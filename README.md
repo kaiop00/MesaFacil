@@ -51,4 +51,3 @@
 - [ ] Integração de pagamentos e avaliações
 - [ ] Testes com restaurante parceiro
 - [ ] Lançamento
-
