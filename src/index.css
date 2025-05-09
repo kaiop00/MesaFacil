@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+.font-inter{
+    font-family: 'Inter', sans-serif;
+}
+
+.font-sora{
+    font-family: 'Sora', sans-serif;
+}
