@@ -63,11 +63,12 @@ export default function LoginFormSection() {
             <button
                 onClick={() => navigate("/cadastro")}
                 className="w-full border border-[#D9A23B] text-[#D9A23B] py-2 rounded font-medium font-inter hover:bg-[#fdf6e8] transition mt-4"
+                disabled={loading}
             >
                 Cadastre-se
             </button>
 
-            <button className="text-sm text-[#0149FD] hover:underline mt-4 font-inter">Esqueceu a senha?</button>
+            <button onClick={() => navigate("/recuperar-senha")} className="text-sm text-[#0149FD] hover:underline mt-4 font-inter" disabled={loading}>Esqueceu a senha?</button>
 
             <footer className="text-xs text-gray-200 text-center py-4 mt-8">© Copyright 2025 MesaFácil</footer>
         </div>

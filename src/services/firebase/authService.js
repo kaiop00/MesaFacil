@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { app } from "@/config/firebaseConfig";
 
@@ -54,3 +55,13 @@ export async function loginWithEmail(email, password) {
 export function logout() {
   return signOut(auth);
 }
+
+/**
+ * Envia e-mail de recuperação de senha
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email);
+}
+

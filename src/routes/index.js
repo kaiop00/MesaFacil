@@ -1,11 +1,13 @@
 import firebaseTestRoute from "@/routes/firebaseTestRoute";
 import loginRoute from "./loginRoute";
-import registerRoute from "./register";
+import registerRoute from "./registerRoute";
+import forgotPasswordRoute from "./forgotPasswordRoute";
 
 const routes = [
     firebaseTestRoute,
     loginRoute,
-    registerRoute
+    registerRoute,
+    forgotPasswordRoute
 ];
 
 export default routes;
