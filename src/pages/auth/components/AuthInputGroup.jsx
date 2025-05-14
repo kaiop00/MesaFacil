@@ -1,3 +1,6 @@
+import { Show, Hide } from "react-coolicons";
+
+
 export default function AuthInputGroup({
   label,
   type = "text",
@@ -25,7 +28,7 @@ export default function AuthInputGroup({
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm"
             onClick={() => setMostrarSenha(!mostrarSenha)}
           >
-            👁️
+            {mostrarSenha ? <Show /> : <Hide />}
           </button>
         )}
       </div>

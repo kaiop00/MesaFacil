@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthInputGroup from "../components/AuthInputGroup";
 import { resetPassword } from "../../../services/firebase/authService";
+import { ChevronLeft } from "react-coolicons";
 
 export default function ForgotFormSection() {
     const [email, setEmail] = useState("");
@@ -9,30 +10,30 @@ export default function ForgotFormSection() {
     const navigate = useNavigate();
 
     const handleForgot = async () => {
-        if(!email){
+        if (!email) {
             alert("Informe um e-mail válido");
             return;
         }
 
         setLoading(true);
-        try{
+        try {
             await resetPassword(email);
             alert("Um e-mail foi enviado com as instruções para redefinir sua senha");
             navigate("/login");
-        } catch (error){
+        } catch (error) {
             console.error(error);
-            if(error.code === "auth/user-not-found") {
+            if (error.code === "auth/user-not-found") {
                 alert("Nenhuma conta encontrada com este email");
-            }else if(error.code === "auth/invalid-email"){
+            } else if (error.code === "auth/invalid-email") {
                 alert("E-mail inválido");
-            }else{
+            } else {
                 alert("Erro ao enviar o e-mail. tente novamente");
             }
-        }finally{
+        } finally {
             setLoading(false);
         }
     }
-    
+
     return (
         <div className="w-full max-w-md px-8 py-12 mx-auto flex flex-col justify-center flex-grow">
             <h1 className="text-[36px] font-extrabold text-center mb-2 font-inter">
@@ -58,9 +59,9 @@ export default function ForgotFormSection() {
 
             <Link
                 to="/login"
-                className="w-full block text-center text-[#D9A23B] py-2 rounded font-medium font-inter hover:underline hover:decoration-[#D9A23B] mt-4"
+                className="w-full flex items-center justify-center gap-1 text-[#D9A23B] py-2 rounded font-medium font-inter hover:underline hover:decoration-[#D9A23B] mt-4"
             >
-                &lt; Voltar ao Login
+                <ChevronLeft size={16} /> Voltar ao Login
             </Link>
 
             <footer className="relative bottom-0 text-xs text-gray-200 text-center">© Copyright 2025 MesaFácil</footer>
