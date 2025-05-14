@@ -1,6 +1,6 @@
 import { AddPlusCircle } from "react-coolicons";
 
-const CardAddOrder = ({ title, subtitle, onNewClick }) => {
+const CardHeader = ({ title, subtitle, onNewClick, showButton = true }) => {
   return (
     <div
       className="
@@ -18,24 +18,25 @@ const CardAddOrder = ({ title, subtitle, onNewClick }) => {
       </div>
 
       {/* Botão Novo Pedido */}
-      <button
-        type="button"
-        onClick={onNewClick}
-        className="
-          w-full sm:w-auto             /* full width mobile, auto em sm+ */ 
-          inline-flex items-center justify-center
-          gap-2
-          bg-yellow-500 hover:bg-yellow-600
-          text-white text-sm font-medium
-          py-2 px-4 rounded-lg shadow-sm transition
-        "
-      >
-        <span className="hidden sm:inline">Novo Pedido</span>{" "}
-        <AddPlusCircle width={20} height={20} />
-        {/* oculta texto no xs */}
-      </button>
+      {showButton && (
+        <button
+          type="button"
+          onClick={onNewClick}
+          className="
+            w-full sm:w-auto
+            inline-flex items-center justify-center
+            gap-2
+            bg-yellow-500 hover:bg-yellow-600
+            text-white text-sm font-medium
+            py-2 px-4 rounded-lg shadow-sm transition
+          "
+        >
+          <span className="hidden sm:inline">Novo Pedido</span>
+          <AddPlusCircle width={20} height={20} />
+        </button>
+      )}
     </div>
   );
 };
 
-export default CardAddOrder;
+export default CardHeader;
