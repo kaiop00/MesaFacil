@@ -21,6 +21,7 @@ export default function LoginFormSection() {
         try {
             await loginWithEmail(email, senha);
             alert("Usuário logado!");
+            navigate("/home");
         } catch (error) {
             alert(translateFirebaseError(error));
         } finally {

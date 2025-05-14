@@ -22,15 +22,15 @@ const Sidebar = () => {
 
   const toggleSidebar = () => setIsOpen((open) => !open);
   const navLinks = [
-    { name: "Dashboard", icon: <House03 size={20} />, path: "/" },
-    { name: "Pedidos", icon: <ListUnordered size={20} />, path: "/pedidos" },
-    { name: "Cardápio", icon: <Coffee size={20} />, path: "/cardapio" },
+    { name: "Dashboard", icon: <House03 size={20} />, path: "/home" },
+    { name: "Pedidos", icon: <ListUnordered size={20} />, path: "/home/pedidos" },
+    { name: "Cardápio", icon: <Coffee size={20} />, path: "/home/cardapio" },
     {
       name: "Relatórios",
       icon: <FileDocument size={20} />,
-      path: "/relatorios",
+      path: "/home/relatorios",
     },
-    { name: "Promoções", icon: <ArrowDownUp size={20} />, path: "/promocoes" },
+    { name: "Promoções", icon: <ArrowDownUp size={20} />, path: "/home/promocoes" },
   ];
 
   return (
@@ -57,10 +57,9 @@ const Sidebar = () => {
       {/* Sidebar container */}
       <aside
         className={`fixed top-0 left-0 h-full bg-white shadow-md z-50 transition-transform duration-300 ease-in-out
-          ${
-            isOpen
-              ? "translate-x-0 w-64"
-              : "-translate-x-full w-64 md:translate-x-0 md:w-16"
+          ${isOpen
+            ? "translate-x-0 w-64"
+            : "-translate-x-full w-64 md:translate-x-0 md:w-16"
           }`}
       >
         {/* Logo */}
@@ -75,9 +74,10 @@ const Sidebar = () => {
               <li key={link.path}>
                 <NavLink
                   to={link.path}
+                  end={link.path === "/home"}
                   className={({ isActive }) =>
                     `flex items-center px-6 py-3 mx-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-all
-                    ${isActive ? "bg-amber-50 text-amber-600 font-medium" : ""}`
+    ${isActive ? "bg-amber-50 text-amber-600 font-medium" : ""}`
                   }
                   onClick={() => {
                     if (isMobile) setIsOpen(false);

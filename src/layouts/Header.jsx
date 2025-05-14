@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
+import { useNavigate } from "react-router-dom";
+import { logout } from "@/services/firebase/authService";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const restaurantName = "Luna Restaurante";
+  const navigate = useNavigate();
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
 
@@ -60,6 +63,15 @@ const Header = () => {
               <hr className="my-1" />
               <a
                 href="#logout"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await logout();
+                    navigate("/login");
+                  } catch (error) {
+                    console.error("Erro ao fazer logout:", error.message);
+                  }
+                }}
                 className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
               >
                 Sair
