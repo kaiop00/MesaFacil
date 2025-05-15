@@ -1,5 +1,5 @@
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { CloseLg } from "react-coolicons";
+import { CloseLg, ChevronDown } from "react-coolicons";
 
 const DetailOrderModal = ({ isOpen, onClose, order }) => {
     return (
@@ -33,17 +33,17 @@ const DetailOrderModal = ({ isOpen, onClose, order }) => {
                         <div>
                             <p className="font-semibold text-sm text-gray-800 mb-2">Itens</p>
                             {order?.items?.map((item, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                                <div key={index} className="flex items-center justify-between p-3 border border-[#F1F5F9] rounded-lg mb-2">
                                     <div className="flex items-center space-x-3">
-                                        <img src={item.image} alt={item.name} className="w-14 h-14 rounded object-cover" />
+                                        <img src={item.image} alt={item.name} className="w-[108px] h-[44px] rounded-[12px] object-cover sm:w-[96px] sm:h-[40px]" />
                                         <div>
-                                            <p className="font-medium text-gray-800 text-sm">
+                                            <p className="font-bold text-gray-800 text-sm">
                                                 {item.quantity}x - {item.name}
                                             </p>
                                             <p className="text-sm text-gray-600">R$ {item.price}</p>
                                         </div>
                                     </div>
-                                    <span className="text-gray-500">▼</span>
+                                    <span className="text-gray-500"><ChevronDown /></span>
                                 </div>
                             ))}
                         </div>

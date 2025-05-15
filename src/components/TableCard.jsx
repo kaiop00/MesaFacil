@@ -73,10 +73,27 @@ const TableCard = ({
       </div>
 
 
-      <DetailOrderModal 
+      <DetailOrderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        
+        order={{
+          id: 1231,
+          items: [
+            {
+              name: "Carne de Gado",
+              quantity: 1,
+              price: "100,00",
+              image: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
+            },
+            {
+              name: "Encanto da Serra",
+              quantity: 1,
+              price: "120,20",
+              image: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
+            },
+          ],
+          observations: "Exemplo de observações",
+        }}
       />
     </>
   );
