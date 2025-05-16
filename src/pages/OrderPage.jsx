@@ -35,6 +35,7 @@ const OrderPage = () => {
         title="Produtos"
         subtitle="Gerencie os produtos da sua loja"
         onNewClick={handleNew}
+        buttonTitle="Novo Pedido"
       />
 
       {/* Seção de Pedidos em Andamento */}

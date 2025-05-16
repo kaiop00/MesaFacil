@@ -1,6 +1,6 @@
 import { AddPlusCircle } from "react-coolicons";
 
-const CardHeader = ({ title, subtitle, onNewClick, showButton = true }) => {
+const CardHeader = ({ title, subtitle, onNewClick, showButton = true, buttonTitle }) => {
   return (
     <div
       className="
@@ -31,7 +31,7 @@ const CardHeader = ({ title, subtitle, onNewClick, showButton = true }) => {
             py-2 px-4 rounded-lg shadow-sm transition
           "
         >
-          <span className="hidden sm:inline">Novo Pedido</span>
+          <span className="hidden sm:inline">{buttonTitle}</span>
           <AddPlusCircle width={20} height={20} />
         </button>
       )}
