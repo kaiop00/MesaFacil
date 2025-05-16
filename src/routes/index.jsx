@@ -1,22 +1,22 @@
 // routes/index.jsx
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Layout from "../layouts/Layout";
-import PrivateRoute from "../components/PrivateRoute";
-import RedirectHandler from "../components/RedirectHandler";
+import Layout from "@/layouts/Layout";
+import PrivateRoute from "@/components/PrivateRoute";
+import RedirectHandler from "@/components/RedirectHandler";
 import { Navigate } from "react-router-dom"; 
 
 
 //Importação das páginas publicas
-import Login from "../pages/auth/login/index";
-import Cadastro from "../pages/auth/register/index";
-import ForgotPassword from "../pages/auth/forgotPassword";
+import LoginPage from "@/features/auth/pages/login/LoginPage";
+import RegisterPage from "@/features/auth/pages/register/RegisterPage";
+import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
 
 // Importação das páginas privadas
-import Dashboard from "../pages/HomePage";
-import Pedidos from "../pages/OrderPage";
-import Cardapio from "../pages/MenuPage";
-import Relatorios from "../pages/AdminDashboard";
-import Promocoes from "../pages/PaymentPage";
+import DashboardPage from "@/features/dashboard/pages/DashboardPage";
+import OrderPage from "@/features/order/pages/OrderPage";
+import FoodListPage from "@/features/foodList/pages/FoodListPage";
+import ReportPage from "@/features/reports/pages/ReportPage";
+import PromotionPage from "@/features/promotions/pages/PromotionPage";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -29,15 +29,15 @@ const router = createBrowserRouter([
   //rotas publicas
   {
     path: "/login",
-    element: <Login />,
+    element: <LoginPage />,
   },
   {
     path: "/cadastro",
-    element: <Cadastro />,
+    element: <RegisterPage />,
   },
   {
     path: "/recuperar-senha",
-    element: <ForgotPassword />,
+    element: <ForgotPasswordPage />,
   },
 
   //rotas privadas
@@ -49,11 +49,11 @@ const router = createBrowserRouter([
         path: "",
         element: <Layout />,
         children: [
-          { path: "", element: <Dashboard /> },
-          { path: "pedidos", element: <Pedidos /> },
-          { path: "cardapio", element: <Cardapio /> },
-          { path: "relatorios", element: <Relatorios /> },
-          { path: "promocoes", element: <Promocoes /> },
+          { path: "", element: <DashboardPage /> },
+          { path: "pedidos", element: <OrderPage /> },
+          { path: "cardapio", element: <FoodListPage /> },
+          { path: "relatorios", element: <ReportPage /> },
+          { path: "promocoes", element: <PromotionPage /> },
         ],
       }
     ]

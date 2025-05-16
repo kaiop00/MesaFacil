@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import AuthInputGroup from "../components/AuthInputGroup";
-import { resetPassword } from "../../../services/firebase/authService";
+import AuthInputGroup from "@/features/auth/components/AuthInputGroup";
+import { resetPassword } from "@/services/firebase/authService";
 import { ChevronLeft } from "react-coolicons";
 
 export default function ForgotFormSection() {

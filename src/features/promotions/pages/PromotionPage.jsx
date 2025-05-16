@@ -1,7 +1,7 @@
 import CardHeader from "@/components/CardHeader";
-import CardPromotionEmpty from '@/components/CardPromotionEmpty';
+import CardPromotionEmpty from '@/features/promotions/components/CardPromotionEmpty';
 
-const PaymentPage = () => {
+const PromotionPage = () => {
   const handleNew = () => {
     alert("Abrir modal de novo pedido");
   };
@@ -20,4 +20,4 @@ const PaymentPage = () => {
   );
 };
 
-export default PaymentPage;
+export default PromotionPage;

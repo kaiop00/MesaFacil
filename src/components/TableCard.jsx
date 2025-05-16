@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { House02, MoreHorizontal, NoteSearch, CheckBig } from "react-coolicons";
-import TableOptionsMenu from "./TableOptionsMenu";
-import DetailOrderModal from "./modals/DetailOrderModal"
+import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
+import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal"
 
 const TableCard = ({
   table,

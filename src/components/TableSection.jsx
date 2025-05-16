@@ -1,4 +1,4 @@
-import TableCard from './TableCard'
+import TableCard from '@/components/TableCard'
 
 const TableSection = ({
   title,
