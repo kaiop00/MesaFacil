@@ -1,6 +1,12 @@
+import { useAuth } from "@/contexts/AuthContext";
+
 const DashboardPage = () => {
+  const { role } = useAuth();
   return (
-    <h1>HomePage</h1>
+    <>
+      {role === "user" && <h1>HomePage user</h1>}
+      {role === "admin" && <h1>HomePage admin</h1>}
+    </>
   )
 }
 
