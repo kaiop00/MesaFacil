@@ -1,9 +1,19 @@
 import CardHeader from "@/components/CardHeader";
 import TableSection from "@/components/TableSection";
+import NewOrderModal from "@/features/order/components/modals/NewOrderModal";
+import { useState } from "react";
 
 const OrderPage = () => {
+  
+  const [ isModalOpen, setIsModalOpen ] = useState(false);
+
+
   const handleNew = () => {
-    alert("Abrir modal de novo pedido");
+    setIsModalOpen(true);
+  };
+
+  const handleClose = () => {
+    setIsModalOpen(false);
   };
 
   // dados de exemplo; troque pelos dados reais da sua API
@@ -47,6 +57,8 @@ const OrderPage = () => {
 
       {/* Seção de Mesas Livres */}
       <TableSection title="Mesas Livres" occupied={false} items={mesasLivres} />
+
+      <NewOrderModal isOpen={isModalOpen} onClose={handleClose} />
     </div>
   );
 };
