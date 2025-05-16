@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AuthInputGroup from "../components/AuthInputGroup";
-import { loginWithEmail } from "../../../services/firebase/authService";
-import { translateFirebaseError } from "../../../utils/firebaseErrorTranslator";
+import AuthInputGroup from "@/features/auth/components/AuthInputGroup";
+import { loginWithEmail } from "@/services/firebase/authService";
+import { translateFirebaseError } from "@/utils/firebaseErrorTranslator";
 
 export default function LoginFormSection() {
     const [email, setEmail] = useState("");

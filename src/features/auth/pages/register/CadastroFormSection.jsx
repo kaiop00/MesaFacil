@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import AuthInputGroup from "../components/AuthInputGroup";
-import { registerWithEmail } from "../../../services/firebase/authService";
-import { translateFirebaseError } from "../../../utils/firebaseErrorTranslator";
+import AuthInputGroup from "@/features/auth/components/AuthInputGroup";
+import { registerWithEmail } from "@/services/firebase/authService";
+import { translateFirebaseError } from "@/utils/firebaseErrorTranslator";
 
 export default function CadastroFormSection() {
     const [nome, setNome] = useState("");
