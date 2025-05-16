@@ -8,9 +8,16 @@ import {
   updateProfile,
   sendPasswordResetEmail,
 } from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  serverTimestamp
+} from "firebase/firestore";
 import { app } from "@/config/firebaseConfig";
 
 const auth = getAuth(app);
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
 /**
@@ -33,6 +40,12 @@ export async function registerWithEmail(email, password, nomeRestaurante) {
   const result = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(result.user, {
     displayName: nomeRestaurante,
+  });
+  await setDoc(doc(db, "users", result.user.uid), {
+    email: result.user.email,
+    nomeRestaurante,
+    role: "user", // ou "admin"
+    createdAt: serverTimestamp(),
   });
   return result.user;
 }
