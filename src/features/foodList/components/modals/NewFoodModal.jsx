@@ -1,0 +1,57 @@
+import { useState } from "react";
+import { Coffee } from "react-coolicons";
+import BaseModalWithHeader from "@/components/BaseModalWithHeader";
+import NewFoodForm from "../forms/NewFoodForm";
+import { salvarNovoItem } from "@/features/foodList/services/foodService";
+
+const NewFoodModal = ({ isOpen, onClose }) => {
+    const [formData, setFormData] = useState({
+        nome: "",
+        categorias: [],
+        valor: "",
+        descricao: "",
+        imagens: [null, null],
+    });
+
+    const handleSalvar = async () => {
+        try {
+            await salvarNovoItem(formData);
+            alert("Item adicionado com sucesso!");
+            onClose();
+        } catch (err) {
+            console.error("Erro ao salvar item:", err);
+            alert(err.message || "Erro ao salvar item.");
+        }
+    };
+
+    return (
+        <BaseModalWithHeader
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Novo Item do Cardapio"
+            subTitle="Preencha as informações para adicionar"
+            icon={Coffee}
+        >
+            <div className="p-6">
+                <NewFoodForm formData={formData} setFormData={setFormData} />
+            </div>
+
+            <div className="font-inter flex justify-between items-center px-6 py-4">
+                <button
+                    onClick={onClose}
+                    className="cursor-pointer font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100"
+                >
+                    Cancelar
+                </button>
+                <button
+                    onClick={handleSalvar}
+                    className="cursor-pointer font-bold bg-[#D9A23B] text-white px-6 py-2 rounded hover:bg-yellow-600"
+                >
+                    Salvar
+                </button>
+            </div>
+        </BaseModalWithHeader>
+    );
+};
+
+export default NewFoodModal;
