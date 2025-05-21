@@ -1,3 +1,4 @@
+import logo from '../assets/images/logo/logo_mesafacil.png';
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -64,7 +65,7 @@ const Sidebar = () => {
       >
         {/* Logo */}
         <div className="py-5 px-4">
-          <h1 className="text-yellow-500 font-bold text-xl">SmartOrder</h1>
+          <img src={logo} alt="Logo" />
         </div>
 
         {/* Navigation links */}
