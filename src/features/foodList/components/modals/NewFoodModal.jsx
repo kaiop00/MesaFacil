@@ -3,14 +3,14 @@ import { Coffee } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import NewFoodForm from "../forms/NewFoodForm";
 import { salvarNovoItem } from "@/features/foodList/services/foodService";
-import { useCardapioContext } from "@/hooks/useCardapioContext";
+import { useCardapioContext } from "@/features/foodList/hooks/useCardapioContext";
 
 const initialFormData = {
     nome: "",
     categorias: [],
     valor: "",
     descricao: "",
-    imagens: [null, null],
+    imagemUrl: [null, null],
 };
 
 const NewFoodModal = ({ isOpen, onClose }) => {

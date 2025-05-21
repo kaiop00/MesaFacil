@@ -1,7 +1,7 @@
 import { MoreHorizontal } from "react-coolicons";
 import { useState } from "react";
 import FoodDetailsModal from "./modals/FoodDetailsModal";
-import { useCardapioContext } from "@/hooks/useCardapioContext";
+import { useCardapioContext } from "@/features/foodList/hooks/useCardapioContext";
 
 const FoodGrid = () => {
   const { items, loading } = useCardapioContext();
