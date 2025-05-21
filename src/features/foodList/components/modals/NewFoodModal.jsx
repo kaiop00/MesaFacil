@@ -10,8 +10,10 @@ const initialFormData = {
     categorias: [],
     valor: "",
     descricao: "",
-    imagemUrl: [null, null],
+    imagemUrl: "",   
+    alergias: [],    
 };
+
 
 const NewFoodModal = ({ isOpen, onClose }) => {
     const [formData, setFormData] = useState(initialFormData);
@@ -20,7 +22,7 @@ const NewFoodModal = ({ isOpen, onClose }) => {
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(initialFormData);  // Reset ao abrir
+            setFormData(initialFormData);  
         }
     }, [isOpen]);
 

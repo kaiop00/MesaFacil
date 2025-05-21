@@ -40,7 +40,7 @@ const UploadWidget = ({ imagemUrl, setImagemUrl }) => {
         Clique para adicionar a foto
       </label>
       <div className="flex gap-3">
-        {imagemUrl ? (
+        {typeof imagemUrl === "string" && imagemUrl.trim() !== "" ? (
           <div className="relative w-24 h-24">
             <img
               src={imagemUrl}

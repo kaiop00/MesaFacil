@@ -35,7 +35,7 @@ const FoodListPage = () => {
         setFilter={setFilter}
       />
 
-      <FoodGrid />
+      <FoodGrid search={search} filter={filter} />
 
       <NewFoodModal isOpen={isModalOpen} onClose={handleCloseModal} />
     </div>

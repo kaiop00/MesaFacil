@@ -11,9 +11,10 @@ const CategorySelect = ({ value, onChange }) => (
       <option value="" disabled>
         Filtrar por Categoria
       </option>
-      <option value="guarnicao">Guarnição</option>
-      <option value="sobremesa">Sobremesa</option>
-      <option value="acompanhamento">Acompanhamento</option>
+      <option value="">Todos</option>
+      <option value="Guarnição">Guarnição</option>
+      <option value="Sobremesa">Sobremesa</option>
+      <option value="Acompanhamento">Acompanhamento</option>
     </select>
     <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
       <Filter className="w-4 h-4 text-[#94A3B8]" />

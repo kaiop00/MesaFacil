@@ -1,25 +1,6 @@
-import Select from "react-select";
 import UploadWidget from "../UploadWidget";
-
-const categoriaOptions = [
-  { value: "Guarnição", label: "Guarnição" },
-  { value: "Carne", label: "Carne" },
-  { value: "Sobremesa", label: "Sobremesa" },
-  { value: "Acompanhamento", label: "Acompanhamento" },
-];
-
-const customSelectStyles = {
-  control: (base) => ({
-    ...base,
-    border: "1px solid #D1D5DB",
-    borderRadius: "0.375rem",
-    padding: "2px",
-    boxShadow: "none",
-    "&:hover": {
-      borderColor: "#D1D5DB",
-    },
-  }),
-};
+import CategoriaSelect from "@/features/foodList/components/selects/CategoriaSelect";
+import AlergiaSelect from "@/features/foodList/components/selects/AlergiaSelect";
 
 const NewFoodForm = ({ formData, setFormData }) => {
   const setImagemUrl = (url) => {
@@ -43,17 +24,21 @@ const NewFoodForm = ({ formData, setFormData }) => {
         />
       </div>
 
-      <div>
-        <label className="block mb-1 font-medium text-gray-700">Categorias</label>
-        <Select
-          isMulti
-          options={categoriaOptions}
-          value={formData.categorias}
-          onChange={(selected) => setFormData((prev) => ({ ...prev, categorias: selected }))}
-          styles={customSelectStyles}
-          placeholder="Escolha uma ou mais categorias"
-        />
-      </div>
+      <CategoriaSelect
+        value={formData.categorias}
+        onChange={(selected) => setFormData((prev) => ({ ...prev, categorias: selected }))}
+      />
+
+      <AlergiaSelect
+        value={formData.alergias.map((a) => ({ label: a, value: a }))}
+        onChange={(selected) =>
+          setFormData((prev) => ({
+            ...prev,
+            alergias: selected.map((s) => s.value) 
+          }))
+        }
+      />
+
 
       <div>
         <label className="block mb-1 font-medium text-gray-700">Valor</label>

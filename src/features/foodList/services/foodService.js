@@ -12,7 +12,7 @@ export async function listarItensCardapio() {
  * @param {object} formData
  */
 export async function salvarNovoItem(formData) {
-  const { nome, categorias, valor, descricao, imagemUrl } = formData;
+  const { nome, categorias, valor, descricao, imagemUrl, alergias } = formData;
 
   if (!nome || !valor || !imagemUrl || categorias.length === 0) {
     throw new Error('Preencha todos os campos obrigatórios.');
@@ -23,7 +23,8 @@ export async function salvarNovoItem(formData) {
     descricao,
     valor: parseFloat(valor),
     categorias: categorias.map((c) => c.value),
-    imagemUrl
+    imagemUrl,
+    alergias: alergias || []
   };
 
   return await create('cardapio', data);  
