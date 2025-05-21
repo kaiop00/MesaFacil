@@ -3,11 +3,13 @@ import CardHeader from "@/components/CardHeader";
 import FilterBar from "@/features/foodList/components/FilterBar";
 import FoodGrid from "@/features/foodList/components/FoodGrid";
 import NewFoodModal from "@/features/foodList/components/modals/NewFoodModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const FoodListPage = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { role } = useAuth();
 
   const handleNew = () => {
     setIsModalOpen(true);
@@ -18,13 +20,13 @@ const FoodListPage = () => {
   };
 
   return (
-    <div className="mt-15">
-      <CardHeader
+    <div className="mt-10 mb-10">
+      {role === "admin" && <CardHeader
         title="Cardápio"
         subtitle="Gerencie o cardápio da sua loja"
         onNewClick={handleNew}
         buttonTitle="Novo Item"
-      />
+      />}
 
       <FilterBar
         search={search}

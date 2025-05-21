@@ -3,6 +3,7 @@ import { Coffee } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import NewFoodForm from "../forms/NewFoodForm";
 import { salvarNovoItem } from "@/features/foodList/services/foodService";
+import { useCardapioContext } from "@/hooks/useCardapioContext";
 
 const initialFormData = {
     nome: "",
@@ -15,6 +16,7 @@ const initialFormData = {
 const NewFoodModal = ({ isOpen, onClose }) => {
     const [formData, setFormData] = useState(initialFormData);
     const [loading, setLoading] = useState(false);
+    const { carregarItens } = useCardapioContext();
 
     useEffect(() => {
         if (isOpen) {
@@ -28,6 +30,7 @@ const NewFoodModal = ({ isOpen, onClose }) => {
             await salvarNovoItem(formData);
             alert("Item adicionado com sucesso!");
             onClose();
+            carregarItens(); 
         } catch (err) {
             console.error("Erro ao salvar item:", err);
             alert(err.message || "Erro ao salvar item.");

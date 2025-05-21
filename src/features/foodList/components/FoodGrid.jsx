@@ -1,54 +1,10 @@
 import { MoreHorizontal } from "react-coolicons";
-import foodImage from "../assets/foodImage.jpg";
 import { useState } from "react";
 import FoodDetailsModal from "./modals/FoodDetailsModal";
-
-const items = [
-  {
-    nome: "Encanto da Serra",
-    preco: "R$ 220,20",
-    categorias: ["Guarnição", "Carne"],
-    imagem: foodImage,
-  },
-  {
-    nome: "Carne de Gado Assada",
-    preco: "R$ 130,20",
-    categorias: ["Guarnição", "Carne"],
-    imagem: foodImage,
-  },
-  {
-    nome: "Almoço Executivo",
-    preco: "R$ 25,00",
-    categorias: ["Guarnição", "Carne"],
-    imagem: foodImage,
-  },
-  {
-    nome: "Almoço Executivo",
-    preco: "R$ 25,00",
-    categorias: ["Guarnição", "Carne"],
-    imagem: foodImage,
-  },
-  {
-    nome: "Almoço Executivo",
-    preco: "R$ 25,00",
-    categorias: ["Guarnição", "Carne"],
-    imagem: foodImage,
-  },
-  {
-    nome: "Almoço Executivo",
-    preco: "R$ 25,00",
-    categorias: ["Guarnição", "Carne"],
-    imagem: foodImage,
-  },
-  {
-    nome: "Almoço Executivo",
-    preco: "R$ 25,00",
-    categorias: ["Guarnição", "Carne"],
-    imagem: foodImage,
-  },
-];
+import { useCardapioContext } from "@/hooks/useCardapioContext";
 
 const FoodGrid = () => {
+  const { items, loading } = useCardapioContext();
   const [selectedItem, setSelectedItem] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
@@ -62,17 +18,25 @@ const FoodGrid = () => {
     setSelectedItem(null);
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <div className="w-12 h-12 border-4 border-[#D9A23B] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <div
-            key={index}
+            key={item.id}
             className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100"
           >
             <div className="relative">
               <img
-                src={item.imagem}
+                src={item.imagemUrl}
                 alt={item.nome}
                 className="h-40 w-full object-cover"
               />
@@ -86,7 +50,9 @@ const FoodGrid = () => {
 
             <div className="p-4">
               <h3 className="font-semibold text-sm text-gray-900">{item.nome}</h3>
-              <p className="text-sm font-medium text-[#D9A23B]">{item.preco}</p>
+              <p className="text-sm font-bold text-[#D9A23B]">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}
+              </p>
               <div className="flex flex-wrap mt-2 gap-1">
                 {item.categorias.map((cat, i) => (
                   <span

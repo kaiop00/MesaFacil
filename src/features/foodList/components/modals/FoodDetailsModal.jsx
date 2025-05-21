@@ -11,9 +11,9 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
             icon={Coffee}
         >
             <div className="font-inter space-y-3 text-sm p-6">
-                <img src={food.imagem} alt={food.nome} className="w-32 rounded-md" />
+                <img src={food.imagemUrl} alt={food.nome} className="w-32 rounded-md" />
                 <p><strong>Nome:</strong> {food.nome}</p>
-                <p><strong>Preço:</strong> {food.preco}</p>
+                <p><strong>Preço:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(food.valor)}</p>
                 <p><strong>Categorias:</strong> {food.categorias.join(", ")}</p>
             </div>
             <div className="font-inter flex justify-between items-center px-6 py-4">
