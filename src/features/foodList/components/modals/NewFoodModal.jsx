@@ -1,19 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Coffee } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import NewFoodForm from "../forms/NewFoodForm";
 import { salvarNovoItem } from "@/features/foodList/services/foodService";
 
+const initialFormData = {
+    nome: "",
+    categorias: [],
+    valor: "",
+    descricao: "",
+    imagens: [null, null],
+};
+
 const NewFoodModal = ({ isOpen, onClose }) => {
-    const [formData, setFormData] = useState({
-        nome: "",
-        categorias: [],
-        valor: "",
-        descricao: "",
-        imagens: [null, null],
-    });
+    const [formData, setFormData] = useState(initialFormData);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(initialFormData);  // Reset ao abrir
+        }
+    }, [isOpen]);
 
     const handleSalvar = async () => {
+        setLoading(true);
         try {
             await salvarNovoItem(formData);
             alert("Item adicionado com sucesso!");
@@ -21,6 +31,8 @@ const NewFoodModal = ({ isOpen, onClose }) => {
         } catch (err) {
             console.error("Erro ao salvar item:", err);
             alert(err.message || "Erro ao salvar item.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -47,7 +59,11 @@ const NewFoodModal = ({ isOpen, onClose }) => {
                     onClick={handleSalvar}
                     className="cursor-pointer font-bold bg-[#D9A23B] text-white px-6 py-2 rounded hover:bg-yellow-600"
                 >
-                    Salvar
+                    {loading ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                        <span>Salvar</span>
+                    )}
                 </button>
             </div>
         </BaseModalWithHeader>
