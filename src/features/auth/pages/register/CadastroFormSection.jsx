@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthInputGroup from "@/features/auth/components/AuthInputGroup";
 import { registerWithEmail } from "@/services/firebase/authService";
 import { translateFirebaseError } from "@/utils/firebaseErrorTranslator";
+import { useToast } from "@/hooks/useToast";
 
 export default function CadastroFormSection() {
     const [nome, setNome] = useState("");
@@ -11,20 +12,21 @@ export default function CadastroFormSection() {
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const { notify } = useToast();
 
 
     const handleCadastro = async () => {
         if (!nome || !email || !senha) {
-            alert("Preencha todos os campos.");
+            notify("Preencha todos os campos", "error");
             return;
         }
         setLoading(true);
         try {
             await registerWithEmail(email, senha, nome);
-            alert("usuario cadastrado com sucesso");
+            notify("usuario cadastrado com sucesso", "success");
             navigate("/login");
         } catch (error) {
-            alert(translateFirebaseError(error));
+            notify(translateFirebaseError(error), "error");
         } finally {
             setLoading(false);
         }

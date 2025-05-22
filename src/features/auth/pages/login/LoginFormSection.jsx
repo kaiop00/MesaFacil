@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AuthInputGroup from "@/features/auth/components/AuthInputGroup";
 import { loginWithEmail } from "@/services/firebase/authService";
 import { translateFirebaseError } from "@/utils/firebaseErrorTranslator";
+import { useToast } from "@/hooks/useToast";
 
 export default function LoginFormSection() {
     const [email, setEmail] = useState("");
@@ -10,20 +11,22 @@ export default function LoginFormSection() {
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { notify } = useToast();
+    
 
     const handleLogin = async () => {
         if (!email.trim() || !senha.trim()) {
-            alert("Preencha todos os campos.");
+            notify("Preencha todos os campos", "error");
             return;
         }
 
         setLoading(true);
         try {
             await loginWithEmail(email, senha);
-            alert("Usuário logado!");
+            notify("Usuário logado!", "success");
             navigate("/home");
         } catch (error) {
-            alert(translateFirebaseError(error));
+            notify(translateFirebaseError(error), "error");
         } finally {
             setLoading(false);
         }

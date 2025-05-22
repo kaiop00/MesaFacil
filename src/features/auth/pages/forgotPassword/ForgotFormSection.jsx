@@ -3,31 +3,33 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthInputGroup from "@/features/auth/components/AuthInputGroup";
 import { resetPassword } from "@/services/firebase/authService";
 import { ChevronLeft } from "react-coolicons";
+import { useToast } from "@/hooks/useToast";
 
 export default function ForgotFormSection() {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { notify } = useToast();
 
     const handleForgot = async () => {
         if (!email) {
-            alert("Informe um e-mail válido");
+            notify("Informe um e-mail válido", "error");
             return;
         }
 
         setLoading(true);
         try {
             await resetPassword(email);
-            alert("Um e-mail foi enviado com as instruções para redefinir sua senha");
+            notify("Um e-mail foi enviado com as instruções para redefinir sua senha", "success");
             navigate("/login");
         } catch (error) {
             console.error(error);
             if (error.code === "auth/user-not-found") {
-                alert("Nenhuma conta encontrada com este email");
+                notify("Nenhuma conta encontrada com este email", "error");
             } else if (error.code === "auth/invalid-email") {
-                alert("E-mail inválido");
+                notify("E-mail inválido", "error");
             } else {
-                alert("Erro ao enviar o e-mail. tente novamente");
+                notify("Erro ao enviar o e-mail. tente novamente", "error");
             }
         } finally {
             setLoading(false);
