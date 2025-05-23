@@ -1,4 +1,3 @@
-// src/services/firebase/firestoreService.js
 import {
   collection,
   doc,
@@ -6,17 +5,29 @@ import {
   getDocs,
   addDoc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  query,
+  orderBy,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
 
 /**
- * Busca todos os documentos de uma coleção
+ * Busca todos os documentos de uma coleção com ordenação opcional
  * @param {string} collectionName
+ * @param {object} [options]
+ * @param {string} [options.orderByField]
+ * @param {string} [options.order]
  */
-export async function getAll(collectionName) {
+export async function getAll(collectionName, options = {}) {
   const colRef = collection(db, collectionName);
-  const snapshot = await getDocs(colRef);
+
+  let q = colRef;
+  if (options.orderByField) {
+    q = query(colRef, orderBy(options.orderByField, options.order || 'asc'));
+  }
+
+  const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
@@ -32,13 +43,17 @@ export async function getById(collectionName, docId) {
 }
 
 /**
- * Adiciona um novo documento
+ * Adiciona um novo documento com createdAt opcional
  * @param {string} collectionName
  * @param {object} data
+ * @param {boolean} [addTimestamp=true]
  */
-export async function create(collectionName, data) {
+export async function create(collectionName, data, addTimestamp = true) {
   const colRef = collection(db, collectionName);
-  const docRef = await addDoc(colRef, data);
+  const payload = addTimestamp
+    ? { ...data, criadoEm: serverTimestamp() }
+    : data;
+  const docRef = await addDoc(colRef, payload);
   return docRef.id;
 }
 

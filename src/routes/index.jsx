@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 import PrivateRoute from "@/components/PrivateRoute";
 import RedirectHandler from "@/components/RedirectHandler";
-import { Navigate } from "react-router-dom"; 
+import { Navigate } from "react-router-dom";
 
 
 //Importação das páginas publicas
@@ -17,6 +17,9 @@ import OrderPage from "@/features/order/pages/OrderPage";
 import FoodListPage from "@/features/foodList/pages/FoodListPage";
 import ReportPage from "@/features/reports/pages/ReportPage";
 import PromotionPage from "@/features/promotions/pages/PromotionPage";
+
+//providers
+import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -51,7 +54,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <DashboardPage /> },
           { path: "pedidos", element: <OrderPage /> },
-          { path: "cardapio", element: <FoodListPage /> },
+          { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <ReportPage /> },
           { path: "promocoes", element: <PromotionPage /> },
         ],
