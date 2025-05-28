@@ -20,17 +20,24 @@ export default function CadastroFormSection() {
             notify("Preencha todos os campos", "error");
             return;
         }
+
         setLoading(true);
         try {
-            await registerWithEmail(email, senha, nome);
-            notify("usuario cadastrado com sucesso", "success");
-            navigate("/login");
+            const { user, idRestaurante } = await registerWithEmail(email, senha, nome);
+
+            if (!idRestaurante) {
+                throw new Error("Falha ao associar restaurante.");
+            }
+
+            notify("Usuário cadastrado com sucesso!", "success");
+            navigate("/home");
         } catch (error) {
             notify(translateFirebaseError(error), "error");
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="w-full max-w-md px-8 py-12 mx-auto flex flex-col justify-center flex-grow">
