@@ -13,14 +13,25 @@ import {
 import { db } from '@/config/firebaseConfig';
 
 /**
- * Busca todos os documentos de uma coleção com ordenação opcional
- * @param {string} collectionName
+ * Gera a referência da subcoleção dentro do restaurante
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
+ * @returns {CollectionReference}
+ */
+function getSubcollectionRef(idRestaurante, subcollectionName) {
+  return collection(db, 'restaurantes', idRestaurante, subcollectionName);
+}
+
+/**
+ * Busca todos os documentos de uma subcoleção com ordenação opcional
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
  * @param {object} [options]
  * @param {string} [options.orderByField]
  * @param {string} [options.order]
  */
-export async function getAll(collectionName, options = {}) {
-  const colRef = collection(db, collectionName);
+export async function getAll(idRestaurante, subcollectionName, options = {}) {
+  const colRef = getSubcollectionRef(idRestaurante, subcollectionName);
 
   let q = colRef;
   if (options.orderByField) {
@@ -32,24 +43,26 @@ export async function getAll(collectionName, options = {}) {
 }
 
 /**
- * Busca um documento por ID
- * @param {string} collectionName
+ * Busca um documento por ID na subcoleção
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
  * @param {string} docId
  */
-export async function getById(collectionName, docId) {
-  const docRef = doc(db, collectionName, docId);
+export async function getById(idRestaurante, subcollectionName, docId) {
+  const docRef = doc(db, 'restaurantes', idRestaurante, subcollectionName, docId);
   const snapshot = await getDoc(docRef);
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
 }
 
 /**
- * Adiciona um novo documento com createdAt opcional
- * @param {string} collectionName
+ * Adiciona um novo documento na subcoleção com createdAt opcional
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
  * @param {object} data
  * @param {boolean} [addTimestamp=true]
  */
-export async function create(collectionName, data, addTimestamp = true) {
-  const colRef = collection(db, collectionName);
+export async function create(idRestaurante, subcollectionName, data, addTimestamp = true) {
+  const colRef = getSubcollectionRef(idRestaurante, subcollectionName);
   const payload = addTimestamp
     ? { ...data, criadoEm: serverTimestamp() }
     : data;
@@ -58,22 +71,24 @@ export async function create(collectionName, data, addTimestamp = true) {
 }
 
 /**
- * Atualiza campos de um documento
- * @param {string} collectionName
+ * Atualiza campos de um documento na subcoleção
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
  * @param {string} docId
  * @param {object} data
  */
-export async function update(collectionName, docId, data) {
-  const docRef = doc(db, collectionName, docId);
+export async function update(idRestaurante, subcollectionName, docId, data) {
+  const docRef = doc(db, 'restaurantes', idRestaurante, subcollectionName, docId);
   await updateDoc(docRef, data);
 }
 
 /**
- * Remove um documento por ID
- * @param {string} collectionName
+ * Remove um documento por ID na subcoleção
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
  * @param {string} docId
  */
-export async function remove(collectionName, docId) {
-  const docRef = doc(db, collectionName, docId);
+export async function remove(idRestaurante, subcollectionName, docId) {
+  const docRef = doc(db, 'restaurantes', idRestaurante, subcollectionName, docId);
   await deleteDoc(docRef);
 }
