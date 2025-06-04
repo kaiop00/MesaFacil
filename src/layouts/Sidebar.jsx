@@ -63,9 +63,7 @@ const Sidebar = () => {
           }`}
       >
         {/* Logo */}
-        <div className="py-5 px-4">
-          <h1 className="text-yellow-500 font-bold text-xl">SmartOrder</h1>
-        </div>
+        <img src="src/assets/mesafacil.png" alt="Logo" className="w-40 py-4 px-4 ml-4"/>
 
         {/* Navigation links */}
         <nav className="mt-6">
