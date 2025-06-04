@@ -24,8 +24,10 @@ const BaseModalWithHeader = ({ isOpen, onClose, title, subTitle, icon: Icon, chi
             </button>
           </div>
 
-          {/* Corpo do modal */}
-          <div>{children}</div>
+          {/* Corpo do modal scrollável */}
+          <div className="max-h-[80vh] overflow-y-auto px-4 sm:px-6 py-4">
+            {children}
+          </div>
         </DialogPanel>
       </div>
     </Dialog>
