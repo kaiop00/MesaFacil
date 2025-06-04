@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TableType from "@/features/config/components/TableType";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import { Coffee } from "react-coolicons";
 import { useToast } from "@/hooks/useToast";
+import { create, getAll } from "@/services/firebase/firestoreService";
+import { useAuth } from "@/contexts/AuthContext";
+import { serverTimestamp } from "firebase/firestore";
 
 const ConfigModal = ({ isOpen, onClose }) => {
   const { notify } = useToast();
+  const { idRestaurante } = useAuth();
 
   const [tableType, setTableType] = useState(null);
   const [qtd, setQtd] = useState("");
+  const [mesas, setMesas] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const resetForm = () => {
     setTableType(null);
@@ -30,22 +36,65 @@ const ConfigModal = ({ isOpen, onClose }) => {
     return true;
   };
 
+  const carregarMesas = async () => {
+    if (!idRestaurante) return;
+    setLoading(true);
+    try {
+      const data = await getAll(idRestaurante, "mesas", { orderByField: "numero" });
+      setMesas(data);
+    } catch (error) {
+      console.error(error);
+      notify("Erro ao carregar mesas", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) carregarMesas();
+  }, [isOpen, idRestaurante]);
+
   const handleAdd = () => {
     if (!validateForm()) return;
 
-    console.log("Mesas incluídas:", {
-      tipo: tableType.value,
-      quantidade: Number(qtd),
-    });
+    const quantidade = Number(qtd);
+    const maiorNumero = mesas.length ? Math.max(...mesas.map((m) => m.numero)) : 0;
 
-    notify(`Incluídas ${qtd} mesas de ${tableType.label}`, "success");
+    const novasMesas = Array.from({ length: quantidade }, (_, i) => ({
+      id: `nova-${Date.now()}-${i}`,
+      numero: maiorNumero + i + 1,
+      tipo: tableType.value,
+      status: "livre",
+      nova: true,
+    }));
+
+    setMesas((prev) => [...prev, ...novasMesas]);
     resetForm();
   };
 
-  const handleSubmit = () => {
-    // Aqui você pode salvar no banco ou enviar para o backend
-    notify("Configurações salvas com sucesso!", "success");
-    onClose();
+  const handleSubmit = async () => {
+    const novas = mesas.filter((mesa) => mesa.nova);
+    if (!novas.length) {
+      notify("Nenhuma nova mesa para salvar.", "info");
+      return;
+    }
+
+    try {
+      for (const mesa of novas) {
+        const { numero, tipo, status } = mesa;
+        await create(idRestaurante, "mesas", {
+          numero,
+          tipo,
+          status,
+          criadoEm: serverTimestamp(),
+        });
+      }
+      notify("Mesas salvas com sucesso!", "success");
+      onClose();
+    } catch (error) {
+      console.error(error);
+      notify("Erro ao salvar mesas", "error");
+    }
   };
 
   return (
@@ -82,6 +131,55 @@ const ConfigModal = ({ isOpen, onClose }) => {
               Incluir
             </button>
           </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button className="bg-[#D9A23B] hover:bg-yellow-600 text-white font-medium px-4 py-2 rounded-md">
+            Baixar Todos os QR Codes
+          </button>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full text-sm text-left">
+            <thead className="bg-gray-100 text-gray-700 font-medium">
+              <tr>
+                <th className="px-4 py-2">Numero</th>
+                <th className="px-4 py-2">Tipo de Mesa</th>
+                <th className="px-4 py-2">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mesas.map((mesa, index) => (
+                <tr
+                  key={mesa.id || `${mesa.numero}-${mesa.tipo}`}
+                  className={`${index % 2 === 1 ? "bg-gray-50" : ""} ${mesa.nova ? "bg-yellow-50" : ""}`}
+                >
+                  <td className="px-4 py-2">{mesa.numero}</td>
+                  <td className="px-4 py-2">{mesa.tipo} Cadeiras</td>
+                  <td className="px-4 py-2">
+                    <button className="bg-gray-100 text-sm px-3 py-1 rounded hover:bg-gray-200 flex items-center space-x-1">
+                      <span>🧾</span>
+                      <span>Baixar QR Code</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {mesas.length === 0 && !loading && (
+                <tr>
+                  <td colSpan="3" className="text-center py-4 text-gray-500">
+                    Nenhuma mesa cadastrada.
+                  </td>
+                </tr>
+              )}
+              {loading && (
+                <tr>
+                  <td colSpan="3" className="text-center py-4 text-gray-400">
+                    Carregando mesas...
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
