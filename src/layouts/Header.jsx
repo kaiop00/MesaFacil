@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
+import ConfigModal from "@/features/config/components/modals/ConfigModal"
 import { logout } from "@/services/firebase/authService";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const restaurantName = "Luna Restaurante";
   const navigate = useNavigate();
@@ -56,6 +58,11 @@ const Header = () => {
               </a>
               <a
                 href="#settings"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsConfigModalOpen(true);
+                  setIsDropdownOpen(false);
+                }}
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
                 Configurações
@@ -78,6 +85,10 @@ const Header = () => {
               </a>
             </div>
           )}
+          <ConfigModal
+            isOpen={isConfigModalOpen}
+            onClose={() => setIsConfigModalOpen(false)}
+          />
         </div>
       </div>
     </header>
