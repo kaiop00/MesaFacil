@@ -4,6 +4,7 @@ import AuthInputGroup from "@/features/auth/components/AuthInputGroup";
 import { resetPassword } from "@/services/firebase/authService";
 import { ChevronLeft } from "react-coolicons";
 import { useToast } from "@/hooks/useToast";
+import mesafacil from '@/assets/mesafacil.png';
 
 export default function ForgotFormSection() {
     const [email, setEmail] = useState("");
@@ -38,10 +39,9 @@ export default function ForgotFormSection() {
 
     return (
         <div className="w-full max-w-md px-8 py-12 mx-auto flex flex-col justify-center flex-grow">
-            <h1 className="text-[36px] font-extrabold text-center mb-2 font-inter">
-                <span className="text-[#010647]">Mesa</span>
-                <span className="text-[#D9A23B]">Fácil</span>
-            </h1>
+            <div class="flex justify-center">
+                <img src={mesafacil} alt="logo" className="w-50" />
+            </div>
             <p className="text-[24px] text-center font-semibold text-[#010647] mt-4 mb-2 font-inter">Esqueceu a senha?</p>
             <p className="text-[15px] text-[#7F7F7F] text-center mb-8 font-inter">Sem problema, siga o passo a passo para ajudarmos a redefinir sua senha, informe seu e-mail</p>
 
@@ -49,7 +49,7 @@ export default function ForgotFormSection() {
 
             <button
                 onClick={handleForgot}
-                className="w-full h-[44px] bg-[#D9A23B] text-white rounded font-semibold font-inter hover:bg-yellow-600 transition mt-6 flex justify-center items-center"
+                className="w-full h-[44px] bg-[#F8912E] text-white rounded font-semibold font-inter transition mt-6 flex justify-center items-center cursor-pointer"
                 disabled={loading}
             >
                 {loading ? (
@@ -61,7 +61,7 @@ export default function ForgotFormSection() {
 
             <Link
                 to="/login"
-                className="w-full flex items-center justify-center gap-1 text-[#D9A23B] py-2 rounded font-medium font-inter hover:underline hover:decoration-[#D9A23B] mt-4"
+                className="w-full flex items-center justify-center gap-1 text-[#F8912E] py-2 rounded font-medium font-inter hover:underline hover:decoration-[#D9A23B] mt-4"
             >
                 <ChevronLeft size={16} /> Voltar ao Login
             </Link>
