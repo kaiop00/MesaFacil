@@ -14,7 +14,7 @@ export default function MainPage() {
             <header className="absolute top-0 left-0 w-full bg-white flex justify-between items-center px-8 py-4 z-20 shadow-md">
                 <img src={mesafacil} alt="logo" className="w-40 sm:w-32" />
 
-                <button className="bg-[#F8912E] text-white font-medium rounded px-4 py-2 hover:opacity-90 transition text-sm sm:text-base">
+                <button className="bg-[#F8912E] text-white font-medium rounded px-4 py-2 hover:opacity-90 transition text-sm sm:text-base cursor-pointer" onClick={() => navigate("/login")}>
                     Acessar Sistema
                 </button>
             </header>
@@ -41,7 +41,7 @@ export default function MainPage() {
 
             {/* Botão inferior */}
             <div className="absolute bottom-12 lg:bottom-24 right-1/2 lg:right-24 transform lg:translate-x-0 translate-x-1/2 z-20">
-                <button className="bg-white rounded-full flex items-center gap-2 px-8 py-5 shadow-md text-sm md:text-base" onClick={() => navigate("/login")}>
+                <button className="bg-white rounded-full flex items-center gap-2 px-8 py-5 shadow-md text-sm md:text-base cursor-pointer" onClick={() => navigate("/login")}>
                     <LogOut className="w-8 h-8 text-[#F89950]" />
                     <span className="text-[#1E293B]">Clique para Acessar</span>
                 </button>
