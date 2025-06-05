@@ -10,6 +10,7 @@ import { Navigate } from "react-router-dom";
 import LoginPage from "@/features/auth/pages/login/LoginPage";
 import RegisterPage from "@/features/auth/pages/register/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
+import MainPage from "@/features/auth/pages/MainPage";
 
 // Importação das páginas privadas
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
 
 
   //rotas publicas
+  {
+    path: "/home-page",
+    element: <MainPage />,
+  },
   {
     path: "/login",
     element: <LoginPage />,

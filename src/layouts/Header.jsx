@@ -74,7 +74,7 @@ const Header = () => {
                   e.preventDefault();
                   try {
                     await logout();
-                    navigate("/login");
+                    navigate("/home-page");
                   } catch (error) {
                     console.error("Erro ao fazer logout:", error.message);
                   }
