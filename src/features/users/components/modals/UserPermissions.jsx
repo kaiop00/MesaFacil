@@ -1,7 +1,27 @@
-import { Check } from "react-coolicons";
 import { PERMISSIONS } from "../../constants/permissions";
 
-const UserPermissions = ({ permissions = {}, onPermissionChange, onToggleAll, selectAll }) => {
+const UserPermissions = ({ permissions = {}, setPermissions, selectAll, setSelectAll }) => {
+  const ALL_PERMISSION_IDS = Object.values(PERMISSIONS)
+    .flatMap(category => category.map(permission => permission.id));
+
+  const handlePermissionChange = (permissionId, checked) => {
+    setPermissions(prev => ({
+      ...prev,
+      [permissionId]: checked
+    }));
+  };
+
+  const handleToggleAll = (checked) => {
+    const allPermissions = {};
+
+    ALL_PERMISSION_IDS.forEach(id => {
+      allPermissions[id] = checked;
+    });
+
+    setPermissions(allPermissions);
+    setSelectAll(checked);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -11,15 +31,13 @@ const UserPermissions = ({ permissions = {}, onPermissionChange, onToggleAll, se
 
         <button
           type="button"
-          onClick={() => onToggleAll(!selectAll)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 ${
-            selectAll ? 'bg-yellow-500' : 'bg-gray-200'
-          }`}
+          onClick={() => handleToggleAll(!selectAll)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 ${selectAll ? 'bg-yellow-500' : 'bg-gray-200'
+            }`}
         >
           <span
-            className={`${
-              selectAll ? 'translate-x-6' : 'translate-x-1'
-            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+            className={`${selectAll ? 'translate-x-6' : 'translate-x-1'
+              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
           />
         </button>
       </div>
@@ -40,26 +58,24 @@ const UserPermissions = ({ permissions = {}, onPermissionChange, onToggleAll, se
                   <span className="text-sm text-gray-700">
                     {permission.label}
                   </span>
-                  
+
                   <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={permissions[permission.id]}
-                      onChange={(e) => onPermissionChange(permission.id, e.target.checked)}
+                      onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
                       className="sr-only"
                       id={`toggle-${permission.id}`}
                     />
 
-                    <label 
+                    <label
                       htmlFor={`toggle-${permission.id}`}
-                      className={`flex overflow-hidden h-6 rounded-full cursor-pointer ${
-                        permissions[permission.id] ? 'bg-yellow-500' : 'bg-gray-200'
-                      }`}
-                    >
-                      <span 
-                        className={`inline-flex self-center h-4 w-4 rounded-full bg-white transform transition-transform duration-200 ease-in-out ${
-                          permissions[permission.id] ? 'translate-x-5' : 'translate-x-1'
+                      className={`block overflow-hidden h-6 rounded-full cursor-pointer ${permissions[permission.id] ? 'bg-yellow-500' : 'bg-gray-200'
                         }`}
+                    >
+                      <span
+                        className={`block h-6 w-6 rounded-full bg-white transform transition-transform duration-200 ease-in-out ${permissions[permission.id] ? 'translate-x-4' : 'translate-x-0'
+                          }`}
                       />
                     </label>
                   </div>

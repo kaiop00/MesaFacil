@@ -1,16 +1,9 @@
 import { useState } from "react";
 import { UserAdd, FileDocument, Slider01 } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
-import UserForm from "./UserForm";
-import UserPermissions from "./UserPermissions";
-import { PERMISSIONS } from "../../constants/permissions";
+import UserForm from "@/features/users/components/modals/UserForm";
+import UserPermissions from "@/features/users/components/modals/UserPermissions";
 
-/**
- * Modal para adicionar novos usuários.
- *
- * @param {boolean} isOpen - Se o modal está aberto ou não.
- * @param {function} onClose - Função para fechar o modal.
- */
 const NewUserModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('dados-gerais');
   const [formData, setFormData] = useState({
@@ -21,59 +14,11 @@ const NewUserModal = ({ isOpen, onClose }) => {
   const [permissions, setPermissions] = useState({});
   const [selectAll, setSelectAll] = useState(false);
 
-  /**
-   * Atualiza o estado do formulário com os dados do usuário.
-   *
-   * @param {object} e - Evento de mudança do formulário.
-   */
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  /**
-   * Atualiza o estado das permissões do usuário.
-   *
-   * @param {string} permissionId - ID da permissão.
-   * @param {boolean} checked - Se a permissão está selecionada ou não.
-   */
-  const handlePermissionChange = (permissionId, checked) => {
-    setPermissions(prev => ({
-      ...prev,
-      [permissionId]: checked
-    }));
-  };
-
-  /**
-   * Atualiza o estado de todas as permissões.
-   *
-   * @param {boolean} checked - Se todas as permissões devem ser selecionadas ou não.
-   */
-  const toggleSelectAll = (checked) => {
-    const allPermissions = {};
-    Object.values(PERMISSIONS).forEach(category => {
-      category.forEach(permission => {
-        allPermissions[permission.id] = checked;
-      });
-    });
-    setPermissions(allPermissions);
-    setSelectAll(checked);
-  };
-
-  /**
-   * Função para lidar com o envio do formulário.
-   *
-   * @param {object} e - Evento de envio do formulário.
-   */
   const handleSubmit = (e) => {
     e.preventDefault();
     if (activeTab === 'dados-gerais') {
       setActiveTab('permissoes');
     } else {
-      // Handle final form submission with both user data and permissions
       console.log('Form submitted:', { ...formData, permissions });
       onClose();
     }
@@ -124,13 +69,16 @@ const NewUserModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit}>
           {/* Formulários de dados gerais e permissões */}
           {activeTab === 'dados-gerais' ? (
-            <UserForm formData={formData} onInputChange={handleInputChange} />
+            <UserForm
+              formData={formData}
+              setFormData={setFormData}
+            />
           ) : (
             <UserPermissions
               permissions={permissions}
-              onPermissionChange={handlePermissionChange}
-              onToggleAll={toggleSelectAll}
+              setPermissions={setPermissions}
               selectAll={selectAll}
+              setSelectAll={setSelectAll}
             />
           )}
 
