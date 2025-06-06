@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import CardHeader from "@/components/CardHeader";
 import UserListTable from "@/features/users/components/UserListTable";
+import NewUserModal from "@/features/users/components/modals/NewUserModal";
 
 const UsersPage = () => {
   const { role } = useAuth();
@@ -63,6 +64,8 @@ const UsersPage = () => {
         onItemsPerPageChange={handleItemsPerPageChange}
         currentPage={currentPage}
         onPageChange={handlePageChange} />
+
+      <NewUserModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 };
