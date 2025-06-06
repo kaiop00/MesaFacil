@@ -17,6 +17,7 @@ import OrderPage from "@/features/order/pages/OrderPage";
 import FoodListPage from "@/features/foodList/pages/FoodListPage";
 import ReportPage from "@/features/reports/pages/ReportPage";
 import PromotionPage from "@/features/promotions/pages/PromotionPage";
+import UsersPage from "@/features/users/pages/UsersPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -57,6 +58,7 @@ const router = createBrowserRouter([
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <ReportPage /> },
           { path: "promocoes", element: <PromotionPage /> },
+          { path: "usuarios", element: <UsersPage />}
         ],
       }
     ]
