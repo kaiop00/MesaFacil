@@ -6,7 +6,7 @@ const RedirectHandler = () => {
 
   if (checking) return null;
 
-  return user ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />;
+  return user ? <Navigate to="/home" replace /> : <Navigate to="/home-page" replace />;
 };
 
 export default RedirectHandler;
