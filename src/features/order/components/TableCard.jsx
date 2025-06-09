@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { House02, MoreHorizontal, NoteSearch, CheckBig } from "react-coolicons";
+import { House02, MoreHorizontal } from "react-coolicons";
 import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
-import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal"
+import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
 
 const TableCard = ({
-  table,
-  timeAgo, // ex: "12 minutos"
-  price, // ex: "220,20"
-  occupied, // boolean: true = pedido em andamento, false = mesa livre
+  numero,   // número da mesa
+  status,   // livre, andamento, pendente
+  timeAgo,  // opcional
+  price,    // opcional
   onMenuClick,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,18 +24,34 @@ const TableCard = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // classes de cor
-  const iconBg = occupied ? "bg-yellow-50" : "bg-green-50";
-  const iconTxt = occupied ? "text-yellow-500" : "text-green-500";
-  const priceTxt = "text-yellow-600 font-medium";
+  // define as classes de cor com base no status
+  const statusStyleMap = {
+    livre: {
+      iconBg: "bg-green-50",
+      iconTxt: "text-green-500",
+      priceTxt: "text-green-600 font-medium",
+    },
+    andamento: {
+      iconBg: "bg-yellow-50",
+      iconTxt: "text-yellow-500",
+      priceTxt: "text-yellow-600 font-medium",
+    },
+    pendente: {
+      iconBg: "bg-red-50",
+      iconTxt: "text-red-500",
+      priceTxt: "text-red-600 font-medium",
+    },
+  };
+
+  const currentStyle = statusStyleMap[status] || statusStyleMap["livre"];
 
   return (
     <>
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
         {/* ícone + menu */}
         <div className="flex justify-between items-start">
-          <div className={`p-2 rounded ${iconBg}`}>
-            <House02 className={`w-6 h-6 ${iconTxt}`} />
+          <div className={`p-2 rounded ${currentStyle.iconBg}`}>
+            <House02 className={`w-6 h-6 ${currentStyle.iconTxt}`} />
           </div>
           <div ref={showOptionsRef} className="relative">
             <button
@@ -56,22 +72,21 @@ const TableCard = ({
               />
             )}
           </div>
-
-
         </div>
 
         {/* conteúdo */}
         <div className="mt-4">
-          <h3 className="text-lg font-semibold text-gray-900">{table}</h3>
-          {occupied && (
+          <h3 className="text-lg font-semibold text-gray-900">Mesa {numero}</h3>
+
+          {status !== "livre" && (
             <>
-              <p className="mt-1 text-sm text-gray-500">Pedido há {timeAgo}</p>
-              <p className={`mt-2 text-lg ${priceTxt}`}>R$ {price}</p>
+              <p className="mt-1 text-sm text-gray-500">{timeAgo}</p>
+              <p className={`mt-2 text-lg ${currentStyle.priceTxt}`}>R$ {price}</p>
             </>
           )}
         </div>
-      </div>
 
+      </div>
 
       <DetailOrderModal
         isOpen={isModalOpen}
@@ -83,13 +98,15 @@ const TableCard = ({
               name: "Carne de Gado",
               quantity: 1,
               price: "100,00",
-              image: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
+              image:
+                "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
             },
             {
               name: "Encanto da Serra",
               quantity: 1,
               price: "120,20",
-              image: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
+              image:
+                "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
             },
           ],
           observations: "Exemplo de observações",
@@ -99,4 +116,4 @@ const TableCard = ({
   );
 };
 
-export default TableCard
+export default TableCard;

@@ -24,3 +24,11 @@ export const criarMesas = async (idRestaurante, tipo, quantidade) => {
     await create(idRestaurante, "mesas", mesa);
   }
 };
+
+/**
+ * Retorna todas as mesas do restaurante
+ * @param {string} idRestaurante
+ */
+export const getAllTables = async (idRestaurante, mesaData) => {
+  return await getAll(idRestaurante, "mesas");
+}
