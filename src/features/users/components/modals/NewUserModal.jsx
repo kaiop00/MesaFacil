@@ -1,26 +1,69 @@
 import { useState } from "react";
 import { UserAdd, FileDocument, Slider01 } from "react-coolicons";
+import { useToast } from "@/hooks/useToast";
+import { useAuth } from "@/contexts/AuthContext";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import UserForm from "@/features/users/components/modals/UserForm";
 import UserPermissions from "@/features/users/components/modals/UserPermissions";
+import FIREBASE_AUTH_REGISTER_ENDPOINT from "@/features/users/constants/endpoint";
 
-const NewUserModal = ({ isOpen, onClose }) => {
+const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
+  const { idRestaurante } = useAuth();
+  const { notify } = useToast();
   const [activeTab, setActiveTab] = useState('dados-gerais');
+  const [isLoading, setIsLoading] = useState(false);
+  const [permissions, setPermissions] = useState({});
+  const [selectAll, setSelectAll] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: ''
   });
-  const [permissions, setPermissions] = useState({});
-  const [selectAll, setSelectAll] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (activeTab === 'dados-gerais') {
       setActiveTab('permissoes');
-    } else {
-      console.log('Form submitted:', { ...formData, permissions });
-      onClose();
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      if (!idRestaurante) throw new Error('ID do restaurante não encontrado');
+
+      const response = await fetch(FIREBASE_AUTH_REGISTER_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          returnSecureToken: true
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        notify(JSON.stringify(data), 'success');
+        onClose();
+        if (onUserAdded) onUserAdded();
+      } else {
+        if (response.status === 400) {
+          if (data.error.message === 'EMAIL_EXISTS') {
+            notify('Email já cadastrado', 'error');
+            return;
+          }
+        }
+
+        notify(JSON.stringify(response.status + ' ' + response.statusText), 'error');
+      }
+    } catch (error) {
+      notify(error.message, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -36,6 +79,7 @@ const NewUserModal = ({ isOpen, onClose }) => {
         {/* Abas */}
         <section className="flex flex-wrap mb-6 bg-gray-100 rounded-lg p-1">
           <button
+            type="button"
             onClick={() => setActiveTab('dados-gerais')}
             className={`flex-1 flex items-center justify-center
               px-4 py-2
@@ -51,6 +95,7 @@ const NewUserModal = ({ isOpen, onClose }) => {
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('permissoes')}
             className={`flex-1 flex items-center justify-center
               px-4 py-2
@@ -86,16 +131,18 @@ const NewUserModal = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              disabled={isLoading}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              disabled={isLoading}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
             >
-              {activeTab === 'dados-gerais' ? 'Próximo' : 'Salvar'}
+              {isLoading ? 'Salvando...' : activeTab === 'dados-gerais' ? 'Próximo' : 'Salvar'}
             </button>
           </div>
         </form>
