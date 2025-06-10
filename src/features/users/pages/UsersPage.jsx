@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import CardHeader from "@/components/CardHeader";
 import UserListTable from "@/features/users/components/UserListTable";
 import NewUserModal from "@/features/users/components/modals/NewUserModal";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
 
 const UsersPage = () => {
-  const { role } = useAuth();
+  const { idRestaurante, role } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const handleNew = () => {
     setIsModalOpen(true);
@@ -16,22 +21,40 @@ const UsersPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Dados de exemplo
-  const users = [
-    { id: 1, name: 'Garçom 1', email: 'email@gmail.com', status: 'Ativo' },
-    { id: 2, name: 'Garçom 2', email: 'email@gmail.com', status: 'Ativo' },
-    { id: 3, name: 'Gerente 1', email: 'email@gmail.com', status: 'Ativo' },
-    { id: 4, name: 'Garçom 3', email: 'email@gmail.com', status: 'Ativo' },
-    { id: 5, name: 'Gerente 2', email: 'email@gmail.com', status: 'Inativo' },
-    { id: 6, name: 'Gerente 3', email: 'email@gmail.com', status: 'Inativo' },
-    // Dados adicionais para demonstrar paginação
-    ...Array.from({ length: 194 }, (_, i) => ({
-      id: i + 7,
-      name: `Usuário ${i + 7}`,
-      email: 'email@gmail.com',
-      status: Math.random() > 0.5 ? 'Ativo' : 'Inativo'
-    }))
-  ];
+  useEffect(() => {
+    if (!idRestaurante) return;
+
+    setLoading(true);
+    setError(null);
+
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('idRestaurante', '==', idRestaurante));
+    
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        try {
+          const usersData = [];
+          querySnapshot.forEach((doc) => {
+            usersData.push({ id: doc.id, ...doc.data() });
+          });
+          setUsers(usersData);
+          setLoading(false);
+        } catch (err) {
+          console.error(err);
+          setError("Erro ao carregar usuários. Tente novamente.");
+          setLoading(false);
+        }
+      },
+      (err) => {
+        console.error(err);
+        setError("Erro ao carregar usuários. Verifique sua conexão.");
+        setLoading(false);
+      }
+    );
+
+    // Limpar
+    return () => unsubscribe();
+  }, [idRestaurante]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -58,6 +81,8 @@ const UsersPage = () => {
 
       <UserListTable
         users={users}
+        loading={loading}
+        error={error}
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
         itemsPerPage={itemsPerPage}
