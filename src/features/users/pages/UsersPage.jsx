@@ -3,18 +3,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import CardHeader from "@/components/CardHeader";
 import UserListTable from "@/features/users/components/UserListTable";
 import NewUserModal from "@/features/users/components/modals/NewUserModal";
+import UserDetailsModal from "@/features/users/components/modals/UserDetailsModal";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 
 const UsersPage = () => {
   const { idRestaurante, role } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const handleNew = () => {
     setIsModalOpen(true);
+  };
+
+  const handleUserDetails = (user) => {
+    setSelectedUser(user);
+    setIsDetailsModalOpen(true);
   };
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,8 +37,8 @@ const UsersPage = () => {
 
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('idRestaurante', '==', idRestaurante));
-    
-    const unsubscribe = onSnapshot(q, 
+
+    const unsubscribe = onSnapshot(q,
       (querySnapshot) => {
         try {
           const usersData = [];
@@ -88,9 +96,24 @@ const UsersPage = () => {
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={handleItemsPerPageChange}
         currentPage={currentPage}
-        onPageChange={handlePageChange} />
+        onPageChange={handlePageChange}
+        onUserDetails={handleUserDetails} />
 
-      <NewUserModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <NewUserModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onUserAdded={() => {
+          setIsModalOpen(false);
+          // Recarregar a lista de usuários
+          setCurrentPage(1);
+        }}
+      />
+
+      <UserDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        user={selectedUser}
+      />
     </div>
   );
 };

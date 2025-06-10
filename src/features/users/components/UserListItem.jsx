@@ -1,7 +1,7 @@
 import { MoreHorizontal, MagnifyingGlassPlus, EditPencil01, CloseLg } from "react-coolicons";
 import { useState, useRef, useEffect } from "react";
 
-const UserListItem = ({ user }) => {
+const UserListItem = ({ user, onDetailsClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -27,7 +27,12 @@ const UserListItem = ({ user }) => {
   const handleAction = (e, action) => {
     e.stopPropagation();
     setIsOpen(false);
-    console.log(`${action} user:`, user.id);
+
+    if (action === 'details' && onDetailsClick) {
+      onDetailsClick(user);
+    } else {
+      console.log(`${action} user:`, user.id);
+    }
   };
 
   return (
@@ -43,8 +48,8 @@ const UserListItem = ({ user }) => {
       <div>
         <span
           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${user.status === 'Ativo'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-orange-100 text-orange-800'
+            ? 'bg-green-100 text-green-800'
+            : 'bg-orange-100 text-orange-800'
             }`}
         >
           {user.status}
