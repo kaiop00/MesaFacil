@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import UserForm from "@/features/users/components/modals/UserForm";
 import UserPermissions from "@/features/users/components/modals/UserPermissions";
-import FIREBASE_AUTH_REGISTER_ENDPOINT from "@/features/users/constants/endpoint";
+import registerUserOnFirebase from "@/features/users/components/modals/handlers/registerUserOnFirebase";
+import addUserToFirestore from "@/features/users/services/addUserToFirestore";
 
 const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
   const { idRestaurante } = useAuth();
@@ -14,40 +15,24 @@ const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [permissions, setPermissions] = useState({});
   const [selectAll, setSelectAll] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (activeTab === 'dados-gerais') {
       setActiveTab('permissoes');
       return;
     }
-
     try {
       setIsLoading(true);
       if (!idRestaurante) throw new Error('ID do restaurante não encontrado');
-
-      const response = await fetch(FIREBASE_AUTH_REGISTER_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          returnSecureToken: true
-        })
-      });
-
+      const response = await registerUserOnFirebase(formData);
       const data = await response.json();
 
       if (response.ok) {
-        notify(JSON.stringify(data), 'success');
+        const uid = data.localId;
+        await addUserToFirestore(uid, formData.name, formData.email, permissions, idRestaurante);
+        notify('Usuário adicionado com sucesso', 'success');
         onClose();
         if (onUserAdded) onUserAdded();
       } else {
@@ -57,7 +42,6 @@ const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
             return;
           }
         }
-
         notify(JSON.stringify(response.status + ' ' + response.statusText), 'error');
       }
     } catch (error) {
