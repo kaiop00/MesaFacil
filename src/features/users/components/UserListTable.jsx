@@ -73,7 +73,7 @@ const UserListTable = ({
           </div>
         ) : (
           <>
-            <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-auto">
+            <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-auto min-h-[50vh]">
               <div className="min-w-lg">
                 <div className="grid grid-cols-4 gap-4 px-6 py-4 
                 bg-gray-50 border-b border-gray-200">
