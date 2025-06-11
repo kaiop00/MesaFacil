@@ -3,7 +3,7 @@ import { Coffee } from "react-coolicons";
 import MesaForm from "@/features/config/components/MesaForm";
 import MesaTable from "@/features/config/components/MesaTable";
 import MesaActions from "@/features/config/components/MesaActions";
-import { useTables } from "@/features/config/hooks/useTables";
+import { useCrudTables } from "@/features/config/hooks/useCrudTables";
 import { useState } from "react";
 
 const ConfigModal = ({ isOpen, onClose }) => {
@@ -17,7 +17,7 @@ const ConfigModal = ({ isOpen, onClose }) => {
         handleAdd,
         handleSubmitAsync,
         handleDeleteMesa,
-    } = useTables({ isOpen, onClose });
+    } = useCrudTables({ isOpen, onClose });
 
 
     const [saving, setSaving] = useState(false);
