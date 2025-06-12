@@ -11,7 +11,8 @@ const UserListTable = ({
   onItemsPerPageChange,
   currentPage,
   onPageChange,
-  onUserDetails
+  onUserDetails,
+  onEditClick
 }) => {
   // State quando estiver carregando dados
   if (loading)
@@ -97,13 +98,16 @@ const UserListTable = ({
                 </div>
 
                 <div className="divide-y divide-gray-200">
-                  {currentUsers.map((user) => (
-                    <UserListItem
-                      key={user.id}
-                      user={user}
-                      onDetailsClick={onUserDetails}
-                    />
-                  ))}
+                  <div className="space-y-4">
+                    {currentUsers.map((user) => (
+                      <UserListItem
+                        key={user.id}
+                        user={user}
+                        onDetailsClick={onUserDetails}
+                        onEditClick={onEditClick}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>

@@ -1,10 +1,18 @@
-import { PERMISSIONS } from "../../constants/permissions";
+import { PERMISSIONS } from "../../../constants/permissions";
 
-const UserPermissions = ({ permissions = {}, setPermissions, selectAll, setSelectAll }) => {
+const UserPermissions = ({ 
+  permissions = {}, 
+  setPermissions, 
+  selectAll, 
+  setSelectAll,
+  readOnly = false 
+}) => {
   const ALL_PERMISSION_IDS = Object.values(PERMISSIONS)
     .flatMap(category => category.map(permission => permission.id));
 
   const handlePermissionChange = (permissionId, checked) => {
+    if (readOnly) return;
+    
     setPermissions(prev => ({
       ...prev,
       [permissionId]: checked
@@ -12,6 +20,8 @@ const UserPermissions = ({ permissions = {}, setPermissions, selectAll, setSelec
   };
 
   const handleToggleAll = (checked) => {
+    if (readOnly) return;
+    
     const allPermissions = {};
 
     ALL_PERMISSION_IDS.forEach(id => {
@@ -21,6 +31,44 @@ const UserPermissions = ({ permissions = {}, setPermissions, selectAll, setSelec
     setPermissions(allPermissions);
     setSelectAll(checked);
   };
+
+  if (readOnly) {
+    return (
+      <div className="space-y-6">
+        {Object.entries(PERMISSIONS).map(([category, perms]) => (
+          <section key={category} className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-700">
+              {category}
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {perms.map((permission) => (
+                <div 
+                  key={permission.id} 
+                  className="flex items-center justify-between p-2"
+                >
+                  <span className="text-sm text-gray-700">
+                    {permission.label}
+                  </span>
+                  
+                  {permissions[permission.id] ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Permitido
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      Negado
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
@@ -59,10 +107,11 @@ const UserPermissions = ({ permissions = {}, setPermissions, selectAll, setSelec
                     {permission.label}
                   </span>
 
+
                   <div className="relative inline-block w-10 mr-2 align-middle select-none">
                     <input
                       type="checkbox"
-                      checked={permissions[permission.id]}
+                      checked={permissions[permission.id] || false}
                       onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
                       className="sr-only"
                       id={`toggle-${permission.id}`}

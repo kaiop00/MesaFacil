@@ -4,6 +4,7 @@ import CardHeader from "@/components/CardHeader";
 import UserListTable from "@/features/users/components/UserListTable";
 import NewUserModal from "@/features/users/components/modals/NewUserModal";
 import UserDetailsModal from "@/features/users/components/modals/UserDetailsModal";
+import EditUserModal from "@/features/users/components/modals/EditUserModal";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 
@@ -11,6 +12,7 @@ const UsersPage = () => {
   const { idRestaurante, role } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,11 @@ const UsersPage = () => {
   const handleUserDetails = (user) => {
     setSelectedUser(user);
     setIsDetailsModalOpen(true);
+  };
+
+  const handleUserEdit = (user) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
   };
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,7 +104,8 @@ const UsersPage = () => {
         onItemsPerPageChange={handleItemsPerPageChange}
         currentPage={currentPage}
         onPageChange={handlePageChange}
-        onUserDetails={handleUserDetails} />
+        onUserDetails={handleUserDetails}
+        onEditClick={handleUserEdit} />
 
       <NewUserModal
         isOpen={isModalOpen}
@@ -113,6 +121,17 @@ const UsersPage = () => {
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         user={selectedUser}
+      />
+
+      <EditUserModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        user={selectedUser}
+        onUserUpdated={() => {
+          setIsEditModalOpen(false);
+          // Recarregar a lista de usuários
+          setCurrentPage(1);
+        }}
       />
     </div>
   );
