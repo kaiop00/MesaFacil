@@ -1,4 +1,4 @@
-import FIREBASE_AUTH_REGISTER_ENDPOINT from '@/features/users/constants/endpoint';
+import { FIREBASE_AUTH_REGISTER_ENDPOINT } from '@/features/users/constants/endpoint';
 
 async function registerUserOnFirebase(formData) {
   return fetch(FIREBASE_AUTH_REGISTER_ENDPOINT, {

@@ -2,20 +2,36 @@ import { useState } from "react";
 import { EditPencil01 } from "react-coolicons";
 import { useToast } from "@/hooks/useToast";
 import UserModal from "./UserModal";
+import updateUserInFirestore from "../../services/updateUserInFirestore";
 
 const EditUserModal = ({ isOpen, onClose, user, onUserUpdated }) => {
   const { notify } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  console.log(user);
 
   const handleSubmit = async ({ formData, permissions }) => {
+    if (!user?.id) {
+      throw new Error('ID do usuário não encontrado');
+    }
+
     try {
       setIsLoading(true);
-      // TODO: Add update logic here
+
+      // Update Firestore (name, email, role, status)
+      await updateUserInFirestore(user.id, {
+        name: formData.name,
+        role: permissions,
+        status: formData.status || 'Ativo'
+      });
+
       notify('Usuário atualizado com sucesso', 'success');
       onClose();
-      if (onUserUpdated) onUserUpdated();
+      
+      if (onUserUpdated) {
+        onUserUpdated();
+      }
     } catch (error) {
-      notify(error.message, 'error');
+      console.error('Error updating user:', error);
       throw error; // This will be handled by UserModal
     } finally {
       setIsLoading(false);
