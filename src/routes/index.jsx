@@ -22,6 +22,7 @@ import UsersPage from "@/features/users/pages/UsersPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
+import { TablesProvider } from "@/features/config/context/TablesContext";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -59,7 +60,7 @@ const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { path: "", element: <DashboardPage /> },
-          { path: "pedidos", element: <OrderPage /> },
+          { path: "pedidos", element: <TablesProvider> <OrderPage /> </TablesProvider> },
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <ReportPage /> },
           { path: "promocoes", element: <PromotionPage /> },

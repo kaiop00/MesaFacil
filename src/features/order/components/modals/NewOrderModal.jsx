@@ -2,12 +2,12 @@ import { Dialog, DialogPanel } from "@headlessui/react";
 import { useEffect, useRef, useState } from "react";
 import { CloseLg, SearchMagnifyingGlass } from "react-coolicons";
 import logo from "@/assets/images/order/TableYellow.png";
+import { useTables } from "@/features/config/hooks/useTables";
 
-// Lista de mesas simuladas
-const mesas = Array.from({ length: 15 }, (_, i) => `Mesa ${String(i + 1).padStart(2, "0")}`);
 
 const NewOrderModal = ({ isOpen, onClose }) => {
-    const [selectedTable, setSelectedTable] = useState("");
+    const { mesas } = useTables();
+    const [selectedTable, setSelectedTable] = useState(null);
     const modalRef = useRef();
 
     const handleContinue = () => {
@@ -84,22 +84,19 @@ const NewOrderModal = ({ isOpen, onClose }) => {
                         <div className="font-inter font-bold grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6 mt-5">
                             {mesas.map((mesa) => (
                                 <button
-                                    key={mesa}
+                                    key={mesa.id}
                                     onClick={() => setSelectedTable(mesa)}
-                                    className={`border border-[#DEE4EA] rounded p-4 flex flex-col items-center justify-center space-y-2 transition-all ${selectedTable === mesa
+                                    className={`border border-[#DEE4EA] rounded p-4 flex flex-col items-center justify-center space-y-2 transition-all ${selectedTable?.id === mesa.id
                                         ? "border-[#D9A23B] bg-[#D9A23B] text-white"
                                         : "hover:border-[#D9A23B]"
                                         }`}
                                 >
-                                    <img
-                                        src={logo}
-                                        className="h-6 sm:h-10"
-                                        alt="Mesa"
-                                    />
-                                    <span className="text-sm sm:text-base">{mesa}</span>
+                                    <img src={logo} className="h-6 sm:h-10" alt="Mesa" />
+                                    <span className="text-sm sm:text-base">Mesa {mesa.numero}</span>
                                 </button>
                             ))}
                         </div>
+
 
                         {/* Ações */}
                         <div className="flex flex-col sm:flex-row justify-between gap-2">

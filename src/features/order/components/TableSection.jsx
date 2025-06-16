@@ -1,20 +1,26 @@
-import TableCard from '@/components/TableCard'
+import TableCard from '@/features/order/components/TableCard'
 
 const TableSection = ({
   title,
-  occupied,    // true = “Pedidos em Andamento”, false = “Mesas Livres”
-  items,       // array: { table, timeAgo?, price? }
+  status,    // "livre", "andamento", "pendente"
+  items,     // array: { table, timeAgo?, price? }
 }) => {
-  // ponto colorido e texto “Ver Todos”
-  const dotColor = occupied ? 'bg-yellow-500' : 'bg-green-500'
+
+  const dotColorMap = {
+    livre: 'bg-green-500',
+    andamento: 'bg-yellow-500',
+    pendente: 'bg-red-500',
+  };
+
+  const dotColor = dotColorMap[status] || 'bg-gray-400';
 
   return (
     <section className="mb-8">
       <header className="flex items-center px-2 mb-4">
         <span className={`w-2 h-2 rounded-full ${dotColor} mr-2`} />
         <h2 className="text-lg font-semibold">{title}</h2>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className="ml-auto text-sm text-gray-500 hover:underline"
         >
           Ver Todos
@@ -24,11 +30,10 @@ const TableSection = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((it, idx) => (
           <TableCard
-            key={idx}
-            table={it.table}
+            numero={it.numero}
+            status="andamento"
             timeAgo={it.timeAgo}
             price={it.price}
-            occupied={occupied}
             onMenuClick={() => console.log('Menu:', it.table)}
           />
         ))}
@@ -37,4 +42,4 @@ const TableSection = ({
   )
 }
 
-export default TableSection
+export default TableSection;
