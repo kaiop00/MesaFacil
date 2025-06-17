@@ -77,7 +77,7 @@ const UserListTable = ({
           </div>
         ) : (
           <>
-            <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-auto min-h-[50vh]">
+            <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-auto sm:overflow-visible min-h-[50vh]">
               <div className="min-w-lg">
                 <div className="grid grid-cols-4 gap-4 px-6 py-4 
                 bg-gray-50 border-b border-gray-200">
@@ -100,26 +100,24 @@ const UserListTable = ({
                 </div>
 
                 <div className="divide-y divide-gray-200">
-                  <div className="space-y-4">
-                    {currentUsers.length > 0 ? (
-                      <div className="bg-white rounded-lg border border-gray-200">
-                        {currentUsers.map((user) => (
-                          <UserListItem
-                            key={user.id}
-                            user={user}
-                            onDetailsClick={onUserDetails}
-                            onEditClick={onEditClick}
-                            onDeactivateClick={onDeactivateClick}
-                            onActivateClick={onActivateClick}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-10 text-gray-500">
-                        Nenhum usuário encontrado.
-                      </div>
-                    )}
-                  </div>
+                  {currentUsers.length > 0 ? (
+                    <>
+                      {currentUsers.map((user) => (
+                        <UserListItem
+                          key={user.id}
+                          user={user}
+                          onDetailsClick={onUserDetails}
+                          onEditClick={onEditClick}
+                          onDeactivateClick={onDeactivateClick}
+                          onActivateClick={onActivateClick}
+                        />
+                      ))}
+                    </>
+                  ) : (
+                    <div className="text-center py-10 text-gray-500">
+                      Nenhum usuário encontrado.
+                    </div>
+                  )}
                 </div>
               </div>
             </section>

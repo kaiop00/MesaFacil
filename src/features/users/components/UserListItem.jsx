@@ -101,12 +101,12 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
                 {user.status === 'Ativo' ? (
                   <>
                     <CloseLg className="w-4 h-4 mr-2 text-red-500" />
-                    Inativar
+                    <span className="text-red-500">Inativar</span>
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2 text-green-500" />
-                    Ativar
+                    <span className="text-green-500">Ativar</span>
                   </>
                 )}
               </button>
