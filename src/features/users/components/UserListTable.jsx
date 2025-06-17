@@ -12,7 +12,9 @@ const UserListTable = ({
   currentPage,
   onPageChange,
   onUserDetails,
-  onEditClick
+  onEditClick,
+  onDeactivateClick,
+  onActivateClick
 }) => {
   // State quando estiver carregando dados
   if (loading)
@@ -99,14 +101,24 @@ const UserListTable = ({
 
                 <div className="divide-y divide-gray-200">
                   <div className="space-y-4">
-                    {currentUsers.map((user) => (
-                      <UserListItem
-                        key={user.id}
-                        user={user}
-                        onDetailsClick={onUserDetails}
-                        onEditClick={onEditClick}
-                      />
-                    ))}
+                    {currentUsers.length > 0 ? (
+                      <div className="bg-white rounded-lg border border-gray-200">
+                        {currentUsers.map((user) => (
+                          <UserListItem
+                            key={user.id}
+                            user={user}
+                            onDetailsClick={onUserDetails}
+                            onEditClick={onEditClick}
+                            onDeactivateClick={onDeactivateClick}
+                            onActivateClick={onActivateClick}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-gray-500">
+                        Nenhum usuário encontrado.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

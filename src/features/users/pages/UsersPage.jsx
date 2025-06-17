@@ -5,6 +5,8 @@ import UserListTable from "@/features/users/components/UserListTable";
 import NewUserModal from "@/features/users/components/modals/NewUserModal";
 import UserDetailsModal from "@/features/users/components/modals/UserDetailsModal";
 import EditUserModal from "@/features/users/components/modals/EditUserModal";
+import DeactivateUserModal from "@/features/users/components/modals/DeactivateUserModal";
+import ActivateUserModal from "@/features/users/components/modals/ActivateUserModal";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 
@@ -13,6 +15,8 @@ const UsersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+  const [isActivateModalOpen, setIsActivateModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +34,16 @@ const UsersPage = () => {
   const handleUserEdit = (user) => {
     setSelectedUser(user);
     setIsEditModalOpen(true);
+  };
+
+  const handleUserDeactivate = (user) => {
+    setSelectedUser(user);
+    setIsDeactivateModalOpen(true);
+  };
+
+  const handleUserActivate = (user) => {
+    setSelectedUser(user);
+    setIsActivateModalOpen(true);
   };
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,7 +119,10 @@ const UsersPage = () => {
         currentPage={currentPage}
         onPageChange={handlePageChange}
         onUserDetails={handleUserDetails}
-        onEditClick={handleUserEdit} />
+        onEditClick={handleUserEdit}
+        onDeactivateClick={handleUserDeactivate}
+        onActivateClick={handleUserActivate}
+      />
 
       <NewUserModal
         isOpen={isModalOpen}
@@ -132,6 +149,18 @@ const UsersPage = () => {
           // Recarregar a lista de usuários
           setCurrentPage(1);
         }}
+      />
+
+      <DeactivateUserModal
+        isOpen={isDeactivateModalOpen}
+        onClose={() => setIsDeactivateModalOpen(false)}
+        user={selectedUser}
+      />
+
+      <ActivateUserModal
+        isOpen={isActivateModalOpen}
+        onClose={() => setIsActivateModalOpen(false)}
+        user={selectedUser}
       />
     </div>
   );

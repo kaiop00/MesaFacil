@@ -7,7 +7,6 @@ import updateUserInFirestore from "../../services/updateUserInFirestore";
 const EditUserModal = ({ isOpen, onClose, user, onUserUpdated }) => {
   const { notify } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  console.log(user);
 
   const handleSubmit = async ({ formData, permissions }) => {
     if (!user?.id) {

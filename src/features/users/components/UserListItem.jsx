@@ -1,7 +1,7 @@
-import { MoreHorizontal, MagnifyingGlassPlus, EditPencil01, CloseLg } from "react-coolicons";
+import { MoreHorizontal, MagnifyingGlassPlus, EditPencil01, CloseLg, Check } from "react-coolicons";
 import { useState, useRef, useEffect } from "react";
 
-const UserListItem = ({ user, onDetailsClick, onEditClick }) => {
+const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, onActivateClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -32,6 +32,12 @@ const UserListItem = ({ user, onDetailsClick, onEditClick }) => {
       onDetailsClick(user);
     } else if (action === 'edit' && onEditClick) {
       onEditClick(user);
+    } else if (action === 'toggleStatus') {
+      if (user.status === 'Inativo') {
+        onActivateClick?.(user);
+      } else if (user.status === 'Ativo') {
+        onDeactivateClick?.(user);
+      }
     } else {
       console.log(`${action} user:`, user.id);
     }
@@ -47,11 +53,12 @@ const UserListItem = ({ user, onDetailsClick, onEditClick }) => {
         {user.email}
       </p>
 
-      <div>
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium ${user.status === 'Ativo' && 'bg-green-100 text-green-800'} ${user.status === 'Inativo' && 'bg-red-200 text-red-800' }`}
-        >
-          {user.status}
+      <div className="flex items-center space-x-1">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.status === 'Ativo'
+            ? 'bg-green-100 text-green-800'
+            : 'bg-yellow-100 text-yellow-800'
+          }`}>
+          {user.status === 'Ativo' ? 'Ativo' : 'Inativo'}
         </span>
       </div>
 
@@ -88,11 +95,20 @@ const UserListItem = ({ user, onDetailsClick, onEditClick }) => {
               </button>
 
               <button
-                onClick={(e) => handleAction(e, 'deactivate')}
-                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                onClick={(e) => handleAction(e, 'toggleStatus')}
+                className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50"
               >
-                <CloseLg className="w-4 h-4 mr-2 text-red-500" />
-                Inativar
+                {user.status === 'Ativo' ? (
+                  <>
+                    <CloseLg className="w-4 h-4 mr-2 text-red-500" />
+                    Inativar
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2 text-green-500" />
+                    Ativar
+                  </>
+                )}
               </button>
             </div>
           </menu>
