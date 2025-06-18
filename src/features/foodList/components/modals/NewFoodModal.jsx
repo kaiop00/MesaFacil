@@ -65,7 +65,7 @@ const NewFoodModal = ({ isOpen, onClose }) => {
                 </button>
                 <button
                     onClick={handleSalvar}
-                    className="cursor-pointer font-bold bg-[#D9A23B] text-white px-6 py-2 rounded hover:bg-yellow-600"
+                    className="cursor-pointer font-bold bg-primary-dynamic text-white px-6 py-2 rounded hover:bg-yellow-600"
                 >
                     {loading ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

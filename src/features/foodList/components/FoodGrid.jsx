@@ -58,7 +58,7 @@ const FoodGrid = ({ search, filter }) => {
 
             <div className="p-4">
               <h3 className="font-semibold text-sm text-gray-900">{item.nome}</h3>
-              <p className="text-sm font-bold text-[#D9A23B]">
+              <p className="text-sm font-bold text-primary-dynamic">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor)}
               </p>
               <div className="flex flex-wrap mt-2 gap-1">

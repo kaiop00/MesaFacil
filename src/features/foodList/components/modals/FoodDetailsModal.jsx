@@ -20,7 +20,7 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                 <button onClick={onClose} className="cursor-pointer font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100">
                     Cancelar
                 </button>
-                <button className="cursor-pointer font-bold bg-[#D9A23B] text-white px-6 py-2 rounded hover:bg-yellow-600">
+                <button className="cursor-pointer font-bold bg-primary-dynamic text-white px-6 py-2 rounded hover:bg-yellow-600">
                     Opções
                 </button>
             </div>
