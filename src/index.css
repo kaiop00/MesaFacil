@@ -24,3 +24,7 @@
 .border-primary-dynamic {
     border-color: rgb(var(--color-primary));
 }
+
+.bg-primary-dynamic-opacity {
+    background-color: rgba(var(--color-primary), 0.2);
+}

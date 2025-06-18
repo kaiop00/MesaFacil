@@ -26,7 +26,7 @@ const CardHeader = ({ title, subtitle, onNewClick, showButton = true, buttonTitl
             w-full sm:w-auto
             inline-flex items-center justify-center
             gap-2
-            bg-yellow-500 hover:bg-yellow-600
+            bg-primary-dynamic cursor-pointer
             text-white text-sm font-medium
             py-2 px-4 rounded-lg shadow-sm transition
           "

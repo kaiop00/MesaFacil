@@ -34,7 +34,7 @@ const Header = () => {
       <div className="flex items-center space-x-4 sm:space-x-6">
         <button className="relative p-1 rounded-full hover:bg-gray-100">
           <Bell size={20} className="text-gray-600" />
-          <span className="absolute top-0 right-0 h-2 w-2 bg-amber-500 rounded-full"></span>
+          <span className="absolute top-0 right-0 h-2 w-2 bg-primary-dynamic rounded-full"></span>
         </button>
 
         <div className="relative" ref={dropdownRef}>
@@ -42,7 +42,7 @@ const Header = () => {
             onClick={toggleDropdown}
             className="flex items-center space-x-1 px-2 py-1 rounded-full hover:bg-gray-100"
           >
-            <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-full bg-primary-dynamic flex items-center justify-center text-white">
               <UserCircle size={16} />
             </div>
             <ChevronDown size={16} className="text-gray-600" />
