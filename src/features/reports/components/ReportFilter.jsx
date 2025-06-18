@@ -98,7 +98,7 @@ const ReportFilter = () => {
         <div className="flex justify-end">
           <button
             onClick={handleSubmit}
-            className="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-primary-dynamic text-white font-medium rounded-md 2 cursor-pointer"
           >
             Gerar Relatório
             <Printer className="ml-2 h-5 w-5" />
