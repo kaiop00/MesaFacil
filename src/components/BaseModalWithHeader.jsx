@@ -8,7 +8,7 @@ const BaseModalWithHeader = ({ isOpen, onClose, title, subTitle, icon: Icon, chi
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="w-full max-w-2xl rounded-lg bg-white shadow-xl overflow-hidden">
           {/* Cabeçalho */}
-          <div className="font-inter flex justify-between items-center px-6 py-4 bg-[#D9A23B]">
+          <div className="font-inter flex justify-between items-center px-6 py-4 bg-primary-dynamic">
             <div className="flex items-start gap-3">
               {Icon && <Icon className="text-white w-9 h-9 mr-2" />}
               <div>

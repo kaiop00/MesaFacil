@@ -28,3 +28,31 @@
 .bg-primary-dynamic-opacity {
     background-color: rgba(var(--color-primary), 0.2);
 }
+
+/* Hover */
+.hover\:bg-primary-dynamic:hover {
+  background-color: rgb(var(--color-primary));
+}
+
+.hover\:border-primary-dynamic:hover {
+  border-color: rgb(var(--color-primary));
+}
+
+.hover\:text-primary-dynamic:hover {
+  color: rgb(var(--color-primary));
+}
+
+/* Focus */
+.focus\:bg-primary-dynamic:focus {
+  background-color: rgb(var(--color-primary));
+}
+
+.focus\:border-primary-dynamic:focus {
+  border-color: rgb(var(--color-primary));
+}
+
+.focus\:text-primary-dynamic:focus {
+  color: rgb(var(--color-primary));
+}
+
+
