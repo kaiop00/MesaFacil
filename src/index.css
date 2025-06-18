@@ -1,9 +1,26 @@
 @import "tailwindcss";
 
-.font-inter{
+:root {
+    --color-primary: 248, 145, 46;
+}
+
+
+.font-inter {
     font-family: 'Inter', sans-serif;
 }
 
-.font-sora{
+.font-sora {
     font-family: 'Sora', sans-serif;
+}
+
+.bg-primary-dynamic {
+    background-color: rgb(var(--color-primary));
+}
+
+.text-primary-dynamic {
+    color: rgb(var(--color-primary));
+}
+
+.border-primary-dynamic {
+    border-color: rgb(var(--color-primary));
 }
