@@ -10,6 +10,7 @@ import { Navigate } from "react-router-dom";
 import LoginPage from "@/features/auth/pages/login/LoginPage";
 import RegisterPage from "@/features/auth/pages/register/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
+import MainPage from "@/features/auth/pages/MainPage";
 
 // Importação das páginas privadas
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
@@ -17,9 +18,11 @@ import OrderPage from "@/features/order/pages/OrderPage";
 import FoodListPage from "@/features/foodList/pages/FoodListPage";
 import ReportPage from "@/features/reports/pages/ReportPage";
 import PromotionPage from "@/features/promotions/pages/PromotionPage";
+import UsersPage from "@/features/users/pages/UsersPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
+import { TablesProvider } from "@/features/config/context/TablesContext";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -30,6 +33,10 @@ const router = createBrowserRouter([
 
 
   //rotas publicas
+  {
+    path: "/home-page",
+    element: <MainPage />,
+  },
   {
     path: "/login",
     element: <LoginPage />,
@@ -53,10 +60,11 @@ const router = createBrowserRouter([
         element: <Layout />,
         children: [
           { path: "", element: <DashboardPage /> },
-          { path: "pedidos", element: <OrderPage /> },
+          { path: "pedidos", element: <TablesProvider> <OrderPage /> </TablesProvider> },
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <ReportPage /> },
           { path: "promocoes", element: <PromotionPage /> },
+          { path: "usuarios", element: <UsersPage />}
         ],
       }
     ]

@@ -1,4 +1,3 @@
-import logo from '../assets/images/logo/logo_mesafacil.png';
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -8,6 +7,7 @@ import {
   FileDocument,
   ArrowDownUp,
   HamburgerLg,
+  Users,
 } from "react-coolicons";
 
 const Sidebar = () => {
@@ -32,6 +32,7 @@ const Sidebar = () => {
       path: "/home/relatorios",
     },
     { name: "Promoções", icon: <ArrowDownUp size={20} />, path: "/home/promocoes" },
+    { name: "Usuarios", icon: <Users size={20} />, path: "/home/usuarios" },
   ];
 
   return (
@@ -64,9 +65,7 @@ const Sidebar = () => {
           }`}
       >
         {/* Logo */}
-        <div className="py-5 px-4">
-          <img src={logo} alt="Logo" />
-        </div>
+        <img src="/src/assets/mesafacil.png" alt="Logo" className="w-40 py-4 px-4 ml-4"/>
 
         {/* Navigation links */}
         <nav className="mt-6">

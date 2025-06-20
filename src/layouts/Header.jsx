@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
+import ConfigModal from "@/features/config/components/modals/ConfigModal"
 import { logout } from "@/services/firebase/authService";
+import NomeRestaurante from "@/components/NomeRestaurante";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const restaurantName = "Luna Restaurante";
   const navigate = useNavigate();
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
@@ -25,7 +27,7 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 md:left-16 lg:left-64 bg-white shadow-md z-40 flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
       {/* Nome do restaurante */}
       <div className="text-lg font-medium text-gray-900 truncate">
-        {restaurantName}
+        <NomeRestaurante />
       </div>
 
       {/* Ações à direita */}
@@ -56,6 +58,11 @@ const Header = () => {
               </a>
               <a
                 href="#settings"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsConfigModalOpen(true);
+                  setIsDropdownOpen(false);
+                }}
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >
                 Configurações
@@ -67,7 +74,7 @@ const Header = () => {
                   e.preventDefault();
                   try {
                     await logout();
-                    navigate("/login");
+                    navigate("/home-page");
                   } catch (error) {
                     console.error("Erro ao fazer logout:", error.message);
                   }
@@ -78,6 +85,10 @@ const Header = () => {
               </a>
             </div>
           )}
+          <ConfigModal
+            isOpen={isConfigModalOpen}
+            onClose={() => setIsConfigModalOpen(false)}
+          />
         </div>
       </div>
     </header>

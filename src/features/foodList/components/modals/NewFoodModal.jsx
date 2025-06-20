@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Coffee } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import NewFoodForm from "../forms/NewFoodForm";
-import { salvarNovoItem } from "@/features/foodList/services/foodService";
-import { useCardapioContext } from "@/features/foodList/hooks/useCardapioContext";
+import { useFoodService } from "@/features/foodList/hooks/useFoodService";
+import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
 import { useToast } from "@/hooks/useToast";
 
 const initialFormData = {
@@ -21,6 +21,7 @@ const NewFoodModal = ({ isOpen, onClose }) => {
     const [loading, setLoading] = useState(false);
     const { carregarItens } = useCardapioContext();
     const { notify } = useToast();
+    const { salvarNovoItem } = useFoodService()
 
     useEffect(() => {
         if (isOpen) {
