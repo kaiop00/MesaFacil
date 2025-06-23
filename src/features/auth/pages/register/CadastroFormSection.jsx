@@ -5,6 +5,7 @@ import { registerWithEmail } from "@/services/firebase/authService";
 import { translateFirebaseError } from "@/utils/firebaseErrorTranslator";
 import { useToast } from "@/hooks/useToast";
 import mesafacil from '@/assets/mesafacil.png';
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function CadastroFormSection() {
     const [nome, setNome] = useState("");
@@ -67,7 +68,7 @@ export default function CadastroFormSection() {
                 disabled={loading}
             >
                 {loading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <LoadingSpinner/>
                 ) : (
                     <span>Confirmar</span>
                 )}

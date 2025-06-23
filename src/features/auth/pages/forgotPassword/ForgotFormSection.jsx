@@ -5,6 +5,7 @@ import { resetPassword } from "@/services/firebase/authService";
 import { ChevronLeft } from "react-coolicons";
 import { useToast } from "@/hooks/useToast";
 import mesafacil from '@/assets/mesafacil.png';
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function ForgotFormSection() {
     const [email, setEmail] = useState("");
@@ -53,7 +54,7 @@ export default function ForgotFormSection() {
                 disabled={loading}
             >
                 {loading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <LoadingSpinner/>
                 ) : (
                     <span>Enviar</span>
                 )}

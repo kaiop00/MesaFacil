@@ -2,6 +2,7 @@ import { MoreHorizontal } from "react-coolicons";
 import { useState } from "react";
 import FoodDetailsModal from "./modals/FoodDetailsModal";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
+import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 const FoodGrid = ({ search, filter }) => {
   const { items, loading } = useCardapioContext();
@@ -21,7 +22,7 @@ const FoodGrid = ({ search, filter }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-[#D9A23B] border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinnerDynamic/>
         <p className="mt-4 text-[#D9A23B] font-semibold">Carregando...</p>
       </div>
     );

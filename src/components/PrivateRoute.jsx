@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import LoadingSpinner from "./LoadingSpinner";
 
 const PrivateRoute = () => {
     const { user, checking } = useAuth();
@@ -7,7 +8,7 @@ const PrivateRoute = () => {
     if (checking) {
         return (
             <div className="h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+                <LoadingSpinner/>
             </div>
         );
     }

@@ -1,7 +1,7 @@
-const LoadingSpinner = ({ size = 5, color = "white" }) => {
+const LoadingSpinner = ({ size = 5}) => {
   return (
     <div
-      className={`w-${size} h-${size} border-2 border-${color} border-t-transparent rounded-full animate-spin`}
+      className={`w-${size} h-${size} border-2 border-white border-t-transparent rounded-full animate-spin`}
     />
   );
 };

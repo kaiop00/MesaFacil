@@ -5,6 +5,7 @@ import MesaTable from "@/features/config/components/mesasConfig/MesaTable";
 import MesaActions from "@/features/config/components/mesasConfig/MesaActions";
 import { useCrudTables } from "@/features/config/hooks/useCrudTables";
 import { useState } from "react";
+import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 const ConfigModal = ({ isOpen, onClose }) => {
     const {
@@ -39,7 +40,7 @@ const ConfigModal = ({ isOpen, onClose }) => {
             <div className="p-6 space-y-4 min-h-[200px] flex flex-col justify-center">
                 {loading || saving ? (
                     <div className="flex justify-center items-center h-full py-12">
-                        <div className="w-6 h-6 border-2 border-[#D9A23B] border-t-transparent rounded-full animate-spin" />
+                        <LoadingSpinnerDynamic/>
                     </div>
                 ) : (
                     <>
