@@ -10,7 +10,7 @@ import RestauranteImageUpload from "@/features/config/components/coresConfig/Res
 import CorInput from "@/features/config/components/coresConfig/CorInput";
 
 const ColorsConfigModal = ({ isOpen, onClose }) => {
-    const [color, setColor] = useState("#F1C322");
+    const [color, setColor] = useState("#F8912E");
     const [imagemUrl, setImagemUrl] = useState(null);
     const { idRestaurante } = useAuth();
     const { notify } = useToast();
