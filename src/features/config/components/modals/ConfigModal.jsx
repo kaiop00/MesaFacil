@@ -1,8 +1,8 @@
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import { Coffee } from "react-coolicons";
-import MesaForm from "@/features/config/components/MesaForm";
-import MesaTable from "@/features/config/components/MesaTable";
-import MesaActions from "@/features/config/components/MesaActions";
+import MesaForm from "@/features/config/components/mesasConfig/MesaForm";
+import MesaTable from "@/features/config/components/mesasConfig/MesaTable";
+import MesaActions from "@/features/config/components/mesasConfig/MesaActions";
 import { useCrudTables } from "@/features/config/hooks/useCrudTables";
 import { useState } from "react";
 
