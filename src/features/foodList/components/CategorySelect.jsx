@@ -6,7 +6,7 @@ const CategorySelect = ({ value, onChange }) => (
       id="Filter"
       value={value}
       onChange={onChange}
-      className="w-full pl-4 pr-10 py-2 text-sm text-[#94A3B8] bg-white rounded-lg border border-gray-200 appearance-none focus:outline-none focus:ring-1 focus:ring-yellow-500"
+      className="w-full pl-4 pr-10 py-2 text-sm text-[#94A3B8] bg-white rounded-lg border border-gray-200 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-dynamic"
     >
       <option value="" disabled>
         Filtrar por Categoria
@@ -17,7 +17,7 @@ const CategorySelect = ({ value, onChange }) => (
       <option value="Acompanhamento">Acompanhamento</option>
     </select>
     <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-      <Filter className="w-4 h-4 text-[#94A3B8]" />
+      <Filter className="w-4 h-4 text-primary-dynamic" />
     </div>
   </div>
 );

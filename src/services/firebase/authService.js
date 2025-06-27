@@ -105,6 +105,7 @@ export async function loginWithEmail(email, password) {
  * @returns {Promise<void>}
  */
 export function logout() {
+  localStorage.removeItem("cor-primary");
   return signOut(auth);
 }
 

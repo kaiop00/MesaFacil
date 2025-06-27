@@ -46,7 +46,7 @@ const NewOrderModal = ({ isOpen, onClose }) => {
                     className="w-full h-full sm:h-auto sm:max-w-4xl overflow-y-auto rounded bg-white shadow-xl flex flex-col"
                 >
                     {/* Cabeçalho */}
-                    <div className="bg-[#D9A23B] font-inter text-white px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center rounded-t">
+                    <div className="bg-primary-dynamic font-inter text-white px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center rounded-t">
                         <div>
                             <h2 className="font-semibold text-lg">Novo Pedido</h2>
                             <p className="text-sm hidden sm:block">Preencha as informações e adicione um novo pedido</p>
@@ -75,7 +75,7 @@ const NewOrderModal = ({ isOpen, onClose }) => {
                                 type="text"
                                 placeholder="Buscar"
                                 className="w-full pl-10 pr-4 py-2 border rounded-md text-sm transition-colors
-                                border-[#D2DBE4] focus:outline-none focus:ring-.5 focus:ring-[#D9A23B] focus:border-[#D9A23B]"
+                                border focus:outline-none focus:border-primary-dynamic"
                                 style={{ borderRadius: "8px" }}
                             />
                         </div>
@@ -87,8 +87,8 @@ const NewOrderModal = ({ isOpen, onClose }) => {
                                     key={mesa.id}
                                     onClick={() => setSelectedTable(mesa)}
                                     className={`border border-[#DEE4EA] rounded p-4 flex flex-col items-center justify-center space-y-2 transition-all ${selectedTable?.id === mesa.id
-                                        ? "border-[#D9A23B] bg-[#D9A23B] text-white"
-                                        : "hover:border-[#D9A23B]"
+                                        ? "border-primary-dynamic bg-primary-dynamic text-white"
+                                        : "hover:border-primary-dynamic"
                                         }`}
                                 >
                                     <img src={logo} className="h-6 sm:h-10" alt="Mesa" />
@@ -107,7 +107,7 @@ const NewOrderModal = ({ isOpen, onClose }) => {
                                 Cancelar
                             </button>
                             <button
-                                className="font-inter w-full sm:w-auto px-4 py-2 bg-[#D9A23B] text-white rounded hover:bg-yellow-700 disabled:bg-[#F1F5F9] disabled:text-[#334155] disabled:cursor-default cursor-pointer"
+                                className="font-inter w-full sm:w-auto px-4 py-2 bg-primary-dynamic text-white rounded disabled:cursor-default cursor-pointer"
                                 disabled={!selectedTable}
                                 onClick={handleContinue}
                             >

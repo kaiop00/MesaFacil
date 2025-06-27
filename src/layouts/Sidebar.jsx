@@ -41,7 +41,7 @@ const Sidebar = () => {
       {isMobile && (
         <button
           onClick={toggleSidebar}
-          className="fixed z-50 top-4 left-4 p-2 rounded-md bg-yellow-500 text-white md:hidden"
+          className="fixed z-50 top-4 left-4 p-2 rounded-md bg-primary-dynamic text-white md:hidden"
           aria-label="Toggle menu"
         >
           <HamburgerLg size={20} />
@@ -65,7 +65,7 @@ const Sidebar = () => {
           }`}
       >
         {/* Logo */}
-        <img src="/src/assets/mesafacil.png" alt="Logo" className="w-40 py-4 px-4 ml-4"/>
+        <img src="/src/assets/mesafacil.png" alt="Logo" className="w-40 py-4 px-4 ml-4" />
 
         {/* Navigation links */}
         <nav className="mt-6">
@@ -77,7 +77,7 @@ const Sidebar = () => {
                   end={link.path === "/home"}
                   className={({ isActive }) =>
                     `flex items-center px-6 py-3 mx-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-all
-    ${isActive ? "bg-amber-50 text-amber-600 font-medium" : ""}`
+    ${isActive ? "bg-primary-dynamic-opacity text-amber-600 font-medium" : ""}`
                   }
                   onClick={() => {
                     if (isMobile) setIsOpen(false);

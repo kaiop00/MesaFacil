@@ -20,7 +20,7 @@ const NewFoodForm = ({ formData, setFormData }) => {
           type="text"
           value={formData.nome}
           onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
         />
       </div>
 
@@ -52,7 +52,7 @@ const NewFoodForm = ({ formData, setFormData }) => {
               valor: parseFloat(e.target.value),
             }))
           }
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
         />
       </div>
 
@@ -61,7 +61,7 @@ const NewFoodForm = ({ formData, setFormData }) => {
         <textarea
           value={formData.descricao}
           onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 resize-none h-24 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+          className="w-full border border-gray-300 rounded-md px-3 py-2 resize-none h-24 focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
         />
       </div>
     </form>

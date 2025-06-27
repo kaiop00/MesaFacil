@@ -1,4 +1,4 @@
-import TableType from "@/features/config/components/TableType";
+import TableType from "@/features/config/components/mesasConfig/TableType";
 
 const MesaForm = ({ tableType, qtd, setTableType, setQtd, onAdd }) => (
     <div className="flex flex-col justify-between md:flex-row md:items-end md:space-x-4 space-y-3 md:space-y-0">

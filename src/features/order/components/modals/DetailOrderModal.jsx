@@ -11,7 +11,7 @@ const DetailOrderModal = ({ isOpen, onClose, order }) => {
             <div className="fixed inset-0 flex items-center justify-center p-4">
                 <DialogPanel className="w-full max-w-2xl rounded-lg bg-white shadow-xl overflow-hidden">
                     {/* Cabeçalho */}
-                    <div className="font-inter flex justify-between items-center px-6 py-4 bg-[#D9A23B]">
+                    <div className="font-inter flex justify-between items-center px-6 py-4 bg-primary-dynamic">
                         <div>
                             <DialogTitle className="text-white text-lg font-semibold">
                                 Detalhes do Pedido
@@ -59,7 +59,7 @@ const DetailOrderModal = ({ isOpen, onClose, order }) => {
                         <button onClick={onClose} className="cursor-pointer font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100">
                             Cancelar
                         </button>
-                        <button className="cursor-pointer font-bold bg-[#D9A23B] text-white px-6 py-2 rounded hover:bg-yellow-600">
+                        <button className="cursor-pointer font-bold bg-primary-dynamic text-white px-6 py-2 rounded hover:bg-yellow-600">
                             Opções
                         </button>
                     </div>

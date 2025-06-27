@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
-import ConfigModal from "@/features/config/components/modals/ConfigModal"
+import ConfigModal from "@/features/config/components/modals/ConfigModal";
+import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
 import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -17,6 +20,7 @@ const Header = () => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
+        setIsSubMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -34,7 +38,7 @@ const Header = () => {
       <div className="flex items-center space-x-4 sm:space-x-6">
         <button className="relative p-1 rounded-full hover:bg-gray-100">
           <Bell size={20} className="text-gray-600" />
-          <span className="absolute top-0 right-0 h-2 w-2 bg-amber-500 rounded-full"></span>
+          <span className="absolute top-0 right-0 h-2 w-2 bg-primary-dynamic rounded-full"></span>
         </button>
 
         <div className="relative" ref={dropdownRef}>
@@ -42,7 +46,7 @@ const Header = () => {
             onClick={toggleDropdown}
             className="flex items-center space-x-1 px-2 py-1 rounded-full hover:bg-gray-100"
           >
-            <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-full bg-primary-dynamic flex items-center justify-center text-white">
               <UserCircle size={16} />
             </div>
             <ChevronDown size={16} className="text-gray-600" />
@@ -56,17 +60,42 @@ const Header = () => {
               >
                 Perfil
               </a>
-              <a
-                href="#settings"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsConfigModalOpen(true);
-                  setIsDropdownOpen(false);
-                }}
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+
+              {/* Submenu Configurações */}
+              <div
+                className="relative"
+                onMouseEnter={() => setIsSubMenuOpen(true)}
               >
-                Configurações
-              </a>
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  Configurações
+                </button>
+
+                {isSubMenuOpen && (
+                  <div className="absolute top-0 right-full mr-1 w-48 bg-white rounded-md shadow-lg py-1 border z-50">
+                    <button
+                      onClick={() => {
+                        setIsConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Mesas
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsColorsConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Cores
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <hr className="my-1" />
               <a
                 href="#logout"
@@ -85,9 +114,14 @@ const Header = () => {
               </a>
             </div>
           )}
+
           <ConfigModal
             isOpen={isConfigModalOpen}
             onClose={() => setIsConfigModalOpen(false)}
+          />
+          <ColorsConfigModal
+            isOpen={isColorsConfigModalOpen}
+            onClose={() => setIsColorsConfigModalOpen(false)}
           />
         </div>
       </div>

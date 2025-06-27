@@ -1,9 +1,62 @@
 @import "tailwindcss";
 
-.font-inter{
+:root {
+    --color-primary: 248, 145, 46;
+}
+
+
+.font-inter {
     font-family: 'Inter', sans-serif;
 }
 
-.font-sora{
+.font-sora {
     font-family: 'Sora', sans-serif;
 }
+
+.bg-primary-dynamic {
+    background-color: rgb(var(--color-primary));
+}
+
+.text-primary-dynamic {
+    color: rgb(var(--color-primary));
+}
+
+.border-primary-dynamic {
+    border-color: rgb(var(--color-primary));
+}
+
+.bg-primary-dynamic-opacity {
+    background-color: rgba(var(--color-primary), 0.2);
+}
+
+/* Hover */
+.hover\:bg-primary-dynamic:hover {
+  background-color: rgb(var(--color-primary));
+}
+
+.hover\:border-primary-dynamic:hover {
+  border-color: rgb(var(--color-primary));
+}
+
+.hover\:text-primary-dynamic:hover {
+  color: rgb(var(--color-primary));
+}
+
+/* Focus */
+.focus\:bg-primary-dynamic:focus {
+  background-color: rgb(var(--color-primary));
+}
+
+.focus\:border-primary-dynamic:focus {
+  border-color: rgb(var(--color-primary));
+}
+
+.focus\:text-primary-dynamic:focus {
+  color: rgb(var(--color-primary));
+}
+
+.focus\:ring-primary-dynamic:focus {
+  box-shadow: 0 0 0 1px rgba(var(--color-primary), 1);
+}
+
+
