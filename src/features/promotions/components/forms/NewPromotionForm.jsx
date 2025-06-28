@@ -1,8 +1,4 @@
-const NewPromotionForm = ({ formData, setFormData }) => {
-  setFormData((prev) => ({
-    ...prev,
-  }));
-
+const NewPromotionForm = ({ formData }) => {
   return (
     <form className="font-inter space-y-4 text-sm">
       <div>
@@ -12,9 +8,6 @@ const NewPromotionForm = ({ formData, setFormData }) => {
         <input
           type="text"
           value={formData.nome}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, nome: e.target.value }))
-          }
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
         />
       </div>
