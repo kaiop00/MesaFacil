@@ -12,7 +12,6 @@ const initialFormData = {
 
 const NewPromotionModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState(initialFormData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { notify } = useToast();
 
   useEffect(() => {
@@ -23,15 +22,12 @@ const NewPromotionModal = ({ isOpen, onClose, onSave }) => {
 
   const handleFormSubmit = async (formData) => {
     try {
-      setIsSubmitting(true);
       await onSave(formData);
       onClose();
       notify("Promoção criada com sucesso!", "success");
     } catch (error) {
       console.error("Error saving promotion:", error);
       notify("Erro ao salvar a promoção. Tente novamente.", "error");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -49,7 +45,6 @@ const NewPromotionModal = ({ isOpen, onClose, onSave }) => {
         setFormData={setFormData}
         onSubmit={handleFormSubmit}
         onCancel={onClose}
-        isSubmitting={isSubmitting}
       />
     </BaseModalWithHeader>
   );

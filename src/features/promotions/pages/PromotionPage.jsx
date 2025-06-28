@@ -8,9 +8,7 @@ import { mockPromoItems } from "@/features/promotions/utils/mock";
 const PromotionPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [promotions, setPromotions] = useState(mockPromoItems);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Handlers
   const handleNew = () => {
     setIsModalOpen(true);
   };
@@ -21,11 +19,10 @@ const PromotionPage = () => {
 
   const handleSavePromotion = async (formData) => {
     try {
-      setIsLoading(true);
-      
+
       // TODO: Replace with actual API call
       // const response = await api.post('/promotions', formData);
-      
+
       // Mock response for now
       const newPromotion = {
         id: Date.now().toString(),
@@ -35,20 +32,21 @@ const PromotionPage = () => {
         imagemUrl: '/placeholder-promo.jpg',
         dataCriacao: new Date().toISOString(),
       };
-      
+
       setPromotions(prev => [newPromotion, ...prev]);
       return Promise.resolve(newPromotion);
     } catch (error) {
       console.error('Error creating promotion:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleOpenPromoOptions = (id) => {
-    console.log(`Opções da promoção ${id} abertas`);
-    // Abrir modal ou menu aqui
+  const handleEditPromotion = (id) => {
+    console.log(`Promoção ${id} editada`);
+  };
+
+  const handleDeletePromotion = (id) => {
+    console.log(`Promoção ${id} excluída`);
   };
 
   const hasPromoItems = promotions.length > 0;
@@ -62,30 +60,26 @@ const PromotionPage = () => {
         buttonTitle="Nova Promoção"
       />
 
-      {!hasPromoItems ? (
-        <CardPromotionEmpty />
-      ) : (
-        <div className="">
-          <div>
-            <div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-              {promotions.map((promo) => (
-                <CardPromotion
-                  key={promo.id}
-                  id={promo.id}
-                  nome={promo.nome}
-                  imagemUrl={promo.imagemUrl}
-                  precoOriginal={promo.precoOriginal}
-                  precoDesconto={promo.precoDesconto}
-                  abrirOpcoes={handleOpenPromoOptions}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {!hasPromoItems
+        ? (<CardPromotionEmpty />)
+        : (<div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          {promotions.map((promo) => (
+            <CardPromotion
+              key={promo.id}
+              id={promo.id}
+              nome={promo.nome}
+              imagemUrl={promo.imagemUrl}
+              precoOriginal={promo.precoOriginal}
+              precoDesconto={promo.precoDesconto}
+              onEdit={handleEditPromotion}
+              onDelete={handleDeletePromotion}
+            />
+          ))}
+        </div>)
+      }
 
-      <NewPromotionModal 
-        isOpen={isModalOpen} 
+      <NewPromotionModal
+        isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSavePromotion}
       />
