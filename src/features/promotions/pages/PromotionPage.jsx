@@ -3,10 +3,12 @@ import CardHeader from "@/components/CardHeader";
 import CardPromotionEmpty from "@/features/promotions/components/CardPromotionEmpty";
 import CardPromotion from "@/features/promotions/components/CardPromotion";
 import NewPromotionModal from "@/features/promotions/components/modals/NewPromotionModal";
+import PromotionDetailsModal from "@/features/promotions/components/modals/PromotionDetailsModal";
 import { mockPromoItems } from "@/features/promotions/utils/mock";
 
 const PromotionPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [promotions, setPromotions] = useState(mockPromoItems);
 
   const handleNew = () => {
@@ -17,9 +19,16 @@ const PromotionPage = () => {
     setIsModalOpen(false);
   };
 
+  const handlePromotionClick = (promotion) => {
+    setSelectedPromotion(promotion);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedPromotion(null);
+  };
+
   const handleSavePromotion = async (formData) => {
     try {
-
       // TODO: Replace with actual API call
       // const response = await api.post('/promotions', formData);
 
@@ -27,9 +36,10 @@ const PromotionPage = () => {
       const newPromotion = {
         id: Date.now().toString(),
         nome: formData.nome || `Promoção ${promotions.length + 1}`,
-        valor: formData.valor,
-        itens: formData.itens,
-        imagemUrl: '/placeholder-promo.jpg',
+        imagemUrl: formData.imagemUrl || '/placeholder-promo.jpg',
+        precoOriginal: formData.precoOriginal,
+        precoDesconto: formData.precoDesconto,
+        itens: formData.itens || [],
         dataCriacao: new Date().toISOString(),
       };
 
@@ -43,10 +53,13 @@ const PromotionPage = () => {
 
   const handleEditPromotion = (id) => {
     console.log(`Promoção ${id} editada`);
+    // TODO: Implement edit functionality
   };
 
   const handleDeletePromotion = (id) => {
-    console.log(`Promoção ${id} excluída`);
+    if (window.confirm('Tem certeza que deseja excluir esta promoção?')) {
+      setPromotions(prev => prev.filter(promo => promo.id !== id));
+    }
   };
 
   const hasPromoItems = promotions.length > 0;
@@ -64,24 +77,40 @@ const PromotionPage = () => {
         ? (<CardPromotionEmpty />)
         : (<div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
           {promotions.map((promo) => (
-            <CardPromotion
+            <div 
               key={promo.id}
-              id={promo.id}
-              nome={promo.nome}
-              imagemUrl={promo.imagemUrl}
-              precoOriginal={promo.precoOriginal}
-              precoDesconto={promo.precoDesconto}
-              onEdit={handleEditPromotion}
-              onDelete={handleDeletePromotion}
-            />
+              className="cursor-pointer"
+              onClick={() => handlePromotionClick(promo)}
+            >
+              <CardPromotion
+                id={promo.id}
+                nome={promo.nome}
+                imagemUrl={promo.imagemUrl}
+                precoOriginal={promo.precoOriginal}
+                precoDesconto={promo.precoDesconto}
+                onEdit={(e) => {
+                  e.stopPropagation();
+                  handleEditPromotion(promo.id);
+                }}
+                onDelete={(e) => {
+                  e.stopPropagation();
+                  handleDeletePromotion(promo.id);
+                }}
+              />
+            </div>
           ))}
-        </div>)
-      }
+        </div>)}
 
       <NewPromotionModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSavePromotion}
+      />
+
+      <PromotionDetailsModal
+        isOpen={!!selectedPromotion}
+        onClose={handleCloseDetails}
+        promotion={selectedPromotion}
       />
     </div>
   );
