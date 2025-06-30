@@ -5,6 +5,7 @@ import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
 import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
+import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -13,6 +14,7 @@ const Header = () => {
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const imagemRestaurante = useImagemDoRestaurante();
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
 
@@ -46,8 +48,16 @@ const Header = () => {
             onClick={toggleDropdown}
             className="flex items-center space-x-1 px-2 py-1 rounded-full hover:bg-gray-100"
           >
-            <div className="w-8 h-8 rounded-full bg-primary-dynamic flex items-center justify-center text-white">
-              <UserCircle size={16} />
+            <div className="w-8 h-8 rounded-full bg-primary-dynamic flex items-center justify-center text-white overflow-hidden">
+              {imagemRestaurante ? (
+                <img
+                  src={imagemRestaurante}
+                  alt="Logo Restaurante"
+                  className="w-full h-full object-cover circle"
+                />
+              ) : (
+                <UserCircle size={16} />
+              )}
             </div>
             <ChevronDown size={16} className="text-gray-600" />
           </button>
