@@ -3,14 +3,17 @@ import CardHeader from "@/components/CardHeader";
 import CardPromotionEmpty from "@/features/promotions/components/CardPromotionEmpty";
 import CardPromotion from "@/features/promotions/components/CardPromotion";
 import NewPromotionModal from "@/features/promotions/components/modals/NewPromotionModal";
+import EditPromotionModal from "@/features/promotions/components/modals/EditPromotionModal";
 import PromotionDetailsModal from "@/features/promotions/components/modals/PromotionDetailsModal";
 import { useAuth } from "@/contexts/AuthContext";
-import { create, getAll, remove } from "@/services/firebase/firestoreService";
+import { create, getAll, remove, update } from "@/services/firebase/firestoreService";
 import { useToast } from "@/hooks/useToast";
 
 const PromotionPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
+  const [editingPromotion, setEditingPromotion] = useState(null);
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -68,9 +71,28 @@ const PromotionPage = () => {
     }
   };
 
-  const handleEditPromotion = (id) => {
-    console.log(`Promoção ${id} editada`);
-    // TODO: Implement edit functionality
+  const handleEditPromotion = (promotion) => {
+    setEditingPromotion(promotion);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdatePromotion = async (updatedPromotion) => {
+    try {
+      // Update the promotion in Firestore
+      await update(idRestaurante, 'promocoes', updatedPromotion.id, updatedPromotion);
+      
+      // Update the local state
+      setPromotions(prev => 
+        prev.map(p => p.id === updatedPromotion.id ? updatedPromotion : p)
+      );
+      
+      setIsEditModalOpen(false);
+      setEditingPromotion(null);
+      notify("Promoção atualizada com sucesso!", "success");
+    } catch (error) {
+      console.error("Error updating promotion:", error);
+      notify("Erro ao atualizar a promoção. Tente novamente.", "error");
+    }
   };
 
   const handleDeletePromotion = async (id) => {
@@ -118,7 +140,7 @@ const PromotionPage = () => {
                     imagemUrl={promo.imagemUrl}
                     precoOriginal={promo.precoOriginal}
                     precoDesconto={promo.precoDesconto}
-                    onEdit={handleEditPromotion}
+                    onEdit={() => handleEditPromotion(promo)}
                     onDelete={handleDeletePromotion}
                   />
                 </div>
@@ -129,6 +151,16 @@ const PromotionPage = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSavePromotion}
+      />
+
+      <EditPromotionModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingPromotion(null);
+        }}
+        promotion={editingPromotion}
+        onSave={handleUpdatePromotion}
       />
 
       <PromotionDetailsModal
