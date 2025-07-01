@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ArrowDownMd, CloseSm, AddPlus, RemoveMinus } from 'react-coolicons';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAll } from '@/services/firebase/firestoreService';
+import { ArrowDownMd, CloseSm, AddPlus, RemoveMinus } from 'react-coolicons';
 
 const EditPromotionForm = ({
   promotion,
@@ -16,10 +16,10 @@ const EditPromotionForm = ({
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
 
-  // Initialize form with promotion data
   useEffect(() => {
     if (promotion) {
       setFormData({
@@ -31,7 +31,6 @@ const EditPromotionForm = ({
     }
   }, [promotion, setFormData]);
 
-  // Format display value when formData.valor changes
   useEffect(() => {
     if (formData.valor !== undefined) {
       setDisplayValue(
@@ -45,14 +44,12 @@ const EditPromotionForm = ({
     }
   }, [formData.valor]);
 
-  // Fetch menu items
   useEffect(() => {
     getAll(idRestaurante, 'cardapio', { orderByField: 'criadoEm', order: 'desc' }).then((items) => {
       setMenuItems(items);
     });
   }, [idRestaurante]);
 
-  // Filter foods based on search term
   const filteredFoods = useMemo(() => {
     if (!searchTerm) return menuItems;
     const term = searchTerm.toLowerCase();
@@ -63,7 +60,6 @@ const EditPromotionForm = ({
     );
   }, [menuItems, searchTerm]);
 
-  // Calculate total value of selected items
   const totalValue = useMemo(() => {
     return selectedFoods.reduce((sum, item) => sum + (item.valor * item.quantity), 0);
   }, [selectedFoods]);
@@ -119,7 +115,7 @@ const EditPromotionForm = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (selectedFoods.length === 0) {
       notify('Selecione pelo menos um item do cardápio', 'error');
       return;
@@ -129,6 +125,8 @@ const EditPromotionForm = ({
       notify('O valor da promoção deve ser maior que zero', 'error');
       return;
     }
+
+    setIsSending(true);
 
     onSubmit({
       ...formData,
@@ -141,7 +139,7 @@ const EditPromotionForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="font-inter space-y-6">
-      <div>
+      <section>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nome da Promoção <span className="text-gray-400">(Opcional)</span>
         </label>
@@ -153,19 +151,18 @@ const EditPromotionForm = ({
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
           placeholder="Ex: Promoção Especial"
         />
-      </div>
+      </section>
 
-      <div>
+      <section>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Itens <span className="text-red-500">*</span>
         </label>
 
-        {/* Search and select food items */}
         <div className="relative">
           <div className="flex rounded-md shadow-sm">
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              className="w-full border border-gray-300 border-r-0 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
               placeholder="Buscar itens..."
               value={searchTerm}
               onChange={(e) => {
@@ -184,7 +181,6 @@ const EditPromotionForm = ({
             </button>
           </div>
 
-          {/* Dropdown with filtered food items */}
           {isDropdownOpen && (
             <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
               {filteredFoods.length === 0
@@ -218,7 +214,6 @@ const EditPromotionForm = ({
           )}
         </div>
 
-        {/* Selected items */}
         <div className="mt-4 space-y-2">
           {selectedFoods.map((item) => (
             <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
@@ -265,9 +260,9 @@ const EditPromotionForm = ({
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Valor Total dos Itens
@@ -298,24 +293,26 @@ const EditPromotionForm = ({
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <section className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
           onClick={onCancel}
+          disabled={isSending}
           className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
         >
           Cancelar
         </button>
+
         <button
           type="submit"
           className="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 focus:outline-none disabled:opacity-50"
-          disabled={selectedFoods.length === 0}
+          disabled={selectedFoods.length === 0 || isSending}
         >
-          Atualizar Promoção
+          {isSending ? 'Atualizando...' : 'Atualizar Promoção'}
         </button>
-      </div>
+      </section>
     </form>
   );
 };

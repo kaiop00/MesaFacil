@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ArrowDownMd, CloseSm, AddPlus, RemoveMinus } from 'react-coolicons';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAll } from '@/services/firebase/firestoreService';
+import { ArrowDownMd, CloseSm, AddPlus, RemoveMinus } from 'react-coolicons';
 
 const NewPromotionForm = ({
   formData,
@@ -14,9 +14,10 @@ const NewPromotionForm = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [foodItems, setFoodItems] = useState([]);
   const [selectedFoods, setSelectedFoods] = useState([]);
+  const [isSending, setIsSending] = useState(false);
+  const [displayValue, setDisplayValue] = useState('');
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
-  const [displayValue, setDisplayValue] = useState('');
 
   useEffect(() => {
     getAll(idRestaurante, 'cardapio', { orderByField: 'criadoEm', order: 'desc' }).then((items) => {
@@ -24,14 +25,13 @@ const NewPromotionForm = ({
     });
   }, [idRestaurante]);
 
-  // Calculate total value of selected items
-  const totalValue = useMemo(() => {
+  const itemsTotalValue = useMemo(() => {
     return selectedFoods.reduce((sum, item) => sum + (item.valor * item.quantity), 0);
   }, [selectedFoods]);
 
-  // Filter food items based on search term and exclude already selected items
   const filteredFoods = useMemo(() => {
     const selectedIds = new Set(selectedFoods.map(item => item.id));
+
     return foodItems.filter(item =>
       !selectedIds.has(item.id) &&
       item.nome.toLowerCase().includes(searchTerm.toLowerCase())
@@ -40,16 +40,16 @@ const NewPromotionForm = ({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    console.log('[handleInputChange] ', value);
+
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleValueChange = (e) => {
-    const input = e.target.value;
-    const numericValue = input.replace(/\D/g, '');
+  const handlePromotionValueChange = (e) => {
+    const { value } = e.target;
+    const numericValue = value.replace(/\D/g, '');
     const floatValue = Number(numericValue) / 100;
 
     setDisplayValue(new Intl.NumberFormat('pt-BR', {
@@ -63,17 +63,20 @@ const NewPromotionForm = ({
     }));
   };
 
-  const handleFoodSelect = (food) => {
+  const handleItemSelected = (food) => {
     setSelectedFoods(prev => [
       ...prev,
       { ...food, quantity: 1 }
     ]);
+
     setSearchTerm('');
+
     setIsDropdownOpen(false);
   };
 
-  const handleQuantityChange = (id, newQuantity) => {
+  const handleItemQuantityChange = (id, newQuantity) => {
     const quantity = Math.max(1, parseInt(newQuantity) || 1);
+
     setSelectedFoods(prev =>
       prev.map(item =>
         item.id === id ? { ...item, quantity } : item
@@ -98,21 +101,26 @@ const NewPromotionForm = ({
       return;
     }
 
+    setIsSending(true);
+
     onSubmit({
       ...formData,
       itens: selectedFoods,
-      precoOriginal: totalValue,
+      precoOriginal: itemsTotalValue,
       precoDesconto: parseFloat(formData.valor),
       imagemUrl: selectedFoods[0]?.imagemUrl || null,
     });
+
+    setIsSending(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="font-inter space-y-6">
-      <div>
+      <section>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nome da Promoção <span className="text-gray-400">(Opcional)</span>
         </label>
+
         <input
           type="text"
           name="nome"
@@ -121,19 +129,18 @@ const NewPromotionForm = ({
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
           placeholder="Ex: Promoção Especial"
         />
-      </div>
+      </section>
 
-      <div>
+      <section>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Itens <span className="text-red-500">*</span>
         </label>
 
-        {/* Search and select food items */}
         <div className="relative">
           <div className="flex rounded-md shadow-sm">
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              className="w-full border border-gray-300 border-r-0 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
               placeholder="Buscar itens..."
               value={searchTerm}
               onChange={(e) => {
@@ -152,7 +159,6 @@ const NewPromotionForm = ({
             </button>
           </div>
 
-          {/* Dropdown with filtered food items */}
           {isDropdownOpen && (
             <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
               {filteredFoods.length === 0
@@ -161,7 +167,7 @@ const NewPromotionForm = ({
                   <div
                     key={food.id}
                     className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => handleFoodSelect(food)}
+                    onClick={() => handleItemSelected(food)}
                   >
                     <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden mr-3">
                       <img
@@ -170,6 +176,7 @@ const NewPromotionForm = ({
                         alt={food.nome}
                       />
                     </div>
+
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-900 truncate">{food.nome}</p>
                       <p className="text-sm text-gray-500 truncate">
@@ -183,7 +190,6 @@ const NewPromotionForm = ({
           )}
         </div>
 
-        {/* Selected items */}
         <div className="mt-4 space-y-2">
           {selectedFoods.map((item) => (
             <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
@@ -195,6 +201,7 @@ const NewPromotionForm = ({
                     alt={item.nome}
                   />
                 </div>
+
                 <div>
                   <div className="text-sm font-medium text-gray-900">{item.nome}</div>
                   <div className="text-xs text-gray-500">
@@ -202,26 +209,29 @@ const NewPromotionForm = ({
                   </div>
                 </div>
               </div>
+
               <div className="flex items-center space-x-2">
                 <div className="flex items-center border rounded-md">
                   <button
                     type="button"
                     className="px-2 py-1 text-gray-600 hover:bg-gray-100"
-                    onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                    onClick={() => handleItemQuantityChange(item.id, item.quantity - 1)}
                   >
                     <RemoveMinus className="h-3 w-3" />
                   </button>
+
                   <input
                     type="number"
                     min="1"
                     value={item.quantity}
-                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                    onChange={(e) => handleItemQuantityChange(item.id, e.target.value)}
                     className="w-10 text-center border-l border-r border-gray-300 py-1 text-sm"
                   />
+
                   <button
                     type="button"
                     className="px-2 py-1 text-gray-600 hover:bg-gray-100"
-                    onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                    onClick={() => handleItemQuantityChange(item.id, item.quantity + 1)}
                   >
                     <AddPlus className="h-3 w-3" />
                   </button>
@@ -240,9 +250,9 @@ const NewPromotionForm = ({
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Valor Total dos Itens
@@ -251,7 +261,7 @@ const NewPromotionForm = ({
             <input
               type="text"
               readOnly
-              value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
+              value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(itemsTotalValue)}
               className="w-full h-12 rounded-md border-gray-300 pl-3 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm bg-gray-100"
             />
           </div>
@@ -266,19 +276,20 @@ const NewPromotionForm = ({
               type="text"
               name="valor"
               value={displayValue}
-              onInput={handleValueChange}
+              onInput={handlePromotionValueChange}
               className="block w-full h-12 rounded-md border-gray-300 pl-3 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm"
               placeholder="0,00"
               required
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <section className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
           onClick={onCancel}
+          disabled={isSending}
           className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
         >
           Cancelar
@@ -286,11 +297,11 @@ const NewPromotionForm = ({
         <button
           type="submit"
           className="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 focus:outline-none disabled:opacity-50"
-          disabled={selectedFoods.length === 0}
+          disabled={selectedFoods.length === 0 || isSending}
         >
-          Salvar Promoção
+          {isSending ? 'Salvando...' : 'Salvar Promoção'}
         </button>
-      </div>
+      </section>
     </form>
   );
 };

@@ -13,7 +13,6 @@ const EditPromotionModal = ({ isOpen, onClose, promotion, onSave }) => {
   
   const { notify } = useToast();
 
-  // Reset form when promotion changes or modal opens
   useEffect(() => {
     if (isOpen && promotion) {
       setFormData({
@@ -27,9 +26,9 @@ const EditPromotionModal = ({ isOpen, onClose, promotion, onSave }) => {
   const handleFormSubmit = async (formData) => {
     try {
       await onSave({
-        ...promotion, // Include existing promotion data
-        ...formData,  // Override with form data
-        id: promotion.id, // Ensure we keep the same ID
+        ...promotion,
+        ...formData,
+        id: promotion.id,
       });
       onClose();
     } catch (error) {

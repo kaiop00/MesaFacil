@@ -19,7 +19,6 @@ const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
       iconClassName="text-yellow-500"
     >
       <div className="space-y-6">
-        {/* Promotion Image */}
         <div className="relative rounded-lg overflow-hidden bg-gray-100 h-48">
           {promotion.imagemUrl ? (
             <img
@@ -38,7 +37,6 @@ const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
           )}
         </div>
 
-        {/* Price Information */}
         <div className="bg-yellow-50 p-4 rounded-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">Valor Original:</span>
@@ -59,7 +57,6 @@ const PromotionDetailsModal = ({ isOpen, onClose, promotion }) => {
           </div>
         </div>
 
-        {/* Items List */}
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-3">Itens incluídos:</h3>
           <div className="space-y-2">

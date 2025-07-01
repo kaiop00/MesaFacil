@@ -35,7 +35,6 @@ const PromotionCard = ({
     setIsMenuOpen(false);
   };
 
-  // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -62,7 +61,6 @@ const PromotionCard = ({
           }}
         />
 
-        {/* Menu button with dropdown */}
         <div className="absolute top-2 right-2" ref={menuRef}>
           <button
             onClick={toggleMenu}
@@ -72,7 +70,6 @@ const PromotionCard = ({
             <MoreHorizontal className="text-gray-800" size={20} />
           </button>
           
-          {/* Dropdown menu */}
           {isMenuOpen && (
             <div className="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-100">
               <button
