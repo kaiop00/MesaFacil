@@ -84,7 +84,8 @@ const NewPromotionForm = ({
       ...formData,
       itens: selectedFoods,
       precoOriginal: totalValue,
-      precoDesconto: parseFloat(formData.valor)
+      precoDesconto: parseFloat(formData.valor),
+      imagemUrl: selectedFoods[0]?.imagemUrl || null,
     });
   };
 

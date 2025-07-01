@@ -1,15 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CardHeader from "@/components/CardHeader";
 import CardPromotionEmpty from "@/features/promotions/components/CardPromotionEmpty";
 import CardPromotion from "@/features/promotions/components/CardPromotion";
 import NewPromotionModal from "@/features/promotions/components/modals/NewPromotionModal";
 import PromotionDetailsModal from "@/features/promotions/components/modals/PromotionDetailsModal";
-import { mockPromoItems } from "@/features/promotions/utils/mock";
+import { useAuth } from "@/contexts/AuthContext";
+import { create, getAll, remove } from "@/services/firebase/firestoreService";
+import { useToast } from "@/hooks/useToast";
 
 const PromotionPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
-  const [promotions, setPromotions] = useState(mockPromoItems);
+  const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { idRestaurante } = useAuth();
+  const { notify } = useToast();
+
+  useEffect(() => {
+    if (idRestaurante) {
+      const fetchPromotions = async () => {
+        try {
+          setLoading(true);
+          const fetchedPromotions = await getAll(idRestaurante, 'promocoes', { orderByField: 'criadoEm', order: 'desc' });
+          setPromotions(fetchedPromotions);
+        } catch (error) {
+          console.error("Erro ao buscar promoções:", error);
+          setError(error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchPromotions();
+    }
+  }, [idRestaurante]);
 
   const handleNew = () => {
     setIsModalOpen(true);
@@ -28,26 +52,19 @@ const PromotionPage = () => {
   };
 
   const handleSavePromotion = async (formData) => {
+    if (!idRestaurante) {
+      notify("Usuário não autenticado. Faça login para criar uma promoção.", "error");
+      return;
+    }
     try {
-      // TODO: Replace with actual API call
-      // const response = await api.post('/promotions', formData);
-
-      // Mock response for now
-      const newPromotion = {
-        id: Date.now().toString(),
-        nome: formData.nome || `Promoção ${promotions.length + 1}`,
-        imagemUrl: formData.imagemUrl || '/placeholder-promo.jpg',
-        precoOriginal: formData.precoOriginal,
-        precoDesconto: formData.precoDesconto,
-        itens: formData.itens || [],
-        dataCriacao: new Date().toISOString(),
-      };
-
-      setPromotions(prev => [newPromotion, ...prev]);
-      return Promise.resolve(newPromotion);
+      await create(idRestaurante, 'promocoes', formData);
+      const fetchedPromotions = await getAll(idRestaurante, 'promocoes', { orderByField: 'criadoEm', order: 'desc' });
+      console.log(fetchedPromotions);
+      setPromotions(fetchedPromotions);
+      handleCloseModal();
     } catch (error) {
       console.error('Error creating promotion:', error);
-      throw error;
+      notify("Erro ao criar promoção", "error");
     }
   };
 
@@ -56,13 +73,22 @@ const PromotionPage = () => {
     // TODO: Implement edit functionality
   };
 
-  const handleDeletePromotion = (id) => {
+  const handleDeletePromotion = async (id) => {
+    if (!idRestaurante) {
+      notify("Usuário não autenticado. Faça login para excluir uma promoção.", "error");
+      return;
+    }
     if (window.confirm('Tem certeza que deseja excluir esta promoção?')) {
-      setPromotions(prev => prev.filter(promo => promo.id !== id));
+      try {
+        await remove(idRestaurante, 'promocoes', id);
+        setPromotions(prev => prev.filter(promo => promo.id !== id));
+        notify("Promoção excluída com sucesso!", "success");
+      } catch (error) {
+        console.error('Erro ao excluir promoção:', error);
+        notify("Erro ao excluir promoção", "error");
+      }
     }
   };
-
-  const hasPromoItems = promotions.length > 0;
 
   return (
     <div className="sm:px-6 md:px-8 mt-10 mb-10 space-y-10">
@@ -73,33 +99,31 @@ const PromotionPage = () => {
         buttonTitle="Nova Promoção"
       />
 
-      {!hasPromoItems
-        ? (<CardPromotionEmpty />)
-        : (<div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-          {promotions.map((promo) => (
-            <div 
-              key={promo.id}
-              className="cursor-pointer"
-              onClick={() => handlePromotionClick(promo)}
-            >
-              <CardPromotion
-                id={promo.id}
-                nome={promo.nome}
-                imagemUrl={promo.imagemUrl}
-                precoOriginal={promo.precoOriginal}
-                precoDesconto={promo.precoDesconto}
-                onEdit={(e) => {
-                  e.stopPropagation();
-                  handleEditPromotion(promo.id);
-                }}
-                onDelete={(e) => {
-                  e.stopPropagation();
-                  handleDeletePromotion(promo.id);
-                }}
-              />
-            </div>
-          ))}
-        </div>)}
+      {loading
+        ? (<div className="flex justify-center items-center h-64">Carregando...</div>)
+        : (error
+          ? (<div className="text-red-500">{error.message}</div>)
+          : (promotions.length === 0
+            ? (<CardPromotionEmpty />)
+            : (<div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              {promotions.map((promo) => (
+                <div
+                  key={promo.id}
+                  className="cursor-pointer"
+                  onClick={() => handlePromotionClick(promo)}
+                >
+                  <CardPromotion
+                    id={promo.id}
+                    nome={promo.nome}
+                    imagemUrl={promo.imagemUrl}
+                    precoOriginal={promo.precoOriginal}
+                    precoDesconto={promo.precoDesconto}
+                    onEdit={handleEditPromotion}
+                    onDelete={handleDeletePromotion}
+                  />
+                </div>
+              ))}
+            </div>)))}
 
       <NewPromotionModal
         isOpen={isModalOpen}

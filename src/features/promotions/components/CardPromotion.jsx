@@ -31,9 +31,7 @@ const PromotionCard = ({
 
   const handleDelete = (e) => {
     e.stopPropagation();
-    if (window.confirm('Tem certeza que deseja excluir esta promoção?')) {
-      onDelete?.(id);
-    }
+    onDelete?.(id);
     setIsMenuOpen(false);
   };
 
