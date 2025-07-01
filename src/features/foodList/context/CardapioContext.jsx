@@ -13,7 +13,15 @@ export const CardapioProvider = ({ children }) => {
   const carregarItens = async () => {
     try {
       const dados = await listarItensCardapio();
-      setItems(dados);
+
+      // ✅ Normaliza cada item para ter o campo `price`
+      const normalizados = dados.map((item) => ({
+        ...item,
+        // Tenta pegar o campo certo, senão usa 0 como fallback
+        price: Number(item.price ?? item.preco ?? item.valor ?? 0),
+      }));
+
+      setItems(normalizados);
     } catch (err) {
       console.error("Erro ao carregar itens do cardápio:", err);
     } finally {
@@ -25,7 +33,14 @@ export const CardapioProvider = ({ children }) => {
     carregarItens();
   }, [listarItensCardapio]);
 
-  const value = useMemo(() => ({ items, loading, carregarItens }), [items, loading, carregarItens]);
+  const value = useMemo(
+    () => ({
+      items,
+      loading,
+      carregarItens,
+    }),
+    [items, loading]
+  );
 
   return (
     <CardapioContext.Provider value={value}>

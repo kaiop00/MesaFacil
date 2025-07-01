@@ -1,23 +1,27 @@
+// /features/order/components/modals/NewOrderModal.jsx
+
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { useEffect, useRef, useState } from "react";
 import { CloseLg, SearchMagnifyingGlass } from "react-coolicons";
 import logo from "@/assets/images/order/TableYellow.png";
 import { useTables } from "@/features/config/hooks/useTables";
+import { useOrderContext } from "@/features/order/context/OrderContext";
+import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 
-
-const NewOrderModal = ({ isOpen, onClose }) => {
+const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
     const { mesas } = useTables();
-    const [selectedTable, setSelectedTable] = useState(null);
+    const { setSelectedTable } = useOrderContext();
+    const [selectedTableLocal, setSelectedTableLocal] = useState(null);
     const modalRef = useRef();
 
     const handleContinue = () => {
-        if (selectedTable) {
-            console.log("Mesa selecionada:", selectedTable);
+        if (selectedTableLocal) {
+            setSelectedTable(selectedTableLocal);
             onClose();
+            openAddItemsModal();
         }
     };
 
-    // Fecha o modal ao clicar fora
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -28,88 +32,75 @@ const NewOrderModal = ({ isOpen, onClose }) => {
         if (isOpen) {
             document.addEventListener("mousedown", handleClickOutside);
         }
-
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [isOpen, onClose]);
 
     return (
-        <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-            {/* Fundo escuro */}
-            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <BaseModalWithHeader
+            isOpen={!!isOpen}   // ✅ alinhado com o que o BaseModal espera
+            onClose={onClose}
+            title="Novo Pedido"
+            subTitle="Preencha as informações e adicione um novo pedido"
+        >
 
-            {/* Conteúdo central do modal */}
-            <div className="fixed inset-0 flex items-center justify-center p-2 sm:p-4">
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            <div className="fixed inset-0 flex items-center justify-center p-4">
                 <DialogPanel
                     ref={modalRef}
-                    className="w-full h-full sm:h-auto sm:max-w-4xl overflow-y-auto rounded bg-white shadow-xl flex flex-col"
+                    className="w-full max-w-4xl overflow-y-auto rounded bg-white shadow-xl flex flex-col"
                 >
-                    {/* Cabeçalho */}
-                    <div className="bg-primary-dynamic font-inter text-white px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center rounded-t">
+                    <div className="bg-primary-dynamic text-white px-4 py-3 flex justify-between items-center rounded-t">
                         <div>
                             <h2 className="font-semibold text-lg">Novo Pedido</h2>
-                            <p className="text-sm hidden sm:block">Preencha as informações e adicione um novo pedido</p>
+                            <p className="text-sm">Preencha as informações e adicione um novo pedido</p>
                         </div>
-                        <button onClick={onClose} className="p-1 cursor-pointer">
+                        <button onClick={onClose}>
                             <CloseLg />
                         </button>
                     </div>
 
-                    {/* Conteúdo principal */}
-                    <div className="font-inter px-4 py-4 sm:px-6 sm:py-6 flex-1 overflow-y-auto">
-                        {/* Título */}
-                        <h3 className="font-medium mb-4 ml-0.5 text-base sm:text-lg">
-                            Selecione uma mesa para continuar
-                        </h3>
-
-                        {/* Campo de busca */}
-                        <div className="font-inter relative mb-4">
-                            {/* Ícone da lupa */}
+                    <div className="p-6">
+                        <h3 className="font-medium mb-4 text-lg">Selecione uma mesa para continuar</h3>
+                        <div className="relative mb-4">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <SearchMagnifyingGlass className="w-5 h-5 text-gray-400" />
                             </div>
-
-                            {/* Campo de busca */}
                             <input
                                 type="text"
                                 placeholder="Buscar"
-                                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm transition-colors
-                                border focus:outline-none focus:border-primary-dynamic"
-                                style={{ borderRadius: "8px" }}
+                                className="w-full pl-10 pr-4 py-2 border rounded-md text-sm border-gray-300 focus:outline-none focus:border-primary-dynamic"
                             />
                         </div>
 
-                        {/* Grade de mesas */}
-                        <div className="font-inter font-bold grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6 mt-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
                             {mesas.map((mesa) => (
                                 <button
                                     key={mesa.id}
-                                    onClick={() => setSelectedTable(mesa)}
-                                    className={`border border-[#DEE4EA] rounded p-4 flex flex-col items-center justify-center space-y-2 transition-all ${selectedTable?.id === mesa.id
+                                    onClick={() => setSelectedTableLocal(mesa)}
+                                    className={`border rounded p-4 flex flex-col items-center space-y-2 transition-all ${selectedTableLocal?.id === mesa.id
                                         ? "border-primary-dynamic bg-primary-dynamic text-white"
                                         : "hover:border-primary-dynamic"
                                         }`}
                                 >
                                     <img src={logo} className="h-6 sm:h-10" alt="Mesa" />
-                                    <span className="text-sm sm:text-base">Mesa {mesa.numero}</span>
+                                    <span>Mesa {mesa.numero}</span>
                                 </button>
                             ))}
                         </div>
 
-
-                        {/* Ações */}
-                        <div className="flex flex-col sm:flex-row justify-between gap-2">
+                        <div className="flex justify-between gap-2">
                             <button
-                                className="font-inter w-full sm:w-auto px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-[#334155] cursor-pointer"
+                                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
                                 onClick={onClose}
                             >
                                 Cancelar
                             </button>
                             <button
-                                className="font-inter w-full sm:w-auto px-4 py-2 bg-primary-dynamic text-white rounded disabled:cursor-default cursor-pointer"
-                                disabled={!selectedTable}
+                                disabled={!selectedTableLocal}
                                 onClick={handleContinue}
+                                className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300"
                             >
                                 Continuar
                             </button>
@@ -117,7 +108,7 @@ const NewOrderModal = ({ isOpen, onClose }) => {
                     </div>
                 </DialogPanel>
             </div>
-        </Dialog>
+        </BaseModalWithHeader>
     );
 };
 

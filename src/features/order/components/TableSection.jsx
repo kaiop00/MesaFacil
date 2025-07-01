@@ -2,8 +2,9 @@ import TableCard from '@/features/order/components/TableCard'
 
 const TableSection = ({
   title,
-  status,    // "livre", "andamento", "pendente"
-  items,     // array: { table, timeAgo?, price? }
+  status,  
+  items,
+  idRestaurante,   
 }) => {
 
   const dotColorMap = {
@@ -30,11 +31,13 @@ const TableSection = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((it, idx) => (
           <TableCard
+            key={it.mesa.id}
             numero={it.numero}
-            status="andamento"
+            status={status}
             timeAgo={it.timeAgo}
             price={it.price}
-            onMenuClick={() => console.log('Menu:', it.table)}
+            mesa={it.mesa}
+            idRestaurante={idRestaurante}
           />
         ))}
       </div>
