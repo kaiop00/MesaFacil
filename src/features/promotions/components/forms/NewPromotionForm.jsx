@@ -12,10 +12,11 @@ const NewPromotionForm = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedFoods, setSelectedFoods] = useState([]);
   const [foodItems, setFoodItems] = useState([]);
+  const [selectedFoods, setSelectedFoods] = useState([]);
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
+  const [displayValue, setDisplayValue] = useState('');
 
   useEffect(() => {
     getAll(idRestaurante, 'cardapio', { orderByField: 'criadoEm', order: 'desc' }).then((items) => {
@@ -39,9 +40,26 @@ const NewPromotionForm = ({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    console.log('[handleInputChange] ', value);
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleValueChange = (e) => {
+    const input = e.target.value;
+    const numericValue = input.replace(/\D/g, '');
+    const floatValue = Number(numericValue) / 100;
+
+    setDisplayValue(new Intl.NumberFormat('pt-BR', {
+      currency: 'BRL',
+      style: 'currency'
+    }).format(floatValue));
+
+    setFormData(prev => ({
+      ...prev,
+      valor: floatValue
     }));
   };
 
@@ -230,15 +248,11 @@ const NewPromotionForm = ({
             Valor Total dos Itens
           </label>
           <div className="relative rounded-md shadow-sm mt-1 h-12">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <span className="text-gray-500 sm:text-sm">R$</span>
-            </div>
-
             <input
               type="text"
               readOnly
               value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
-              className="w-full h-12 rounded-md border-gray-300 pl-12 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm bg-gray-100"
+              className="w-full h-12 rounded-md border-gray-300 pl-3 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm bg-gray-100"
             />
           </div>
         </div>
@@ -248,18 +262,13 @@ const NewPromotionForm = ({
             Valor da Promoção <span className="text-red-500">*</span>
           </label>
           <div className="mt-1 relative rounded-md shadow-sm h-12">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <span className="text-gray-500 sm:text-sm">R$</span>
-            </div>
             <input
-              type="number"
+              type="text"
               name="valor"
-              min="0.01"
-              step="0.01"
-              value={formData.valor || ''}
-              onChange={handleInputChange}
-              className="block w-full h-12 rounded-md border-gray-300 pl-12 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm"
-              placeholder="0.00"
+              value={displayValue}
+              onInput={handleValueChange}
+              className="block w-full h-12 rounded-md border-gray-300 pl-3 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm"
+              placeholder="0,00"
               required
             />
           </div>
