@@ -17,7 +17,6 @@ const CorInput = ({ color, setColor }) => (
         <option value="#FF0000">Vermelho</option>
         <option value="#0000FF">Azul</option>
         <option value="#008000">Verde</option>
-        <option value="#FFFF00">Amarelo</option>
         <option value="#FFA500">Laranja</option>
         <option value="#800080">Roxo</option>
       </select>
