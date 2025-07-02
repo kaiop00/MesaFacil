@@ -79,7 +79,7 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
                                 <button
                                     key={mesa.id}
                                     onClick={() => setSelectedTableLocal(mesa)}
-                                    className={`border rounded p-4 flex flex-col items-center space-y-2 transition-all ${selectedTableLocal?.id === mesa.id
+                                    className={`cursor-pointer border rounded p-4 flex flex-col items-center space-y-2 transition-all ${selectedTableLocal?.id === mesa.id
                                         ? "border-primary-dynamic bg-primary-dynamic text-white"
                                         : "hover:border-primary-dynamic"
                                         }`}
@@ -92,7 +92,7 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
 
                         <div className="flex justify-between gap-2">
                             <button
-                                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+                                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
                                 onClick={onClose}
                             >
                                 Cancelar
@@ -100,7 +100,7 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
                             <button
                                 disabled={!selectedTableLocal}
                                 onClick={handleContinue}
-                                className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300"
+                                className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
                             >
                                 Continuar
                             </button>
