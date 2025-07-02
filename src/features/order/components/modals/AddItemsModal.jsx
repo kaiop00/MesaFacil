@@ -6,12 +6,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createPedido } from "@/features/order/services/orderService";
 import CardapioItemSelect from "@/features/order/components/CardapioItemSelect";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
+import { useToast } from "@/hooks/useToast";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const AddItemsModal = ({ isOpen, onClose }) => {
     const { items: cardapioItems } = useCardapioContext();
     const { selectedTable, items, addItem, updateItemQuantity, removeItem, clearOrder } = useOrderContext();
     const [selectedItemId, setSelectedItemId] = useState("");
     const { idRestaurante } = useAuth();
+    const { notify } = useToast();
+    const [loading, setLoading] = useState(false);
 
     const handleAdd = () => {
         const item = cardapioItems.find((i) => i.id === selectedItemId);
@@ -22,14 +26,23 @@ const AddItemsModal = ({ isOpen, onClose }) => {
     };
 
     const handleSubmit = async () => {
-        if (!selectedTable) return;
-
+        if (!selectedTable) {
+            notify("Selecione uma mesa primeiro", "error");
+            return;
+        }
+        setLoading(true);
         const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        try {
+            await createPedido(idRestaurante, selectedTable.id, items, total);
+            clearOrder();
+            onClose();
+            notify("Pedido adicionado com sucesso" , "success");
+        } catch (error) {
+            notify(`${error} , error`);
+        } finally {
+            setLoading(false);
+        }
 
-        await createPedido(idRestaurante, selectedTable.id, items, total);
-
-        clearOrder();
-        onClose();
     }
 
     const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -77,10 +90,10 @@ const AddItemsModal = ({ isOpen, onClose }) => {
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={items.length === 0}
+                        disabled={items.length === 0 || loading}
                         className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
                     >
-                        Continuar
+                        {loading ? <LoadingSpinner /> : "Continuar"}
                     </button>
                 </div>
             </div>
