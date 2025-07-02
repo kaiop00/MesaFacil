@@ -1,50 +1,43 @@
-import { useState } from "react";
-
-import mock1 from "../../../assets/images/mock/mock1.png";
-import mock2 from "../../../assets/images/mock/mock2.png";
-import mock3 from "../../../assets/images/mock/mock3.png";
-
+import { useState, useEffect } from "react";
 import CardHeader from "@/components/CardHeader";
 import CardPromotionEmpty from "@/features/promotions/components/CardPromotionEmpty";
 import CardPromotion from "@/features/promotions/components/CardPromotion";
 import NewPromotionModal from "@/features/promotions/components/modals/NewPromotionModal";
-
-// Mock de dados para exemplo
-export const mockPromoItems = [
-  {
-    id: 1,
-    nome: "Encanto da Serra",
-    imagemUrl: mock1,
-    precoOriginal: 100,
-    precoDesconto: 50,
-  },
-  {
-    id: 2,
-    nome: "Carne de Gado Assada",
-    imagemUrl: mock2,
-    precoOriginal: 14.2,
-    precoDesconto: 12.2,
-  },
-  {
-    id: 3,
-    nome: "Almoço Executivo",
-    imagemUrl: mock3,
-    precoOriginal: 14.2,
-    precoDesconto: 12.2,
-  },
-  {
-    id: 4,
-    nome: "Almoço Executivo",
-    imagemUrl: mock3,
-    precoOriginal: 14.2,
-    precoDesconto: 12.2,
-  },
-];
+import EditPromotionModal from "@/features/promotions/components/modals/EditPromotionModal";
+import PromotionDetailsModal from "@/features/promotions/components/modals/PromotionDetailsModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { create, getAll, remove, update } from "@/services/firebase/firestoreService";
+import { useToast } from "@/hooks/useToast";
 
 const PromotionPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedPromotion, setSelectedPromotion] = useState(null);
+  const [editingPromotion, setEditingPromotion] = useState(null);
+  const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { idRestaurante } = useAuth();
+  const { notify } = useToast();
 
-  // Handlers
+  useEffect(() => {
+    if (idRestaurante) {
+      const fetchPromotions = async () => {
+        try {
+          setLoading(true);
+          const fetchedPromotions = await getAll(idRestaurante, 'promocoes', { orderByField: 'criadoEm', order: 'desc' });
+          setPromotions(fetchedPromotions);
+        } catch (error) {
+          console.error("Erro ao buscar promoções:", error);
+          setError(error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchPromotions();
+    }
+  }, [idRestaurante]);
+
   const handleNew = () => {
     setIsModalOpen(true);
   };
@@ -53,15 +46,71 @@ const PromotionPage = () => {
     setIsModalOpen(false);
   };
 
-  const handleOpenPromoOptions = (id) => {
-    console.log(`Opções da promoção ${id} abertas`);
-    // Abrir modal ou menu aqui
+  const handlePromotionClick = (promotion) => {
+    setSelectedPromotion(promotion);
   };
 
-  // Usar apenas dados mock
-  const displayPromoItems = mockPromoItems;
+  const handleCloseDetails = () => {
+    setSelectedPromotion(null);
+  };
 
-  const hasPromoItems = displayPromoItems.length > 0;
+  const handleSavePromotion = async (formData) => {
+    if (!idRestaurante) {
+      notify("Usuário não autenticado. Faça login para criar uma promoção.", "error");
+      return;
+    }
+    try {
+      await create(idRestaurante, 'promocoes', formData);
+      const fetchedPromotions = await getAll(idRestaurante, 'promocoes', { orderByField: 'criadoEm', order: 'desc' });
+      console.log(fetchedPromotions);
+      setPromotions(fetchedPromotions);
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error creating promotion:', error);
+      notify("Erro ao criar promoção", "error");
+    }
+  };
+
+  const handleEditPromotion = (promotion) => {
+    setEditingPromotion(promotion);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdatePromotion = async (updatedPromotion) => {
+    try {
+      // Update the promotion in Firestore
+      await update(idRestaurante, 'promocoes', updatedPromotion.id, updatedPromotion);
+      
+      // Update the local state
+      setPromotions(prev => 
+        prev.map(p => p.id === updatedPromotion.id ? updatedPromotion : p)
+      );
+      
+      setIsEditModalOpen(false);
+      setEditingPromotion(null);
+      notify("Promoção atualizada com sucesso!", "success");
+    } catch (error) {
+      console.error("Error updating promotion:", error);
+      notify("Erro ao atualizar a promoção. Tente novamente.", "error");
+    }
+  };
+
+  const handleDeletePromotion = async (id) => {
+    if (!idRestaurante) {
+      notify("Usuário não autenticado. Faça login para excluir uma promoção.", "error");
+      return;
+    }
+    if (window.confirm('Tem certeza que deseja excluir esta promoção?')) {
+      try {
+        await remove(idRestaurante, 'promocoes', id);
+        setPromotions(prev => prev.filter(promo => promo.id !== id));
+        notify("Promoção excluída com sucesso!", "success");
+      } catch (error) {
+        console.error('Erro ao excluir promoção:', error);
+        notify("Erro ao excluir promoção", "error");
+      }
+    }
+  };
 
   return (
     <div className="sm:px-6 md:px-8 mt-10 mb-10 space-y-10">
@@ -72,31 +121,53 @@ const PromotionPage = () => {
         buttonTitle="Nova Promoção"
       />
 
-      {!hasPromoItems ? (
-        <CardPromotionEmpty />
-      ) : (
-        <div className="">
-          <div>
-            <div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-              {displayPromoItems.map((promo) => (
-                <CardPromotion
+      {loading
+        ? (<div className="flex justify-center items-center h-64">Carregando...</div>)
+        : (error
+          ? (<div className="text-red-500">{error.message}</div>)
+          : (promotions.length === 0
+            ? (<CardPromotionEmpty />)
+            : (<div className="font-inter grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              {promotions.map((promo) => (
+                <div
                   key={promo.id}
-                  id={promo.id}
-                  nome={promo.nome}
-                  imagemUrl={promo.imagemUrl}
-                  precoOriginal={promo.precoOriginal}
-                  precoDesconto={promo.precoDesconto}
-                  abrirOpcoes={handleOpenPromoOptions}
-                />
+                  className="cursor-pointer"
+                  onClick={() => handlePromotionClick(promo)}
+                >
+                  <CardPromotion
+                    id={promo.id}
+                    nome={promo.nome}
+                    imagemUrl={promo.imagemUrl}
+                    precoOriginal={promo.precoOriginal}
+                    precoDesconto={promo.precoDesconto}
+                    onEdit={() => handleEditPromotion(promo)}
+                    onDelete={handleDeletePromotion}
+                  />
+                </div>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
+            </div>)))}
+
       <NewPromotionModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-      ></NewPromotionModal>
+        onSave={handleSavePromotion}
+      />
+
+      <EditPromotionModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingPromotion(null);
+        }}
+        promotion={editingPromotion}
+        onSave={handleUpdatePromotion}
+      />
+
+      <PromotionDetailsModal
+        isOpen={!!selectedPromotion}
+        onClose={handleCloseDetails}
+        promotion={selectedPromotion}
+      />
     </div>
   );
 };

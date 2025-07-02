@@ -1,19 +1,17 @@
 import { useState, useEffect } from "react";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
-import { useToast } from "@/hooks/useToast";
 import { ArrowDownUp } from "react-coolicons";
 import NewPromotionForm from "../forms/NewPromotionForm";
+import { useToast } from "@/hooks/useToast";
 
 const initialFormData = {
   nome: "",
   itens: [],
-  precoOriginal: "",
-  precoDesconto: "",
+  valor: "",
 };
 
-const NewPromotionModal = ({ isOpen, onClose }) => {
+const NewPromotionModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState(initialFormData);
-  const [loading, setLoading] = useState(false);
   const { notify } = useToast();
 
   useEffect(() => {
@@ -22,19 +20,32 @@ const NewPromotionModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  const handleFormSubmit = async (formData) => {
+    try {
+      await onSave(formData);
+      onClose();
+      notify("Promoção criada com sucesso!", "success");
+    } catch (error) {
+      console.error("Error saving promotion:", error);
+      notify("Erro ao salvar a promoção. Tente novamente.", "error");
+    }
+  };
+
   return (
     <BaseModalWithHeader
       isOpen={isOpen}
       onClose={onClose}
-      title="Novo Promoção"
+      title="Nova Promoção"
       subTitle="Preencha as informações para adicionar"
       icon={ArrowDownUp}
+      iconClassName="text-yellow-500"
     >
       <NewPromotionForm
         formData={formData}
         setFormData={setFormData}
-      ></NewPromotionForm>
-      
+        onSubmit={handleFormSubmit}
+        onCancel={onClose}
+      />
     </BaseModalWithHeader>
   );
 };

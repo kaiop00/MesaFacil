@@ -4,58 +4,87 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getAll } from '@/services/firebase/firestoreService';
 import { ArrowDownMd, CloseSm, AddPlus, RemoveMinus } from 'react-coolicons';
 
-const NewPromotionForm = ({
+const EditPromotionForm = ({
+  promotion,
   formData,
   setFormData,
   onSubmit,
   onCancel,
 }) => {
+  const [selectedFoods, setSelectedFoods] = useState(promotion?.itens || []);
+  const [displayValue, setDisplayValue] = useState('');
+  const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [foodItems, setFoodItems] = useState([]);
-  const [selectedFoods, setSelectedFoods] = useState([]);
   const [isSending, setIsSending] = useState(false);
-  const [displayValue, setDisplayValue] = useState('');
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
 
   useEffect(() => {
+    if (promotion) {
+      setFormData({
+        nome: promotion.nome || '',
+        descricao: promotion.descricao || '',
+        valor: promotion.precoDesconto || 0,
+      });
+      setSelectedFoods(promotion.itens || []);
+    }
+  }, [promotion, setFormData]);
+
+  useEffect(() => {
+    if (formData.valor !== undefined) {
+      setDisplayValue(
+        new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(formData.valor)
+      );
+    }
+  }, [formData.valor]);
+
+  useEffect(() => {
     getAll(idRestaurante, 'cardapio', { orderByField: 'criadoEm', order: 'desc' }).then((items) => {
-      setFoodItems(items);
+      setMenuItems(items);
     });
   }, [idRestaurante]);
 
-  const itemsTotalValue = useMemo(() => {
+  const filteredFoods = useMemo(() => {
+    if (!searchTerm) return menuItems;
+    const term = searchTerm.toLowerCase();
+    return menuItems.filter(
+      (item) =>
+        item.nome.toLowerCase().includes(term) ||
+        item.descricao?.toLowerCase().includes(term)
+    );
+  }, [menuItems, searchTerm]);
+
+  const totalValue = useMemo(() => {
     return selectedFoods.reduce((sum, item) => sum + (item.valor * item.quantity), 0);
   }, [selectedFoods]);
 
-  const filteredFoods = useMemo(() => {
-    const selectedIds = new Set(selectedFoods.map(item => item.id));
-
-    return foodItems.filter(item =>
-      !selectedIds.has(item.id) &&
-      item.nome.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [foodItems, searchTerm, selectedFoods]);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handlePromotionValueChange = (e) => {
-    const { value } = e.target;
-    const numericValue = value.replace(/\D/g, '');
+  const handleValueChange = (e) => {
+    const input = e.target.value;
+    const numericValue = input.replace(/\D/g, '');
     const floatValue = Number(numericValue) / 100;
 
-    setDisplayValue(new Intl.NumberFormat('pt-BR', {
-      currency: 'BRL',
-      style: 'currency'
-    }).format(floatValue));
+    setDisplayValue(
+      new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(floatValue)
+    );
 
     setFormData(prev => ({
       ...prev,
@@ -63,28 +92,24 @@ const NewPromotionForm = ({
     }));
   };
 
-  const handleItemSelected = (food) => {
+  const handleFoodSelect = (food) => {
     setSelectedFoods(prev => [
       ...prev,
       { ...food, quantity: 1 }
     ]);
-
-    setSearchTerm('');
-
-    setIsDropdownOpen(false);
   };
 
-  const handleItemQuantityChange = (id, newQuantity) => {
-    const quantity = Math.max(1, parseInt(newQuantity) || 1);
-
+  const updateQuantity = (id, increment) => {
     setSelectedFoods(prev =>
       prev.map(item =>
-        item.id === id ? { ...item, quantity } : item
+        item.id === id
+          ? { ...item, quantity: Math.max(1, item.quantity + (increment ? 1 : -1)) }
+          : item
       )
     );
   };
 
-  const handleRemoveItem = (id) => {
+  const removeFood = (id) => {
     setSelectedFoods(prev => prev.filter(item => item.id !== id));
   };
 
@@ -92,12 +117,12 @@ const NewPromotionForm = ({
     e.preventDefault();
 
     if (selectedFoods.length === 0) {
-      notify('Adicione pelo menos um item à promoção', 'error');
+      notify('Selecione pelo menos um item do cardápio', 'error');
       return;
     }
 
     if (!formData.valor || formData.valor <= 0) {
-      notify('Defina um valor de promoção válido', 'error');
+      notify('O valor da promoção deve ser maior que zero', 'error');
       return;
     }
 
@@ -106,12 +131,10 @@ const NewPromotionForm = ({
     onSubmit({
       ...formData,
       itens: selectedFoods,
-      precoOriginal: itemsTotalValue,
+      precoOriginal: totalValue,
       precoDesconto: parseFloat(formData.valor),
-      imagemUrl: selectedFoods[0]?.imagemUrl || null,
+      imagemUrl: selectedFoods[0]?.imagemUrl || promotion?.imagemUrl || null,
     });
-
-    setIsSending(false);
   };
 
   return (
@@ -120,7 +143,6 @@ const NewPromotionForm = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Nome da Promoção <span className="text-gray-400">(Opcional)</span>
         </label>
-
         <input
           type="text"
           name="nome"
@@ -167,7 +189,11 @@ const NewPromotionForm = ({
                   <div
                     key={food.id}
                     className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => handleItemSelected(food)}
+                    onClick={() => {
+                      handleFoodSelect(food);
+                      setSearchTerm('');
+                      setIsDropdownOpen(false);
+                    }}
                   >
                     <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden mr-3">
                       <img
@@ -176,7 +202,6 @@ const NewPromotionForm = ({
                         alt={food.nome}
                       />
                     </div>
-
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-gray-900 truncate">{food.nome}</p>
                       <p className="text-sm text-gray-500 truncate">
@@ -184,8 +209,7 @@ const NewPromotionForm = ({
                       </p>
                     </div>
                   </div>
-                ))
-                )}
+                )))}
             </div>
           )}
         </div>
@@ -201,7 +225,6 @@ const NewPromotionForm = ({
                     alt={item.nome}
                   />
                 </div>
-
                 <div>
                   <div className="text-sm font-medium text-gray-900">{item.nome}</div>
                   <div className="text-xs text-gray-500">
@@ -209,42 +232,29 @@ const NewPromotionForm = ({
                   </div>
                 </div>
               </div>
-
               <div className="flex items-center space-x-2">
-                <div className="flex items-center border rounded-md">
-                  <button
-                    type="button"
-                    className="px-2 py-1 text-gray-600 hover:bg-gray-100"
-                    onClick={() => handleItemQuantityChange(item.id, item.quantity - 1)}
-                  >
-                    <RemoveMinus className="h-3 w-3" />
-                  </button>
-
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => handleItemQuantityChange(item.id, e.target.value)}
-                    className="w-10 text-center border-l border-r border-gray-300 py-1 text-sm"
-                  />
-
-                  <button
-                    type="button"
-                    className="px-2 py-1 text-gray-600 hover:bg-gray-100"
-                    onClick={() => handleItemQuantityChange(item.id, item.quantity + 1)}
-                  >
-                    <AddPlus className="h-3 w-3" />
-                  </button>
-                </div>
-                <div className="text-sm font-medium text-gray-900 w-20 text-right">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor * item.quantity)}
-                </div>
                 <button
                   type="button"
-                  className="text-gray-400 hover:text-red-500"
-                  onClick={() => handleRemoveItem(item.id)}
+                  onClick={() => updateQuantity(item.id, -1)}
+                  className="p-1 text-gray-500 hover:text-gray-700"
+                  disabled={item.quantity <= 1}
                 >
-                  <CloseSm className="h-5 w-5" />
+                  <RemoveMinus className="w-4 h-4" />
+                </button>
+                <span className="text-sm w-6 text-center">{item.quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => updateQuantity(item.id, 1)}
+                  className="p-1 text-gray-500 hover:text-gray-700"
+                >
+                  <AddPlus className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeFood(item.id)}
+                  className="p-1 text-red-500 hover:text-red-700"
+                >
+                  <CloseSm className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -261,7 +271,7 @@ const NewPromotionForm = ({
             <input
               type="text"
               readOnly
-              value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(itemsTotalValue)}
+              value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
               className="w-full h-12 rounded-md border-gray-300 pl-3 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm bg-gray-100"
             />
           </div>
@@ -276,7 +286,7 @@ const NewPromotionForm = ({
               type="text"
               name="valor"
               value={displayValue}
-              onInput={handlePromotionValueChange}
+              onInput={handleValueChange}
               className="block w-full h-12 rounded-md border-gray-300 pl-3 pr-12 focus:border-yellow-500 focus:ring-yellow-500 sm:text-sm"
               placeholder="0,00"
               required
@@ -294,16 +304,17 @@ const NewPromotionForm = ({
         >
           Cancelar
         </button>
+
         <button
           type="submit"
           className="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 focus:outline-none disabled:opacity-50"
           disabled={selectedFoods.length === 0 || isSending}
         >
-          {isSending ? 'Salvando...' : 'Salvar Promoção'}
+          {isSending ? 'Atualizando...' : 'Atualizar Promoção'}
         </button>
       </section>
     </form>
   );
 };
 
-export default NewPromotionForm;
+export default EditPromotionForm;
