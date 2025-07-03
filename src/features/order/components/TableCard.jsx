@@ -4,11 +4,12 @@ import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
 
 const TableCard = ({
-  numero,   // número da mesa
-  status,   // livre, andamento, pendente
-  timeAgo,  // opcional
-  price,    // opcional
-  onMenuClick,
+  numero,
+  status,
+  timeAgo,
+  price,
+  mesa,          // ✅ objeto real
+  idRestaurante
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -36,7 +37,7 @@ const TableCard = ({
       iconTxt: "text-yellow-500",
       priceTxt: "text-yellow-600 font-medium",
     },
-    pendente: {
+    entregue: {
       iconBg: "bg-red-50",
       iconTxt: "text-red-500",
       priceTxt: "text-red-600 font-medium",
@@ -56,7 +57,7 @@ const TableCard = ({
           <div ref={showOptionsRef} className="relative">
             <button
               onClick={() => setShowOptions((prev) => !prev)}
-              className="p-1 bg-gray-100 rounded hover:bg-gray-200"
+              className="p-1 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
             >
               <MoreHorizontal className="w-5 h-5 text-gray-500" />
             </button>
@@ -91,27 +92,10 @@ const TableCard = ({
       <DetailOrderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        order={{
-          id: 1231,
-          items: [
-            {
-              name: "Carne de Gado",
-              quantity: 1,
-              price: "100,00",
-              image:
-                "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
-            },
-            {
-              name: "Encanto da Serra",
-              quantity: 1,
-              price: "120,20",
-              image:
-                "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=100&q=80",
-            },
-          ],
-          observations: "Exemplo de observações",
-        }}
+        mesaSelecionada={mesa}
+        idRestaurante={idRestaurante}
       />
+
     </>
   );
 };

@@ -19,13 +19,13 @@ export const useTables = () => {
   //mesas em andamento
   const mesasAndamento = useMemo(() => tables.filter(t => t.status === "andamento"), [tables]);
   //mesas aguardando pagamento
-  const mesasPendentes = useMemo(() => tables.filter(t => t.status === "pendente"), [tables]);
+  const mesasEntregues = useMemo(() => tables.filter(t => t.status === "entregue"), [tables]);
 
   return {
     tables,
     mesas,
     mesasLivres,
     mesasAndamento,
-    mesasPendentes,
+    mesasEntregues,
   };
 };
