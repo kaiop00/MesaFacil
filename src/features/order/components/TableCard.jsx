@@ -57,7 +57,7 @@ const TableCard = ({
           <div ref={showOptionsRef} className="relative">
             <button
               onClick={() => setShowOptions((prev) => !prev)}
-              className="p-1 bg-gray-100 rounded hover:bg-gray-200"
+              className="p-1 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
             >
               <MoreHorizontal className="w-5 h-5 text-gray-500" />
             </button>

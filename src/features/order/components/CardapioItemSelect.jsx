@@ -35,7 +35,7 @@ export default function CardapioItemSelect({
                         onChange={(event) => setQuery(event.target.value)}
                     />
                     <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                        <ChevronDown className="h-5 w-5 text-gray-400 cursor-pointer" />
                     </Combobox.Button>
                 </div>
 
