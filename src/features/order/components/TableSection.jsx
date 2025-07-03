@@ -2,16 +2,17 @@ import TableCard from '@/features/order/components/TableCard'
 
 const TableSection = ({
   title,
-  status,  
+  status,
   items,
-  idRestaurante,   
+  idRestaurante,
 }) => {
 
   const dotColorMap = {
     livre: 'bg-green-500',
     andamento: 'bg-yellow-500',
-    pendente: 'bg-red-500',
+    entregue: 'bg-red-500',
   };
+
 
   const dotColor = dotColorMap[status] || 'bg-gray-400';
 
@@ -31,11 +32,11 @@ const TableSection = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((it, idx) => (
           <TableCard
-            key={it.mesa.id}
+            key={it.mesa?.id || `mesa-${it.numero}-${idx}`}
             numero={it.numero}
             status={status}
             timeAgo={it.timeAgo}
-            price={it.price}
+            total={it.total}
             mesa={it.mesa}
             idRestaurante={idRestaurante}
           />

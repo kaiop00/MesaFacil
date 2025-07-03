@@ -7,7 +7,7 @@ const TableCard = ({
   numero,
   status,
   timeAgo,
-  price,
+  total,
   mesa,          // ✅ objeto real
   idRestaurante
 }) => {
@@ -82,7 +82,10 @@ const TableCard = ({
           {status !== "livre" && (
             <>
               <p className="mt-1 text-sm text-gray-500">{timeAgo}</p>
-              <p className={`mt-2 text-lg ${currentStyle.priceTxt}`}>R$ {price}</p>
+              <p className={`mt-2 text-lg ${currentStyle.priceTxt}`}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+              </p>
+
             </>
           )}
         </div>
