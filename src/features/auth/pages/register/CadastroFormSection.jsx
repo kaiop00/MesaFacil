@@ -5,6 +5,7 @@ import { registerWithEmail } from "@/services/firebase/authService";
 import { translateFirebaseError } from "@/utils/firebaseErrorTranslator";
 import { useToast } from "@/hooks/useToast";
 import mesafacil from '@/assets/mesafacil.png';
+import confirmacao from '@/assets/images/signup/confirmacao.png';
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function CadastroFormSection() {
@@ -12,10 +13,10 @@ export default function CadastroFormSection() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [mostrarSenha, setMostrarSenha] = useState(false);
+    const [registrationSuccess, setRegistrationSuccess] = useState(false);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const { notify } = useToast();
-
 
     const handleCadastro = async () => {
         if (!nome || !email || !senha) {
@@ -31,19 +32,44 @@ export default function CadastroFormSection() {
                 throw new Error("Falha ao associar restaurante.");
             }
 
-            notify("Usuário cadastrado com sucesso!", "success");
-            navigate("/home");
+            setRegistrationSuccess(true);
         } catch (error) {
             notify(translateFirebaseError(error), "error");
-        } finally {
             setLoading(false);
         }
     };
 
+    if (registrationSuccess) {
+        return (
+            <div className="w-full max-w-md px-8 py-12 mx-auto flex flex-col justify-center flex-grow">
+                <div className="flex justify-center">
+                    <img src={mesafacil} alt="logo" className="w-50" />
+                </div>
+
+                <div className="text-center mt-8">
+                    <img src={confirmacao} alt="Sucesso" className="mx-auto max-w-40 mb-6" />
+                    <h2 className="text-2xl font-semibold text-green-600 mb-4">Cadastro Realizado com Sucesso!</h2>
+                    <p className="text-gray-600 mb-8">
+                        Clique no botão abaixo para acessar o painel do sistema. Bem-vindo!
+                    </p>
+                    <button
+                        onClick={() => navigate('/home')}
+                        className="w-full h-[44px] bg-[#F8912E] text-white rounded font-semibold font-inter transition hover:bg-orange-600"
+                    >
+                        Ir para o painel
+                    </button>
+                </div>
+
+                <footer className="text-xs text-gray-400 text-center py-4 mt-12">
+                    &copy; Copyright 2025 MesaFácil
+                </footer>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full max-w-md px-8 py-12 mx-auto flex flex-col justify-center flex-grow">
-            <div class="flex justify-center">
+            <div className="flex justify-center">
                 <img src={mesafacil} alt="logo" className="w-50" />
             </div>
 
@@ -64,16 +90,11 @@ export default function CadastroFormSection() {
 
             <button
                 onClick={handleCadastro}
-                className="w-full h-[44px] bg-[#F8912E] text-white rounded font-semibold font-inter  transition mt-6 flex justify-center items-center cursor-pointer"
+                className="w-full h-[44px] bg-[#F8912E] text-white rounded font-semibold font-inter transition mt-6 flex justify-center items-center cursor-pointer hover:bg-orange-600"
                 disabled={loading}
             >
-                {loading ? (
-                    <LoadingSpinner/>
-                ) : (
-                    <span>Confirmar</span>
-                )}
+                {loading ? <LoadingSpinner /> : <span>Confirmar</span>}
             </button>
-
 
             <Link
                 to="/login"
@@ -82,7 +103,9 @@ export default function CadastroFormSection() {
                 &lt; Voltar ao Login
             </Link>
 
-            <footer className="text-xs text-gray-200 text-center py-4 mt-8">© Copyright 2025 MesaFácil</footer>
+            <footer className="text-xs text-gray-400 text-center py-4 mt-8">
+                &copy; Copyright 2025 MesaFácil
+            </footer>
         </div>
     );
 }
