@@ -17,6 +17,7 @@ export default function CadastroFormSection() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const { notify } = useToast();
+    const [idRestaurante, setIdRestaurante] = useState(null);
 
     const handleCadastro = async () => {
         if (!nome || !email || !senha) {
@@ -31,6 +32,8 @@ export default function CadastroFormSection() {
             if (!idRestaurante) {
                 throw new Error("Falha ao associar restaurante.");
             }
+
+            setIdRestaurante(idRestaurante);
 
             setRegistrationSuccess(true);
         } catch (error) {
@@ -53,7 +56,7 @@ export default function CadastroFormSection() {
                         Clique no botão abaixo para acessar o painel do sistema. Bem-vindo!
                     </p>
                     <button
-                        onClick={() => navigate('/home')}
+                        onClick={() => navigate('/home', { state: { idRestaurante } })}
                         className="w-full h-[44px] bg-[#F8912E] text-white rounded font-semibold font-inter transition hover:bg-orange-600"
                     >
                         Ir para o painel

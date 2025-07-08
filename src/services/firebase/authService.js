@@ -21,6 +21,7 @@ import {
   addDoc,
 } from "firebase/firestore";
 import { app } from "@/config/firebaseConfig";
+import { PERMISSIONS } from "@/features/users/constants/permissions";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -78,16 +79,26 @@ export async function registerWithEmail(email, password, nomeRestaurante) {
 
   const idRestaurante = await criarOuAssociarRestaurante(nomeRestaurante);
 
+  // Create an object with all permissions set to true
+  const allPermissions = Object.values(PERMISSIONS)
+    .flat()
+    .reduce((acc, permission) => {
+      acc[permission.id] = true;
+      return acc;
+    }, {});
+
   await setDoc(doc(db, "users", result.user.uid), {
     email: result.user.email,
     idRestaurante,
-    role: "user",
+    status: 'Ativo',
+    role: {
+      ...allPermissions
+    },
     createdAt: serverTimestamp(),
   });
 
   return { user: result.user, idRestaurante };
 }
-
 
 /**
  * Realiza login com e-mail e senha.
