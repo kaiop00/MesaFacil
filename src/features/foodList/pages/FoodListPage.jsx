@@ -21,7 +21,7 @@ const FoodListPage = () => {
 
   return (
     <div className="sm:px-6 md:px-8 mt-10 mb-10 space-y-10">
-      {role === "admin" && <CardHeader
+      {(role.create_menu_items || role === "admin") && <CardHeader
         title="Cardápio"
         subtitle="Gerencie o cardápio da sua loja"
         onNewClick={handleNew}

@@ -101,7 +101,7 @@ const UsersPage = () => {
 
   return (
     <div className="mt-10 mb-10">
-      {role === "admin" && <CardHeader
+      {(role.create_users || role === "admin") && <CardHeader
         title="Usuarios"
         subtitle="Gerencie os usuarios do seu restaurante."
         onNewClick={handleNew}
