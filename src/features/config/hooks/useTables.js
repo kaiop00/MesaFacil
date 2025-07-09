@@ -1,18 +1,17 @@
 import { useContext, useEffect, useState } from "react";
 import { TablesContext } from "@/features/config/context/TablesContext";
 import { getPedidosDaMesa } from "@/features/order/services/orderService";
+import { formatDistanceToNow } from "date-fns";
+import {ptBR} from "date-fns/locale";
 
 /**
  * Calcula 'há x minutos' ou 'há x horas'
  */
 function timeAgoString(date) {
-  const now = new Date();
-  const diff = Math.floor((now - date) / 60000); // minutos
-
-  if (diff < 1) return "agora mesmo";
-  if (diff < 60) return `há ${diff} min`;
-  const hours = Math.floor(diff / 60);
-  return `há ${hours}h`;
+  return formatDistanceToNow(date, {
+    addSuffix:true,
+    locale:ptBR,
+  });
 }
 
 /**
@@ -58,8 +57,8 @@ export const useTables = (idRestaurante) => {
           return {
             ...mesa,
             total: pedido?.total ?? 0,
-            timeAgo: pedido?.criadoEm?.toDate
-              ? timeAgoString(pedido.criadoEm.toDate())
+            timeAgo: pedido?.finalizadoEm?.toDate
+              ? timeAgoString(pedido.finalizadoEm.toDate())
               : "-",
           };
         })

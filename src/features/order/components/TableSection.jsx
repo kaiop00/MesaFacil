@@ -1,4 +1,5 @@
 import TableCard from '@/features/order/components/TableCard'
+import { useEffect } from 'react';
 
 const TableSection = ({
   title,
@@ -15,7 +16,9 @@ const TableSection = ({
 
 
   const dotColor = dotColorMap[status] || 'bg-gray-400';
-
+  useEffect(() => {
+    console.log(items);
+  })
   return (
     <section className="mb-8">
       <header className="flex items-center px-2 mb-4">
