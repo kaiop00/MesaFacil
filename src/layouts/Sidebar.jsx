@@ -8,6 +8,7 @@ import {
   ArrowDownUp,
   HamburgerLg,
   Users,
+  Notebook,
 } from "react-coolicons";
 
 const Sidebar = () => {
@@ -32,7 +33,8 @@ const Sidebar = () => {
       path: "/home/relatorios",
     },
     { name: "Promoções", icon: <ArrowDownUp size={20} />, path: "/home/promocoes" },
-    { name: "Usuarios", icon: <Users size={20} />, path: "/home/usuarios" },
+    { name: "Itens", icon: <Notebook size={20} />, path: "/home/itens" },
+    { name: "Usuários", icon: <Users size={20} />, path: "/home/usuarios" },
   ];
 
   return (

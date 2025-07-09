@@ -19,6 +19,7 @@ import FoodListPage from "@/features/foodList/pages/FoodListPage";
 import ReportPage from "@/features/reports/pages/ReportPage";
 import PromotionPage from "@/features/promotions/pages/PromotionPage";
 import UsersPage from "@/features/users/pages/UsersPage";
+import ItemsPage from "@/features/items/pages/ItemsPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -30,7 +31,6 @@ const router = createBrowserRouter([
     path: "/",
     element: <RedirectHandler />,
   },
-
 
   //rotas publicas
   {
@@ -64,7 +64,8 @@ const router = createBrowserRouter([
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <ReportPage /> },
           { path: "promocoes", element: <PromotionPage /> },
-          { path: "usuarios", element: <UsersPage />}
+          { path: "usuarios", element: <UsersPage /> },
+          { path: "itens", element: <ItemsPage /> },
         ],
       }
     ]
@@ -75,7 +76,6 @@ const router = createBrowserRouter([
     path: "*",
     element: <Navigate to="/" replace />,
   }
-
 ]);
 
 const AppRouter = () => {
