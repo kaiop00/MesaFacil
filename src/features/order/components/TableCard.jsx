@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { House02, MoreHorizontal } from "react-coolicons";
 import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
+import { finalizarPedido } from "@/features/order/services/orderService";
+import ConfirmModal from "@/components/ConfirmModal";
+import { useToast } from "@/hooks/useToast";
 
 const TableCard = ({
   numero,
@@ -11,9 +14,12 @@ const TableCard = ({
   mesa,          // ✅ objeto real
   idRestaurante
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ title: "", message: "" });
   const [showOptions, setShowOptions] = useState(false);
   const showOptionsRef = useRef(null);
+  const { notify } = useToast();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -46,6 +52,32 @@ const TableCard = ({
 
   const currentStyle = statusStyleMap[status] || statusStyleMap["livre"];
 
+  const handleConfirm = async () => {
+    if (mesa?.status === "andamento") {
+      await finalizarPedido(idRestaurante, mesa?.id);
+      notify("Pedido Entregue", "success");
+    } else if (mesa?.status === "entregue") {
+      console.log('redirecionar para tela de pagamento!!!');
+      setIsConfirmModalOpen(false);
+    }
+  }
+
+  const handleFinalize = () => {
+    if (mesa?.status === "andamento") {
+      setModalConfig({
+        title: "Pedido Entregue",
+        message: "Você tem certeza que deseja confirmar a entrega desse pedido? Esta é uma ação irreversível e vai disponibilizar o cliente a possibilidade de realizar o pagamento",
+      });
+    } else if (mesa?.status === "entregue") {
+      setModalConfig({
+        title: "Finalizar Pedido",
+        message: "Você tem certeza que deseja finalizar esse pedido? Esta é uma ação irreversível e vai levar para tela de pagamento do pedido"
+      });
+    }
+    setIsConfirmModalOpen(true);
+    setShowOptions(false);
+  }
+
   return (
     <>
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
@@ -54,25 +86,25 @@ const TableCard = ({
           <div className={`p-2 rounded ${currentStyle.iconBg}`}>
             <House02 className={`w-6 h-6 ${currentStyle.iconTxt}`} />
           </div>
-          <div ref={showOptionsRef} className="relative">
-            <button
-              onClick={() => setShowOptions((prev) => !prev)}
-              className="p-1 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
-            >
-              <MoreHorizontal className="w-5 h-5 text-gray-500" />
-            </button>
-            {showOptions && (
-              <TableOptionsMenu
-                onDetail={() => {
-                  setIsModalOpen(true);
-                  setShowOptions(false);
-                }}
-                onFinalize={() => {
-                  setShowOptions(false);
-                }}
-              />
-            )}
-          </div>
+          {mesa?.status !== "livre" && (
+            <div ref={showOptionsRef} className="relative">
+              <button
+                onClick={() => setShowOptions((prev) => !prev)}
+                className="p-1 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
+              >
+                <MoreHorizontal className="w-5 h-5 text-gray-500" />
+              </button>
+              {showOptions && (
+                <TableOptionsMenu
+                  onDetail={() => {
+                    setIsDetailModalOpen(true);
+                    setShowOptions(false);
+                  }}
+                  onFinalize={handleFinalize}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* conteúdo */}
@@ -93,10 +125,18 @@ const TableCard = ({
       </div>
 
       <DetailOrderModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
         mesaSelecionada={mesa}
         idRestaurante={idRestaurante}
+      />
+
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onCancel={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleConfirm}
       />
 
     </>
