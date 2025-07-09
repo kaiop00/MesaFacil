@@ -164,7 +164,7 @@ const ItemsPage = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="mt-10 space-y-6">
       <CardHeader title="Itens" subtitle="Gerencie os itens do seu restaurante" onNewClick={handleNewItem} buttonTitle="Novo Item" />
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
