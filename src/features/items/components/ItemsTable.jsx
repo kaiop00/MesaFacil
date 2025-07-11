@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MoreHorizontal, EditPencil01, UnfoldMore, TrashFull, ChevronLeft, ChevronRight } from "react-coolicons";
 
 const getStockStatus = (current, low, medium) => {
-  if (current <= (low || 0)) {
+  if (current <= low) {
     return {
       text: "Estoque baixo",
       color: "text-red-600",
       bgColor: "bg-red-50",
       borderColor: "border-red-100"
     };
-  } else if (current <= (medium || 10)) {
+  } else if (current <= medium) {
     return {
       text: "Estoque médio",
       color: "text-yellow-600",
@@ -40,43 +40,7 @@ const ItemsTable = ({
   onItemsPerPageChange = () => { }
 }) => {
   const [openDropdown, setOpenDropdown] = useState(null);
-  const [localItems, setLocalItems] = useState([]);
-  const [localTotalItems, setLocalTotalItems] = useState(0);
-
-  const isControlled = items.length > 0 && totalItems > 0;
-  const displayItems = isControlled ? items : localItems;
-  const displayTotalItems = isControlled ? totalItems : localTotalItems;
-  const totalPages = Math.ceil(displayTotalItems / itemsPerPage) || 1;
-
-  useEffect(() => {
-    if (!isControlled) {
-      const mockItems = [
-        {
-          id: 1,
-          nome: "Carne de Boi",
-          marca: "Friboi",
-          estoque: { atual: 5, baixo: 5, medio: 10, alto: 20 },
-          unidadeArmazenamento: "kg"
-        },
-        {
-          id: 2,
-          nome: "Arroz",
-          marca: "Tio João",
-          estoque: { atual: 15, baixo: 10, medio: 30, alto: 50 },
-          unidadeArmazenamento: "kg"
-        },
-        {
-          id: 3,
-          nome: "Feijão",
-          marca: "Camil",
-          estoque: { atual: 25, baixo: 5, medio: 15, alto: 25 },
-          unidadeArmazenamento: "kg"
-        },
-      ];
-      setLocalItems(mockItems);
-      setLocalTotalItems(mockItems.length);
-    }
-  }, [isControlled]);
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
 
   const toggleDropdown = (itemId) => {
     setOpenDropdown(openDropdown === itemId ? null : itemId);
@@ -114,14 +78,14 @@ const ItemsTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {displayItems.length > 0 ? (
-              displayItems.map((item) => {
+            {items.length > 0 ? (
+              items.map((item) => {
                 const status = getStockStatus(
                   item.estoque?.atual || 0,
                   item.estoque?.baixo,
-                  item.estoque?.medio,
-                  item.estoque?.alto
+                  item.estoque?.medio
                 );
+                console.log(status);
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
@@ -133,10 +97,11 @@ const ItemsTable = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className={`h-2 w-2 rounded-full ${status.bgColor.replace('bg-', 'bg-opacity-70 bg-')} ${status.color.replace('text-', 'text-opacity-70 text-')} mr-2`}></div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {item.estoque?.atual || 0} {item.unidadeArmazenamento || 'un'}
-                        </span>
+                        <div className={`rounded-full py-2 px-4 ${status.bgColor} ${status.borderColor}`}>
+                          <span className={`text-sm font-medium ${status.color}`}>
+                            {item.estoque?.atual || 0} {item.unidadeArmazenamento || 'un'}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -156,7 +121,7 @@ const ItemsTable = ({
                                 onView(item);
                                 setOpenDropdown(null);
                               }}
-                              className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
                             >
                               <UnfoldMore className="mr-2 h-4 w-4" />
                               Visualizar
@@ -166,7 +131,7 @@ const ItemsTable = ({
                                 onEdit(item);
                                 setOpenDropdown(null);
                               }}
-                              className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             >
                               <EditPencil01 className="mr-2 h-4 w-4" />
                               Editar
@@ -176,7 +141,7 @@ const ItemsTable = ({
                                 onDelete(item);
                                 setOpenDropdown(null);
                               }}
-                              className="flex w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
                             >
                               <TrashFull className="mr-2 h-4 w-4" />
                               Excluir
@@ -240,7 +205,7 @@ const ItemsTable = ({
                 </option>
               ))}
             </select>
-            <p className="text-sm text-gray-700">de <span className="font-medium">{displayTotalItems}</span> registros</p>
+            <p className="text-sm text-gray-700">de <span className="font-medium">{totalItems}</span> registros</p>
 
             <div className="flex space-x-1">
               <button

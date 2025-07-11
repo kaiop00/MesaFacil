@@ -45,7 +45,7 @@ const UserListTable = ({
   const currentUsers = filteredUsers.slice(startIndex, endIndex);
 
   return (
-    <section className="mt-5 min-h-screen bg-white p-6">
+    <section className="mt-5 bg-white p-6">
       <div className="max-w-7xl mx-auto">
         <header className="mb-6">
           <form className="relative max-w-md">

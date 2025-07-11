@@ -27,10 +27,10 @@ const ItemFormModal = ({
         marca: item.marca || "",
         unidadeArmazenamento: item.unidadeArmazenamento || "Unidade",
         unidadeCompra: item.unidadeCompra || "Unidade",
-        estoqueAtual: item.estoqueAtual || "",
-        estoqueBaixo: item.estoqueBaixo || "",
-        estoqueMedio: item.estoqueMedio || "",
-        estoqueAlto: item.estoqueAlto || ""
+        estoqueAtual: item.estoque?.atual || "",
+        estoqueBaixo: item.estoque?.baixo || "",
+        estoqueMedio: item.estoque?.medio || "",
+        estoqueAlto: item.estoque?.alto || ""
       });
     } else {
       setFormData({
