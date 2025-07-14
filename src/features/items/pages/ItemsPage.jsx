@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { create, getAll, update, remove } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
 import { SearchMagnifyingGlass } from "react-coolicons";
 import ItemsTable from "@/features/items/components/ItemsTable";
 import ItemFormModal from "@/features/items/components/ItemFormModal";
 import ItemDetailsModal from "@/features/items/components/ItemDetailsModal";
+import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 const ItemsPage = () => {
+  const { idRestaurante } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -14,104 +18,50 @@ const ItemsPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const mockItems = [
-      {
-        id: 1,
-        nome: "Carne de Boi",
-        marca: "Friboi",
-        unidadeArmazenamento: "Grama",
-        unidadeCompra: "Unidade",
-        estoque: {
-          atual: 20,
-          baixo: 5,
-          medio: 10,
-          alto: 20,
-        },
-        categoria: "Carnes"
-      },
-      {
-        id: 2,
-        nome: "Arroz",
-        marca: "Tio João",
-        unidadeArmazenamento: "Grama",
-        unidadeCompra: "Pacote",
-        estoque: {
-          atual: 50,
-          baixo: 10,
-          medio: 30,
-          alto: 50,
-        },
-        categoria: "Grãos"
-      },
-      {
-        id: 3,
-        nome: "Feijão",
-        marca: "Camil",
-        unidadeArmazenamento: "Quilograma",
-        unidadeCompra: "Pacote",
-        estoque: {
-          atual: 25,
-          baixo: 5,
-          medio: 15,
-          alto: 25,
-        },
-        categoria: "Grãos"
-      },
-      {
-        id: 4,
-        nome: "Macarrão",
-        marca: "Tio João",
-        unidadeArmazenamento: "Quilograma",
-        unidadeCompra: "Pacote",
-        estoque: {
-          atual: 25,
-          baixo: 5,
-          medio: 15,
-          alto: 25,
-        },
-        categoria: "Grãos"
-      },
-      {
-        id: 5,
-        nome: "Macarrão",
-        marca: "Tio João",
-        unidadeArmazenamento: "Quilograma",
-        unidadeCompra: "Pacote",
-        estoque: {
-          atual: 25,
-          baixo: 5,
-          medio: 15,
-          alto: 25,
-        },
-        categoria: "Grãos"
-      },
-      {
-        id: 6,
-        nome: "Macarrão",
-        marca: "Tio João",
-        unidadeArmazenamento: "Quilograma",
-        unidadeCompra: "Pacote",
-        estoque: {
-          atual: 25,
-          baixo: 5,
-          medio: 15,
-          alto: 25,
-        },
-        categoria: "Grãos"
-      },
-    ];
+    const fetchItems = async () => {
+      if (!idRestaurante) return;
 
-    const filteredItems = mockItems.filter(item =>
-      item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.marca && item.marca.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+      try {
+        setIsLoading(true);
+        const itemsData = await getAll(idRestaurante, 'itens', {
+          orderByField: 'nome',
+          order: 'asc'
+        });
 
-    setItems(filteredItems);
-    setTotalItems(filteredItems.length);
+        setItems(itemsData);
+        setFilteredItems(itemsData);
+        setTotalItems(itemsData.length);
+      } catch (error) {
+        console.error("Error fetching items:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchItems();
+  }, [idRestaurante]);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredItems(items);
+    } else {
+      const filtered = items.filter(item =>
+        item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.marca && item.marca.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setFilteredItems(filtered);
+    }
     setCurrentPage(1);
-  }, [searchTerm]);
+    setTotalItems(filteredItems.length);
+  }, [searchTerm, items, filteredItems]);
+
+  useEffect(() => {
+    setTotalItems(filteredItems.length);
+  }, [filteredItems]);
 
   const handleNewItem = () => {
     setSelectedItem(null);
@@ -128,44 +78,90 @@ const ItemsPage = () => {
     setIsDetailsModalOpen(true);
   };
 
-  const handleDeleteItem = (item) => {
+  const handleDeleteItem = async (item) => {
     if (window.confirm(`Tem certeza que deseja excluir o item "${item.nome}"?`)) {
-      setItems(prevItems => prevItems.filter(i => i.id !== item.id));
-      setTotalItems(prev => prev - 1);
+      try {
+        // Delete from Firestore
+        await remove(idRestaurante, 'itens', item.id);
+        
+        // Update local state
+        setItems(prevItems => prevItems.filter(i => i.id !== item.id));
+        setTotalItems(prev => prev - 1);
+        
+        // Show success message or handle success
+        // You might want to add a toast notification here
+        
+      } catch (error) {
+        console.error("Error deleting item:", error);
+        // Handle error (e.g., show error message to user)
+      }
     }
   };
 
-  const handleSaveItem = (itemData) => {
-    if (selectedItem) {
-      setItems(prevItems =>
-        prevItems.map(item =>
-          item.id === selectedItem.id ? { ...item, ...itemData } : item
-        )
-      );
-    } else {
-      const newItem = {
-        ...itemData,
-        id: Date.now(),
-        categoria: itemData.categoria || "Outros"
-      };
-      setItems(prevItems => [newItem, ...prevItems]);
-      setTotalItems(prev => prev + 1);
+  const handleSaveItem = async (itemData) => {
+    try {
+      if (selectedItem) {
+        // Update existing item in Firestore
+        await update(idRestaurante, 'itens', selectedItem.id, itemData);
+        
+        // Update local state
+        setItems(prevItems =>
+          prevItems.map(item =>
+            item.id === selectedItem.id ? { ...item, ...itemData } : item
+          )
+        );
+      } else {
+        // Create new item in Firestore
+        const newItem = {
+          ...itemData,
+          createdAt: new Date().toISOString()
+        };
+        const docRef = await create(idRestaurante, 'itens', newItem);
+
+        // Update local state with the new item (including the Firestore ID)
+        setItems(prevItems => [
+          { ...newItem, id: docRef.id },
+          ...prevItems
+        ]);
+      }
+      
+      // Show success message or handle success
+      // You might want to add a toast notification here
+      
+    } catch (error) {
+      console.error("Error saving item:", error);
+      // Handle error (e.g., show error message to user)
+    } finally {
+      setIsFormModalOpen(false);
+      setSelectedItem(null);
     }
-    setIsFormModalOpen(false);
   };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
-  const paginatedItems = items.slice(
+  const paginatedItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinnerDynamic size={5} />
+      </div>
+    );
+  }
+
   return (
     <div className="mt-10 space-y-6">
-      <CardHeader title="Itens" subtitle="Gerencie os itens do seu restaurante" onNewClick={handleNewItem} buttonTitle="Novo Item" />
+      <CardHeader
+        title="Itens"
+        subtitle="Gerencie os itens do seu restaurante"
+        onNewClick={handleNewItem}
+        buttonTitle="Novo Item"
+      />
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="p-4 border-b border-gray-200">

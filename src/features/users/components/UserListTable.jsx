@@ -46,7 +46,7 @@ const UserListTable = ({
 
   return (
     <section className="mt-5 bg-white p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto">
         <header className="mb-6">
           <form className="relative max-w-md">
             <label htmlFor="search" className="sr-only">

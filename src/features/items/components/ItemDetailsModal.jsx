@@ -55,20 +55,20 @@ const ItemDetailsModal = ({
           <div className="grid grid-cols-1 gap-4">
             <div>
               <p className="text-sm font-medium text-gray-500">Estoque Atual</p>
-              <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoque?.atual)}</p>
+              <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoqueAtual)}</p>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-sm font-medium text-gray-500">Estoque Baixo</p>
-                <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoque?.baixo)}</p>
+                <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoqueBaixo)}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Estoque Médio</p>
-                <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoque?.medio)}</p>
+                <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoqueMedio)}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Estoque Alto</p>
-                <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoque?.alto)}</p>
+                <p className="mt-1 text-sm text-gray-900">{formatValue(item.estoqueAlto)}</p>
               </div>
             </div>
           </div>

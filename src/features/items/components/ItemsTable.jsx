@@ -81,9 +81,9 @@ const ItemsTable = ({
             {items.length > 0 ? (
               items.map((item) => {
                 const status = getStockStatus(
-                  item.estoque?.atual || 0,
-                  item.estoque?.baixo,
-                  item.estoque?.medio
+                  item.estoqueAtual || 0,
+                  item.estoqueBaixo,
+                  item.estoqueMedio
                 );
                 console.log(status);
 
@@ -99,7 +99,7 @@ const ItemsTable = ({
                       <div className="flex items-center">
                         <div className={`rounded-full py-2 px-4 ${status.bgColor} ${status.borderColor}`}>
                           <span className={`text-sm font-medium ${status.color}`}>
-                            {item.estoque?.atual || 0} {item.unidadeArmazenamento || 'un'}
+                            {item.estoqueAtual || 0} {item.unidadeArmazenamento || 'un'}
                           </span>
                         </div>
                       </div>
@@ -195,9 +195,10 @@ const ItemsTable = ({
           <div className="flex items-center space-x-2">
             <p className="text-sm text-gray-700">Mostrar</p>
             <select
+              name="chooseItemsPerPage"
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              className="block w-20 rounded-md border-gray-300 py-1 pl-3 pr-8 text-sm focus:border-yellow-500 focus:outline-none focus:ring-yellow-500"
+              className="block w-20 rounded-md py-1 text-sm border-yellow-500 focus:outline-none focus:ring-yellow-500"
             >
               {ITEMS_PER_PAGE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
