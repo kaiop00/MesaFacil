@@ -12,6 +12,7 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic"; // ✅ s
 const OrderPage = () => {
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
   const [isAddItemsModalOpen, setIsAddItemsModalOpen] = useState(false);
+  const [selectedTable, setSelectedtable] = useState(null);
   const { idRestaurante } = useAuth();
   const { mesasLivres, mesasAndamento, mesasEntregues, tables } = useTables(idRestaurante);
 
@@ -43,7 +44,10 @@ const OrderPage = () => {
   const handleNew = () => setIsNewOrderModalOpen(true);
   const handleCloseNewOrder = () => setIsNewOrderModalOpen(false);
   const handleCloseAddItems = () => setIsAddItemsModalOpen(false);
-  const openAddItemsModal = () => setIsAddItemsModalOpen(true);
+  const openAddItemsModal = (mesa) => {
+    setSelectedtable(mesa);
+    setIsAddItemsModalOpen(true);
+  }
 
   return (
     <CardapioProvider>
@@ -94,6 +98,7 @@ const OrderPage = () => {
           <AddItemsModal
             isOpen={isAddItemsModalOpen}
             onClose={handleCloseAddItems}
+            selectedTable={selectedTable}
           />
         </div>
       </OrderProvider>

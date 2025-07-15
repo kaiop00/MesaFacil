@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
 import { useOrderContext } from "@/features/order/context/OrderContext";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
@@ -9,9 +9,9 @@ import OrderItemsList from "@/features/order/components/OrderItemsList";
 import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-const AddItemsModal = ({ isOpen, onClose }) => {
+const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
     const { items: cardapioItems } = useCardapioContext();
-    const { selectedTable, items, addItem, updateItemQuantity, removeItem, clearOrder } = useOrderContext();
+    const { items, addItem, updateItemQuantity, removeItem, clearOrder } = useOrderContext();
     const [selectedItemId, setSelectedItemId] = useState("");
     const { idRestaurante } = useAuth();
     const { notify } = useToast();
@@ -25,18 +25,29 @@ const AddItemsModal = ({ isOpen, onClose }) => {
         }
     };
 
+    useEffect(() => {
+        if (!isOpen) {
+            setSelectedItemId("");
+            clearOrder();
+        }
+    }, [isOpen])
+
+
+    const total = useMemo(() => {
+        return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    }, [items]);
+
     const handleSubmit = async () => {
         if (!selectedTable) {
             notify("Selecione uma mesa primeiro", "error");
             return;
         }
         setLoading(true);
-        const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
         try {
             await createPedido(idRestaurante, selectedTable.id, items, total);
             clearOrder();
             onClose();
-            notify("Pedido adicionado com sucesso" , "success");
+            notify("Pedido adicionado com sucesso", "success");
         } catch (error) {
             notify(`${error} , error`);
         } finally {
@@ -44,8 +55,6 @@ const AddItemsModal = ({ isOpen, onClose }) => {
         }
 
     }
-
-    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     return (
         <BaseModalWithHeader

@@ -1,8 +1,7 @@
 // src/features/order/components/modals/NewOrderModal.jsx
 
-import { useEffect, useState } from "react";
-import { SearchMagnifyingGlass } from "react-coolicons";
-import logo from "@/assets/images/order/TableYellow.png";
+import { useState, useEffect } from "react";
+import { SearchMagnifyingGlass, House02 } from "react-coolicons";
 import { useTables } from "@/features/config/hooks/useTables";
 import { useOrderContext } from "@/features/order/context/OrderContext";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
@@ -15,10 +14,29 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
     const handleContinue = () => {
         if (selectedTableLocal) {
             setSelectedTable(selectedTableLocal);
+            openAddItemsModal(selectedTableLocal);
             onClose();
-            openAddItemsModal();
         }
     };
+
+    useEffect(() => {
+        if(!isOpen){
+            setSelectedTableLocal(null);
+        }
+    }, [isOpen]);
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case "livre":
+                return "text-green-500 bg-green-50";
+            case "andamento":
+                return "text-yellow-500 bg-yellow-50";
+            case "entregue":
+                return "text-red-500 bg-red-50";
+            default:
+                return "color-#D9A23B";
+        }
+    }
 
     return (
         <BaseModalWithHeader
@@ -48,12 +66,13 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
                         <button
                             key={mesa.id}
                             onClick={() => setSelectedTableLocal(mesa)}
-                            className={`cursor-pointer border rounded p-4 flex flex-col items-center space-y-2 transition-all ${selectedTableLocal?.id === mesa.id
+                            className={`cursor-pointer border rounded p-4 flex flex-col items-center space-y-2 transition-all
+                                 ${selectedTableLocal?.id === mesa.id
                                     ? "border-primary-dynamic bg-primary-dynamic text-white"
                                     : "hover:border-primary-dynamic"
                                 }`}
                         >
-                            <img src={logo} className="h-6 sm:h-10" alt="Mesa" />
+                            <House02 className={`h-10 w-10 p-2 rounded ${getStatusColor(mesa.status)}`}/>
                             <span>Mesa {mesa.numero}</span>
                         </button>
                     ))}
