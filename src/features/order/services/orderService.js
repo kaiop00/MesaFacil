@@ -8,6 +8,7 @@ import {
     arrayUnion,
 } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
+import { runTransaction } from "firebase/firestore";
 
 /**
  * Lista mesas separadas por status
@@ -47,13 +48,6 @@ export const createPedido = async (idRestaurante, mesaId, items, total) => {
         imagemUrl: item.imagemUrl || "",
     }));
 
-    console.log("📌 [createPedido] Verificando pedidos existentes:", {
-        idRestaurante,
-        mesaId,
-        pedidoItems,
-        total,
-    });
-
     const pedidosRef = collection(
         db,
         "restaurantes",
@@ -72,8 +66,6 @@ export const createPedido = async (idRestaurante, mesaId, items, total) => {
 
     if (pedidoExistente) {
         // Atualiza pedido existente
-        console.log("✅ [createPedido] Pedido em andamento encontrado:", pedidoExistente.id);
-
         const pedidoRef = doc(pedidosRef, pedidoExistente.id);
 
         // Garante soma do total com valor atual
@@ -87,9 +79,6 @@ export const createPedido = async (idRestaurante, mesaId, items, total) => {
         });
 
     } else {
-        // Cria novo pedido se não existir
-        console.log("✅ [createPedido] Nenhum pedido em andamento. Criando novo.");
-
         await addDoc(pedidosRef, {
             items: pedidoItems,
             total,
@@ -109,11 +98,6 @@ export const createPedido = async (idRestaurante, mesaId, items, total) => {
  * Lista pedidos de uma mesa
  */
 export const getPedidosDaMesa = async (idRestaurante, mesaId) => {
-    console.log("📌 [getPedidosDaMesa] Buscando pedidos para:", {
-        idRestaurante,
-        mesaId,
-    });
-
     const pedidosRef = collection(
         db,
         "restaurantes",
@@ -123,11 +107,41 @@ export const getPedidosDaMesa = async (idRestaurante, mesaId) => {
         "pedidos"
     );
     const snapshot = await getDocs(pedidosRef);
-
     const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-    console.log("✅ [getPedidosDaMesa] Quantidade:", snapshot.size);
-    console.log("✅ [getPedidosDaMesa] Pedidos:", pedidos);
-
     return pedidos;
+};
+
+
+/**
+ * finalize o pedido e atualiza o stauts da mesa para 'entregue'
+ */
+export const finalizarPedido = async (idRestaurante, mesaId) => {
+    const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
+    const snapshot = await getDocs(pedidosRef);
+
+    const pedidosAndamento = snapshot.docs.filter(
+        (doc) => doc.data().status === "andamento"
+    );
+
+    const total = pedidosAndamento.reduce(
+        (acc, doc) => acc + (doc.data().total || 0),
+        0
+    );
+
+    await Promise.all(
+        pedidosAndamento.map((docSnap) => {
+            const pedidoDocRef = doc(pedidosRef, docSnap.id);
+            return updateDoc(pedidoDocRef, {
+                status: "entregue",
+                finalizadoEm: serverTimestamp(),
+            });
+        })
+    );
+
+    const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
+    await updateDoc(mesaDocRef, {
+        status: "entregue",
+        entregueEm: serverTimestamp(),
+        total,
+    });
 };
