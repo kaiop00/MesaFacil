@@ -20,6 +20,7 @@ const ItemsPage = () => {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -36,7 +37,7 @@ const ItemsPage = () => {
         setFilteredItems(itemsData);
         setTotalItems(itemsData.length);
       } catch (error) {
-        console.error("Error fetching items:", error);
+        setError(error);
       } finally {
         setIsLoading(false);
       }
@@ -83,14 +84,14 @@ const ItemsPage = () => {
       try {
         // Delete from Firestore
         await remove(idRestaurante, 'itens', item.id);
-        
+
         // Update local state
         setItems(prevItems => prevItems.filter(i => i.id !== item.id));
         setTotalItems(prev => prev - 1);
-        
+
         // Show success message or handle success
         // You might want to add a toast notification here
-        
+
       } catch (error) {
         console.error("Error deleting item:", error);
         // Handle error (e.g., show error message to user)
@@ -103,7 +104,7 @@ const ItemsPage = () => {
       if (selectedItem) {
         // Update existing item in Firestore
         await update(idRestaurante, 'itens', selectedItem.id, itemData);
-        
+
         // Update local state
         setItems(prevItems =>
           prevItems.map(item =>
@@ -124,10 +125,10 @@ const ItemsPage = () => {
           ...prevItems
         ]);
       }
-      
+
       // Show success message or handle success
       // You might want to add a toast notification here
-      
+
     } catch (error) {
       console.error("Error saving item:", error);
       // Handle error (e.g., show error message to user)
@@ -146,14 +147,6 @@ const ItemsPage = () => {
     currentPage * itemsPerPage
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingSpinnerDynamic size={5} />
-      </div>
-    );
-  }
-
   return (
     <div className="mt-10 space-y-6">
       <CardHeader
@@ -163,45 +156,66 @@ const ItemsPage = () => {
         buttonTitle="Novo Item"
       />
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-4 border-b border-gray-200">
-          <div className="relative max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchMagnifyingGlass className="h-5 w-5 text-gray-400" />
+      <div className="mt-5 bg-white p-6">
+        <div className="mx-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[400px]">
+              Carregando...
             </div>
-            <input
-              type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm"
-              placeholder="Pesquisar itens..."
-              value={searchTerm}
-              onChange={handleSearch}
-            />
-          </div>
-        </div>
+          ) : error ? (
+            <div className="p-6 text-center text-red-500">
+              <p>Erro ao carregar itens. Tente novamente.</p>
+            </div>
+          ) : (
+            <>
+              <header className="mb-6">
+                <div className="relative max-w-md">
+                  <label htmlFor="search" className="sr-only">
+                    Procure o item que deseja encontrar
+                  </label>
+                  <input
+                    type="search"
+                    id="search"
+                    placeholder="Procure por nome ou marca"
+                    value={searchTerm}
+                    onChange={handleSearch}
+                    className="w-full pl-4 pr-12 py-3
+                    border border-gray-300 rounded-lg
+                    bg-white text-gray-900 placeholder-gray-500
+                    focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                  <SearchMagnifyingGlass className="absolute right-4 top-1/2
+                  transform -translate-y-1/2 
+                  text-orange-500 w-5 h-5" />
+                </div>
+              </header>
 
-        <div className="overflow-x-auto">
-          <ItemsTable
-            items={paginatedItems}
-            currentPage={currentPage}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(newItemsPerPage) => {
-              setItemsPerPage(newItemsPerPage);
-              setCurrentPage(1);
-            }}
-            onEdit={handleEditItem}
-            onView={handleViewItem}
-            onDelete={handleDeleteItem}
-          />
+              <ItemsTable
+                items={paginatedItems}
+                totalItems={totalItems}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+                searchTerm={searchTerm}
+                onSearchChange={(e) => setSearchTerm(e.target.value)}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={(value) => {
+                  setItemsPerPage(value);
+                  setCurrentPage(1);
+                }}
+                onView={handleViewItem}
+                onEdit={handleEditItem}
+                onDelete={handleDeleteItem}
+              />
+            </>
+          )}
         </div>
       </div>
 
       <ItemFormModal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
-        item={selectedItem}
         onSave={handleSaveItem}
+        item={selectedItem}
       />
 
       <ItemDetailsModal
