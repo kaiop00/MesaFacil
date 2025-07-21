@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   House03,
   ListUnordered,
@@ -67,7 +67,9 @@ const Sidebar = () => {
           }`}
       >
         {/* Logo */}
-        <img src="/src/assets/mesafacil.png" alt="Logo" className="w-40 py-4 px-4 ml-4" />
+        <Link href="/home">
+          <img src="/src/assets/mesafacil.png" alt="Logo" className="w-40 py-4 px-4 ml-4" />
+        </Link>
 
         {/* Navigation links */}
         <nav className="mt-6">
