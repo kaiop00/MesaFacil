@@ -75,11 +75,13 @@ export const useCrudTables = ({ isOpen, onClose }) => {
 
         try {
             for (const mesa of novas) {
+                const qrCodeUrl = `${window.location.origin}/mesa/${mesa.numero}`;
                 await create(idRestaurante, "mesas", {
                     numero: mesa.numero,
                     tipo: mesa.tipo,
                     status: mesa.status,
                     criadoEm: serverTimestamp(),
+                    qrCodeUrl,
                 });
             }
             notify("Mesas salvas com sucesso!", "success");
