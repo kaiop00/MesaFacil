@@ -3,12 +3,11 @@ import logo from '@/assets/logo-white.png';
 import mesafacil from '@/assets/mesafacil.png';
 import mesafacil_white from '@/assets/mesafacil_white.png'
 import { LogOut, CircleCheck } from "react-coolicons"
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, Link } from "react-router-dom";
 import Instagram from '../components/Instagram';
 import Facebook from '../components/Facebook';
 
 export default function MainPage() {
-
     const navigate = useNavigate();
 
     return (
@@ -256,14 +255,14 @@ export default function MainPage() {
                         <div className="lg:ml-auto">
                             <ul className="space-y-4">
                                 <li>
-                                    <a href="#" className="text-gray-400 font-bold hover:text-white text-sm transition-colors">
+                                    <Link to="/politica-privacidade" className="text-gray-400 font-bold hover:text-white text-sm transition-colors">
                                         Política de Privacidade
-                                    </a>
+                                    </Link>
                                 </li>
                                 <li>
-                                    <a href="#" className="text-gray-400 font-bold hover:text-white text-sm transition-colors">
+                                    <Link to="/termos" className="text-gray-400 font-bold hover:text-white text-sm transition-colors">
                                         Termos de Uso
-                                    </a>
+                                    </Link>
                                 </li>
                             </ul>
                         </div>

@@ -5,12 +5,16 @@ import PrivateRoute from "@/components/PrivateRoute";
 import RedirectHandler from "@/components/RedirectHandler";
 import { Navigate } from "react-router-dom";
 
+//Importação das páginas estáticas
+import PrivacyPage from "@/static/privacy/PrivacyPage";
+import TermsPage from "@/static/terms/TermsPage.jsx";
 
 //Importação das páginas publicas
 import LoginPage from "@/features/auth/pages/login/LoginPage";
 import RegisterPage from "@/features/auth/pages/register/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
 import MainPage from "@/features/auth/pages/MainPage";
+
 
 // Importação das páginas privadas
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
@@ -48,6 +52,14 @@ const router = createBrowserRouter([
   {
     path: "/recuperar-senha",
     element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/politica-privacidade",
+    element: <PrivacyPage />
+  },
+  {
+    path: "/termos",
+    element: <TermsPage />
   },
 
   //rotas privadas
