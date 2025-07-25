@@ -142,7 +142,7 @@ export default function MainPage() {
                         ].map((testimonial, index) => (
                             <div key={index} className="flex flex-col justify-between bg-gray-100 border-gray-300 rounded-xl p-10 gap-4 h-72 border hover:shadow-lg transition-shadow">
                                 <p className="text-gray-700 font-bold mt-0  ">{testimonial.text}</p>
-                                <div className="flex items-center mt-4">
+                                <div className="flex items-center">
                                     <img
                                         src={testimonial.avatar}
                                         alt={testimonial.name}
