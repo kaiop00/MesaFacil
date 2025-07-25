@@ -6,6 +6,7 @@ import MesaActions from "@/features/config/components/mesasConfig/MesaActions";
 import { useCrudTables } from "@/features/config/hooks/useCrudTables";
 import { useState } from "react";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { QrCodeModal } from "./QrCodeModal";
 
 const ConfigModal = ({ isOpen, onClose }) => {
     const {
@@ -21,6 +22,8 @@ const ConfigModal = ({ isOpen, onClose }) => {
     } = useCrudTables({ isOpen, onClose });
 
 
+    const [mesaSelecionada, setMesaSelecionada] = useState(null);
+    const [modalAberto, setModalAberto] = useState(false);
     const [saving, setSaving] = useState(false);
 
     const handleSubmit = async () => {
@@ -28,6 +31,16 @@ const ConfigModal = ({ isOpen, onClose }) => {
         await handleSubmitAsync();
         setSaving(false);
     };
+
+    const handleAbrirQRcode = (mesa) => {
+        setMesaSelecionada(mesa);
+        setModalAberto(true);
+    }
+
+    const handleFecharModal = () => {
+        setModalAberto(false);
+        setMesaSelecionada(null);
+    }
 
     return (
         <BaseModalWithHeader
@@ -40,7 +53,7 @@ const ConfigModal = ({ isOpen, onClose }) => {
             <div className="p-6 space-y-4 min-h-[200px] flex flex-col justify-center">
                 {loading || saving ? (
                     <div className="flex justify-center items-center h-full py-12">
-                        <LoadingSpinnerDynamic/>
+                        <LoadingSpinnerDynamic />
                     </div>
                 ) : (
                     <>
@@ -52,7 +65,17 @@ const ConfigModal = ({ isOpen, onClose }) => {
                             onAdd={handleAdd}
                         />
                         <MesaActions />
-                        <MesaTable mesas={mesas} loading={false} onDelete={handleDeleteMesa} />
+                        <MesaTable
+                            mesas={mesas}
+                            loading={false}
+                            onDelete={handleDeleteMesa}
+                            onQrCodeClick={handleAbrirQRcode}
+                        />
+                        <QrCodeModal
+                            isOpen={modalAberto}
+                            onClose={handleFecharModal}
+                            mesa={mesaSelecionada}
+                        />
                     </>
                 )}
             </div>
