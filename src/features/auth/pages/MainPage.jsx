@@ -99,45 +99,45 @@ export default function MainPage() {
                         {[
                             {
                                 name: 'Carlos Silva',
-                                role: 'Dono do Restaurante Sabor da Terra',
+                                role: 'Cliente Frequente',
                                 avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
                                 rating: 5,
-                                text: 'O sistema agiliza o acesso a informações, aumentando a produtividade e o engajamento dos colaboradores.'
+                                text: '"Agora não preciso mais ficar esperando o garçom pra pedir uma cerveja. Escaneio o QR Code e pronto, chega rapidinho!"'
                             },
                             {
                                 name: 'Ana Beatriz',
-                                role: 'Gerente do La Bella Pizza',
+                                role: 'Mãe e Cliente',
                                 avatar: 'https://randomuser.me/api/portraits/women/14.jpg',
                                 rating: 5,
-                                text: 'O sistema agiliza o acesso a informações, aumentando a produtividade e o engajamento dos colaboradores.'
+                                text: '"Com criança na mesa, tudo precisa ser rápido. Esse sistema MesaFácil facilita muito! Peço, acompanho e já pago em alguns cliques, sem muito esforço."'
                             },
                             {
                                 name: 'Roberto Almeida',
-                                role: 'Sócio do Churrascão Gaúcho',
+                                role: 'Amigo do Grupo',
                                 avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
                                 rating: 5,
-                                text: 'O sistema agiliza o acesso a informações, aumentando a produtividade e o engajamento dos colaboradores.'
+                                text: '"Dividir a conta nunca foi tão fácil. Cada um paga direto pelo app, sem confusão!"'
                             },
                             {
-                                name: 'Ana Beatriz',
-                                role: 'Gerente do La Bella Pizza',
+                                name: 'Mariana Costa',
+                                role: 'Turista Estrangeira',
                                 avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
                                 rating: 5,
-                                text: 'O sistema agiliza o acesso a informações, aumentando a produtividade e o engajamento dos colaboradores.'
+                                text: '"O cardápio traduzido no app salvou minha viagem. Pedi sem medo e ainda acompanhei tudo pelo celular."'
                             },
                             {
-                                name: 'Ana Beatriz',
-                                role: 'Gerente do La Bella Pizza',
-                                avatar: 'https://randomuser.me/api/portraits/women/41.jpg',
+                                name: 'Rafael Mendes',
+                                role: 'Dono de Restaurante',
+                                avatar: 'https://randomuser.me/api/portraits/men/41.jpg',
                                 rating: 5,
-                                text: 'O sistema agiliza o acesso a informações, aumentando a produtividade e o engajamento dos colaboradores.'
+                                text: '"Com o dashboard do MesaFácil eu tenho controle total do que está saindo — consigo ver os pedidos em tempo real, o tempo de preparo, e até identificar gargalos no atendimento. É gestão na palma da mão."'
                             },
                             {
-                                name: 'Ana Beatriz',
-                                role: 'Gerente do La Bella Pizza',
+                                name: 'Juliana Santos',
+                                role: 'Influenciadora Digital',
                                 avatar: 'https://randomuser.me/api/portraits/women/43.jpg',
                                 rating: 5,
-                                text: 'O sistema agiliza o acesso a informações, aumentando a produtividade e o engajamento dos colaboradores.'
+                                text: '"A experiência fica muito mais fluida e tecnológica. Mostrei no meu stories e muita gente ficou curiosa!"'
                             },
                         ].map((testimonial, index) => (
                             <div key={index} className="flex flex-col justify-between bg-gray-100 border-gray-300 rounded-xl p-10 gap-4 h-72 border hover:shadow-lg transition-shadow">
@@ -174,28 +174,28 @@ export default function MainPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
                         {[
                             {
-                                question: 'Exemplo de Pergunta',
-                                answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec quis vestibulum neque, at condimentum diam. In a pulvinar velit. Cras rutrum, lorem convallis volutpat congue, tortor nisl fermentum magna, nec dictum erat urna in ligula. Cras maximus sem feugiat mauris lacinia, vel fringilla sapien egestas. Donec eu maximus sapien, ut dignissim sapien. Praesent gravida nulla vel lobortis volutpat. Fusce eu magna at metus sollicitudin pharetra vitae eu metus. Sed sodales varius congue. Sed luctus, velit in congue ultricies, felis lacus sodales mauris, sit amet accumsan sapien lectus ut augue. Maecenas ac vestibulum magna. Ut tincidunt arcu erat.'
+                                question: 'Como faço um pedido usando o MesaFácil?',
+                                answer: 'Basta escanear o QR Code disponível na sua mesa com a câmera do celular. O cardápio digital vai abrir automaticamente, e você pode escolher seus itens, confirmar o pedido e acompanhar o status em tempo real.'
                             },
                             {
-                                question: 'Exemplo de Pergunta',
-                                answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec quis vestibulum neque, at condimentum diam. In a pulvinar velit. Cras rutrum, lorem convallis volutpat congue, tortor nisl fermentum magna, nec dictum erat urna in ligula. Cras maximus sem feugiat mauris lacinia, vel fringilla sapien egestas. Donec eu maximus sapien, ut dignissim sapien. Praesent gravida nulla vel lobortis volutpat. Fusce eu magna at metus sollicitudin pharetra vitae eu metus. Sed sodales varius congue. Sed luctus, velit in congue ultricies, felis lacus sodales mauris, sit amet accumsan sapien lectus ut augue. Maecenas ac vestibulum magna. Ut tincidunt arcu erat.'
+                                question: 'Preciso baixar algum aplicativo para usar o MesaFácil?',
+                                answer: 'Não! O MesaFácil funciona direto no navegador do seu celular. É só escanear o QR Code da mesa e começar a usar.'
                             },
                             {
-                                question: 'Exemplo de Pergunta',
-                                answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec quis vestibulum neque, at condimentum diam. In a pulvinar velit. Cras rutrum, lorem convallis volutpat congue, tortor nisl fermentum magna, nec dictum erat urna in ligula. Cras maximus sem feugiat mauris lacinia, vel fringilla sapien egestas. Donec eu maximus sapien, ut dignissim sapien. Praesent gravida nulla vel lobortis volutpat. Fusce eu magna at metus sollicitudin pharetra vitae eu metus. Sed sodales varius congue. Sed luctus, velit in congue ultricies, felis lacus sodales mauris, sit amet accumsan sapien lectus ut augue. Maecenas ac vestibulum magna. Ut tincidunt arcu erat.'
+                                question: 'Consigo pagar direto pelo sistema?',
+                                answer: 'Sim! Você pode pagar pelo próprio MesaFácil usando PIX, para cartão o garçom vai de imediato até sua mesa. Também é possível dividir a conta com os amigos, cada um pagando sua parte individualmente.'
                             },
                             {
-                                question: 'Exemplo de Pergunta',
-                                answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec quis vestibulum neque, at condimentum diam. In a pulvinar velit. Cras rutrum, lorem convallis volutpat congue, tortor nisl fermentum magna, nec dictum erat urna in ligula. Cras maximus sem feugiat mauris lacinia, vel fringilla sapien egestas. Donec eu maximus sapien, ut dignissim sapien. Praesent gravida nulla vel lobortis volutpat. Fusce eu magna at metus sollicitudin pharetra vitae eu metus. Sed sodales varius congue. Sed luctus, velit in congue ultricies, felis lacus sodales mauris, sit amet accumsan sapien lectus ut augue. Maecenas ac vestibulum magna. Ut tincidunt arcu erat.'
+                                question: 'E se eu ver algum problema com meu pedido?',
+                                answer: 'O sistema permite que você chame o garçom pelo próprio aplicativo. Além disso, o restaurante recebe notificações em tempo real e pode resolver rapidamente qualquer situação.'
                             },
                             {
-                                question: 'Exemplo de Pergunta',
-                                answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec quis vestibulum neque, at condimentum diam. In a pulvinar velit. Cras rutrum, lorem convallis volutpat congue, tortor nisl fermentum magna, nec dictum erat urna in ligula. Cras maximus sem feugiat mauris lacinia, vel fringilla sapien egestas. Donec eu maximus sapien, ut dignissim sapien. Praesent gravida nulla vel lobortis volutpat. Fusce eu magna at metus sollicitudin pharetra vitae eu metus. Sed sodales varius congue. Sed luctus, velit in congue ultricies, felis lacus sodales mauris, sit amet accumsan sapien lectus ut augue. Maecenas ac vestibulum magna. Ut tincidunt arcu erat.'
+                                question: 'O sistema é seguro para fazer pagamentos?',
+                                answer: 'Sim. O MesaFácil utiliza protocolos de segurança modernos e parceiros de pagamento confiáveis para garantir total proteção dos seus dados.'
                             },
                             {
-                                question: 'Exemplo de Pergunta',
-                                answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec quis vestibulum neque, at condimentum diam. In a pulvinar velit. Cras rutrum, lorem convallis volutpat congue, tortor nisl fermentum magna, nec dictum erat urna in ligula. Cras maximus sem feugiat mauris lacinia, vel fringilla sapien egestas. Donec eu maximus sapien, ut dignissim sapien. Praesent gravida nulla vel lobortis volutpat. Fusce eu magna at metus sollicitudin pharetra vitae eu metus. Sed sodales varius congue. Sed luctus, velit in congue ultricies, felis lacus sodales mauris, sit amet accumsan sapien lectus ut augue. Maecenas ac vestibulum magna. Ut tincidunt arcu erat.'
+                                question: 'Sou dono de restaurante. Posso acompanhar os pedidos em tempo real?',
+                                answer: 'Sim! A plataforma conta com um dashboard completo onde você acompanha todos os pedidos em andamento, tempo de preparo, formas de pagamento, e ainda tem acesso a relatórios de vendas e desempenho da equipe.'
                             }
                         ].map((faq, index) => (
                             <div key={index} className="bg-white h-fit rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
