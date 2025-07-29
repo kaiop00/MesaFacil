@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { getAll, create } from "@/services/firebase/firestoreService";
 import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/contexts/AuthContext";
-import { serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { remove } from "@/services/firebase/firestoreService";
 
 
@@ -75,14 +75,15 @@ export const useCrudTables = ({ isOpen, onClose }) => {
 
         try {
             for (const mesa of novas) {
-                const qrCodeUrl = `${window.location.origin}/mesa/${mesa.numero}-${mesa.id}`;
-                await create(idRestaurante, "mesas", {
+                const docRef = await create(idRestaurante, "mesas", {
                     numero: mesa.numero,
                     tipo: mesa.tipo,
                     status: mesa.status,
                     criadoEm: serverTimestamp(),
-                    qrCodeUrl,
                 });
+
+                const qrCodeUrl = `${window.location.origin}/mesa/${mesa.numero}-${docRef.id}?restaurante=${idRestaurante}`;
+                await updateDoc(docRef, { qrCodeUrl });
             }
             notify("Mesas salvas com sucesso!", "success");
             onClose();

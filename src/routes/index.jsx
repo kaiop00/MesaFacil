@@ -28,6 +28,7 @@ import ItemsPage from "@/features/items/pages/ItemsPage";
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
 import { TablesProvider } from "@/features/config/context/TablesContext";
+import MesaPage from "@/features/cliente/pages/MesaPage";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -60,6 +61,12 @@ const router = createBrowserRouter([
   {
     path: "/termos",
     element: <TermsPage />
+  },
+  {
+    path: "mesa/:slug",
+    element: (
+      <MesaPage />
+    )
   },
 
   //rotas privadas
