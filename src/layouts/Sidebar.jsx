@@ -34,6 +34,7 @@ const Sidebar = () => {
     },
     { name: "Promoções", icon: <ArrowDownUp size={20} />, path: "/home/promocoes" },
     { name: "Itens", icon: <Notebook size={20} />, path: "/home/itens" },
+    { name: "Entradas e Saídas", icon: <ArrowDownUp size={20} />, path: "/home/movimentacao" },
     { name: "Usuários", icon: <Users size={20} />, path: "/home/usuarios" },
   ];
 

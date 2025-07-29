@@ -24,6 +24,7 @@ import ReportPage from "@/features/reports/pages/ReportPage";
 import PromotionPage from "@/features/promotions/pages/PromotionPage";
 import UsersPage from "@/features/users/pages/UsersPage";
 import ItemsPage from "@/features/items/pages/ItemsPage";
+import MovementsPage from "@/features/movements/pages/MovementsPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -78,6 +79,7 @@ const router = createBrowserRouter([
           { path: "promocoes", element: <PromotionPage /> },
           { path: "usuarios", element: <UsersPage /> },
           { path: "itens", element: <ItemsPage /> },
+          { path: "movimentacao", element: <MovementsPage /> },
         ],
       }
     ]
