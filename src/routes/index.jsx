@@ -29,6 +29,7 @@ import ItemsPage from "@/features/items/pages/ItemsPage";
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
 import { TablesProvider } from "@/features/config/context/TablesContext";
 import MesaPage from "@/features/cliente/pages/MesaPage";
+import ClienteLayout from "@/features/cliente/layout/ClienteLayout";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -65,7 +66,9 @@ const router = createBrowserRouter([
   {
     path: "mesa/:slug",
     element: (
-      <MesaPage />
+      <ClienteLayout>
+        <MesaPage />
+      </ClienteLayout>
     )
   },
 
