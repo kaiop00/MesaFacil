@@ -33,7 +33,7 @@ const MovementDetailsModal = ({
             Nome
           </label>
           <div className="text-gray-900 font-medium">
-            {movement.nome || "N/A"}
+            {movement.itemNome || "N/A"}
           </div>
         </div>
 
@@ -85,6 +85,16 @@ const MovementDetailsModal = ({
               {movement.quantidade || movement.qtd || "10"}
             </div>
           </div>
+          {movement.unidadeArmazenamento !== movement.unidadeCompra && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fator de Transformação
+              </label>
+              <div className="text-gray-900">
+                {movement.fatorTransformacao || '1.00'}
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Saldo

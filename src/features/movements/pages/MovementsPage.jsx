@@ -1,91 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAll, create, update, remove } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
 import MovementsTable from "../components/MovementsTable";
 import MovementsFormModal from "../components/MovementsFormModal";
 import MovementDetailsModal from "../components/MovementDetailsModal";
-
-// Mock data for development
-const mockMovements = [
-  {
-    id: 1,
-    nome: "Carne de Boi",
-    tipo: "Entrada",
-    quantidade: 10,
-    saldo: 30,
-    itemId: 1,
-    unidadeArmazenamento: "Pacote",
-    unidadeCompra: "Unidade",
-    marca: "Friboi",
-    tipoMovimentacao: "entrada",
-    qtdAtual: 20,
-    qtd: 10,
-    novoSaldo: 30,
-  },
-  {
-    id: 2,
-    nome: "Frango",
-    tipo: "Saída",
-    quantidade: 5,
-    saldo: 15,
-    itemId: 2,
-    unidadeArmazenamento: "Kg",
-    unidadeCompra: "Kg",
-    marca: "Sadia",
-    tipoMovimentacao: "saida",
-    qtdAtual: 20,
-    qtd: 5,
-    novoSaldo: 15,
-  },
-  {
-    id: 3,
-    nome: "Arroz",
-    tipo: "Entrada",
-    quantidade: 20,
-    saldo: 8,
-    itemId: 3,
-    unidadeArmazenamento: "Kg",
-    unidadeCompra: "Saco",
-    marca: "Tio João",
-    tipoMovimentacao: "entrada",
-    qtdAtual: 0,
-    qtd: 20,
-    novoSaldo: 8,
-    fatorTransformacao: 3,
-  },
-];
-
-const mockItems = [
-  {
-    id: 1,
-    nome: "Carne de Boi",
-    unidadeArmazenamento: "Pacote",
-    unidadeCompra: "Unidade",
-    saldo: 30,
-    marca: "Friboi",
-  },
-  {
-    id: 2,
-    nome: "Frango",
-    unidadeArmazenamento: "Kg",
-    unidadeCompra: "Kg",
-    saldo: 15,
-    marca: "Sadia",
-  },
-  {
-    id: 3,
-    nome: "Arroz",
-    unidadeArmazenamento: "Kg",
-    unidadeCompra: "Saco",
-    saldo: 8,
-    marca: "Tio João",
-  },
-];
+import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 const MovementsPage = () => {
+  const { idRestaurante } = useAuth();
   const [allMovements, setAllMovements] = useState([]);
   const [movements, setMovements] = useState([]);
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [itemsLoading, setItemsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Pagination state
@@ -100,32 +28,25 @@ const MovementsPage = () => {
   const [selectedMovement, setSelectedMovement] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Load movements from Firestore
   const loadMovements = useCallback(async () => {
+    if (!idRestaurante) return;
+    
     setLoading(true);
-    setError(null);
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setAllMovements(mockMovements);
+      const movementsData = await getAll(idRestaurante, 'movimentos', {
+        orderByField: 'createdAt',
+        order: 'desc'
+      });
+      
+      setAllMovements(movementsData);
     } catch (err) {
       setError("Erro ao carregar movimentações");
       console.error("Error loading movements:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const loadItems = useCallback(async () => {
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      setItems(mockItems);
-    } catch (err) {
-      console.error("Error loading items:", err);
-    }
-  }, []);
+  }, [idRestaurante]);
 
   // Filter and paginate movements based on search and pagination
   useEffect(() => {
@@ -145,6 +66,25 @@ const MovementsPage = () => {
     setMovements(paginatedMovements);
     setTotalItems(filteredMovements.length);
   }, [allMovements, currentPage, itemsPerPage, searchTerm]);
+
+  // Load items from Firestore
+  const loadItems = useCallback(async () => {
+    if (!idRestaurante) return;
+
+    try {
+      setItemsLoading(true);
+      const itemsData = await getAll(idRestaurante, 'itens', {
+        orderByField: 'nome',
+        order: 'asc'
+      });
+      setItems(itemsData);
+    } catch (error) {
+      console.error("Error loading items:", error);
+      setError("Erro ao carregar itens");
+    } finally {
+      setItemsLoading(false);
+    }
+  }, [idRestaurante]);
 
   // Load data on component mount
   useEffect(() => {
@@ -166,19 +106,22 @@ const MovementsPage = () => {
   const handleDelete = async (movement) => {
     if (
       window.confirm(
-        `Tem certeza que deseja excluir a movimentação "${movement.nome}"?`,
+        `Tem certeza que deseja excluir a movimentação de "${movement.itemNome}"?`,
       )
     ) {
       try {
         setLoading(true);
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        
+        // Delete from Firestore
+        await remove(idRestaurante, 'movimentos', movement.id);
 
         // Remove from local state
         setAllMovements((prev) => prev.filter((m) => m.id !== movement.id));
 
         alert("Movimentação excluída com sucesso!");
       } catch (err) {
+        console.error("Error deleting movement:", err);
+        setError("Erro ao excluir movimentação");
         setError("Erro ao excluir movimentação");
         console.error("Error deleting movement:", err);
       } finally {
@@ -197,45 +140,80 @@ const MovementsPage = () => {
     setModalLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const selectedItem = items.find((item) => item.id === formData.itemId);
+      
+      // Prepare movement data for Firestore
+      const movementData = {
+        // Item reference
+        itemId: formData.itemId,
+        itemNome: selectedItem?.nome || "",
+        
+        // Movement details
+        tipoMovimentacao: formData.tipoMovimentacao,
+        quantidade: parseFloat(formData.qtd) || 0,
+        saldoAtual: parseFloat(formData.qtdAtual) || 0,
+        novoSaldo: parseFloat(formData.novoSaldo) || 0,
+        
+        // Units
+        unidadeArmazenamento: formData.unidadeArmazenamento || "",
+        unidadeCompra: formData.unidadeCompra || "",
+        
+        // Transformation factor (if applicable)
+        fatorTransformacao: formData.fatorTransformacao 
+          ? parseFloat(formData.fatorTransformacao) 
+          : null,
+        
+        // Timestamps
+        updatedAt: new Date().toISOString(),
+        data: new Date().toISOString(),
+        
+        // Additional item info for display
+        marca: selectedItem?.marca || "",
+        
+        // Preserve existing fields if editing
+        ...(selectedMovement ? {
+          id: selectedMovement.id,
+          createdAt: selectedMovement.createdAt || new Date().toISOString(),
+        } : {})
+      };
 
       if (selectedMovement) {
-        // Update existing movement
-        const updatedMovement = {
-          ...selectedMovement,
-          ...formData,
-          nome:
-            items.find((item) => item.id === formData.itemId)?.nome ||
-            selectedMovement.nome,
-        };
+        // Update existing movement in Firestore
+        await update(idRestaurante, 'movimentos', selectedMovement.id, movementData);
 
-        setAllMovements((prev) =>
-          prev.map((m) => (m.id === selectedMovement.id ? updatedMovement : m)),
+        // Update local state
+        setAllMovements(prev =>
+          prev.map(m => 
+            m.id === selectedMovement.id 
+              ? { ...m, ...movementData }
+              : m
+          )
         );
+        
         alert("Movimentação atualizada com sucesso!");
       } else {
-        // Create new movement
-        const selectedItem = items.find((item) => item.id === formData.itemId);
+        // Create new movement in Firestore
         const newMovement = {
-          ...formData,
-          id: Date.now(),
-          nome: selectedItem?.nome || "",
-          tipo: formData.tipoMovimentacao,
-          quantidade: parseFloat(formData.qtd),
-          saldo: parseFloat(formData.novoSaldo),
-          marca: selectedItem?.marca || "",
+          ...movementData,
+          createdAt: new Date().toISOString(),
         };
-
-        setAllMovements((prev) => [newMovement, ...prev]);
+        
+        const docRef = await create(idRestaurante, 'movimentos', newMovement);
+        
+        // Update local state with the new movement (including the Firestore ID)
+        setAllMovements(prev => [
+          { ...newMovement, id: docRef.id },
+          ...prev
+        ]);
+        
         alert("Movimentação criada com sucesso!");
       }
 
       setIsFormModalOpen(false);
       setSelectedMovement(null);
     } catch (err) {
-      setError("Erro ao salvar movimentação");
       console.error("Error saving movement:", err);
+      setError("Erro ao salvar movimentação. Por favor, tente novamente.");
     } finally {
       setModalLoading(false);
     }
@@ -258,27 +236,35 @@ const MovementsPage = () => {
   return (
     <div className="mt-10 space-y-6">
       <CardHeader
-        title="Itens"
-        subtitle="Gerencie os itens do seu restaurante"
+        title="Entradas e Saídas"
+        subtitle="Gerencie as movimentações do seu restaurante"
         onNewClick={handleCreate}
         buttonTitle="Nova movimentação"
       />
-        {/* Table */}
-        <MovementsTable
-          movements={movements}
-          loading={loading}
-          error={error}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={setItemsPerPage}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
-          onEdit={handleEdit}
-          onView={handleView}
-          onDelete={handleDelete}
-          totalItems={totalItems}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-        />
+        {/* Loading state */}
+        {(loading || itemsLoading) ? (
+          <div className="flex justify-center items-center p-8">
+            <LoadingSpinnerDynamic />
+          </div>
+        ) : error ? (
+          <div className="text-red-500 text-center p-4">{error}</div>
+        ) : (
+          <MovementsTable
+            movements={movements}
+            loading={loading}
+            error={error}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={setItemsPerPage}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            onEdit={handleEdit}
+            onView={handleView}
+            onDelete={handleDelete}
+            totalItems={totalItems}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
+        )}
 
         {/* Form Modal */}
         <MovementsFormModal

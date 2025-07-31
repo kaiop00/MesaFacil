@@ -31,25 +31,27 @@ const MovementsFormModal = ({
 
   // Movement types
   const movementTypes = [
-    { value: "entrada", label: "Entrada" },
-    { value: "saida", label: "Saída" },
-    { value: "ajuste", label: "Ajuste" },
-    { value: "transferencia", label: "Transferência" },
+    { value: "Entrada", label: "Entrada" },
+    { value: "Saida", label: "Saída" },
+    { value: "Ajuste", label: "Ajuste" },
+    { value: "Transferencia", label: "Transferência" },
   ];
 
   useEffect(() => {
     if (isOpen) {
       if (movement) {
         // Editing mode - populate form
+        console.log(movement);
         setFormData({
           itemId: movement.itemId || "",
           unidadeArmazenamento: movement.unidadeArmazenamento || "",
           unidadeCompra: movement.unidadeCompra || "",
+          // Ensure we use the correct field name from the movement object
           tipoMovimentacao: movement.tipoMovimentacao || "",
-          qtdAtual: movement.qtdAtual || "",
-          qtd: movement.qtd || "",
+          qtdAtual: movement.saldoAtual || "",
+          qtd: movement.quantidade || "",
           novoSaldo: movement.novoSaldo || "",
-          fatorTransformacao: movement.fatorTransformacao || "",
+          fatorTransformacao: movement.fatorTransformacao?.toString() || "",
         });
       } else {
         // Creating mode - reset form
@@ -69,44 +71,65 @@ const MovementsFormModal = ({
   }, [isOpen, movement]);
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    // First, update the field that changed
+    setFormData(prevFormData => {
+      // Create the updated form data with the new value
+      const updatedFormData = {
+        ...prevFormData,
+        [field]: value,
+      };
 
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: "",
-      }));
-    }
-
-    // Calculate new balance when quantity changes
-    if (field === "qtd" && formData.qtdAtual) {
-      const currentQty = parseFloat(formData.qtdAtual) || 0;
-      const newQty = parseFloat(value) || 0;
-      let newBalance = 0;
-
-      switch (formData.tipoMovimentacao) {
-        case "entrada":
-          newBalance = currentQty + newQty;
-          break;
-        case "saida":
-          newBalance = currentQty - newQty;
-          break;
-        case "ajuste":
-          newBalance = newQty;
-          break;
-        default:
-          newBalance = currentQty;
+      // Clear error for the field that changed
+      if (errors[field]) {
+        setErrors(prev => ({
+          ...prev,
+          [field]: "",
+        }));
       }
 
-      setFormData((prev) => ({
-        ...prev,
-        novoSaldo: newBalance.toString(),
-      }));
-    }
+      // Calculate new balance when quantity or transformation factor changes
+      if ((field === "qtd" || field === "fatorTransformacao") && updatedFormData.qtdAtual) {
+        const currentQty = parseFloat(updatedFormData.qtdAtual) || 0;
+        const newQty = field === "qtd" ? parseFloat(value) || 0 : parseFloat(updatedFormData.qtd) || 0;
+        const factor = field === "fatorTransformacao" ? parseFloat(value) || 1 : parseFloat(updatedFormData.fatorTransformacao) || 1;
+        
+        // Apply transformation factor if units are different and factor is provided
+        const effectiveQty = updatedFormData.unidadeArmazenamento !== updatedFormData.unidadeCompra && factor
+          ? newQty * factor
+          : newQty;
+          
+        let newBalance = 0;
+
+        switch (updatedFormData.tipoMovimentacao) {
+          case movementTypes[0].value: // Entrada
+            newBalance = currentQty + effectiveQty;
+            break;
+          case movementTypes[1].value: // Saída
+            newBalance = currentQty - effectiveQty;
+            break;
+          case movementTypes[2].value: // Ajuste
+            newBalance = effectiveQty;
+            break;
+          default:
+            newBalance = currentQty;
+        }
+
+        // Return the updated form data with the new balance
+        return {
+          ...updatedFormData,
+          novoSaldo: newBalance.toFixed(2),
+          // Auto-calculate factor if not set and units are different
+          ...(field === "qtd" && 
+              updatedFormData.unidadeArmazenamento !== updatedFormData.unidadeCompra && 
+              !updatedFormData.fatorTransformacao && {
+                fatorTransformacao: "1.00"
+              }
+          )
+        };
+      }
+
+      return updatedFormData;
+    });
   };
 
   const handleItemSelect = (item) => {
@@ -115,7 +138,7 @@ const MovementsFormModal = ({
       itemId: item.id,
       unidadeArmazenamento: item.unidadeArmazenamento || "",
       unidadeCompra: item.unidadeCompra || "",
-      qtdAtual: item.saldo?.toString() || "",
+      qtdAtual: item.estoqueAtual?.toString() || "",
     }));
     setIsDropdownOpen((prev) => ({ ...prev, item: false }));
   };
@@ -244,25 +267,31 @@ const MovementsFormModal = ({
             </div>
           </div>
 
-          {/* Transformation Factor (for editing mode when units are different) */}
-          {isEditing &&
-            formData.unidadeArmazenamento !== formData.unidadeCompra && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fator de Transformação
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.fatorTransformacao}
-                  onChange={(e) =>
-                    handleInputChange("fatorTransformacao", e.target.value)
-                  }
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  placeholder="Digite o fator de transformação"
-                />
-              </div>
-            )}
+          {/* Transformation Factor (when units are different) */}
+          {formData.unidadeArmazenamento && 
+           formData.unidadeCompra && 
+           formData.unidadeArmazenamento !== formData.unidadeCompra && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fator de Transformação ({formData.unidadeCompra} para {formData.unidadeArmazenamento})
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={formData.fatorTransformacao || ""}
+                onChange={(e) =>
+                  handleInputChange("fatorTransformacao", e.target.value)
+                }
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                placeholder={`Ex: 1 ${formData.unidadeCompra} = 0.05 ${formData.unidadeArmazenamento}`}
+                required
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                1 {formData.unidadeCompra} = {formData.fatorTransformacao || '1.00'} {formData.unidadeArmazenamento}
+              </p>
+            </div>
+          )}
 
           {/* Movement Type */}
           <div>
@@ -335,7 +364,7 @@ const MovementsFormModal = ({
               </label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 value={formData.qtd}
                 onChange={(e) => handleInputChange("qtd", e.target.value)}
                 className={`w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
