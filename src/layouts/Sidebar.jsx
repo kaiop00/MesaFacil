@@ -45,7 +45,7 @@ const Sidebar = () => {
       {isMobile && (
         <button
           onClick={toggleSidebar}
-          className="fixed z-50 top-4 left-4 p-2 rounded-md bg-primary-dynamic text-white md:hidden"
+          className="fixed z-50 top-3 left-4 p-2 rounded-md bg-primary-dynamic text-white md:hidden"
           aria-label="Toggle menu"
         >
           <HamburgerLg size={20} />

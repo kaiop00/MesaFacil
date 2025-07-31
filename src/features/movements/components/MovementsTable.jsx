@@ -98,110 +98,112 @@ const MovementsTable = ({
           </form>
         </div>
 
-        <div className="min-w-lg rounded-lg shadow-sm border border-gray-200">
-          {/* Table Header */}
-          <div className="grid grid-cols-5 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <div className="flex items-center text-sm font-medium text-gray-600">
-              Nome
-              <ChevronDown className="ml-1 w-4 h-4" />
+        <div className="overflow-auto rounded-lg shadow-sm border border-gray-200">
+          <div className="min-w-lg min-h-80">
+            {/* Table Header */}
+            <div className="grid grid-cols-5 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                Nome
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                Tipo
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                Qtd
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                Saldo
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div></div>
             </div>
-            <div className="flex items-center text-sm font-medium text-gray-600">
-              Tipo
-              <ChevronDown className="ml-1 w-4 h-4" />
-            </div>
-            <div className="flex items-center text-sm font-medium text-gray-600">
-              Qtd
-              <ChevronDown className="ml-1 w-4 h-4" />
-            </div>
-            <div className="flex items-center text-sm font-medium text-gray-600">
-              Saldo
-              <ChevronDown className="ml-1 w-4 h-4" />
-            </div>
-            <div></div>
-          </div>
 
-          {/* Table Body */}
-          {movements.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Nenhum movimento encontrado</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {movements.map((movement) => {
-                const balanceStatus = getBalanceStatus(movement.saldo);
+            {/* Table Body */}
+            {movements.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Nenhum movimento encontrado</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {movements.map((movement) => {
+                  const balanceStatus = getBalanceStatus(movement.saldo);
 
-                return (
-                  <div
-                    key={movement.id}
-                    className="grid grid-cols-5 gap-4 px-6 py-4 hover:bg-gray-50"
-                  >
-                    <div className="flex items-center text-sm text-gray-900">
-                      {movement.itemNome || 'Sem nome'}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      {movement.tipoMovimentacao || 'Não especificado'}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      {movement.quantidade} {movement.quantidade > 1 ? `${movement.unidadeArmazenamento}s` : movement.unidadeArmazenamento || ''}
-                    </div>
-                    <div className="flex items-center">
-                      <div
-                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[40px] ${balanceStatus.bgColor} ${balanceStatus.color}`}
-                      >
-                        {movement.novoSaldo}
+                  return (
+                    <div
+                      key={movement.id}
+                      className="grid grid-cols-5 gap-4 px-6 py-4 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center text-sm text-gray-900">
+                        {movement.itemNome || 'Sem nome'}
                       </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => toggleDropdown(movement.id)}
-                          className="text-gray-400 hover:text-gray-500"
+                      <div className="flex items-center text-sm text-gray-500">
+                        {movement.tipoMovimentacao || 'Não especificado'}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        {movement.quantidade} {movement.quantidade > 1 ? `${movement.unidadeArmazenamento}s` : movement.unidadeArmazenamento || ''}
+                      </div>
+                      <div className="flex items-center">
+                        <div
+                          className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[40px] ${balanceStatus.bgColor} ${balanceStatus.color}`}
                         >
-                          <MoreHorizontal className="h-5 w-5" />
-                        </button>
+                          {movement.novoSaldo}
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => toggleDropdown(movement.id)}
+                            className="text-gray-400 hover:text-gray-500"
+                          >
+                            <MoreHorizontal className="h-5 w-5" />
+                          </button>
 
-                        {openDropdown === movement.id && (
-                          <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                            <button
-                              onClick={() => {
-                                onView?.(movement);
-                                setOpenDropdown(null);
-                              }}
-                              className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
-                            >
-                              <UnfoldMore className="mr-2 h-4 w-4" />
-                              Visualizar
-                            </button>
-                            <button
-                              onClick={() => {
-                                onEdit?.(movement);
-                                setOpenDropdown(null);
-                              }}
-                              className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              <EditPencil01 className="mr-2 h-4 w-4" />
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => {
-                                onDelete?.(movement);
-                                setOpenDropdown(null);
-                              }}
-                              className="flex w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
-                            >
-                              <TrashFull className="mr-2 h-4 w-4" />
-                              Excluir
-                            </button>
-                          </div>
-                        )}
+                          {openDropdown === movement.id && (
+                            <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-gray-300 ring-opacity-5 focus:outline-none">
+                              <button
+                                onClick={() => {
+                                  onView?.(movement);
+                                  setOpenDropdown(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
+                              >
+                                <UnfoldMore className="mr-2 h-4 w-4" />
+                                Visualizar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  onEdit?.(movement);
+                                  setOpenDropdown(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                <EditPencil01 className="mr-2 h-4 w-4" />
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  onDelete?.(movement);
+                                  setOpenDropdown(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
+                              >
+                                <TrashFull className="mr-2 h-4 w-4" />
+                                Excluir
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
         {/* Pagination Footer */}
         <footer className="flex flex-wrap items-center justify-between gap-4 mt-6">

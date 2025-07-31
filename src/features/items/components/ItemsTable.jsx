@@ -125,13 +125,13 @@ const ItemsTable = ({
                       </button>
 
                       {openDropdown === item.id && (
-                        <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-gray-300 ring-opacity-5 focus:outline-none">
                           <button
                             onClick={() => {
                               onView(item);
                               setOpenDropdown(null);
                             }}
-                            className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
                           >
                             <UnfoldMore className="mr-2 h-4 w-4" />
                             Visualizar
@@ -141,7 +141,7 @@ const ItemsTable = ({
                               onEdit(item);
                               setOpenDropdown(null);
                             }}
-                            className="flex w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             <EditPencil01 className="mr-2 h-4 w-4" />
                             Editar
@@ -151,7 +151,7 @@ const ItemsTable = ({
                               onDelete(item);
                               setOpenDropdown(null);
                             }}
-                            className="flex w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
+                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
                           >
                             <TrashFull className="mr-2 h-4 w-4" />
                             Excluir
