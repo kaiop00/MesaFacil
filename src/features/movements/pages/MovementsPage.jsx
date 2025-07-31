@@ -54,7 +54,7 @@ const MovementsPage = () => {
     let filteredMovements = allMovements;
     if (searchTerm) {
       filteredMovements = allMovements.filter((movement) =>
-        movement.nome.toLowerCase().includes(searchTerm.toLowerCase()),
+        movement.itemNome.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
