@@ -27,6 +27,10 @@ export const useMesa = () => {
         fetchMesa();
     }, [mesaId, idRestaurante]);
 
+      const listarItensCardapio = async () => {
+        return await getAll(idRestaurante, 'cardapio', { orderByField: 'criadoEm', order: 'desc' });
+      };
+
     return {
         mesa,
         loading,

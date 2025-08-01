@@ -1,3 +1,4 @@
+import CardCardapio from "../components/CardCardapio";
 import { useMesa } from "../hooks/useMesa";
 
 export default function MesaPage() {
@@ -10,6 +11,9 @@ export default function MesaPage() {
     return (
         <div className="p-4">
             <h1 className="text-2xl font-semibold">Mesa {mesa.numero}</h1>
+            <CardCardapio />
+            <CardCardapio />
+            <CardCardapio />
         </div>
     );
 }
