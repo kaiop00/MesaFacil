@@ -67,7 +67,7 @@ export async function create(idRestaurante, subcollectionName, data, addTimestam
     ? { ...data, criadoEm: serverTimestamp() }
     : data;
   const docRef = await addDoc(colRef, payload);
-  return docRef.id;
+  return docRef;
 }
 
 /**
