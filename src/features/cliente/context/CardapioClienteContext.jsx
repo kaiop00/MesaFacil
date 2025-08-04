@@ -16,7 +16,7 @@ export default function CardapioClienteProvider({ children }) {
 
             const normalizados = dados.map((item) => ({
                 ...item,
-                price: Number(item.price ?? item.preco ?? item.valor ?? 0),
+                price: Number(item.valor),
             }));
 
             setItems(normalizados);

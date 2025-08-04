@@ -1,6 +1,15 @@
-export default function CardCardapio({item}) {
+import { useNavigate } from "react-router-dom"
+
+
+export default function CardCardapio({ item, onClick }) {
+
+    const navigate = useNavigate();
+
     return (
-        <div className="w-full flex items-start justify-between p-3 bg-white border-t border-b border-gray-100">
+        <div
+            className="w-full flex items-start justify-between p-3 bg-white border-t border-b border-gray-100"
+            onClick={onClick}
+        >
             {/* Informações do prato */}
             <div className="flex flex-col flex-1 pr-3">
                 <p className="text-[#D9A23B] font-semibold text-lg">R${item.valor}</p>
