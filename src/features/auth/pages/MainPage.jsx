@@ -227,7 +227,6 @@ export default function MainPage() {
                             <p className="text-gray-400 text-sm font-bold">
                                 Soluções completas para gestão de restaurantes e bares. Simplificamos a administração do seu negócio.
                             </p>
-                            <p className="text-gray-400 text-sm">Nome do CEO, 2025</p>
                         </div>
 
                         {/* Quick Links */}
