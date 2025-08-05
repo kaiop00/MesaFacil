@@ -3,11 +3,13 @@ import CardCardapio from "../components/CardCardapio";
 import { useClienteCardapio } from "../context/CardapioClienteContext";
 import { useMesa } from "../hooks/useMesa";
 import ItemModal from "../components/ItemModal";
+import { useCarrinho } from "../context/CarrinhoContext";
 
 export default function MesaPage() {
     const { mesa, loading, error } = useMesa();
     const { items, loadingCardapio } = useClienteCardapio();
     const [itemSelecionado, setItemSelecionado] = useState(null);
+    const { adicionarItemCarrinho } = useCarrinho();
 
     if (loading || loadingCardapio) return <p>Carregando...</p>
     if (error) return <p>{error}</p>
@@ -21,12 +23,17 @@ export default function MesaPage() {
                     key={item.id}
                     item={item}
                     onClick={() => setItemSelecionado(item)}
+                    onAddCarrinho={adicionarItemCarrinho}
                 />
             })}
             {itemSelecionado && (
                 <ItemModal
                     item={itemSelecionado}
                     onClose={() => setItemSelecionado(null)}
+                    onAdicionar={(itemComQuantidade) => {
+                        adicionarItemCarrinho(itemComQuantidade);
+                        setItemSelecionado(null);
+                    }}
                 />
             )}
         </div>
