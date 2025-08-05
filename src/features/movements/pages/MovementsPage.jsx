@@ -206,6 +206,23 @@ const MovementsPage = () => {
           ...prev
         ]);
         
+        // Update the item's estoqueAtual
+        const selectedItem = items.find(item => item.id === newMovement.itemId);
+        if (selectedItem) {
+          await update(idRestaurante, 'itens', selectedItem.id, {
+            estoqueAtual: parseFloat(newMovement.novoSaldo)
+          });
+          
+          // Update local items state
+          setItems(prevItems => 
+            prevItems.map(item => 
+              item.id === selectedItem.id 
+                ? { ...item, estoqueAtual: parseFloat(newMovement.novoSaldo) }
+                : item
+            )
+          );
+        }
+        
         alert("Movimentação criada com sucesso!");
       }
 
