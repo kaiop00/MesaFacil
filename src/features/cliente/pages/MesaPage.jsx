@@ -16,7 +16,7 @@ export default function MesaPage() {
     if (!mesa) return <p>Mesa nao encontrada</p>
 
     return (
-        <div className="p-4">
+        <div className="p-4 mb-20">
             <h1 className="text-2xl font-semibold">Mesa {mesa.numero}</h1>
             {items.map((item) => {
                 return <CardCardapio

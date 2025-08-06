@@ -1,3 +1,4 @@
+import { Outlet } from "react-router-dom";
 import CardapioClienteProvider from "../context/CardapioClienteContext";
 import CarrinhoProvider from "../context/CarrinhoContext";
 import { ClienteProvider } from "../context/ClienteContext";
@@ -5,7 +6,7 @@ import CarrinhoFooter from "./CarrinhoFooter";
 import ClienteBanner from "./ClienteBanner";
 import ClienteHeader from "./ClienteHeader";
 
-export default function ClienteLayout({ children }) {
+export default function ClienteLayout() {
     return (
         <ClienteProvider>
             <CardapioClienteProvider>
@@ -13,7 +14,7 @@ export default function ClienteLayout({ children }) {
                     <main className="min-h-screen">
                         <ClienteHeader />
                         <ClienteBanner />
-                        {children}
+                        <Outlet />
                         <CarrinhoFooter />
                     </main>
                 </CarrinhoProvider>

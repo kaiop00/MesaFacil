@@ -1,7 +1,9 @@
 import { useCarrinho } from "../context/CarrinhoContext";
+import { Navigate, useNavigate } from "react-router-dom";
 
 export default function CarrinhoFooter({  }) {
     const { carrinhoItems, total, quantidade } = useCarrinho();
+    const navigate = useNavigate();
 
     if (quantidade === 0) return null;
 
@@ -15,7 +17,7 @@ export default function CarrinhoFooter({  }) {
                 </p>
             </div>
             <button
-                // onClick={onVerSacola}
+                onClick={() => navigate("sacola")}
                 className="bg-[#D9A23B] text-white font-medium px-4 py-2 rounded-md hover:opacity-90 transition"
             >
                 Ver Sacola
