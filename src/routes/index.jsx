@@ -31,6 +31,7 @@ import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
 import { TablesProvider } from "@/features/config/context/TablesContext";
 import MesaPage from "@/features/cliente/pages/MesaPage";
 import ClienteLayout from "@/features/cliente/layout/ClienteLayout";
+import SacolaPage from "@/features/cliente/pages/SacolaPage";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -66,11 +67,11 @@ const router = createBrowserRouter([
   },
   {
     path: "mesa/:slug",
-    element: (
-      <ClienteLayout>
-        <MesaPage />
-      </ClienteLayout>
-    )
+    element: <ClienteLayout />,
+    children: [
+      { index: true, element: <MesaPage /> },
+      { path: "sacola", element: <SacolaPage /> },
+    ]
   },
 
   //rotas privadas
