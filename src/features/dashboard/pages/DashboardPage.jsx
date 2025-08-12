@@ -1,6 +1,7 @@
 import { AplicaCorDoSistema } from "@/components/AplicaCorDoSistema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTables } from "@/features/config/hooks/useTables";
+import { showAllOrdersFromTable } from "../services/mesas";
 import { useEffect, useState } from "react";
 import {
   ShoppingCart01,
@@ -15,13 +16,14 @@ import { useMemo } from "react";
 
 const DashboardPage = () => {
   const { idRestaurante } = useAuth();
-  const { mesasAndamento } = useTables(idRestaurante);
+  const { mesasAndamento, tables } = useTables(idRestaurante);
   const [salesData, setSalesData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
-  const [stats] = useState({
-    totalSales: 3476.87,
+  const [stats, setStats] = useState({
+    totalSales: 0,
     salesGrowth: 12.65,
-    totalOrders: 48,
+    totalOrders: 0,
+    totalCompleteOrders: 0,
     ordersGrowth: 12.65,
     avgServiceTime: 45,
     timeGrowth: 12.65,
@@ -30,11 +32,92 @@ const DashboardPage = () => {
   const mesasAndamentoDisplay = useMemo(
     () =>
       mesasAndamento.map((mesa) => {
-        console.log(mesa);
         return { ...mesa };
       }),
     [mesasAndamento],
   );
+
+  const calculateStats = (orders) => {
+    let totalSales = 0;
+    let totalOrders = 0;
+    let totalServiceTime = 0;
+    let completedOrders = 0;
+
+    orders.forEach((order) => {
+      totalSales += order.total;
+      totalOrders += 1;
+
+      // Calculate service time for completed orders
+      if (order.finalizadoEm && order.criadoEm) {
+        const createdTime =
+          order.criadoEm.seconds * 1000 + order.criadoEm.nanoseconds / 1000000;
+        const finishedTime =
+          order.finalizadoEm.seconds * 1000 +
+          order.finalizadoEm.nanoseconds / 1000000;
+
+        const serviceTimeMs = finishedTime - createdTime;
+        const serviceTimeMinutes = serviceTimeMs / (1000 * 60); // Convert to minutes
+
+        totalServiceTime += serviceTimeMinutes;
+        completedOrders += 1;
+      }
+    });
+
+    const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+    const averageServiceTime =
+      completedOrders > 0 ? totalServiceTime / completedOrders : 0;
+
+    return {
+      totalSales,
+      totalOrders,
+      averageOrderValue,
+      averageServiceTime,
+      completedOrders,
+    };
+  };
+
+  useEffect(() => {
+    const fetchTableStats = async () => {
+      if (!tables || tables.length === 0 || !idRestaurante) return;
+
+      // Reset stats before calculating
+      let totalSales = 0;
+      let totalOrders = 0;
+      let totalServiceTime = 0;
+      let totalCompletedOrders = 0;
+
+      // Wait for all table orders to be fetched
+      const promises = tables.map(async (table) => {
+        const orders = await showAllOrdersFromTable(idRestaurante, table.id);
+        return calculateStats(orders);
+      });
+
+      const allStats = await Promise.all(promises);
+
+      // Calculate totals from all tables
+      allStats.forEach((stat) => {
+        totalSales += stat.totalSales;
+        totalOrders += stat.totalOrders;
+        totalServiceTime += stat.averageServiceTime * stat.completedOrders; // Weighted sum
+        totalCompletedOrders += stat.completedOrders;
+      });
+
+      // Calculate overall average service time
+      const avgServiceTime =
+        totalCompletedOrders > 0 ? totalServiceTime / totalCompletedOrders : 0;
+
+      // Update stats once with final totals
+      setStats((prevStats) => ({
+        ...prevStats,
+        totalSales,
+        totalOrders,
+        avgServiceTime: Math.round(avgServiceTime), // Round to nearest minute
+      }));
+    };
+
+    fetchTableStats();
+  }, [tables, idRestaurante]);
+
   // Mock data for sales chart
   useEffect(() => {
     setSalesData([
@@ -92,35 +175,34 @@ const DashboardPage = () => {
               Ver Todos
             </button>
           </div>
-              {mesasAndamentoDisplay.length === 0 ? (
-                <p>Nenhum pedido em andamento</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {mesasAndamentoDisplay.slice(0, 4).map((mesa) => (
-                    <div
-                      key={mesa.id}
-                      className="bg-white rounded-lg shadow p-6"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-orange-50 rounded-lg">
-                          <Notebook className="w-5 h-5 text-orange-500" />
-                        </div>
-                        <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                      </div>
-
-                      <div className="space-y-1">
-                        <h3 className="font-medium text-gray-900">
-                          Mesa {mesa.numero}
-                        </h3>
-                        <p className="text-sm text-gray-500">Pedido {mesa.timeAgo}</p>
-                        <p className="text-lg font-semibold text-orange-500 mt-3">
-                          {formatCurrency(Number(mesa.total))}
-                        </p>
-                      </div>
+          {mesasAndamentoDisplay.length === 0 ? (
+            <p>Nenhum pedido em andamento</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {mesasAndamentoDisplay.slice(0, 4).map((mesa) => (
+                <div key={mesa.id} className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 bg-orange-50 rounded-lg">
+                      <Notebook className="w-5 h-5 text-orange-500" />
                     </div>
-                  ))}
+                    <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className="font-medium text-gray-900">
+                      Mesa {mesa.numero}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Pedido {mesa.timeAgo}
+                    </p>
+                    <p className="text-lg font-semibold text-orange-500 mt-3">
+                      {formatCurrency(Number(mesa.total))}
+                    </p>
+                  </div>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Statistics Cards */}
@@ -142,12 +224,6 @@ const DashboardPage = () => {
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(stats.totalSales)}
               </p>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-500 font-medium">
-                  {stats.salesGrowth}%
-                </span>
-              </div>
             </div>
           </div>
 
@@ -168,12 +244,6 @@ const DashboardPage = () => {
               <p className="text-2xl font-bold text-gray-900">
                 {stats.totalOrders}
               </p>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-500 font-medium">
-                  {stats.ordersGrowth}%
-                </span>
-              </div>
             </div>
           </div>
 
@@ -196,12 +266,6 @@ const DashboardPage = () => {
               <p className="text-2xl font-bold text-gray-900">
                 {stats.avgServiceTime} min
               </p>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-500 font-medium">
-                  {stats.timeGrowth}%
-                </span>
-              </div>
             </div>
           </div>
         </div>
