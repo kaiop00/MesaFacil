@@ -1,14 +1,13 @@
 import { AplicaCorDoSistema } from "@/components/AplicaCorDoSistema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTables } from "@/features/config/hooks/useTables";
-import { showAllOrdersFromTable } from "../services/mesas";
+import { getTableStatsOptimized } from "../services/mesas";
 import { useEffect, useState } from "react";
 import {
   ShoppingCart01,
   Notebook,
   Timer,
   MoreHorizontal,
-  TrendingUp,
   ChevronDown,
 } from "react-coolicons";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
@@ -29,6 +28,11 @@ const DashboardPage = () => {
     timeGrowth: 12.65,
   });
 
+  // Individual filters for each card
+  const [salesFilter, setSalesFilter] = useState('Hoje');
+  const [ordersFilter, setOrdersFilter] = useState('Hoje');
+  const [timeFilter, setTimeFilter] = useState('Mensal');
+
   const mesasAndamentoDisplay = useMemo(
     () =>
       mesasAndamento.map((mesa) => {
@@ -37,86 +41,32 @@ const DashboardPage = () => {
     [mesasAndamento],
   );
 
-  const calculateStats = (orders) => {
-    let totalSales = 0;
-    let totalOrders = 0;
-    let totalServiceTime = 0;
-    let completedOrders = 0;
-
-    orders.forEach((order) => {
-      totalSales += order.total;
-      totalOrders += 1;
-
-      // Calculate service time for completed orders
-      if (order.finalizadoEm && order.criadoEm) {
-        const createdTime =
-          order.criadoEm.seconds * 1000 + order.criadoEm.nanoseconds / 1000000;
-        const finishedTime =
-          order.finalizadoEm.seconds * 1000 +
-          order.finalizadoEm.nanoseconds / 1000000;
-
-        const serviceTimeMs = finishedTime - createdTime;
-        const serviceTimeMinutes = serviceTimeMs / (1000 * 60); // Convert to minutes
-
-        totalServiceTime += serviceTimeMinutes;
-        completedOrders += 1;
-      }
-    });
-
-    const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
-    const averageServiceTime =
-      completedOrders > 0 ? totalServiceTime / completedOrders : 0;
-
-    return {
-      totalSales,
-      totalOrders,
-      averageOrderValue,
-      averageServiceTime,
-      completedOrders,
-    };
-  };
-
   useEffect(() => {
     const fetchTableStats = async () => {
       if (!tables || tables.length === 0 || !idRestaurante) return;
 
-      // Reset stats before calculating
-      let totalSales = 0;
-      let totalOrders = 0;
-      let totalServiceTime = 0;
-      let totalCompletedOrders = 0;
+      try {
+        // Execute all three stat queries in parallel with their respective filters
+        const [salesStats, ordersStats, timeStats] = await Promise.all([
+          getTableStatsOptimized(idRestaurante, tables, salesFilter),
+          getTableStatsOptimized(idRestaurante, tables, ordersFilter),
+          getTableStatsOptimized(idRestaurante, tables, timeFilter)
+        ]);
 
-      // Wait for all table orders to be fetched
-      const promises = tables.map(async (table) => {
-        const orders = await showAllOrdersFromTable(idRestaurante, table.id);
-        return calculateStats(orders);
-      });
-
-      const allStats = await Promise.all(promises);
-
-      // Calculate totals from all tables
-      allStats.forEach((stat) => {
-        totalSales += stat.totalSales;
-        totalOrders += stat.totalOrders;
-        totalServiceTime += stat.averageServiceTime * stat.completedOrders; // Weighted sum
-        totalCompletedOrders += stat.completedOrders;
-      });
-
-      // Calculate overall average service time
-      const avgServiceTime =
-        totalCompletedOrders > 0 ? totalServiceTime / totalCompletedOrders : 0;
-
-      // Update stats once with final totals
-      setStats((prevStats) => ({
-        ...prevStats,
-        totalSales,
-        totalOrders,
-        avgServiceTime: Math.round(avgServiceTime), // Round to nearest minute
-      }));
+        // Update stats with filtered results
+        setStats((prevStats) => ({
+          ...prevStats,
+          totalSales: salesStats.totalSales,
+          totalOrders: ordersStats.totalOrders,
+          avgServiceTime: timeStats.averageServiceTime,
+        }));
+      } catch (error) {
+        console.error('Error fetching table stats:', error);
+      }
     };
 
     fetchTableStats();
-  }, [tables, idRestaurante]);
+  }, [tables, idRestaurante, salesFilter, ordersFilter, timeFilter]);
 
   // Mock data for sales chart
   useEffect(() => {
@@ -213,9 +163,17 @@ const DashboardPage = () => {
               <div className="p-2 bg-orange-50 rounded-lg">
                 <ShoppingCart01 className="w-5 h-5 text-orange-500" />
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-gray-500">Hoje</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+              <div className="relative">
+                <select
+                  value={salesFilter}
+                  onChange={(e) => setSalesFilter(e.target.value)}
+                  className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
+                >
+                  <option value="Hoje">Hoje</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Mensal">Mensal</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
@@ -233,9 +191,17 @@ const DashboardPage = () => {
               <div className="p-2 bg-orange-50 rounded-lg">
                 <Notebook className="w-5 h-5 text-orange-500" />
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-gray-500">Hoje</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+              <div className="relative">
+                <select
+                  value={ordersFilter}
+                  onChange={(e) => setOrdersFilter(e.target.value)}
+                  className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
+                >
+                  <option value="Hoje">Hoje</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Mensal">Mensal</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
@@ -253,9 +219,17 @@ const DashboardPage = () => {
               <div className="p-2 bg-orange-50 rounded-lg">
                 <Timer className="w-5 h-5 text-orange-500" />
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-gray-500">Mensal</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+              <div className="relative">
+                <select
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                  className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
+                >
+                  <option value="Hoje">Hoje</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Mensal">Mensal</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
