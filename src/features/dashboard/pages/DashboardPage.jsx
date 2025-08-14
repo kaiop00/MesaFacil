@@ -264,36 +264,40 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            {/* Simple Bar Chart */}
-            <div className="h-64 flex items-end justify-between gap-2 mt-8">
-              {salesData.map((item, index) => {
-                const height =
-                  (item.value / Math.max(...salesData.map((d) => d.value))) *
-                  100;
-                return (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center gap-2 flex-1"
-                  >
+            {/* Chart with Y-axis */}
+            <div className="flex mt-8">
+              {/* Y-axis labels */}
+              <div className="flex flex-col justify-between h-64 pr-4 text-xs text-gray-500">
+                <span>7k</span>
+                <span>6k</span>
+                <span>5k</span>
+                <span>4k</span>
+                <span>3k</span>
+                <span>2k</span>
+                <span>1k</span>
+                <span>0</span>
+              </div>
+              
+              {/* Bar Chart */}
+              <div className="h-64 flex items-end justify-between gap-2 flex-1">
+                {salesData.map((item, index) => {
+                  const height =
+                    (item.value / Math.max(...salesData.map((d) => d.value))) *
+                    100;
+                  return (
                     <div
-                      className="w-full bg-orange-400 rounded-t transition-all duration-300 hover:bg-orange-500"
-                      style={{ height: `${height}%`, minHeight: "8px" }}
-                    ></div>
-                    <span className="text-xs text-gray-500">{item.month}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Chart Legend */}
-            <div className="flex items-center justify-between mt-6 text-xs text-gray-500">
-              <span>1k</span>
-              <span>2k</span>
-              <span>3k</span>
-              <span>4k</span>
-              <span>5k</span>
-              <span>6k</span>
-              <span>7k</span>
+                      key={index}
+                      className="flex flex-col items-center gap-2 flex-1"
+                    >
+                      <div
+                        className="w-full bg-orange-400 rounded-t transition-all duration-300 hover:bg-orange-500"
+                        style={{ height: `${height}%`, minHeight: "8px" }}
+                      ></div>
+                      <span className="text-xs text-gray-500">{item.month}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
