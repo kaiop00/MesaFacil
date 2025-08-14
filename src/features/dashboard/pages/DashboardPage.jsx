@@ -1,7 +1,7 @@
 import { AplicaCorDoSistema } from "@/components/AplicaCorDoSistema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTables } from "@/features/config/hooks/useTables";
-import { getTableStatsOptimized } from "../services/mesas";
+import { getTableStatsOptimized, getMonthlySalesData } from "../services/mesas";
 import { useEffect, useState } from "react";
 import {
   ShoppingCart01,
@@ -12,11 +12,31 @@ import {
 } from "react-coolicons";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useMemo } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const DashboardPage = () => {
   const { idRestaurante } = useAuth();
   const { mesasAndamento, tables } = useTables(idRestaurante);
   const [salesData, setSalesData] = useState([]);
+  const [loadingSalesData, setLoadingSalesData] = useState(true);
   const [topProducts, setTopProducts] = useState([]);
   const [stats, setStats] = useState({
     totalSales: 0,
@@ -32,6 +52,8 @@ const DashboardPage = () => {
   const [salesFilter, setSalesFilter] = useState('Hoje');
   const [ordersFilter, setOrdersFilter] = useState('Hoje');
   const [timeFilter, setTimeFilter] = useState('Mensal');
+  const [chartFilter, setChartFilter] = useState('Mensal');
+  const [categoryFilter, setCategoryFilter] = useState('Todas');
 
   const mesasAndamentoDisplay = useMemo(
     () =>
@@ -68,23 +90,27 @@ const DashboardPage = () => {
     fetchTableStats();
   }, [tables, idRestaurante, salesFilter, ordersFilter, timeFilter]);
 
-  // Mock data for sales chart
+  // Fetch monthly sales data for chart
   useEffect(() => {
-    setSalesData([
-      { month: "Jan", value: 3200 },
-      { month: "Fev", value: 1800 },
-      { month: "Mar", value: 2400 },
-      { month: "Abr", value: 3800 },
-      { month: "Mai", value: 2600 },
-      { month: "Jun", value: 3200 },
-      { month: "Jul", value: 3400 },
-      { month: "Ago", value: 2600 },
-      { month: "Set", value: 2800 },
-      { month: "Out", value: 3000 },
-      { month: "Nov", value: 2200 },
-      { month: "Dez", value: 3000 },
-    ]);
+    const fetchMonthlySalesData = async () => {
+      if (!tables || tables.length === 0 || !idRestaurante) return;
 
+      try {
+        setLoadingSalesData(true);
+        const monthlyData = await getMonthlySalesData(idRestaurante, tables, chartFilter, categoryFilter);
+        setSalesData(monthlyData);
+      } catch (error) {
+        console.error('Error fetching monthly sales data:', error);
+        // Fallback to empty array on error
+        setSalesData([]);
+      } finally {
+        setLoadingSalesData(false);
+      }
+    };
+
+    fetchMonthlySalesData();
+
+    // Mock data for top products (keep this for now)
     setTopProducts([
       { name: "Peixe", value: 1400.2 },
       { name: "Encanto da Serra", value: 1400.2 },
@@ -93,7 +119,7 @@ const DashboardPage = () => {
       { name: "Carne de Gado", value: 1400.2 },
       { name: "Encanto da Serra", value: 1400.2 },
     ]);
-  }, []);
+  }, [tables, idRestaurante, chartFilter, categoryFilter]);
 
   const formatCurrency = (value) => {
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
@@ -253,51 +279,119 @@ const DashboardPage = () => {
                 Evolução de Vendas
               </h3>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-gray-500">Categoria</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                <div className="relative">
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
+                  >
+                    <option value="Todas">Todas</option>
+                    <option value="Guarnição">Guarnição</option>
+                    <option value="Sobremesa">Sobremesa</option>
+                    <option value="Carne">Carne</option>
+                    <option value="Acompanhamento">Acompanhamento</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-gray-500">Mensal</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                <div className="relative">
+                  <select
+                    value={chartFilter}
+                    onChange={(e) => setChartFilter(e.target.value)}
+                    className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
+                  >
+                    <option value="Mensal">Mensal</option>
+                    <option value="Anual">Anual</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
             </div>
 
-            {/* Chart with Y-axis */}
-            <div className="flex mt-8">
-              {/* Y-axis labels */}
-              <div className="flex flex-col justify-between h-64 pr-4 text-xs text-gray-500">
-                <span>7k</span>
-                <span>6k</span>
-                <span>5k</span>
-                <span>4k</span>
-                <span>3k</span>
-                <span>2k</span>
-                <span>1k</span>
-                <span>0</span>
-              </div>
-              
-              {/* Bar Chart */}
-              <div className="h-64 flex items-end justify-between gap-2 flex-1">
-                {salesData.map((item, index) => {
-                  const height =
-                    (item.value / Math.max(...salesData.map((d) => d.value))) *
-                    100;
-                  return (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center gap-2 flex-1"
-                    >
-                      <div
-                        className="w-full bg-orange-400 rounded-t transition-all duration-300 hover:bg-orange-500"
-                        style={{ height: `${height}%`, minHeight: "8px" }}
-                      ></div>
-                      <span className="text-xs text-gray-500">{item.month}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Chart.js Bar Chart */}
+            <div className="mt-8 h-80">
+              {loadingSalesData ? (
+                <div className="flex items-center justify-center w-full h-full">
+                  <LoadingSpinnerDynamic />
+                </div>
+              ) : salesData.length > 0 ? (
+                <Bar
+                  data={{
+                    labels: salesData.map(item => item.month),
+                    datasets: [
+                      {
+                        data: salesData.map(item => item.value),
+                        backgroundColor: '#FB923C',
+                        borderColor: '#FB923C',
+                        borderWidth: 0,
+                        borderRadius: {
+                          topLeft: 4,
+                          topRight: 4,
+                        },
+                        borderSkipped: false,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            return formatCurrency(context.parsed.y);
+                          }
+                        }
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        grid: {
+                          color: '#F3F4F6',
+                          drawBorder: false,
+                        },
+                        ticks: {
+                          color: '#9CA3AF',
+                          font: {
+                            size: 12,
+                          },
+                          callback: function(value) {
+                            if (value >= 1000) {
+                              return (value / 1000) + 'k';
+                            }
+                            return value;
+                          }
+                        },
+                        border: {
+                          display: false,
+                        },
+                      },
+                      x: {
+                        grid: {
+                          display: false,
+                          drawBorder: false,
+                        },
+                        ticks: {
+                          color: '#9CA3AF',
+                          font: {
+                            size: 12,
+                          },
+                        },
+                        border: {
+                          display: false,
+                        },
+                      },
+                    },
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full text-gray-500">
+                  Nenhum dado disponível
+                </div>
+              )}
             </div>
           </div>
 
