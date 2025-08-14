@@ -1,7 +1,7 @@
 import { AplicaCorDoSistema } from "@/components/AplicaCorDoSistema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTables } from "@/features/config/hooks/useTables";
-import { getTableStatsOptimized, getMonthlySalesData } from "../services/mesas";
+import { getTableStatsOptimized, getMonthlySalesData, getTopSellingProducts } from "../services/mesas";
 import { useEffect, useState } from "react";
 import {
   ShoppingCart01,
@@ -38,6 +38,7 @@ const DashboardPage = () => {
   const [salesData, setSalesData] = useState([]);
   const [loadingSalesData, setLoadingSalesData] = useState(true);
   const [topProducts, setTopProducts] = useState([]);
+  const [loadingTopProducts, setLoadingTopProducts] = useState(true);
   const [stats, setStats] = useState({
     totalSales: 0,
     salesGrowth: 12.65,
@@ -54,6 +55,7 @@ const DashboardPage = () => {
   const [timeFilter, setTimeFilter] = useState('Mensal');
   const [chartFilter, setChartFilter] = useState('Mensal');
   const [categoryFilter, setCategoryFilter] = useState('Todas');
+  const [productsFilter, setProductsFilter] = useState('Mensal');
 
   const mesasAndamentoDisplay = useMemo(
     () =>
@@ -109,17 +111,27 @@ const DashboardPage = () => {
     };
 
     fetchMonthlySalesData();
-
-    // Mock data for top products (keep this for now)
-    setTopProducts([
-      { name: "Peixe", value: 1400.2 },
-      { name: "Encanto da Serra", value: 1400.2 },
-      { name: "Carne de Gado", value: 1400.2 },
-      { name: "Encanto da Serra", value: 1400.2 },
-      { name: "Carne de Gado", value: 1400.2 },
-      { name: "Encanto da Serra", value: 1400.2 },
-    ]);
   }, [tables, idRestaurante, chartFilter, categoryFilter]);
+
+  // Fetch top selling products data
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      if (!tables || tables.length === 0 || !idRestaurante) return;
+
+      try {
+        setLoadingTopProducts(true);
+        const productsData = await getTopSellingProducts(idRestaurante, tables, productsFilter);
+        setTopProducts(productsData);
+      } catch (error) {
+        console.error('Error fetching top products:', error);
+        setTopProducts([]);
+      } finally {
+        setLoadingTopProducts(false);
+      }
+    };
+
+    fetchTopProducts();
+  }, [tables, idRestaurante, productsFilter]);
 
   const formatCurrency = (value) => {
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
@@ -401,30 +413,51 @@ const DashboardPage = () => {
               <h3 className="text-lg font-medium text-gray-900">
                 Produtos Mais Vendidos
               </h3>
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-gray-500">Mensal</span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-sm font-medium text-gray-700 border-b border-gray-100 pb-2">
-                <span>Nome</span>
-                <span>Valor Vendido</span>
-              </div>
-
-              {topProducts.map((product, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-2"
+              <div className="relative">
+                <select
+                  value={productsFilter}
+                  onChange={(e) => setProductsFilter(e.target.value)}
+                  className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                 >
-                  <span className="text-sm text-gray-900">{product.name}</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {formatCurrency(product.value)}
-                  </span>
-                </div>
-              ))}
+                  <option value="Mensal">Mensal</option>
+                  <option value="Anual">Anual</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
+
+            {loadingTopProducts ? (
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinnerDynamic />
+              </div>
+            ) : (
+              <div className="space-y-0">
+                <div className="flex items-center justify-between text-sm font-medium text-gray-500 border-b border-gray-100 pb-3 mb-1">
+                  <span>Nome</span>
+                  <span>Valor Vendido</span>
+                </div>
+
+                {topProducts.length > 0 ? (
+                  topProducts.map((product, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-between py-3 px-2 ${
+                        index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                      }`}
+                    >
+                      <span className="text-sm text-gray-900 font-medium">{product.name}</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {formatCurrency(product.value)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    Nenhum produto encontrado
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -13,9 +13,9 @@ export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter =
     mesaId,
     "pedidos",
   );
-  
+
   let pedidosQuery = pedidosRef;
-  
+
   // Apply date filter directly in Firestore query
   if (dateFilter) {
     const startDate = getFilterStartDate(dateFilter);
@@ -24,10 +24,10 @@ export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter =
       pedidosQuery = query(pedidosRef, where("criadoEm", ">=", startTimestamp));
     }
   }
-  
+
   const snapshot = await getDocs(pedidosQuery);
   const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  
+
   console.log('[pedidos]', pedidos);
   return pedidos;
 };
@@ -37,7 +37,7 @@ export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter =
  */
 const getFilterStartDate = (period) => {
   const now = new Date();
-  
+
   switch (period) {
     case 'Hoje':
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -178,7 +178,7 @@ const getMonthlySalesDataInternal = async (idRestaurante, tables, category = "To
 
     // Get sales for this specific month
     const monthlySales = await getMonthlySalesForPeriod(idRestaurante, tables, monthStart, monthEnd, category);
-    
+
     monthlyData.push({
       month: monthNames[monthDate.getMonth()],
       value: monthlySales
@@ -203,7 +203,7 @@ const getYearlySalesData = async (idRestaurante, tables, category = "Todas") => 
 
     // Get sales for this specific year
     const yearlySales = await getMonthlySalesForPeriod(idRestaurante, tables, yearStart, yearEnd, category);
-    
+
     yearlyData.push({
       month: year.toString(),
       value: yearlySales
@@ -226,6 +226,90 @@ const getMonthlySalesForPeriod = async (idRestaurante, tables, startDate, endDat
       table.id,
       "pedidos",
     );
+
+    const startTimestamp = Timestamp.fromDate(startDate);
+    const endTimestamp = Timestamp.fromDate(endDate);
+
+    const pedidosQuery = query(
+      pedidosRef,
+      where("criadoEm", ">=", startTimestamp),
+      where("criadoEm", "<=", endTimestamp)
+    );
+
+    const snapshot = await getDocs(pedidosQuery);
+    const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    // Calculate total sales for this table in this period with category filter
+    return pedidos.reduce((total, order) => {
+      if (category === "Todas") {
+        return total + (order.total || 0);
+      }
+
+      // Filter by category
+      const categoryTotal = (order.items || []).reduce((itemTotal, item) => {
+        if (item.categorias && item.categorias.includes(category)) {
+          return itemTotal + (item.price * item.quantity || 0);
+        }
+        return itemTotal;
+      }, 0);
+
+      return total + categoryTotal;
+    }, 0);
+  });
+
+  const tablesSales = await Promise.all(promises);
+  return tablesSales.reduce((total, sales) => total + sales, 0);
+};
+
+/**
+ * Busca os produtos mais vendidos para o período especificado
+ * @param {string} idRestaurante - ID do restaurante
+ * @param {Array} tables - Lista de mesas
+ * @param {string} filter - Filtro de período: "Mensal" ou "Anual"
+ */
+export const getTopSellingProducts = async (idRestaurante, tables, filter = "Mensal") => {
+  if (!tables || tables.length === 0) {
+    return [];
+  }
+
+  let startDate, endDate;
+  const now = new Date();
+
+  if (filter === "Mensal") {
+    // Current month
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (filter === "Anual") {
+    // Current year
+    startDate = new Date(now.getFullYear(), 0, 1);
+    endDate = new Date(now.getFullYear(), 11, 31);
+  }
+
+  return getTopProductsForPeriod(idRestaurante, tables, startDate, endDate);
+};
+
+/**
+ * Busca os produtos mais vendidos para um período específico
+ */
+const getTopProductsForPeriod = async (idRestaurante, tables, startDate, endDate) => {
+  console.log('[getTopProductsForPeriod] Starting with:', { 
+    idRestaurante, 
+    tablesCount: tables.length, 
+    startDate: startDate.toISOString(), 
+    endDate: endDate.toISOString() 
+  });
+
+  const productSales = {};
+
+  const promises = tables.map(async (table) => {
+    const pedidosRef = collection(
+      db,
+      "restaurantes",
+      idRestaurante,
+      "mesas",
+      table.id,
+      "pedidos",
+    );
     
     const startTimestamp = Timestamp.fromDate(startDate);
     const endTimestamp = Timestamp.fromDate(endDate);
@@ -239,24 +323,38 @@ const getMonthlySalesForPeriod = async (idRestaurante, tables, startDate, endDat
     const snapshot = await getDocs(pedidosQuery);
     const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     
-    // Calculate total sales for this table in this period with category filter
-    return pedidos.reduce((total, order) => {
-      if (category === "Todas") {
-        return total + (order.total || 0);
+    console.log(`[getTopProductsForPeriod] Table ${table.id} found ${pedidos.length} orders`);
+    
+    // Process each order's items
+    pedidos.forEach((order) => {
+      console.log('[getTopProductsForPeriod] Processing order:', { id: order.id, itemsCount: order.items?.length || 0 });
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach((item) => {
+          const productName = item.nome || 'Produto Desconhecido';
+          const itemTotal = (item.price || 0) * (item.quantity || 0);
+          
+          console.log('[getTopProductsForPeriod] Processing item:', { productName, price: item.price, quantity: item.quantity, itemTotal });
+          
+          if (productSales[productName]) {
+            productSales[productName] += itemTotal;
+          } else {
+            productSales[productName] = itemTotal;
+          }
+        });
       }
-      
-      // Filter by category
-      const categoryTotal = (order.items || []).reduce((itemTotal, item) => {
-        if (item.categorias && item.categorias.includes(category)) {
-          return itemTotal + (item.price * item.quantity || 0);
-        }
-        return itemTotal;
-      }, 0);
-      
-      return total + categoryTotal;
-    }, 0);
+    });
   });
 
-  const tablesSales = await Promise.all(promises);
-  return tablesSales.reduce((total, sales) => total + sales, 0);
+  await Promise.all(promises);
+
+  console.log('[getTopProductsForPeriod] Final productSales:', productSales);
+
+  // Convert to array and sort by sales value
+  const sortedProducts = Object.entries(productSales)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10); // Get top 10 products
+
+  console.log('[getTopProductsForPeriod] Returning sorted products:', sortedProducts);
+  return sortedProducts;
 };
