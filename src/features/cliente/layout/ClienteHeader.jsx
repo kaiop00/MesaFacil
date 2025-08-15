@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { HamburgerMd, CloseLg } from "react-coolicons";
 import SelectIdioma from "../components/SelectIdicoma";
+import Logo from "../../../assets/logo.png"
+
 
 
 export default function ClienteHeader() {
@@ -9,10 +11,10 @@ export default function ClienteHeader() {
     return (
         <header className="flex items-center justify-between px-4 py-3 shadow-sm bg-white">
             {/* Logo */}
-            <img src="src/assets/react.svg" alt="Logo" className="h-10 w-10" />
+            <img src={Logo} alt="Logo" className="h-10 w-10" />
 
             {/* Idioma */}
-           <SelectIdioma />
+            <SelectIdioma />
 
             {/* Botão menu */}
             <button onClick={() => setIsOpen(!isOpen)} className="md:hidden">
