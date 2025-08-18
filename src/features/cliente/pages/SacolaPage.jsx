@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
+import CarrinhoFooter from "../layout/CarrinhoFooter";
 
 export default function SacolaPage() {
     const { carrinhoItems } = useCarrinho();
@@ -14,44 +15,60 @@ export default function SacolaPage() {
             return;
         }
 
-        const observacoes = observacoesRef.current.value;
+        const observacoes = (observacoesRef.current?.value || "").trim();
 
         console.log("Pedido enviado:", {
             itens: carrinhoItems,
-            observacoes: observacoes.trim(),
+            observacoes,
         });
-
-        // Aqui você poderia chamar uma API ou navegar para uma tela de confirmação
     }
 
+    const vazio = carrinhoItems.length === 0;
+
     return (
-        <div className="flex flex-col p-4 gap-1 mb-28">
-            <h1>Items</h1>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                {carrinhoItems.map((item) => (
-                    <CardCarrinho key={item.id} item={item} />
-                ))}
+        <div className="flex flex-col p-4 gap-4 pb-48">
+            <h1 className="text-lg font-semibold">Itens</h1>
 
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="observacoes" className="text-sm font-medium text-gray-700">
-                        Observações
-                    </label>
-                    <textarea
-                        id="observacoes"
-                        ref={observacoesRef}
-                        rows={3}
-                        placeholder="Ex: sem cebola, ponto da carne..."
-                        className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                    />
-                </div>
+            {vazio ? (
+                <p className="text-sm text-gray-600">
+                    Sua sacola está vazia. Adicione itens pelo cardápio.
+                </p>
+            ) : (
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    {carrinhoItems.map((item) => (
+                        <CardCarrinho key={item.id} item={item} />
+                    ))}
 
-                <button
-                    type="submit"
-                    className="w-full bg-[#D9A23B] text-white rounded p-3 text-center font-medium hover:opacity-90 transition"
-                >
-                    Confirmar Pedido
-                </button>
-            </form>
+                    <div className="flex flex-col gap-2">
+                        <label
+                            htmlFor="observacoes"
+                            className="text-sm font-medium text-gray-700"
+                        >
+                            Observações
+                        </label>
+                        <textarea
+                            id="observacoes"
+                            ref={observacoesRef}
+                            rows={3}
+                            placeholder="Ex: sem cebola, ponto da carne..."
+                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={vazio}
+                        className="
+              w-full bg-[#D9A23B] text-white rounded p-3 text-center font-medium
+              hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed
+            "
+                    >
+                        Confirmar Pedido
+                    </button>
+                </form>
+            )}
+
+            <CarrinhoFooter />
         </div>
     );
 }
