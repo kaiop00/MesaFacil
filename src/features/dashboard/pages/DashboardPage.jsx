@@ -22,6 +22,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { formatDuration, intervalToDuration } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 ChartJS.register(
   CategoryScale,
@@ -35,6 +37,23 @@ ChartJS.register(
 const DashboardPage = () => {
   const { idRestaurante } = useAuth();
   const { mesasAndamento, tables } = useTables(idRestaurante);
+
+  // Helper function to format service time
+  const formatServiceTime = (minutes) => {
+    if (minutes > 60) {
+      const duration = intervalToDuration({
+        start: 0,
+        end: minutes * 60 * 1000 // Convert minutes to milliseconds
+      });
+      
+      return formatDuration(duration, {
+        format: ['hours', 'minutes'],
+        locale: ptBR,
+        delimiter: ' e '
+      });
+    }
+    return `${minutes} min`;
+  };
   const [salesData, setSalesData] = useState([]);
   const [loadingSalesData, setLoadingSalesData] = useState(true);
   const [topProducts, setTopProducts] = useState([]);
@@ -276,7 +295,7 @@ const DashboardPage = () => {
                 Tempo Médio de Atendimento
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.avgServiceTime} min
+                {formatServiceTime(stats.avgServiceTime)}
               </p>
             </div>
           </div>
