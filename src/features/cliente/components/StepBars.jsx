@@ -4,7 +4,7 @@ export default function StepBars({ currentStep, total = 3 }) {
     const steps = Array.from({ length: total }, (_, i) => i + 1);
 
     return (
-        <div className="flex items-center gap-4 w-full px-10">
+        <div className="flex items-center gap-4 w-full px-7">
             {steps.map((step) => {
                 const isFilled = step <= currentStep; 
 
