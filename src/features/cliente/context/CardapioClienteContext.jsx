@@ -5,18 +5,21 @@ import { getAll } from '@/services/firebase/firestoreService';
 const CardapioClienteContext = createContext();
 
 export default function CardapioClienteProvider({ children }) {
-
-    const { idRestaurante } = useCliente()
+    const { idRestaurante } = useCliente();
     const [loadingCardapio, setLoadingCardapio] = useState(true);
     const [items, setItems] = useState([]);
 
     const carregarCardapio = async () => {
         try {
-            const dados = await getAll(idRestaurante, 'cardapio', { orderByField: 'criadoEm', order: 'desc' });
+            const dados = await getAll(idRestaurante, 'cardapio', {
+                orderByField: 'criadoEm',
+                order: 'desc'
+            });
 
             const normalizados = dados.map((item) => ({
                 ...item,
-                price: Number(item.valor),
+                price: Number(item.valor ?? 0), // compatível com carrinho e service
+                quantity: 1, // default para controle no carrinho
             }));
 
             setItems(normalizados);
@@ -37,7 +40,7 @@ export default function CardapioClienteProvider({ children }) {
         <CardapioClienteContext.Provider value={{ items, loadingCardapio }}>
             {children}
         </CardapioClienteContext.Provider>
-    )
+    );
 }
 
 export function useClienteCardapio() {

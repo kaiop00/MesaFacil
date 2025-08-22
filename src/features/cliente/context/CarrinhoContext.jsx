@@ -13,12 +13,16 @@ export default function CarrinhoProvider({ children }) {
                 const atualizados = [...prev];
                 atualizados[index] = {
                     ...atualizados[index],
-                    quantidade: (atualizados[index].quantidade || 1) + (item.quantidade || 1),
+                    quantity: (atualizados[index].quantity || 1) + (item.quantity || 1),
                 };
                 return atualizados;
             }
 
-            return [...prev, { ...item, quantidade: item.quantidade || 1 }];
+            return [...prev, {
+                ...item,
+                price: item.price ?? item.valor ?? 0,
+                quantity: item.quantity ?? 1,
+            }];
         });
     }
 
@@ -32,13 +36,12 @@ export default function CarrinhoProvider({ children }) {
 
     const total = useMemo(() => {
         return carrinhoItems.reduce((acc, item) => {
-            const preco = item.valor ?? item.price ?? 0;
-            return acc + preco * (item.quantidade ?? 1);
+            return acc + (item.price ?? 0) * (item.quantity ?? 1);
         }, 0);
     }, [carrinhoItems]);
 
     const quantidade = useMemo(() => {
-        return carrinhoItems.reduce((acc, item) => acc + (item.quantidade ?? 1), 0);
+        return carrinhoItems.reduce((acc, item) => acc + (item.quantity ?? 1), 0);
     }, [carrinhoItems]);
 
     return (

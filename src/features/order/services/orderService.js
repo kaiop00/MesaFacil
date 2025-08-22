@@ -36,7 +36,7 @@ export const getMesasPorStatus = async (idRestaurante) => {
  * Cria ou atualiza um pedido de uma mesa.
  * Mantém um único pedido em andamento por mesa.
  */
-export const createPedido = async (idRestaurante, mesaId, items, total) => {
+export const createPedido = async (idRestaurante, mesaId, items, total, observacoes = "") => {
     const pedidoItems = items.map((item) => ({
         id: item.id,
         nome: item.nome,
@@ -76,6 +76,7 @@ export const createPedido = async (idRestaurante, mesaId, items, total) => {
             items: arrayUnion(...pedidoItems), // adiciona sem sobrescrever os existentes
             total: novoTotal,
             atualizadoEm: serverTimestamp(),
+            observacoes: observacoes, 
         });
 
     } else {
@@ -83,6 +84,7 @@ export const createPedido = async (idRestaurante, mesaId, items, total) => {
             items: pedidoItems,
             total,
             status: "andamento",
+            observacoes,
             criadoEm: serverTimestamp(),
         });
     }

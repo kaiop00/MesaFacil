@@ -95,6 +95,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                 }
                             </p>
                         </div>
+                        <p>Observações: {pedido.observacoes}</p>
                     </div>
                 ))}
             </div>
