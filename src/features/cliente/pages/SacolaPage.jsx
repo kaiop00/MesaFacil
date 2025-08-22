@@ -1,16 +1,18 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
 import CarrinhoFooter from "../layout/CarrinhoFooter";
 import { createPedido } from "@/features/order/services/orderService";
 import { useCliente } from "../context/ClienteContext";
 import { useToast } from "@/hooks/useToast";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function SacolaPage() {
     const { notify } = useToast()
     const { mesaId, idRestaurante } = useCliente()
     const { carrinhoItems, limparCarrinho, total } = useCarrinho();
     const observacoesRef = useRef();
+    const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -19,18 +21,20 @@ export default function SacolaPage() {
             console.warn("Carrinho vazio. Nada foi enviado.");
             return;
         }
-        
-        try{
+        setLoading(true);
+        try {
             const observacoes = (observacoesRef.current?.value || "").trim();
             await createPedido(idRestaurante, mesaId, carrinhoItems, total, observacoes);
             notify("Pedido Enviado Com sucesso", "success");
             limparCarrinho();
-        }catch(error){
+        } catch (error) {
             console.error("Erro ao enviar pedido: ", error);
             notify("Erro ao enviar pedido", "error");
+        } finally {
+            setLoading(false);
         }
 
-        
+
     }
 
     const vazio = carrinhoItems.length === 0;
@@ -67,13 +71,14 @@ export default function SacolaPage() {
 
                     <button
                         type="submit"
-                        disabled={vazio}
+                        disabled={vazio || loading}
                         className="
               w-full bg-[#D9A23B] text-white rounded p-3 text-center font-medium
               hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed
+              flex items-center justify-center
             "
                     >
-                        Confirmar Pedido
+                        {loading ? (<LoadingSpinner />) : ("Confirmar Pedido")}
                     </button>
                 </form>
             )}
