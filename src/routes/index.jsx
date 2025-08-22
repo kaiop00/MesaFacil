@@ -31,6 +31,7 @@ import { TablesProvider } from "@/features/config/context/TablesContext";
 import MesaPage from "@/features/cliente/pages/MesaPage";
 import ClienteLayout from "@/features/cliente/layout/ClienteLayout";
 import SacolaPage from "@/features/cliente/pages/SacolaPage";
+import PedidoClientePage from "@/features/cliente/pages/PedidoClientePage";
 
 const router = createBrowserRouter([
   // redireciona para /home ou /login
@@ -70,6 +71,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <MesaPage /> },
       { path: "sacola", element: <SacolaPage /> },
+      { path: "pedido", element: <PedidoClientePage /> }
     ]
   },
 
