@@ -2,25 +2,35 @@ import { useRef } from "react";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
 import CarrinhoFooter from "../layout/CarrinhoFooter";
+import { createPedido } from "@/features/order/services/orderService";
+import { useCliente } from "../context/ClienteContext";
+import { useToast } from "@/hooks/useToast";
 
 export default function SacolaPage() {
-    const { carrinhoItems } = useCarrinho();
+    const { notify } = useToast()
+    const { mesaId, idRestaurante } = useCliente()
+    const { carrinhoItems, limparCarrinho, total } = useCarrinho();
     const observacoesRef = useRef();
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
 
         if (carrinhoItems.length === 0) {
             console.warn("Carrinho vazio. Nada foi enviado.");
             return;
         }
+        
+        try{
+            const observacoes = (observacoesRef.current?.value || "").trim();
+            await createPedido(idRestaurante, mesaId, carrinhoItems, total, observacoes);
+            notify("Pedido Enviado Com sucesso", "success");
+            limparCarrinho();
+        }catch(error){
+            console.error("Erro ao enviar pedido: ", error);
+            notify("Erro ao enviar pedido", "error");
+        }
 
-        const observacoes = (observacoesRef.current?.value || "").trim();
-
-        console.log("Pedido enviado:", {
-            itens: carrinhoItems,
-            observacoes,
-        });
+        
     }
 
     const vazio = carrinhoItems.length === 0;
