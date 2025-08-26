@@ -3,8 +3,14 @@ import { db } from "@/config/firebaseConfig";
 
 /**
  * Lista pedidos de uma mesa com filtro de data usando queries do Firestore
+ * @param {string} idRestaurante - ID do restaurante
+ * @param {string} mesaId - ID da mesa
+ * @param {string|null} dateFilter - Filtro predefinido: 'Hoje', 'Semanal', 'Mensal'
+ * @param {string|null} startDate - Data de início personalizada (ISO string)
+ * @param {string|null} endDate - Data de fim personalizada (ISO string)
+ * @returns {Promise<Array>} Array de pedidos filtrados
  */
-export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter = null) => {
+export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter = null, startDate = null, endDate = null) => {
   const pedidosRef = collection(
     db,
     "restaurantes",
@@ -16,11 +22,22 @@ export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter =
 
   let pedidosQuery = pedidosRef;
 
-  // Apply date filter directly in Firestore query
-  if (dateFilter) {
-    const startDate = getFilterStartDate(dateFilter);
-    if (startDate) {
-      const startTimestamp = Timestamp.fromDate(startDate);
+  // OTIMIZAÇÃO: Apply custom date range filter directly in Firestore query
+  // This reduces data transfer and improves performance significantly
+  if (startDate && endDate) {
+    const startTimestamp = Timestamp.fromDate(new Date(startDate));
+    const endTimestamp = Timestamp.fromDate(new Date(endDate));
+    pedidosQuery = query(
+      pedidosRef,
+      where("criadoEm", ">=", startTimestamp),
+      where("criadoEm", "<=", endTimestamp)
+    );
+  }
+  // Apply predefined period filter if no custom range provided
+  else if (dateFilter) {
+    const filterStartDate = getFilterStartDate(dateFilter);
+    if (filterStartDate) {
+      const startTimestamp = Timestamp.fromDate(filterStartDate);
       pedidosQuery = query(pedidosRef, where("criadoEm", ">=", startTimestamp));
     }
   }
@@ -28,7 +45,6 @@ export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter =
   const snapshot = await getDocs(pedidosQuery);
   const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-  console.log('[pedidos]', pedidos);
   return pedidos;
 };
 
@@ -59,8 +75,14 @@ const getFilterStartDate = (period) => {
 /**
  * Versão otimizada para buscar estatísticas de múltiplas mesas com o mesmo filtro
  * Útil quando você precisa das mesmas estatísticas para todas as mesas
+ * @param {string} idRestaurante - ID do restaurante
+ * @param {Array} tables - Array de mesas
+ * @param {string|null} dateFilter - Filtro predefinido
+ * @param {string|null} startDate - Data de início personalizada
+ * @param {string|null} endDate - Data de fim personalizada
+ * @returns {Promise<Object>} Estatísticas agregadas de todas as mesas
  */
-export const getTableStatsOptimized = async (idRestaurante, tables, dateFilter = null) => {
+export const getTableStatsOptimized = async (idRestaurante, tables, dateFilter = null, startDate = null, endDate = null) => {
   if (!tables || tables.length === 0) {
     return {
       totalSales: 0,
@@ -73,7 +95,7 @@ export const getTableStatsOptimized = async (idRestaurante, tables, dateFilter =
 
   // Execute all queries in parallel but with the same filter
   const promises = tables.map(async (table) => {
-    const orders = await showAllOrdersFromTable(idRestaurante, table.id, dateFilter);
+    const orders = await showAllOrdersFromTable(idRestaurante, table.id, dateFilter, startDate, endDate);
     return calculateStats(orders);
   });
 
@@ -292,13 +314,6 @@ export const getTopSellingProducts = async (idRestaurante, tables, filter = "Men
  * Busca os produtos mais vendidos para um período específico
  */
 const getTopProductsForPeriod = async (idRestaurante, tables, startDate, endDate) => {
-  console.log('[getTopProductsForPeriod] Starting with:', { 
-    idRestaurante, 
-    tablesCount: tables.length, 
-    startDate: startDate.toISOString(), 
-    endDate: endDate.toISOString() 
-  });
-
   const productSales = {};
 
   const promises = tables.map(async (table) => {
@@ -310,31 +325,25 @@ const getTopProductsForPeriod = async (idRestaurante, tables, startDate, endDate
       table.id,
       "pedidos",
     );
-    
+
     const startTimestamp = Timestamp.fromDate(startDate);
     const endTimestamp = Timestamp.fromDate(endDate);
-    
+
     const pedidosQuery = query(
-      pedidosRef, 
+      pedidosRef,
       where("criadoEm", ">=", startTimestamp),
       where("criadoEm", "<=", endTimestamp)
     );
-    
+
     const snapshot = await getDocs(pedidosQuery);
     const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    
-    console.log(`[getTopProductsForPeriod] Table ${table.id} found ${pedidos.length} orders`);
-    
     // Process each order's items
     pedidos.forEach((order) => {
-      console.log('[getTopProductsForPeriod] Processing order:', { id: order.id, itemsCount: order.items?.length || 0 });
       if (order.items && Array.isArray(order.items)) {
         order.items.forEach((item) => {
           const productName = item.nome || 'Produto Desconhecido';
           const itemTotal = (item.price || 0) * (item.quantity || 0);
-          
-          console.log('[getTopProductsForPeriod] Processing item:', { productName, price: item.price, quantity: item.quantity, itemTotal });
-          
+
           if (productSales[productName]) {
             productSales[productName] += itemTotal;
           } else {
@@ -347,14 +356,11 @@ const getTopProductsForPeriod = async (idRestaurante, tables, startDate, endDate
 
   await Promise.all(promises);
 
-  console.log('[getTopProductsForPeriod] Final productSales:', productSales);
-
   // Convert to array and sort by sales value
   const sortedProducts = Object.entries(productSales)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 10); // Get top 10 products
 
-  console.log('[getTopProductsForPeriod] Returning sorted products:', sortedProducts);
   return sortedProducts;
 };
