@@ -1,14 +1,17 @@
-import { useState } from "react";
-import { Calendar, Printer } from "react-coolicons";
+import { Printer } from "react-coolicons";
+import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
-const ReportFilter = () => {
-  const [reportType, setReportType] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-
-  const handleSubmit = () => {
-    console.log("Relatório solicitado:", { reportType, startDate, endDate });
-  };
+const ReportFilter = ({
+  reportType,
+  setReportType,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  onSubmit,
+  loading,
+  disabled = false
+}) => {
   return (
     <div className="bg-white rounded-lg p-6 shadow-md w-full">
       <div className="space-y-6">
@@ -25,15 +28,16 @@ const ReportFilter = () => {
               id="reportType"
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              disabled={disabled}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="" disabled>
                 Escolha o tipo de relatório que deseja
               </option>
-              <option value="daily">Diário</option>
-              <option value="weekly">Semanal</option>
-              <option value="monthly">Mensal</option>
-              <option value="custom">Personalizado</option>
+              <option value="vendas">Relatório de Vendas</option>
+              <option value="periodo">Relatório por Período</option>
+              <option value="produto">Relatório por Produto</option>
+              <option value="garcom">Relatório por Garçom</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -63,7 +67,8 @@ const ReportFilter = () => {
                 id="startDate"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-700"
+                disabled={disabled}
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   colorScheme: "light",
                 }}
@@ -85,7 +90,8 @@ const ReportFilter = () => {
                 id="endDate"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-700"
+                disabled={disabled}
+                className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   colorScheme: "light",
                 }}
@@ -97,11 +103,23 @@ const ReportFilter = () => {
         {/* Submit Button aligned to the right */}
         <div className="flex justify-end">
           <button
-            onClick={handleSubmit}
-            className="inline-flex items-center px-4 py-2 bg-primary-dynamic text-white font-medium rounded-md 2 cursor-pointer"
+            onClick={onSubmit}
+            disabled={loading || disabled}
+            className="inline-flex items-center px-4 py-2 bg-primary-dynamic text-white font-medium rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Gerar Relatório
-            <Printer className="ml-2 h-5 w-5" />
+            {loading ? (
+              <>
+                Gerando...
+                <div className="ml-2">
+                  <LoadingSpinnerDynamic size={4} />
+                </div>
+              </>
+            ) : (
+              <>
+                Gerar Relatório
+                <Printer className="ml-2 h-5 w-5" />
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -88,7 +88,7 @@ const router = createBrowserRouter([
           { path: "", element: <TablesProvider> <DashboardPage /> </TablesProvider> },
           { path: "pedidos", element: <TablesProvider> <OrderPage /> </TablesProvider> },
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
-          { path: "relatorios", element: <ReportPage /> },
+          { path: "relatorios", element: <TablesProvider> <ReportPage /> </TablesProvider> },
           { path: "promocoes", element: <PromotionPage /> },
           { path: "usuarios", element: <UsersPage /> },
           { path: "itens", element: <ItemsPage /> },
