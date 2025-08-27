@@ -14,9 +14,9 @@ export default function CategoriaConfigModal({ isOpen, onClose }) {
 
     const {
         categorias,
-        isListening,   // loading da tabela
-        isSending,     // loading do botão do form
-        deletingIds,   // ids deletando p/ tabela
+        isListening,   
+        isSending,     
+        deletingIds,   
         addCategoria,
         deleteCategoria,
     } = useCrudCategorias({ idRestaurante, enabled: isOpen });
@@ -54,13 +54,13 @@ export default function CategoriaConfigModal({ isOpen, onClose }) {
                 value={name}
                 onChange={setName}
                 onSubmit={handleCreate}
-                loading={isSending}   // spinner só no botão
+                loading={isSending}   
             />
 
             <CategoriasTable
                 categorias={categorias}
-                loading={isListening} // “Carregando categorias...” só na tabela
-                deletingIds={deletingIds} // spinner por linha ao excluir
+                loading={isListening} 
+                deletingIds={deletingIds}
                 onDelete={handleDelete}
             />
         </BaseModalWithHeader>

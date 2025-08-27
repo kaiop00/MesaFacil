@@ -4,8 +4,8 @@ import { TrashFull } from "react-coolicons";
 
 export default function CategoriasTable({
     categorias = [],
-    loading = false,      // carrega a lista
-    deletingIds,         // Set<string>
+    loading = false,      
+    deletingIds,         
     onDelete,
 }) {
     return (
