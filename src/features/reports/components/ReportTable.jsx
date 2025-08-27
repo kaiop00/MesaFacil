@@ -4,8 +4,16 @@ import {
   ProductReportTable,
   WaiterReportTable
 } from "./tables";
+import { generatePDF } from "@/utils/pdfGenerator";
+import { useState } from "react";
+import { Download } from "react-coolicons";
+import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { useToast } from "@/hooks/useToast";
 
 const ReportTable = ({ reportData, startDate, endDate }) => {
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const { notify } = useToast();
+  
   const formatCurrency = (value) => {
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
@@ -40,15 +48,55 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      setIsGeneratingPDF(true);
+      await generatePDF(reportData, startDate, endDate);
+      notify('PDF gerado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      notify('Erro ao gerar PDF. Tente novamente.', 'error');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg p-6 shadow-md w-full">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          {getReportTitle()}
-        </h3>
-        <p className="text-sm text-gray-500">
-          Período: {new Date(startDate).toLocaleDateString('pt-BR')} até {new Date(endDate).toLocaleDateString('pt-BR')}
-        </p>
+      <div className="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-gray-900 truncate">
+            {getReportTitle()}
+          </h3>
+          <p className="text-sm text-gray-500 truncate">
+            Período: {new Date(startDate).toLocaleDateString('pt-BR')} até {new Date(endDate).toLocaleDateString('pt-BR')}
+          </p>
+        </div>
+        {hasData() && (
+          <div className="flex justify-end sm:justify-start">
+            <button
+              onClick={handleExportPDF}
+              disabled={isGeneratingPDF}
+              className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-primary-dynamic text-white font-medium rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap"
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <span className="hidden sm:inline">Gerando PDF...</span>
+                  <span className="sm:hidden">Gerando...</span>
+                  <div className="ml-2">
+                    <LoadingSpinnerDynamic size={4} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Exportar PDF</span>
+                  <span className="sm:hidden">PDF</span>
+                  <Download className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto">
