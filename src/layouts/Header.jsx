@@ -6,12 +6,14 @@ import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigM
 import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
+import CategoriaConfigModal from "@/features/config/components/modals/CategoriasConfigModal";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
+  const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
@@ -102,6 +104,16 @@ const Header = () => {
                     >
                       Foto/Cores
                     </button>
+                    <button
+                      onClick={() => {
+                        setIsCategoriaConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Categorias
+                    </button>
                   </div>
                 )}
               </div>
@@ -132,6 +144,10 @@ const Header = () => {
           <ColorsConfigModal
             isOpen={isColorsConfigModalOpen}
             onClose={() => setIsColorsConfigModalOpen(false)}
+          />
+          <CategoriaConfigModal
+            isOpen={isCategoriaConfigModalOpen}
+            onClose={() => setIsCategoriaConfigModalOpen(false)}
           />
         </div>
       </div>
