@@ -47,6 +47,8 @@ async function criarOuAssociarRestaurante(nomeRestaurante) {
 
   const docRef = await addDoc(collection(db, "restaurantes"), {
     nome: nomeRestaurante,
+    cor_base: "#D9A23B",   
+    imagem_restaurante: null, 
     createdAt: serverTimestamp(),
   });
 
