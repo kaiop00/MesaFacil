@@ -56,7 +56,10 @@ export default function CadastroFormSection() {
                         Clique no botão abaixo para acessar o painel do sistema. Bem-vindo!
                     </p>
                     <button
-                        onClick={() => navigate('/home', { state: { idRestaurante } })}
+                      onClick={() => {
+                        navigate('/home', {state : { idRestaurante } });
+                        window.location.reload();
+                      }}
                         className="w-full h-[44px] bg-[#F8912E] text-white rounded font-semibold font-inter transition hover:bg-orange-600"
                     >
                         Ir para o painel
