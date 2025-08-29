@@ -1,18 +1,18 @@
-import UploadWidget from "../UploadWidget";
+import UploadImageFirebase from "@/features/foodList/components/UploadWidget";
 import CategoriaSelect from "@/features/foodList/components/selects/CategoriaSelect";
 import AlergiaSelect from "@/features/foodList/components/selects/AlergiaSelect";
 
 const NewFoodForm = ({ formData, setFormData }) => {
-  const setImagemUrl = (url) => {
-    setFormData((prev) => ({
-      ...prev,
-      imagemUrl: url,
-    }));
-  };
+  const setFile = (file) => setFormData((p) => ({ ...p, file }));
+  const setPreviewUrl = (url) => setFormData((p) => ({ ...p, previewUrl: url }));
 
   return (
     <form className="font-inter space-y-4 text-sm">
-      <UploadWidget imagemUrl={formData.imagemUrl} setImagemUrl={setImagemUrl} />
+      <UploadImageFirebase
+        previewUrl={formData.previewUrl || null}
+        setPreviewUrl={setPreviewUrl}
+        setFile={setFile}
+      />
 
       <div>
         <label className="block mb-1 font-medium text-gray-700">Nome do Item</label>
@@ -32,13 +32,9 @@ const NewFoodForm = ({ formData, setFormData }) => {
       <AlergiaSelect
         value={formData.alergias.map((a) => ({ label: a, value: a }))}
         onChange={(selected) =>
-          setFormData((prev) => ({
-            ...prev,
-            alergias: selected.map((s) => s.value) 
-          }))
+          setFormData((prev) => ({ ...prev, alergias: selected.map((s) => s.value) }))
         }
       />
-
 
       <div>
         <label className="block mb-1 font-medium text-gray-700">Valor</label>
@@ -47,10 +43,7 @@ const NewFoodForm = ({ formData, setFormData }) => {
           step="0.01"
           value={formData.valor}
           onChange={(e) =>
-            setFormData((prev) => ({
-              ...prev,
-              valor: parseFloat(e.target.value),
-            }))
+            setFormData((prev) => ({ ...prev, valor: parseFloat(e.target.value) }))
           }
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
         />
