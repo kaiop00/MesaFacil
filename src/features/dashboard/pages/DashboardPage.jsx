@@ -45,7 +45,7 @@ const DashboardPage = () => {
         start: 0,
         end: minutes * 60 * 1000 // Convert minutes to milliseconds
       });
-      
+
       return formatDuration(duration, {
         format: ['hours', 'minutes'],
         locale: ptBR,
@@ -114,7 +114,10 @@ const DashboardPage = () => {
   // Fetch monthly sales data for chart
   useEffect(() => {
     const fetchMonthlySalesData = async () => {
-      if (!tables || tables.length === 0 || !idRestaurante) return;
+      if (!tables || tables.length === 0 || !idRestaurante) {
+        setLoadingSalesData(false);
+        return;
+      };
 
       try {
         setLoadingSalesData(true);
@@ -125,9 +128,11 @@ const DashboardPage = () => {
         // Fallback to empty array on error
         setSalesData([]);
       } finally {
+        console.log('finally');
         setLoadingSalesData(false);
       }
     };
+    console.log('fetchMonthlySalesData');
 
     fetchMonthlySalesData();
   }, [tables, idRestaurante, chartFilter, categoryFilter]);
@@ -135,7 +140,10 @@ const DashboardPage = () => {
   // Fetch top selling products data
   useEffect(() => {
     const fetchTopProducts = async () => {
-      if (!tables || tables.length === 0 || !idRestaurante) return;
+      if (!tables || tables.length === 0 || !idRestaurante) {
+        setLoadingTopProducts(false);
+        return;
+      };
 
       try {
         setLoadingTopProducts(true);
