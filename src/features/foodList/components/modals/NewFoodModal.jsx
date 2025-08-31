@@ -12,22 +12,20 @@ const initialFormData = {
     categorias: [],
     valor: "",
     descricao: "",
-    imagemUrl: "",   
-    alergias: [],    
+    file: null,        // <- novo
+    previewUrl: "",    // <- novo (apenas UI)
+    alergias: [],
 };
-
 
 const NewFoodModal = ({ isOpen, onClose }) => {
     const [formData, setFormData] = useState(initialFormData);
     const [loading, setLoading] = useState(false);
     const { carregarItens } = useCardapioContext();
     const { notify } = useToast();
-    const { salvarNovoItem } = useFoodService()
+    const { salvarNovoItem } = useFoodService();
 
     useEffect(() => {
-        if (isOpen) {
-            setFormData(initialFormData);  
-        }
+        if (isOpen) setFormData(initialFormData);
     }, [isOpen]);
 
     const handleSalvar = async () => {
@@ -36,7 +34,7 @@ const NewFoodModal = ({ isOpen, onClose }) => {
             await salvarNovoItem(formData);
             notify("Item adicionado com sucesso!", "success");
             onClose();
-            carregarItens(); 
+            carregarItens();
         } catch (err) {
             console.error("Erro ao salvar item:", err);
             notify(err.message || "Erro ao salvar item.", "error");
@@ -58,21 +56,11 @@ const NewFoodModal = ({ isOpen, onClose }) => {
             </div>
 
             <div className="font-inter flex justify-between items-center px-6 py-4">
-                <button
-                    onClick={onClose}
-                    className="cursor-pointer font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100"
-                >
+                <button onClick={onClose} className="font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100">
                     Cancelar
                 </button>
-                <button
-                    onClick={handleSalvar}
-                    className="cursor-pointer font-bold bg-primary-dynamic text-white px-6 py-2 rounded"
-                >
-                    {loading ? (
-                        <LoadingSpinner/>
-                    ) : (
-                        <span>Salvar</span>
-                    )}
+                <button onClick={handleSalvar} className="font-bold bg-primary-dynamic text-white px-6 py-2 rounded">
+                    {loading ? <LoadingSpinner /> : <span>Salvar</span>}
                 </button>
             </div>
         </BaseModalWithHeader>
