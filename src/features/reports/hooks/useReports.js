@@ -67,8 +67,9 @@ export const useReports = (idRestaurante, tables) => {
    * @returns {Object} Dados agrupados por período
    */
   const generatePeriodReport = async (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = new Date(startDate + "T00:00:00");
+    const end = new Date(endDate + "T23:59:59");
+    console.log(start);
 
     // Execute all table queries in parallel for the entire period (ONE REQUEST PER TABLE)
     const tablesOrdersPromises = tables.map(async (table) => {

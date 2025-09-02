@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/useToast";
 const ReportTable = ({ reportData, startDate, endDate }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { notify } = useToast();
-  
+
   const formatCurrency = (value) => {
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
@@ -69,7 +69,7 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
             {getReportTitle()}
           </h3>
           <p className="text-sm text-gray-500 truncate">
-            Período: {new Date(startDate).toLocaleDateString('pt-BR')} até {new Date(endDate).toLocaleDateString('pt-BR')}
+            Período: {new Date(startDate + "T00:00:00").toLocaleDateString('pt-BR')} até {new Date(endDate + "T23:59:59").toLocaleDateString('pt-BR')}
           </p>
         </div>
         {hasData() && (
@@ -101,30 +101,30 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
 
       <div className="overflow-x-auto">
         {reportData.type === "vendas" && (
-          <SalesReportTable 
-            orders={reportData.orders} 
-            formatCurrency={formatCurrency} 
+          <SalesReportTable
+            orders={reportData.orders}
+            formatCurrency={formatCurrency}
           />
         )}
 
         {reportData.type === "periodo" && (
-          <PeriodReportTable 
-            data={reportData.data} 
-            formatCurrency={formatCurrency} 
+          <PeriodReportTable
+            data={reportData.data}
+            formatCurrency={formatCurrency}
           />
         )}
 
         {reportData.type === "produto" && (
-          <ProductReportTable 
-            products={reportData.products} 
-            formatCurrency={formatCurrency} 
+          <ProductReportTable
+            products={reportData.products}
+            formatCurrency={formatCurrency}
           />
         )}
 
         {reportData.type === "garcom" && (
-          <WaiterReportTable 
-            waiters={reportData.waiters} 
-            formatCurrency={formatCurrency} 
+          <WaiterReportTable
+            waiters={reportData.waiters}
+            formatCurrency={formatCurrency}
           />
         )}
       </div>

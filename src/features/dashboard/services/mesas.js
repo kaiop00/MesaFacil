@@ -25,8 +25,8 @@ export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter =
   // OTIMIZAÇÃO: Apply custom date range filter directly in Firestore query
   // This reduces data transfer and improves performance significantly
   if (startDate && endDate) {
-    const startTimestamp = Timestamp.fromDate(new Date(startDate));
-    const endTimestamp = Timestamp.fromDate(new Date(endDate));
+    const startTimestamp = Timestamp.fromDate(new Date(startDate + "T00:00:00"));
+    const endTimestamp = Timestamp.fromDate(new Date(endDate + "T23:59:59"));
     pedidosQuery = query(
       pedidosRef,
       where("criadoEm", ">=", startTimestamp),

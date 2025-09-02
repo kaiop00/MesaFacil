@@ -92,6 +92,19 @@ const formatDateFile = (dateString) => {
   return new Date(dateString).toISOString().split('T')[0];
 };
 
+const checkPageSpace = (doc, currentY, requiredSpace = 30) => {
+  const pageHeight = doc.internal.pageSize.height;
+  const footerSpace = 25; // Reserve space for footer
+  const availableSpace = pageHeight - footerSpace - currentY;
+  
+  if (availableSpace < requiredSpace) {
+    doc.addPage();
+    return 20; // Return new starting Y position on new page
+  }
+  
+  return currentY;
+};
+
 const generateSalesTable = (doc, orders, startY) => {
   const tableColumns = ['Nº Pedido', 'Mesa', 'Data', 'Valor', 'Status'];
   const tableRows = orders.map(order => [
@@ -128,7 +141,10 @@ const generateSalesTable = (doc, orders, startY) => {
 
   // Add summary
   const totalValue = orders.reduce((sum, order) => sum + order.valor, 0);
-  const finalY = doc.lastAutoTable.finalY + 10;
+  let finalY = doc.lastAutoTable.finalY + 10;
+
+  // Check if we have enough space for summary (2 lines + margin)
+  finalY = checkPageSpace(doc, finalY, 20);
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
@@ -171,7 +187,10 @@ const generatePeriodTable = (doc, data, startY) => {
   // Add summary
   const totalOrders = data.reduce((sum, day) => sum + day.totalPedidos, 0);
   const totalValue = data.reduce((sum, day) => sum + day.valorTotal, 0);
-  const finalY = doc.lastAutoTable.finalY + 10;
+  let finalY = doc.lastAutoTable.finalY + 10;
+
+  // Check if we have enough space for summary (2 lines + margin)
+  finalY = checkPageSpace(doc, finalY, 20);
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
@@ -214,7 +233,10 @@ const generateProductTable = (doc, products, startY) => {
   // Add summary
   const totalQuantity = products.reduce((sum, product) => sum + product.quantidadeVendida, 0);
   const totalValue = products.reduce((sum, product) => sum + product.valorTotal, 0);
-  const finalY = doc.lastAutoTable.finalY + 10;
+  let finalY = doc.lastAutoTable.finalY + 10;
+
+  // Check if we have enough space for summary (2 lines + margin)
+  finalY = checkPageSpace(doc, finalY, 20);
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
@@ -257,7 +279,10 @@ const generateWaiterTable = (doc, waiters, startY) => {
   // Add summary
   const totalOrders = waiters.reduce((sum, waiter) => sum + waiter.numeroPedidos, 0);
   const totalValue = waiters.reduce((sum, waiter) => sum + waiter.valorTotal, 0);
-  const finalY = doc.lastAutoTable.finalY + 10;
+  let finalY = doc.lastAutoTable.finalY + 10;
+
+  // Check if we have enough space for summary (2 lines + margin)
+  finalY = checkPageSpace(doc, finalY, 20);
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
