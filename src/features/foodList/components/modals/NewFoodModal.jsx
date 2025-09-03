@@ -12,8 +12,8 @@ const initialFormData = {
     categorias: [],
     valor: "",
     descricao: "",
-    file: null,        // <- novo
-    previewUrl: "",    // <- novo (apenas UI)
+    file: null,
+    previewUrl: "",
     alergias: [],
 };
 
@@ -28,7 +28,44 @@ const NewFoodModal = ({ isOpen, onClose }) => {
         if (isOpen) setFormData(initialFormData);
     }, [isOpen]);
 
+    // --- validação local com mensagens específicas
+    const validarFormulario = () => {
+        const faltando = [];
+
+        if (!formData.nome?.trim()) faltando.push("nome");
+        if (!Array.isArray(formData.categorias) || formData.categorias.length === 0)
+            faltando.push("categoria");
+        const v = Number(formData.valor);
+        if (!Number.isFinite(v) || v <= 0) faltando.push("valor");
+        if (!formData.file && !formData.previewUrl) faltando.push("imagem"); // se imagem for obrigatória
+
+        if (faltando.length > 0) {
+            if (faltando.length === 1 && faltando[0] === "categoria") {
+                notify("Selecione pelo menos uma categoria.", "error");
+            } else if (faltando.length === 1 && faltando[0] === "imagem") {
+                notify("Inclua uma imagem do item.", "error");
+            } else {
+                const labels = {
+                    nome: "nome",
+                    categoria: "categoria",
+                    valor: "valor",
+                    imagem: "imagem",
+                };
+                notify(
+                    `Preencha os campos obrigatórios: ${faltando
+                        .map((k) => labels[k])
+                        .join(", ")}.`,
+                    "error"
+                );
+            }
+            return false;
+        }
+        return true;
+    };
+
     const handleSalvar = async () => {
+        if (!validarFormulario()) return;
+
         setLoading(true);
         try {
             await salvarNovoItem(formData);
@@ -37,7 +74,7 @@ const NewFoodModal = ({ isOpen, onClose }) => {
             carregarItens();
         } catch (err) {
             console.error("Erro ao salvar item:", err);
-            notify(err.message || "Erro ao salvar item.", "error");
+            notify(err?.message || "Erro ao salvar item.", "error");
         } finally {
             setLoading(false);
         }
@@ -56,10 +93,17 @@ const NewFoodModal = ({ isOpen, onClose }) => {
             </div>
 
             <div className="font-inter flex justify-between items-center px-6 py-4">
-                <button onClick={onClose} className="font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100">
+                <button
+                    onClick={onClose}
+                    className="font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100"
+                >
                     Cancelar
                 </button>
-                <button onClick={handleSalvar} className="font-bold bg-primary-dynamic text-white px-6 py-2 rounded">
+                <button
+                    onClick={handleSalvar}
+                    className="font-bold bg-primary-dynamic text-white px-6 py-2 rounded"
+                    disabled={loading}
+                >
                     {loading ? <LoadingSpinner /> : <span>Salvar</span>}
                 </button>
             </div>
