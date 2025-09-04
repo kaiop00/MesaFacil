@@ -3,11 +3,13 @@ import { useCardapioContext } from "@/features/foodList/context/CardapioContext"
 import { useOrderContext } from "@/features/order/context/OrderContext";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { createPedido } from "@/features/order/services/orderService";
+import { createPedido, verificarEstoquePedido } from "@/features/order/services/orderService";
 import CardapioItemSelect from "@/features/order/components/CardapioItemSelect";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
 import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import EstoqueInfo from "@/components/EstoqueInfo";
+import { TriangleWarning, CheckboxCheck } from "react-coolicons";
 
 const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
     const { items: cardapioItems } = useCardapioContext();
@@ -16,6 +18,8 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
     const { idRestaurante } = useAuth();
     const { notify } = useToast();
     const [loading, setLoading] = useState(false);
+    const [verificacaoEstoque, setVerificacaoEstoque] = useState(null);
+    const [loadingEstoque, setLoadingEstoque] = useState(false);
 
     const handleAdd = () => {
         const item = cardapioItems.find((i) => i.id === selectedItemId);
@@ -37,23 +41,56 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
         return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     }, [items]);
 
+    // Verificar estoque sempre que os itens mudarem
+    useEffect(() => {
+        if (items.length > 0) {
+            verificarEstoque();
+        } else {
+            setVerificacaoEstoque(null);
+        }
+    }, [items, idRestaurante]);
+
+    const verificarEstoque = async () => {
+        setLoadingEstoque(true);
+        try {
+            const verificacao = await verificarEstoquePedido(idRestaurante, items);
+            setVerificacaoEstoque(verificacao);
+        } catch (error) {
+            console.error('Erro ao verificar estoque:', error);
+            setVerificacaoEstoque({ podeProcessar: false, verificacoes: [] });
+        } finally {
+            setLoadingEstoque(false);
+        }
+    };
+
     const handleSubmit = async () => {
         if (!selectedTable) {
             notify("Selecione uma mesa primeiro", "error");
             return;
         }
+
+        // Verificar estoque antes de confirmar
+        if (verificacaoEstoque && !verificacaoEstoque.podeProcessar) {
+            notify("Não é possível processar o pedido devido a problemas no estoque", "error");
+            return;
+        }
+
         setLoading(true);
         try {
-            await createPedido(idRestaurante, selectedTable.id, items, total);
+            const resultado = await createPedido(idRestaurante, selectedTable.id, items, total);
             clearOrder();
             onClose();
-            notify("Pedido adicionado com sucesso", "success");
+
+            if (resultado.estoqueProcessado) {
+                notify("Pedido adicionado e estoque atualizado com sucesso!", "success");
+            } else {
+                notify("Pedido adicionado com sucesso!", "success");
+            }
         } catch (error) {
-            notify(`${error} , error`);
+            notify(error.message || "Erro ao processar pedido", "error");
         } finally {
             setLoading(false);
         }
-
     }
 
     return (
@@ -88,6 +125,58 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
                     removeItem={removeItem}
                 />
 
+                {/* Informações de Estoque */}
+                {items.length > 0 && (
+                    <div className="mt-4">
+                        {loadingEstoque ? (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                <div className="flex items-center space-x-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                                    <span className="text-sm text-gray-600">Verificando estoque...</span>
+                                </div>
+                            </div>
+                        ) : verificacaoEstoque ? (
+                            <div className={`border rounded-lg p-3 ${
+                                verificacaoEstoque.podeProcessar
+                                    ? 'bg-green-50 border-green-200'
+                                    : 'bg-red-50 border-red-200'
+                            }`}>
+                                <div className="flex items-center space-x-2 mb-2">
+                                    {verificacaoEstoque.podeProcessar ? (
+                                        <CheckboxCheck className="w-4 h-4 text-green-600" />
+                                    ) : (
+                                        <TriangleWarning className="w-4 h-4 text-red-600" />
+                                    )}
+                                    <span className={`text-sm font-medium ${
+                                        verificacaoEstoque.podeProcessar
+                                            ? 'text-green-800'
+                                            : 'text-red-800'
+                                    }`}>
+                                        {verificacaoEstoque.podeProcessar
+                                            ? 'Estoque disponível'
+                                            : 'Estoque insuficiente'
+                                        }
+                                    </span>
+                                </div>
+
+                                {!verificacaoEstoque.podeProcessar && (
+                                    <div className="space-y-1">
+                                        {verificacaoEstoque.verificacoes
+                                            .filter(v => !v.disponivel)
+                                            .map((verificacao, index) => (
+                                            <div key={index} className="text-xs text-red-700">
+                                                • {verificacao.itemNome}: {verificacao.motivo}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : null}
+
+                        <EstoqueInfo itensPedido={items} className="mt-2" />
+                    </div>
+                )}
+
                 <div className="mt-4 font-bold">Total: R$ {total.toFixed(2)}</div>
 
                 <div className="flex justify-between gap-2 mt-4">
@@ -99,8 +188,9 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={items.length === 0 || loading}
+                        disabled={items.length === 0 || loading || (verificacaoEstoque && !verificacaoEstoque.podeProcessar)}
                         className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
+                        title={verificacaoEstoque && !verificacaoEstoque.podeProcessar ? "Estoque insuficiente" : ""}
                     >
                         {loading ? <LoadingSpinner /> : "Continuar"}
                     </button>

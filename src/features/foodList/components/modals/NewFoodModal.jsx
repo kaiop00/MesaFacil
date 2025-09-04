@@ -15,6 +15,7 @@ const initialFormData = {
     file: null,
     previewUrl: "",
     alergias: [],
+    ingredientes: [],
 };
 
 const NewFoodModal = ({ isOpen, onClose }) => {

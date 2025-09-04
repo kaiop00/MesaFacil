@@ -101,7 +101,7 @@ const MovementsTable = ({
         <div className="overflow-auto rounded-lg shadow-sm border border-gray-200">
           <div className="min-w-lg min-h-80">
             {/* Table Header */}
-            <div className="grid grid-cols-5 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
               <div className="flex items-center text-sm font-medium text-gray-600">
                 Nome
                 <ChevronDown className="ml-1 w-4 h-4" />
@@ -116,6 +116,10 @@ const MovementsTable = ({
               </div>
               <div className="flex items-center text-sm font-medium text-gray-600">
                 Saldo
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                Referência
                 <ChevronDown className="ml-1 w-4 h-4" />
               </div>
               <div></div>
@@ -134,13 +138,25 @@ const MovementsTable = ({
                   return (
                     <div
                       key={movement.id}
-                      className="grid grid-cols-5 gap-4 px-6 py-4 hover:bg-gray-50"
+                      className="grid grid-cols-6 gap-4 px-6 py-4 hover:bg-gray-50"
                     >
                       <div className="flex items-center text-sm text-gray-900">
                         {movement.itemNome || 'Sem nome'}
                       </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        {movement.tipoMovimentacao || 'Não especificado'}
+                      <div className="flex items-center">
+                        <span 
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            movement.tipoMovimentacao?.includes('Pedido') 
+                              ? 'bg-orange-100 text-orange-800' 
+                              : movement.tipoMovimentacao?.includes('CANCELAMENTO')
+                              ? 'bg-red-100 text-red-800'
+                              : movement.tipoMovimentacao?.includes('Entrada')
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {movement.tipoMovimentacao || 'Não especificado'}
+                        </span>
                       </div>
                       <div className="flex items-center text-sm text-gray-500">
                         {movement.quantidade} {movement.quantidade > 1 ? `${movement.unidadeArmazenamento}s` : movement.unidadeArmazenamento || ''}
@@ -151,6 +167,20 @@ const MovementsTable = ({
                         >
                           {movement.novoSaldo}
                         </div>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        {movement.pedidoReferencia ? (
+                          <div className="flex flex-col">
+                            <span className="text-blue-600 font-medium">
+                              {movement.pedidoReferencia.startsWith('CANCELAMENTO') ? 'Cancelamento' : 'Pedido'}
+                            </span>
+                            <span className="text-gray-400">
+                              {movement.pedidoReferencia.replace('CANCELAMENTO-', '').substring(0, 8)}...
+                            </span>
+                          </div>
+                        ) : (
+                          <span>Manual</span>
+                        )}
                       </div>
                       <div className="flex justify-end">
                         <div className="relative">

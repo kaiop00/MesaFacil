@@ -1,10 +1,12 @@
 import UploadImageFirebase from "@/features/foodList/components/UploadWidget";
 import CategoriaSelect from "@/features/foodList/components/selects/CategoriaSelect";
 import AlergiaSelect from "@/features/foodList/components/selects/AlergiaSelect";
+import IngredientesSelector from "@/features/foodList/components/ingredientes/IngredientesSelector";
 
 const NewFoodForm = ({ formData, setFormData }) => {
   const setFile = (file) => setFormData((p) => ({ ...p, file }));
   const setPreviewUrl = (url) => setFormData((p) => ({ ...p, previewUrl: url }));
+  const setIngredientes = (ingredientes) => setFormData((p) => ({ ...p, ingredientes }));
 
   return (
     <form className="font-inter space-y-4 text-sm">
@@ -57,6 +59,11 @@ const NewFoodForm = ({ formData, setFormData }) => {
           className="w-full border border-gray-300 rounded-md px-3 py-2 resize-none h-24 focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
         />
       </div>
+
+      <IngredientesSelector
+        value={formData.ingredientes || []}
+        onChange={setIngredientes}
+      />
     </form>
   );
 };

@@ -8,6 +8,8 @@ import {
   deleteDoc,
   query,
   orderBy,
+  where,
+  limit,
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
@@ -91,4 +93,33 @@ export async function update(idRestaurante, subcollectionName, docId, data) {
 export async function remove(idRestaurante, subcollectionName, docId) {
   const docRef = doc(db, 'restaurantes', idRestaurante, subcollectionName, docId);
   await deleteDoc(docRef);
+}
+
+/**
+ * Busca movimentações com filtros aplicados no Firestore
+ * @param {string} idRestaurante
+ * @param {string} itemId
+ * @param {object} [options]
+ * @param {number} [options.limit=10]
+ * @param {string} [options.orderByField='createdAt']
+ * @param {string} [options.order='desc']
+ */
+export async function getMovimentacoesByItem(idRestaurante, itemId, options = {}) {
+  const colRef = getSubcollectionRef(idRestaurante, 'movimentos');
+  
+  const queryConstraints = [
+    where('itemId', '==', itemId)
+  ];
+
+  if (options.orderByField) {
+    queryConstraints.push(orderBy(options.orderByField, options.order || 'desc'));
+  }
+
+  if (options.limit) {
+    queryConstraints.push(limit(options.limit));
+  }
+
+  const q = query(colRef, ...queryConstraints);
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
