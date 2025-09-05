@@ -12,20 +12,30 @@ function Item({ to, label, icon, badge, end }) {
             end={end}
             className={({ isActive }) =>
                 [
+                    // MOBILE: mantém como estava
                     "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition",
+                    // DESKTOP/TABLET: mais área de clique
+                    "md:px-4 md:py-2 lg:px-5 lg:py-3",
                     isActive ? "text-[#D9A23B]" : "text-gray-600 hover:text-gray-800",
+                    // foco acessível
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D9A23B]/40"
                 ].join(" ")
             }
         >
-            <div className="relative">
+            <div className="relative md:scale-110 lg:scale-125">
                 {icon}
                 {typeof badge === "number" && badge > 0 && (
-                    <span className="absolute -top-1 -right-2 text-[10px] leading-none bg-red-500 text-white rounded-full px-1.5 py-0.5">
+                    <span
+                        className="
+              absolute -top-1 -right-2 text-[10px] leading-none bg-red-500 text-white rounded-full px-1.5 py-0.5
+              md:-top-1.5 md:-right-2 md:text-[11px] md:px-2 md:py-0.5
+            "
+                    >
                         {badge > 99 ? "99+" : badge}
                     </span>
                 )}
             </div>
-            <span className="text-[11px] leading-none">{label}</span>
+            <span className="text-[11px] leading-none md:text-xs lg:text-sm">{label}</span>
         </NavLink>
     );
 }
@@ -41,10 +51,20 @@ export default function NavFooter() {
         flex items-center justify-center
         shadow-[0_-6px_20px_rgba(0,0,0,0.06)]
         z-40
+
+        /* TABLET/DESKTOP: flutuante e centralizada */
+        md:bottom-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:px-3 md:py-3
+        md:rounded-2xl md:border md:shadow-lg md:border-gray-200 md:bg-white/90
       "
             aria-label="Navegação do cliente"
         >
-            <div className="flex w-full max-w-md items-center justify-between">
+            <div
+                className="
+          flex w-full max-w-md items-center justify-between
+          md:max-w-none md:w-auto md:gap-6
+          lg:gap-10
+        "
+            >
                 <Item
                     to="."
                     end

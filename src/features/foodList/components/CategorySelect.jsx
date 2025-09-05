@@ -1,25 +1,32 @@
 import { Filter } from "react-coolicons";
+import useCrudCategorias from "@/features/config/hooks/useCrudCategorias";
+import { useAuth } from "@/contexts/AuthContext";
 
-const CategorySelect = ({ value, onChange }) => (
-  <div className="relative w-full md:w-[30%]">
-    <select
-      id="Filter"
-      value={value}
-      onChange={onChange}
-      className="w-full pl-4 pr-10 py-2 text-sm text-[#94A3B8] bg-white rounded-lg border border-gray-200 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-dynamic"
-    >
-      <option value="" disabled>
-        Filtrar por Categoria
-      </option>
-      <option value="">Todos</option>
-      <option value="Guarnição">Guarnição</option>
-      <option value="Sobremesa">Sobremesa</option>
-      <option value="Acompanhamento">Acompanhamento</option>
-    </select>
-    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-      <Filter className="w-4 h-4 text-primary-dynamic" />
+const CategorySelect = ({ value, onChange }) => {
+  const { idRestaurante } = useAuth();
+  const { categorias, loading } = useCrudCategorias({ idRestaurante });
+
+  return (
+    <div className="relative w-full md:w-[30%]">
+      <select
+        id="Filter"
+        value={value}
+        onChange={onChange}
+        disabled={loading}
+        className="w-full pl-4 pr-10 py-2 text-sm text-[#94A3B8] bg-white rounded-lg border border-gray-200 appearance-none focus:outline-none focus:ring-1 focus:ring-primary-dynamic"
+      >
+        <option value="">Todas as categorias</option>
+        {categorias.map((categoria) => (
+          <option key={categoria.id} value={categoria.nome}>
+            {categoria.nome}
+          </option>
+        ))}
+      </select>
+      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+        <Filter className="w-4 h-4 text-primary-dynamic" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default CategorySelect;

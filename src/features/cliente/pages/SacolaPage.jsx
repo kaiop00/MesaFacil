@@ -8,8 +8,8 @@ import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function SacolaPage() {
-    const { notify } = useToast()
-    const { mesaId, idRestaurante } = useCliente()
+    const { notify } = useToast();
+    const { mesaId, idRestaurante } = useCliente();
     const { carrinhoItems, limparCarrinho, total } = useCarrinho();
     const observacoesRef = useRef();
     const [loading, setLoading] = useState(false);
@@ -24,7 +24,13 @@ export default function SacolaPage() {
         setLoading(true);
         try {
             const observacoes = (observacoesRef.current?.value || "").trim();
-            await createPedido(idRestaurante, mesaId, carrinhoItems, total, observacoes);
+            await createPedido(
+                idRestaurante,
+                mesaId,
+                carrinhoItems,
+                total,
+                observacoes
+            );
             notify("Pedido Enviado Com sucesso", "success");
             limparCarrinho();
         } catch (error) {
@@ -33,15 +39,13 @@ export default function SacolaPage() {
         } finally {
             setLoading(false);
         }
-
-
     }
 
     const vazio = carrinhoItems.length === 0;
 
     return (
-        <div className="flex flex-col p-4 gap-4 pb-48">
-            <h1 className="text-lg font-semibold">Itens</h1>
+        <div className="flex flex-col p-4 gap-4 pb-48 md:px-6 lg:px-8 max-w-6xl mx-auto">
+            <h1 className="text-lg font-semibold md:text-xl">Itens</h1>
 
             {vazio ? (
                 <p className="text-sm text-gray-600">
@@ -49,9 +53,12 @@ export default function SacolaPage() {
                 </p>
             ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    {carrinhoItems.map((item) => (
-                        <CardCarrinho key={item.id} item={item} />
-                    ))}
+                    {/* GRID RESPONSIVO: 1 (mobile), 2 (tablet e desktop) */}
+                    <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
+                        {carrinhoItems.map((item) => (
+                            <CardCarrinho key={item.id} item={item} />
+                        ))}
+                    </div>
 
                     <div className="flex flex-col gap-2">
                         <label
@@ -78,7 +85,7 @@ export default function SacolaPage() {
               flex items-center justify-center
             "
                     >
-                        {loading ? (<LoadingSpinner />) : ("Confirmar Pedido")}
+                        {loading ? <LoadingSpinner /> : "Confirmar Pedido"}
                     </button>
                 </form>
             )}
