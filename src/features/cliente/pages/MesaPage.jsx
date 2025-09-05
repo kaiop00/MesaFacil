@@ -5,8 +5,8 @@ import { useMesa } from "../hooks/useMesa";
 import ItemModal from "../components/ItemModal";
 import { useCarrinho } from "../context/CarrinhoContext";
 import { SearchMagnifyingGlass } from "react-coolicons";
-import useCategoriasCliente from "@/features/cliente/hooks/useCategoriasCliente"
-import CategoryTabs from "@/features/cliente/components/CategoryTabs"
+import useCategoriasCliente from "@/features/cliente/hooks/useCategoriasCliente";
+import CategoryTabs from "@/features/cliente/components/CategoryTabs";
 import { useCliente } from "../context/ClienteContext";
 
 export default function MesaPage() {
@@ -23,9 +23,7 @@ export default function MesaPage() {
         setActiveCategory,
         filterByCategory,
         loading: loadingCategorias,
-    } = useCategoriasCliente({
-        idRestaurante: idRestaurante
-    });
+    } = useCategoriasCliente({ idRestaurante });
 
     const filteredItems = useMemo(() => {
         const q = searchItem.toLowerCase().trim();
@@ -38,10 +36,10 @@ export default function MesaPage() {
     if (!mesa) return <p>Mesa nao encontrada</p>;
 
     return (
-        <div className="p-4 mb-20">
-            <h1 className="text-2xl font-semibold">Mesa {mesa.numero}</h1>
+        <div className="p-4 mb-20 md:pb-28 md:px-6 lg:px-8 max-w-6xl mx-auto">
+            <h1 className="text-2xl font-semibold md:text-3xl">Mesa {mesa.numero}</h1>
 
-            <div className="relative mb-4">
+            <div className="relative mb-4 md:mb-6">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <SearchMagnifyingGlass className="w-5 h-5 text-gray-400" />
                 </div>
@@ -49,7 +47,8 @@ export default function MesaPage() {
                     onChange={(e) => setSearchItem(e.target.value)}
                     type="text"
                     placeholder="Buscar"
-                    className="w-full pl-10 pr-4 py-2 border rounded-md text-sm border-gray-300 focus:outline-none focus:border-amber-600"
+                    className="w-full pl-10 pr-4 py-2 border rounded-md text-sm border-gray-300 focus:outline-none focus:border-amber-600
+                     md:text-base md:py-2.5"
                 />
             </div>
 
@@ -60,17 +59,24 @@ export default function MesaPage() {
                     setActiveCategory(id);
                     // opcional: window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="sticky top-0 z-10 bg-white mb-2"
+                className="sticky top-0 z-10 bg-white mb-2 md:mb-4"
             />
 
-            {filteredItems.map((item) => (
-                <CardCardapio
-                    key={item.id}
-                    item={item}
-                    onClick={() => setItemSelecionado(item)}
-                    onAddCarrinho={adicionarItemCarrinho}
-                />
-            ))}
+            {/* LISTA -> GRID RESPONSIVO */}
+            <div className="
+  space-y-2 
+  md:space-y-0 md:grid md:grid-cols-2 md:gap-4 
+  lg:grid-cols-4 lg:gap-6
+">
+                {filteredItems.map((item) => (
+                    <CardCardapio
+                        key={item.id}
+                        item={item}
+                        onClick={() => setItemSelecionado(item)}
+                        onAddCarrinho={adicionarItemCarrinho}
+                    />
+                ))}
+            </div>
 
             {itemSelecionado && (
                 <ItemModal
