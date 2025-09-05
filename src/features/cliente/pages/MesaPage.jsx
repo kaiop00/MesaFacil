@@ -4,7 +4,10 @@ import { useClienteCardapio } from "../context/CardapioClienteContext";
 import { useMesa } from "../hooks/useMesa";
 import ItemModal from "../components/ItemModal";
 import { useCarrinho } from "../context/CarrinhoContext";
-import { SearchMagnifyingGlass } from "react-coolicons"
+import { SearchMagnifyingGlass } from "react-coolicons";
+import useCategoriasCliente from "@/features/cliente/hooks/useCategoriasCliente"
+import CategoryTabs from "@/features/cliente/components/CategoryTabs"
+import { useCliente } from "../context/ClienteContext";
 
 export default function MesaPage() {
     const { mesa, loading, error } = useMesa();
@@ -12,17 +15,27 @@ export default function MesaPage() {
     const [itemSelecionado, setItemSelecionado] = useState(null);
     const { adicionarItemCarrinho } = useCarrinho();
     const [searchItem, setSearchItem] = useState("");
+    const { idRestaurante } = useCliente();
+
+    const {
+        tabs,
+        activeCategory,
+        setActiveCategory,
+        filterByCategory,
+        loading: loadingCategorias,
+    } = useCategoriasCliente({
+        idRestaurante: idRestaurante
+    });
 
     const filteredItems = useMemo(() => {
-        if (!searchItem) return items || [];
-        const q = searchItem.toLocaleLowerCase();
-        return (items || []).filter((item) => (item.nome || '').toLocaleLowerCase().includes(q));
-    }, [items, searchItem]);
+        const q = searchItem.toLowerCase().trim();
+        const byCat = filterByCategory(items || []);
+        return byCat.filter((it) => (it?.nome || "").toLowerCase().includes(q));
+    }, [items, searchItem, filterByCategory]);
 
-
-    if (loading || loadingCardapio) return <p>Carregando...</p>
-    if (error) return <p>{error}</p>
-    if (!mesa) return <p>Mesa nao encontrada</p>
+    if (loading || loadingCardapio || loadingCategorias) return <p>Carregando...</p>;
+    if (error) return <p>{error}</p>;
+    if (!mesa) return <p>Mesa nao encontrada</p>;
 
     return (
         <div className="p-4 mb-20">
@@ -36,18 +49,29 @@ export default function MesaPage() {
                     onChange={(e) => setSearchItem(e.target.value)}
                     type="text"
                     placeholder="Buscar"
-                    className="w-full pl-10 pr-4 py-2 border rounded-md text-sm border-gray-300 focus:outline-none focus:border-primary-dynamic"
+                    className="w-full pl-10 pr-4 py-2 border rounded-md text-sm border-gray-300 focus:outline-none focus:border-amber-600"
                 />
             </div>
 
-            {filteredItems.map((item) => {
-                return <CardCardapio
+            <CategoryTabs
+                categories={tabs}
+                activeId={activeCategory}
+                onChange={(id) => {
+                    setActiveCategory(id);
+                    // opcional: window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="sticky top-0 z-10 bg-white mb-2"
+            />
+
+            {filteredItems.map((item) => (
+                <CardCardapio
                     key={item.id}
                     item={item}
                     onClick={() => setItemSelecionado(item)}
                     onAddCarrinho={adicionarItemCarrinho}
                 />
-            })}
+            ))}
+
             {itemSelecionado && (
                 <ItemModal
                     item={itemSelecionado}
