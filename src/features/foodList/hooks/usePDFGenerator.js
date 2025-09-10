@@ -44,34 +44,37 @@ export function usePDFGenerator() {
       
       // Color scheme
       const primaryColor = hexToRgb(corBase);
-      const lightGray = [245, 245, 245];
-      const darkGray = [64, 64, 64];
+      const lightBlue = [224, 247, 250]; // Light blue header background
+      const darkGray = [60, 60, 60];
+      const mediumGray = [120, 120, 120];
       
-      // Header
-      doc.setFillColor(...primaryColor);
-      doc.rect(0, 0, pageWidth, 40, 'F');
+      // Header background
+      doc.setFillColor(...lightBlue);
+      doc.rect(0, 0, pageWidth, 50, 'F');
       
       // Restaurant name
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      doc.setTextColor(...darkGray);
+      doc.setFontSize(22);
       doc.setFont("helvetica", "bold");
-      const titleWidth = doc.getTextWidth(finalRestaurantName);
-      doc.text(finalRestaurantName, (pageWidth - titleWidth) / 2, 25);
+      const titleWidth = doc.getTextWidth(finalRestaurantName.toUpperCase());
+      doc.text(finalRestaurantName.toUpperCase(), (pageWidth - titleWidth) / 2, 28);
       
       // Subtitle
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      const subtitle = "CARDÁPIO";
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "italic");
+      const subtitle = "Menu";
       const subtitleWidth = doc.getTextWidth(subtitle);
-      doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 33);
+      doc.text(subtitle, (pageWidth - subtitleWidth) / 2, 38);
       
-      // Reset color for content
-      doc.setTextColor(...darkGray);
+      // Layout settings
+      const margin = 20;
+      const columnWidth = (pageWidth - 3 * margin) / 2; // Two columns with center margin
+      const leftColumnX = margin;
+      const rightColumnX = margin + columnWidth + margin;
       
-      let yPosition = 55;
-      const margin = 15;
-      const lineHeight = 8;
-      const itemSpacing = 15;
+      let leftColumnY = 65;
+      let rightColumnY = 65;
+      let currentColumn = 'left'; // Track which column we're in
       
       // Group items by category
       const itemsByCategory = menuItems.reduce((acc, item) => {
@@ -84,104 +87,146 @@ export function usePDFGenerator() {
         return acc;
       }, {});
       
+      const categories = Object.keys(itemsByCategory);
+      
+      // Calculate items per column (roughly)
+      const totalItems = menuItems.length + categories.length;
+      const itemsPerColumn = Math.ceil(totalItems / 2);
+      let processedItems = 0;
+      
       // Generate content for each category
       Object.entries(itemsByCategory).forEach(([categoria, items]) => {
-        // Check if we need a new page
-        if (yPosition + 30 > pageHeight - margin) {
-          doc.addPage();
-          yPosition = margin;
+        const currentY = currentColumn === 'left' ? leftColumnY : rightColumnY;
+        const currentX = currentColumn === 'left' ? leftColumnX : rightColumnX;
+        
+        // Check if we need to switch columns or add new page
+        if (currentY + 40 > pageHeight - 30) {
+          if (currentColumn === 'left') {
+            currentColumn = 'right';
+          } else {
+            doc.addPage();
+            leftColumnY = 30;
+            rightColumnY = 30;
+            currentColumn = 'left';
+          }
         }
         
+        const yPos = currentColumn === 'left' ? leftColumnY : rightColumnY;
+        const xPos = currentColumn === 'left' ? leftColumnX : rightColumnX;
+        
         // Category header
-        doc.setFillColor(...lightGray);
-        doc.rect(margin, yPosition - 3, pageWidth - (2 * margin), 12, 'F');
-        
-        doc.setFontSize(14);
+        doc.setFontSize(13);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...primaryColor);
-        doc.text(categoria.toUpperCase(), margin + 3, yPosition + 5);
-        
-        yPosition += itemSpacing;
         doc.setTextColor(...darkGray);
+        doc.text(categoria.toUpperCase(), xPos, yPos);
+        
+        // Category underline
+        doc.setDrawColor(...primaryColor);
+        doc.setLineWidth(0.5);
+        doc.line(xPos, yPos + 2, xPos + columnWidth, yPos + 2);
+        
+        let itemY = yPos + 12;
         
         // Items in category
         items.forEach((item) => {
-          // Check if we need a new page
-          if (yPosition + 25 > pageHeight - margin) {
-            doc.addPage();
-            yPosition = margin;
+          // Check if we need to switch columns or add page
+          if (itemY + 20 > pageHeight - 30) {
+            if (currentColumn === 'left') {
+              currentColumn = 'right';
+              itemY = rightColumnY;
+            } else {
+              doc.addPage();
+              leftColumnY = 30;
+              rightColumnY = 30;
+              currentColumn = 'left';
+              itemY = leftColumnY;
+            }
           }
           
-          // Item name and price line
-          doc.setFontSize(12);
-          doc.setFont("helvetica", "bold");
+          const itemX = currentColumn === 'left' ? leftColumnX : rightColumnX;
           
+          // Item name
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...darkGray);
+          
+          let itemName = item.nome.toUpperCase();
+          const maxItemWidth = columnWidth - 30; // Reserve space for price
+          
+          if (doc.getTextWidth(itemName) > maxItemWidth) {
+            while (doc.getTextWidth(itemName + "...") > maxItemWidth && itemName.length > 0) {
+              itemName = itemName.slice(0, -1);
+            }
+            itemName += "...";
+          }
+          
+          doc.text(itemName, itemX, itemY);
+          
+          // Price (right-aligned in column)
           const price = new Intl.NumberFormat('pt-BR', { 
             style: 'currency', 
             currency: 'BRL' 
           }).format(item.valor);
           
           const priceWidth = doc.getTextWidth(price);
-          const maxNameWidth = pageWidth - margin * 2 - priceWidth - 5;
-          
-          // Item name (truncate if too long)
-          let itemName = item.nome;
-          if (doc.getTextWidth(itemName) > maxNameWidth) {
-            while (doc.getTextWidth(itemName + "...") > maxNameWidth && itemName.length > 0) {
-              itemName = itemName.slice(0, -1);
-            }
-            itemName += "...";
-          }
-          
-          doc.text(itemName, margin, yPosition);
-          doc.text(price, pageWidth - margin - priceWidth, yPosition);
-          
-          // Dotted line
-          const dotsStart = margin + doc.getTextWidth(itemName) + 3;
-          const dotsEnd = pageWidth - margin - priceWidth - 3;
-          doc.setFontSize(8);
           doc.setFont("helvetica", "normal");
-          let dotX = dotsStart;
-          while (dotX < dotsEnd - 2) {
-            doc.text(".", dotX, yPosition - 1);
-            dotX += 3;
-          }
+          doc.text(price, itemX + columnWidth - priceWidth, itemY);
           
-          yPosition += lineHeight;
+          itemY += 6;
           
           // Description
           if (item.descricao) {
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(100, 100, 100);
-            
-            const descLines = doc.splitTextToSize(item.descricao, pageWidth - margin * 2);
-            descLines.forEach(line => {
-              doc.text(line, margin, yPosition);
-              yPosition += 5;
-            });
-            doc.setTextColor(...darkGray);
-          }
-          
-          // Allergies
-          if (item.alergias && item.alergias.length > 0) {
             doc.setFontSize(8);
-            doc.setFont("helvetica", "italic");
-            doc.setTextColor(200, 50, 50);
-            doc.text("Alérgenos: " + item.alergias.join(", "), margin, yPosition);
-            yPosition += 5;
-            doc.setTextColor(...darkGray);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...mediumGray);
+            
+            const descLines = doc.splitTextToSize(item.descricao, columnWidth);
+            const maxLines = 2; // Limit description to 2 lines
+            const linesToShow = descLines.slice(0, maxLines);
+            
+            linesToShow.forEach((line, index) => {
+              if (index === maxLines - 1 && descLines.length > maxLines) {
+                line = line.slice(0, -3) + "...";
+              }
+              doc.text(line, itemX, itemY);
+              itemY += 4;
+            });
           }
           
-          yPosition += itemSpacing - 3;
+          // Allergies (if any)
+          if (item.alergias && item.alergias.length > 0) {
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(180, 50, 50);
+            const allergyText = "Alérgenos: " + item.alergias.join(", ");
+            const allergyLines = doc.splitTextToSize(allergyText, columnWidth);
+            allergyLines.forEach(line => {
+              doc.text(line, itemX, itemY);
+              itemY += 3.5;
+            });
+          }
+          
+          itemY += 8; // Space between items
         });
         
-        yPosition += 5;
+        // Update column positions
+        if (currentColumn === 'left') {
+          leftColumnY = itemY + 8;
+          // Switch to right column for next category if we have space
+          if (processedItems < itemsPerColumn) {
+            currentColumn = 'right';
+          }
+        } else {
+          rightColumnY = itemY + 8;
+          currentColumn = 'left';
+        }
+        
+        processedItems += items.length + 1; // +1 for category header
       });
       
       // Footer
       const currentDate = new Date().toLocaleDateString('pt-BR');
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(150, 150, 150);
       doc.text(`Gerado em: ${currentDate}`, margin, pageHeight - 10);
