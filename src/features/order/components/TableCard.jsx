@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { House02, MoreHorizontal } from "react-coolicons";
 import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
-import { finalizarPedido } from "@/features/order/services/orderService";
+// import { finalizarPedido } from "@/features/order/services/orderService";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/hooks/useToast";
 
@@ -53,10 +53,8 @@ const TableCard = ({
   const currentStyle = statusStyleMap[status] || statusStyleMap["livre"];
 
   const handleConfirm = async () => {
-    if (mesa?.status === "andamento") {
-      await finalizarPedido(idRestaurante, mesa?.id);
-      notify("Pedido Entregue", "success");
-    } else if (mesa?.status === "entregue") {
+    // Mantido apenas para o fluxo "entregue" (pagamento futuramente)
+    if (mesa?.status === "entregue") {
       console.log('redirecionar para tela de pagamento!!!');
       setIsConfirmModalOpen(false);
     }
@@ -64,10 +62,10 @@ const TableCard = ({
 
   const handleFinalize = () => {
     if (mesa?.status === "andamento") {
-      setModalConfig({
-        title: "Pedido Entregue",
-        message: "Você tem certeza que deseja confirmar a entrega desse pedido? Esta é uma ação irreversível e vai disponibilizar o cliente a possibilidade de realizar o pagamento",
-      });
+      // Em andamento: abrir detalhes para escolher qual pedido finalizar
+      setIsDetailModalOpen(true);
+      setShowOptions(false);
+      return;
     } else if (mesa?.status === "entregue") {
       setModalConfig({
         title: "Finalizar Pedido",
