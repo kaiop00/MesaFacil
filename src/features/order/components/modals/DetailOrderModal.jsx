@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
-import { getPedidosDaMesa } from "@/features/order/services/orderService";
+import { getPedidosDaMesa, finalizarPedidoEspecifico } from "@/features/order/services/orderService";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { useToast } from "@/hooks/useToast";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) => {
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [finalizando, setFinalizando] = useState({}); // { [pedidoId]: boolean }
+    const { notify } = useToast();
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -28,6 +31,23 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
 
         fetchPedidos();
     }, [isOpen, mesaSelecionada, idRestaurante]);
+
+    const handleFinalizarPedido = async (pedidoId) => {
+        if (!idRestaurante || !mesaSelecionada?.id || !pedidoId) return;
+        setFinalizando(prev => ({ ...prev, [pedidoId]: true }));
+        try {
+            await finalizarPedidoEspecifico(idRestaurante, mesaSelecionada.id, pedidoId);
+            notify("Pedido finalizado com sucesso", "success");
+            // Recarregar a lista
+            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
+            setPedidos(dados || []);
+        } catch (error) {
+            console.error("Erro ao finalizar pedido:", error);
+            notify("Erro ao finalizar pedido", "error");
+        } finally {
+            setFinalizando(prev => ({ ...prev, [pedidoId]: false }));
+        }
+    };
 
     return (
         <BaseModalWithHeader
@@ -96,6 +116,18 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                             </p>
                         </div>
                         <p>Observações: {pedido.observacoes}</p>
+
+                        {pedido.status === 'andamento' && (
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={() => handleFinalizarPedido(pedido.id)}
+                                    disabled={!!finalizando[pedido.id]}
+                                    className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
+                                >
+                                    {finalizando[pedido.id] ? 'Finalizando...' : 'Finalizar este pedido'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

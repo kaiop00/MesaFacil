@@ -3,18 +3,25 @@ import TableSection from "@/features/order/components/TableSection";
 import NewOrderModal from "@/features/order/components/modals/NewOrderModal";
 import AddItemsModal from "@/features/order/components/modals/AddItemsModal";
 import { OrderProvider } from "@/features/order/context/OrderContext";
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTables } from "@/features/config/hooks/useTables";
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic"; // ✅ seu spinner
+import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 
 const OrderPage = () => {
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
   const [isAddItemsModalOpen, setIsAddItemsModalOpen] = useState(false);
   const [selectedTable, setSelectedtable] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [mesaDetalhe, setMesaDetalhe] = useState(null);
   const { idRestaurante } = useAuth();
   const { mesasLivres, mesasAndamento, mesasEntregues, tables } = useTables(idRestaurante);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const isLoading = tables.length > 0 &&
     (mesasAndamento.length === 0 && mesasEntregues.length === 0 && mesasLivres.length === 0);
@@ -48,6 +55,17 @@ const OrderPage = () => {
     setSelectedtable(mesa);
     setIsAddItemsModalOpen(true);
   }
+
+  // Abrir detalhes via deep-link (?mesaId=...)
+  useEffect(() => {
+    const mesaId = searchParams.get('mesaId');
+    if (!mesaId || tables.length === 0) return;
+    const mesa = tables.find((m) => m.id === mesaId);
+    if (mesa) {
+      setMesaDetalhe(mesa);
+      setIsDetailModalOpen(true);
+    }
+  }, [searchParams, tables]);
 
   return (
     <CardapioProvider>
@@ -99,6 +117,21 @@ const OrderPage = () => {
             isOpen={isAddItemsModalOpen}
             onClose={handleCloseAddItems}
             selectedTable={selectedTable}
+          />
+
+          {/* Modal de detalhes aberto via deep-link */}
+          <DetailOrderModal
+            isOpen={isDetailModalOpen}
+            onClose={() => {
+              setIsDetailModalOpen(false);
+              setMesaDetalhe(null);
+              // Remove o query param da URL
+              const sp = new URLSearchParams(location.search);
+              sp.delete('mesaId');
+              navigate({ search: sp.toString() }, { replace: true });
+            }}
+            mesaSelecionada={mesaDetalhe}
+            idRestaurante={idRestaurante}
           />
         </div>
       </OrderProvider>

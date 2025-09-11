@@ -7,6 +7,9 @@ import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
 import CategoriaConfigModal from "@/features/config/components/modals/CategoriasConfigModal";
+import NotificationsModal from "@/features/notifications/components/NotificationsModal";
+import { useNotifications } from "@/features/notifications/hooks/useNotifications";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -17,6 +20,9 @@ const Header = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
+  const { idRestaurante } = useAuth();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
 
@@ -40,9 +46,16 @@ const Header = () => {
 
       {/* Ações à direita */}
       <div className="flex items-center space-x-4 sm:space-x-6">
-        <button className="relative p-1 rounded-full hover:bg-gray-100">
+        <button
+          className="relative p-1 rounded-full hover:bg-gray-100"
+          onClick={() => setIsNotificationsOpen(true)}
+        >
           <Bell size={20} className="text-gray-600" />
-          <span className="absolute top-0 right-0 h-2 w-2 bg-primary-dynamic rounded-full"></span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-primary-dynamic text-white text-[10px] leading-4 rounded-full flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
         </button>
 
         <div className="relative" ref={dropdownRef}>
@@ -151,6 +164,19 @@ const Header = () => {
           />
         </div>
       </div>
+
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        notifications={notifications}
+        onMarkAll={markAllAsRead}
+        onMarkOne={markOneAsRead}
+        onView={(mesaId) => {
+          setIsNotificationsOpen(false);
+          navigate(`/home/pedidos?mesaId=${encodeURIComponent(mesaId)}`);
+        }}
+        loading={loading}
+      />
     </header>
   );
 };
