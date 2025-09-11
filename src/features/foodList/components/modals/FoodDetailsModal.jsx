@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import EditFoodIngredientsModal from "./EditFoodIngredientsModal";
 import { useIngredientes } from "@/hooks/useIngredientes";
+import { pluralizeUnit } from "@/services/utils/unitConversionService";
 
 const FoodDetailsModal = ({ isOpen, onClose, food }) => {
     const [isIngredientsModalOpen, setIsIngredientsModalOpen] = useState(false);
@@ -98,7 +99,7 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                                         {ingrediente.itemNome}
                                     </span>
                                     <span className="text-gray-600">
-                                        {ingrediente.quantidade} {ingrediente.unidade?.toLowerCase() || 'un'} por porção
+                                        {ingrediente.quantidade} {pluralizeUnit(ingrediente.unidade, ingrediente.quantidade) || 'un'} por porção
                                     </span>
                                 </div>
                             ))}

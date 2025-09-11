@@ -8,6 +8,7 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMovimentacoesByItem } from "@/services/firebase/firestoreService";
+import { pluralizeUnit } from "@/services/utils/unitConversionService";
 
 const ItemDetailsModal = ({ isOpen, onClose, item }) => {
   const { idRestaurante } = useAuth();
@@ -142,7 +143,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                 </p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {formatValue(item.estoqueAtual)}{" "}
-                  {(item.unidadeArmazenamento || 'un').toLowerCase() + (item.estoqueAtual > 1 ? 's' : '')}
+                  {pluralizeUnit(item.unidadeArmazenamento || 'Unidade', item.estoqueAtual).toLowerCase()}
                 </p>
               </div>
               <div
@@ -194,7 +195,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                 </span>
               </div>
               <p className="text-lg font-semibold text-orange-600 mt-1">
-                {totalConsumido.toFixed(2)} {item.unidadeArmazenamento || "un"}
+                {totalConsumido.toFixed(2)} {pluralizeUnit(item.unidadeArmazenamento || "Unidade", totalConsumido).toLowerCase()}
               </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-3">
@@ -274,7 +275,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                       />
                       <span>
                         {mov.quantidade < 0 ? "" : "+"}
-                        {mov.quantidade} {mov.unidadeArmazenamento || "un"}
+                        {mov.quantidade} {pluralizeUnit(mov.unidadeArmazenamento || "Unidade", Math.abs(mov.quantidade)).toLowerCase()}
                       </span>
                     </p>
                     <p className="text-xs text-gray-500">

@@ -8,6 +8,7 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
+import { convertIngredientToStorage } from '@/services/utils/unitConversionService';
 
 /**
  * Serviço para gerenciar ingredientes dos itens do cardápio
@@ -107,33 +108,68 @@ export const calcularConsumoIngredientes = async (idRestaurante, itensPedido) =>
   const cardapioIds = itensPedido.map(item => item.id);
   const ingredientesPorItem = await buscarIngredientesMultiplos(idRestaurante, cardapioIds);
   
+  // Buscar informações dos itens do estoque para obter unidades de armazenamento
+  const itensEstoqueRef = collection(db, 'restaurantes', idRestaurante, 'itens');
+  const itensSnapshot = await getDocs(itensEstoqueRef);
+  const itensEstoque = {};
+  itensSnapshot.docs.forEach(doc => {
+    itensEstoque[doc.id] = { id: doc.id, ...doc.data() };
+  });
+  
   const consumoTotal = {};
+  const errosConversao = [];
   
   itensPedido.forEach(itemPedido => {
     const ingredientes = ingredientesPorItem[itemPedido.id] || [];
     
     ingredientes.forEach(ingrediente => {
-      const consumo = ingrediente.quantidade * itemPedido.quantity;
+      const itemEstoque = itensEstoque[ingrediente.itemId];
+      
+      if (!itemEstoque) {
+        errosConversao.push(`Item ${ingrediente.itemNome} não encontrado no estoque`);
+        return;
+      }
+      
+      // Converter a quantidade do ingrediente para a unidade de armazenamento
+      const conversao = convertIngredientToStorage(
+        ingrediente.quantidade,
+        ingrediente.unidade,
+        itemEstoque.unidadeArmazenamento
+      );
+      
+      if (!conversao.success) {
+        errosConversao.push(`Erro na conversão para ${ingrediente.itemNome}: ${conversao.errorMessage}`);
+        return;
+      }
+      
+      const consumoConvertido = conversao.convertedQuantity * itemPedido.quantity;
       
       if (!consumoTotal[ingrediente.itemId]) {
         consumoTotal[ingrediente.itemId] = {
           itemId: ingrediente.itemId,
           itemNome: ingrediente.itemNome,
           consumoTotal: 0,
-          unidade: ingrediente.unidade,
+          unidade: itemEstoque.unidadeArmazenamento, // Usar unidade de armazenamento
           detalhes: []
         };
       }
       
-      consumoTotal[ingrediente.itemId].consumoTotal += consumo;
+      consumoTotal[ingrediente.itemId].consumoTotal += consumoConvertido;
       consumoTotal[ingrediente.itemId].detalhes.push({
         cardapioItem: itemPedido.nome,
         quantidade: itemPedido.quantity,
         consumoPorPorcao: ingrediente.quantidade,
-        consumoTotal: consumo
+        unidadeOriginal: ingrediente.unidade,
+        consumoPorPorcaoConvertido: conversao.convertedQuantity,
+        consumoTotal: consumoConvertido
       });
     });
   });
+  
+  // Se há erros de conversão, lançar exceção
+  if (errosConversao.length > 0) {
+    throw new Error(`Erros de conversão de unidades:\n${errosConversao.join('\n')}`);
+  }
   
   return Object.values(consumoTotal);
 };
