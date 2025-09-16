@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import "./i18n";
 
 // main.jsx
 const corSalva = localStorage.getItem('cor-primary');
