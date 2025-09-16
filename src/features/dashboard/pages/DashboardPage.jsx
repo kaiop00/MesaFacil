@@ -25,6 +25,7 @@ import {
 import { Bar } from 'react-chartjs-2';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Link } from "react-router-dom";
 
 ChartJS.register(
   CategoryScale,
@@ -188,9 +189,9 @@ const DashboardPage = () => {
                 {t("ordersInProgress")}
               </h2>
             </div>
-            <button className="text-sm text-gray-500 hover:text-gray-700">
+            <Link to="/home/pedidos" className="text-sm text-gray-500 hover:text-gray-700">
               {t("viewAll")}
-            </button>
+            </Link>
           </div>
           {mesasAndamentoDisplay.length === 0 ? (
             <p>{t("noOrdersInProgress")}</p>
@@ -202,7 +203,6 @@ const DashboardPage = () => {
                     <div className="p-2 bg-orange-50 rounded-lg">
                       <Notebook className="w-5 h-5 text-orange-500" />
                     </div>
-                    <MoreHorizontal className="w-5 h-5 text-gray-400" />
                   </div>
 
                   <div className="space-y-1">
