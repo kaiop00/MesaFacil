@@ -183,9 +183,10 @@ export const calcularConsumoIngredientes = async (idRestaurante, itensPedido) =>
 export const processarBaixaEstoque = async (idRestaurante, consumoIngredientes, pedidoId) => {
   return await runTransaction(db, async (transaction) => {
     const resultados = [];
+    const itensParaAtualizar = [];
     
+    // FASE 1: Fazer todas as leituras primeiro
     for (const consumo of consumoIngredientes) {
-      // Buscar item atual no estoque
       const itemRef = doc(db, 'restaurantes', idRestaurante, 'itens', consumo.itemId);
       const itemDoc = await transaction.get(itemRef);
       
@@ -201,35 +202,46 @@ export const processarBaixaEstoque = async (idRestaurante, consumoIngredientes, 
         throw new Error(`Estoque insuficiente para ${consumo.itemNome}. Disponível: ${estoqueAtual}, Necessário: ${consumo.consumoTotal}`);
       }
       
+      // Armazenar dados para as escritas
+      itensParaAtualizar.push({
+        itemRef,
+        consumo,
+        estoqueAtual,
+        novoEstoque
+      });
+    }
+    
+    // FASE 2: Fazer todas as escritas após todas as leituras
+    for (const item of itensParaAtualizar) {
       // Atualizar estoque
-      transaction.update(itemRef, {
-        estoqueAtual: novoEstoque
+      transaction.update(item.itemRef, {
+        estoqueAtual: item.novoEstoque
       });
       
       // Registrar movimento de saída
       const movimentoRef = doc(collection(db, 'restaurantes', idRestaurante, 'movimentos'));
       transaction.set(movimentoRef, {
-        itemId: consumo.itemId,
-        itemNome: consumo.itemNome,
+        itemId: item.consumo.itemId,
+        itemNome: item.consumo.itemNome,
         tipoMovimentacao: 'Saída - Pedido',
-        quantidade: consumo.consumoTotal,
-        saldoAtual: estoqueAtual,
-        novoSaldo: novoEstoque,
-        unidadeArmazenamento: consumo.unidade,
+        quantidade: item.consumo.consumoTotal,
+        saldoAtual: item.estoqueAtual,
+        novoSaldo: item.novoEstoque,
+        unidadeArmazenamento: item.consumo.unidade,
         pedidoReferencia: pedidoId,
-        detalhesConsumo: consumo.detalhes,
+        detalhesConsumo: item.consumo.detalhes,
         data: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
       
       resultados.push({
-        itemId: consumo.itemId,
-        itemNome: consumo.itemNome,
-        estoqueAnterior: estoqueAtual,
-        consumo: consumo.consumoTotal,
-        novoEstoque: novoEstoque,
-        detalhes: consumo.detalhes
+        itemId: item.consumo.itemId,
+        itemNome: item.consumo.itemNome,
+        estoqueAnterior: item.estoqueAtual,
+        consumo: item.consumo.consumoTotal,
+        novoEstoque: item.novoEstoque,
+        detalhes: item.consumo.detalhes
       });
     }
     
@@ -244,23 +256,38 @@ export const processarBaixaEstoque = async (idRestaurante, consumoIngredientes, 
  */
 export const verificarEstoqueDisponivel = async (idRestaurante, itensPedido) => {
   const consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, itensPedido);
+  
+  if (consumoIngredientes.length === 0) {
+    return { podeProcessar: true, verificacoes: [] };
+  }
+  
+  // Buscar todos os itens necessários de uma vez
+  const itemIds = consumoIngredientes.map(consumo => consumo.itemId);
+  const itensRef = collection(db, 'restaurantes', idRestaurante, 'itens');
+  const itensSnapshot = await getDocs(itensRef);
+  
+  // Criar mapa dos itens do estoque
+  const itensEstoque = {};
+  itensSnapshot.docs.forEach(doc => {
+    itensEstoque[doc.id] = { id: doc.id, ...doc.data() };
+  });
+  
   const verificacoes = [];
   
-  for (const consumo of consumoIngredientes) {
-    const itemDoc = await getDocs(query(collection(db, 'restaurantes', idRestaurante, 'itens'), where('__name__', '==', consumo.itemId)));
+  consumoIngredientes.forEach(consumo => {
+    const itemEstoque = itensEstoque[consumo.itemId];
     
-    if (itemDoc.empty) {
+    if (!itemEstoque) {
       verificacoes.push({
         itemId: consumo.itemId,
         itemNome: consumo.itemNome,
         disponivel: false,
         motivo: 'Item não encontrado no estoque'
       });
-      continue;
+      return;
     }
     
-    const itemData = itemDoc.docs[0].data();
-    const estoqueAtual = itemData.estoqueAtual || 0;
+    const estoqueAtual = itemEstoque.estoqueAtual || 0;
     
     verificacoes.push({
       itemId: consumo.itemId,
@@ -270,7 +297,7 @@ export const verificarEstoqueDisponivel = async (idRestaurante, itensPedido) => 
       disponivel: estoqueAtual >= consumo.consumoTotal,
       motivo: estoqueAtual >= consumo.consumoTotal ? 'OK' : `Estoque insuficiente (disponível: ${estoqueAtual}, necessário: ${consumo.consumoTotal})`
     });
-  }
+  });
   
   return {
     podeProcessar: verificacoes.every(v => v.disponivel),
