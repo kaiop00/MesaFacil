@@ -1,11 +1,23 @@
-import { useMemo, useState } from "react";
-import TableYellowImg from "@/assets/images/order/TableYellow.png";
+import { useEffect, useMemo, useState } from "react";
 import { useCliente } from "../context/ClienteContext";
 import { formatCurrency } from "../utils/pedidos";
 
-export default function PagamentoResumo({ pedidos = [], loading = false, error = null, totalPedidos = 0, onVoltar }) {
+export default function PagamentoResumo({
+    pedidos = [],
+    loading = false,
+    error = null,
+    totalPedidos = 0,
+    onVoltar,
+    onChamarGarcom,
+    chamarGarcomLoading = false,
+    garcomSolicitado = false,
+    mesaNumero,
+    onConfirmarPix,
+}) {
     const { numero } = useCliente();
+    const mesaNumeroExibicao = mesaNumero || numero;
     const [selectedOption, setSelectedOption] = useState(null);
+    const [selectionError, setSelectionError] = useState(false);
 
     const itensResumo = useMemo(() => {
         return pedidos.flatMap((pedido) => {
@@ -22,10 +34,46 @@ export default function PagamentoResumo({ pedidos = [], loading = false, error =
         });
     }, [pedidos]);
 
+    useEffect(() => {
+        if (garcomSolicitado) {
+            setSelectedOption("garcom");
+        }
+    }, [garcomSolicitado]);
+
+    const handleSelectOption = (id) => {
+        if (id === "garcom" && (garcomSolicitado || chamarGarcomLoading)) return;
+        setSelectedOption(id);
+        setSelectionError(false);
+    };
+
+    const handleContinuar = async () => {
+        if (!selectedOption) {
+            setSelectionError(true);
+            return;
+        }
+
+        if (selectedOption === "garcom") {
+            if (typeof onChamarGarcom === "function") {
+                await onChamarGarcom();
+            }
+            return;
+        }
+
+        if (selectedOption === "pix" && typeof onConfirmarPix === "function") {
+            onConfirmarPix();
+        }
+    };
+
     return (
         <div className="flex flex-col items-center mt-6 px-4 pb-6">
             <div className="bg-white rounded-xl shadow-md w-full max-w-md overflow-hidden">
                 <div className="px-6 py-6 space-y-6 text-gray-700 text-sm">
+                    <div className="space-y-1 text-center">
+                        <p className="text-xs text-[#D9A23B] font-semibold uppercase tracking-[0.2em]">Mesa {mesaNumeroExibicao || "-"}</p>
+                        <h2 className="text-2xl font-semibold text-gray-900">Realizar o Pagamento</h2>
+                        <p className="text-sm text-gray-500">Escolha uma opção para prosseguir</p>
+                    </div>
+
                     <section className="space-y-3">
                         <div className="flex items-center gap-3">
                             <span className="flex-1 h-px bg-[#D9A23B]/30" />
@@ -70,19 +118,22 @@ export default function PagamentoResumo({ pedidos = [], loading = false, error =
                         <h3 className="text-sm font-semibold text-gray-900">Escolha uma das opções</h3>
 
                         <div className="space-y-3">
-                            {[{
-                                id: "pix",
-                                title: "Pagar com Pix",
-                                description: "",
-                                accent: "border-[#10B981]",
-                                badge: "Pix",
-                            }, {
-                                id: "garcom",
-                                title: "Chamar Garçom",
-                                description: "O garçom irá até sua mesa auxiliar no pagamento",
-                                accent: "border-[#D9A23B]",
-                                badge: "Garçom",
-                            }].map((option) => {
+                            {[
+                                {
+                                    id: "pix",
+                                    title: "Pagar com Pix",
+                                    description: "",
+                                    accent: "border-[#10B981]",
+                                    badge: "Pix",
+                                },
+                                {
+                                    id: "garcom",
+                                    title: "Chamar Garçom",
+                                    description: "O garçom irá até sua mesa auxiliar no pagamento",
+                                    accent: "border-[#D9A23B]",
+                                    badge: "Garçom",
+                                },
+                            ].map((option) => {
                                 const isSelected = selectedOption === option.id;
                                 const baseClasses = [
                                     "w-full",
@@ -94,7 +145,8 @@ export default function PagamentoResumo({ pedidos = [], loading = false, error =
                                     "gap-3",
                                     "transition",
                                     "text-left",
-                                ];
+                                    option.id === "garcom" && garcomSolicitado ? "opacity-80" : "",
+                                ].filter(Boolean);
 
                                 if (isSelected) {
                                     baseClasses.push(option.id === "garcom" ? "bg-[#FDF0D8]" : "bg-[#ECFDF5]");
@@ -110,11 +162,13 @@ export default function PagamentoResumo({ pedidos = [], loading = false, error =
                                         type="button"
                                         key={option.id}
                                         className={baseClasses.join(" ")}
-                                        onClick={() => setSelectedOption(option.id)}
+                                        onClick={() => handleSelectOption(option.id)}
+                                        disabled={option.id === "garcom" && (chamarGarcomLoading || garcomSolicitado)}
                                     >
                                         <span
-                                            className={`h-5 w-5 rounded-full border ${isSelected ? option.accent : "border-gray-300"
-                                                } flex items-center justify-center text-[10px] uppercase font-semibold`}
+                                            className={`h-5 w-5 rounded-full border ${
+                                                isSelected ? option.accent : "border-gray-300"
+                                            } flex items-center justify-center text-[10px] uppercase font-semibold`}
                                         >
                                             {isSelected ? "•" : ""}
                                         </span>
@@ -130,15 +184,26 @@ export default function PagamentoResumo({ pedidos = [], loading = false, error =
                                     </button>
                                 );
                             })}
+                            {selectionError && (
+                                <p className="text-xs text-red-500">Selecione uma opção para continuar.</p>
+                            )}
                         </div>
                     </section>
 
                     <div className="flex flex-col gap-3">
                         <button
                             type="button"
-                            className="w-full bg-[#D9A23B] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#c48f32] transition"
+                            className="w-full bg-[#D9A23B] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#c48f32] transition disabled:bg-[#D9A23B]/60"
+                            onClick={handleContinuar}
+                            disabled={(selectedOption === "garcom" && (chamarGarcomLoading || garcomSolicitado)) || chamarGarcomLoading}
                         >
-                            Continuar
+                            {selectedOption === "garcom"
+                                ? garcomSolicitado
+                                    ? "Garçom a caminho"
+                                    : chamarGarcomLoading
+                                        ? "Chamando..."
+                                        : "Confirmar chamada do garçom"
+                                : "Continuar"}
                         </button>
                         <button
                             type="button"

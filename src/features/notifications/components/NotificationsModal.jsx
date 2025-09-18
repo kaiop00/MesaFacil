@@ -42,6 +42,22 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
     }
   };
 
+  const buildTitle = (notification) => {
+    if (notification.tipo === "garcom") {
+      return `Mesa ${notification.mesaNumero || notification.mesaId || "-"} solicitou atendimento`;
+    }
+    return `Novo pedido chegou - Pedido da mesa ${notification.mesaNumero}`;
+  };
+
+  const buildSubtitle = (notification) => {
+    if (notification.tipo === "garcom") {
+      return notification.motivo
+        ? `Motivo: ${notification.motivo}`
+        : "Chamada de garçom";
+    }
+    return null;
+  };
+
   return (
     <BaseModalWithHeader
       isOpen={!!isOpen}
@@ -66,9 +82,12 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
               </div>
               <div>
                 <p className="font-semibold text-gray-800 text-sm">
-                  Novo pedido chegou - Pedido da mesa {n.mesaNumero}
+                  {buildTitle(n)}
                 </p>
                 <p className="text-xs text-gray-600">{formatData(n.criadoEm)}</p>
+                {buildSubtitle(n) && (
+                  <p className="text-xs text-gray-500 mt-0.5">{buildSubtitle(n)}</p>
+                )}
               </div>
             </div>
             <button onClick={() => toggleMenu(`${n.mesaId}-${n.id}`)} className="h-8 w-8 rounded bg-gray-50 border border-gray-200 flex items-center justify-center">
@@ -116,9 +135,12 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
               <div className="w-9 h-9 rounded bg-gray-100 flex items-center justify-center text-gray-500"><House02/></div>
               <div>
                 <p className="font-medium text-gray-700 text-sm">
-                  Novo pedido chegou - Pedido da mesa {n.mesaNumero}
+                  {buildTitle(n)}
                 </p>
                 <p className="text-xs text-gray-500">{formatData(n.criadoEm)}</p>
+                {buildSubtitle(n) && (
+                  <p className="text-xs text-gray-400 mt-0.5">{buildSubtitle(n)}</p>
+                )}
               </div>
             </div>
             <button disabled title="Já lida" className="h-8 w-8 rounded bg-gray-50 border border-gray-200 flex items-center justify-center opacity-40 cursor-not-allowed">

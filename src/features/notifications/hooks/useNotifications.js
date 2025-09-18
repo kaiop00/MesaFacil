@@ -28,6 +28,8 @@ const toMillis = (ts) => {
  */
 export function useNotifications(idRestaurante) {
   const [notifications, setNotifications] = useState([]);
+  const [pedidoNotifications, setPedidoNotifications] = useState([]);
+  const [eventoNotifications, setEventoNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const mesaUnsubsRef = useRef({}); // { mesaId: unsubscribe }
@@ -44,6 +46,8 @@ export function useNotifications(idRestaurante) {
 
     if (!idRestaurante) {
       setNotifications([]);
+      setPedidoNotifications([]);
+      setEventoNotifications([]);
       setUnreadCount(0);
       return;
     }
@@ -101,10 +105,8 @@ export function useNotifications(idRestaurante) {
 
           // Unificar todas as mesas sempre que um listener atualizar
           const all = Object.values(tempByMesa).flat();
-          // Ordenar por criadoEm desc localmente também (por segurança)
           all.sort((a, b) => toMillis(b.criadoEm) - toMillis(a.criadoEm));
-          setNotifications(all);
-          setUnreadCount(all.filter((n) => n.read === false).length);
+          setPedidoNotifications(all);
         });
       });
     });
@@ -115,6 +117,62 @@ export function useNotifications(idRestaurante) {
       if (unsubscribeMesasRef.current) unsubscribeMesasRef.current();
     };
   }, [idRestaurante]);
+
+  useEffect(() => {
+    if (!idRestaurante) {
+      setEventoNotifications([]);
+      return;
+    }
+
+    const start = startOfDay(new Date());
+    const end = endOfDay(new Date());
+    const qStart = Timestamp.fromDate(start);
+    const qEnd = Timestamp.fromDate(end);
+
+    const notificacoesRef = collection(db, "restaurantes", idRestaurante, "notificacoes");
+    const notificacoesQuery = query(
+      notificacoesRef,
+      where("criadoEm", ">=", qStart),
+      where("criadoEm", "<=", qEnd),
+      orderBy("criadoEm", "desc")
+    );
+
+    const unsubscribe = onSnapshot(notificacoesQuery, (snapshot) => {
+      const docs = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          refPath: docSnap.ref.path,
+          tipo: data.tipo || "evento",
+          mesaId: data.mesaId,
+          mesaNumero: data.mesaNumero,
+          motivo: data.motivo,
+          criadoEm: data.criadoEm,
+          read: data.read ?? false,
+          payload: data.itens || data.payload || [],
+          pedidoId: data.pedidoId || null,
+          total: data.total ?? 0,
+          status: data.status || "pendente",
+          origem: data.origem || "",
+        };
+      });
+      setEventoNotifications(docs);
+    });
+
+    return () => unsubscribe();
+  }, [idRestaurante]);
+
+  useEffect(() => {
+    const pedidosNormalizados = pedidoNotifications.map((notif) => ({
+      ...notif,
+      tipo: notif.tipo || "pedido",
+    }));
+
+    const combined = [...pedidosNormalizados, ...eventoNotifications];
+    combined.sort((a, b) => toMillis(b.criadoEm) - toMillis(a.criadoEm));
+    setNotifications(combined);
+    setUnreadCount(combined.filter((n) => n.read === false).length);
+  }, [pedidoNotifications, eventoNotifications]);
 
   const markAllAsRead = async () => {
     if (!idRestaurante || notifications.length === 0) return;
