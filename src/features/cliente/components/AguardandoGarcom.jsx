@@ -33,23 +33,23 @@ export default function AguardandoGarcom({ pedidos = [], totalPedidos = 0, mesaN
                             </div>
 
                             <div className="space-y-4 pt-1">
-                        {pedidos.map((pedido, index) => {
-                            const itensPedido = pedido.items || [];
-                            const totalPedido = typeof pedido.total === "number" ? pedido.total : computeSubtotal(itensPedido);
+                                {pedidos.map((pedido, index) => {
+                                    const itensPedido = pedido.items || [];
+                                    const totalPedido = typeof pedido.total === "number" ? pedido.total : computeSubtotal(itensPedido);
 
-                            return (
-                                <div key={pedido.id || index} className="space-y-2">
-                                    <div className="flex justify-between text-sm text-gray-600">
-                                        <span>Pedido {index + 1}</span>
-                                        <span className="font-medium text-gray-900">Nº {pedido.id || "-"}</span>
-                                    </div>
+                                    return (
+                                        <div key={pedido.id || index} className="space-y-2">
+                                            <div className="flex justify-between text-sm text-gray-600">
+                                                <span>Pedido {index + 1}</span>
+                                                <span className="font-medium text-gray-900">Nº {pedido.id || "-"}</span>
+                                            </div>
 
-                                    {itensPedido.length > 0 && (
-                                        <ul className="space-y-1">
-                                            {itensPedido.map((item, itemIndex) => {
-                                                const price = item.price ?? item.valor ?? 0;
-                                                const quantity = item.quantity ?? item.quantidade ?? 1;
-                                                const subtotal = price * quantity;
+                                            {itensPedido.length > 0 && (
+                                                <ul className="space-y-1">
+                                                    {itensPedido.map((item, itemIndex) => {
+                                                        const price = item.price ?? item.valor ?? 0;
+                                                        const quantity = item.quantity ?? item.quantidade ?? 1;
+                                                        const subtotal = price * quantity;
 
                                                         return (
                                                             <li
@@ -63,14 +63,14 @@ export default function AguardandoGarcom({ pedidos = [], totalPedidos = 0, mesaN
                                                                 <span>{formatCurrency(subtotal)}</span>
                                                             </li>
                                                         );
-                                            })}
-                                        </ul>
-                                    )}
+                                                    })}
+                                                </ul>
+                                            )}
 
-                                    <div className="flex justify-between text-sm font-semibold text-gray-900">
-                                        <span>Total do pedido</span>
-                                        <span>{formatCurrency(totalPedido)}</span>
-                                    </div>
+                                            <div className="flex justify-between text-sm font-semibold text-gray-900">
+                                                <span>Total do pedido</span>
+                                                <span>{formatCurrency(totalPedido)}</span>
+                                            </div>
                                         </div>
                                     );
                                 })}

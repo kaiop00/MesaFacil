@@ -1,35 +1,70 @@
-import { Coffee, DownloadPackage, EditPencil01 } from "react-coolicons";
-import { useState, useEffect } from "react";
+import { Coffee, DownloadPackage, EditPencil01, TrashFull } from "react-coolicons";
+import { useCallback, useEffect, useState } from "react";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import EditFoodIngredientsModal from "./EditFoodIngredientsModal";
 import { useIngredientes } from "@/hooks/useIngredientes";
+import EditFoodModal from "./EditFoodModal";
+import { useFoodService } from "@/features/foodList/hooks/useFoodService";
+import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
+import { useToast } from "@/hooks/useToast";
 
 const FoodDetailsModal = ({ isOpen, onClose, food }) => {
     const [isIngredientsModalOpen, setIsIngredientsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [savingItem, setSavingItem] = useState(false);
+    const [deletingItem, setDeletingItem] = useState(false);
     const [ingredientes, setIngredientes] = useState([]);
     const [loadingIngredientes, setLoadingIngredientes] = useState(false);
     const { buscarIngredientes } = useIngredientes();
+    const { atualizarItemCardapio, removerItemCardapio } = useFoodService();
+    const { carregarItens } = useCardapioContext();
+    const { notify } = useToast();
+    const [foodData, setFoodData] = useState(food);
+
+    const carregarIngredientes = useCallback(
+        async (itemId) => {
+            if (!itemId) return;
+
+            setLoadingIngredientes(true);
+            try {
+                const ingredientesItem = await buscarIngredientes(itemId);
+                setIngredientes(ingredientesItem);
+            } catch (error) {
+                console.error('Erro ao carregar ingredientes:', error);
+                setIngredientes([]);
+            } finally {
+                setLoadingIngredientes(false);
+            }
+        },
+        [buscarIngredientes]
+    );
 
     useEffect(() => {
-        if (isOpen && food) {
-            carregarIngredientes();
+        if (!food) {
+            setFoodData(food);
+            return;
         }
-    }, [isOpen, food]);
 
-    const carregarIngredientes = async () => {
-        if (!food) return;
+        const categoriasSanitizadas = Array.isArray(food.categorias)
+            ? food.categorias.map((cat) => {
+                  if (typeof cat === "string") return cat;
+                  if (cat?.value) return cat.value;
+                  if (cat?.label) return cat.label;
+                  return String(cat);
+              })
+            : [];
 
-        setLoadingIngredientes(true);
-        try {
-            const ingredientesItem = await buscarIngredientes(food.id);
-            setIngredientes(ingredientesItem);
-        } catch (error) {
-            console.error('Erro ao carregar ingredientes:', error);
-            setIngredientes([]);
-        } finally {
-            setLoadingIngredientes(false);
+        setFoodData({
+            ...food,
+            categorias: categoriasSanitizadas,
+        });
+    }, [food]);
+
+    useEffect(() => {
+        if (isOpen && foodData?.id) {
+            carregarIngredientes(foodData.id);
         }
-    };
+    }, [isOpen, foodData?.id, carregarIngredientes]);
 
     const handleEditIngredients = () => {
         setIsIngredientsModalOpen(true);
@@ -37,9 +72,66 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
 
     const handleIngredientsModalClose = () => {
         setIsIngredientsModalOpen(false);
-        // Recarregar ingredientes após fechar o modal de edição
-        carregarIngredientes();
+        if (foodData?.id) {
+            carregarIngredientes(foodData.id);
+        }
     };
+
+    const handleItemUpdate = async ({ nome, categorias, valor, descricao }) => {
+        if (!foodData?.id) return;
+        setSavingItem(true);
+        try {
+            await atualizarItemCardapio(foodData.id, {
+                nome,
+                categorias,
+                valor,
+                descricao,
+            });
+            notify("Item atualizado com sucesso!", "success");
+            setFoodData((prev) => ({
+                ...prev,
+                nome,
+                categorias,
+                valor,
+                descricao,
+            }));
+            await carregarItens();
+        } catch (error) {
+            console.error("Erro ao atualizar item", error);
+            notify(error?.message || "Não foi possível atualizar o item.", "error");
+            throw error;
+        } finally {
+            setSavingItem(false);
+        }
+    };
+
+    const handleDeleteItem = async () => {
+        if (!foodData?.id) return;
+        const confirmar = window.confirm(
+            `Tem certeza que deseja remover o item "${foodData.nome}" do cardápio?`
+        );
+        if (!confirmar) return;
+
+        setDeletingItem(true);
+        try {
+            await removerItemCardapio(foodData.id, foodData.storagePath);
+            notify("Item removido com sucesso!", "success");
+            await carregarItens();
+            setIsEditModalOpen(false);
+            setIsIngredientsModalOpen(false);
+            onClose();
+        } catch (error) {
+            console.error("Erro ao remover item", error);
+            notify(error?.message || "Não foi possível remover o item.", "error");
+        } finally {
+            setDeletingItem(false);
+        }
+    };
+
+    if (!foodData) {
+        return null;
+    }
+
     return (
         <BaseModalWithHeader
             isOpen={isOpen}
@@ -50,16 +142,36 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
         >
             <div className="font-inter space-y-4 text-sm p-6">
                 <div className="flex items-start space-x-4">
-                    <img src={food.imagemUrl} alt={food.nome} className="w-32 h-32 rounded-md object-cover" />
+                    {foodData.imagemUrl ? (
+                        <img src={foodData.imagemUrl} alt={foodData.nome} className="w-32 h-32 rounded-md object-cover" />
+                    ) : (
+                        <div className="w-32 h-32 rounded-md bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
+                            Sem imagem
+                        </div>
+                    )}
                     <div className="flex-1 space-y-2">
-                        <p><strong>Nome:</strong> {food.nome}</p>
-                        <p><strong>Preço:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(food.valor)}</p>
-                        <p><strong>Categorias:</strong> {food.categorias.join(", ")}</p>
-                        {food.descricao && (
-                            <p><strong>Descrição:</strong> {food.descricao}</p>
-                        )}
-                        {food.alergias && food.alergias.length > 0 && (
-                            <p><strong>Alergias:</strong> {food.alergias.join(", ")}</p>
+                        <div className="flex justify-between items-start">
+                            <div className="space-y-2">
+                                <p><strong>Nome:</strong> {foodData.nome}</p>
+                                <p><strong>Preço:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(foodData.valor)}</p>
+                                <p><strong>Categorias:</strong> {Array.isArray(foodData.categorias) && foodData.categorias.length > 0 ? foodData.categorias.join(", ") : "-"}</p>
+                                {foodData.descricao && (
+                                    <p><strong>Descrição:</strong> {foodData.descricao}</p>
+                                )}
+                                {foodData.alergias && foodData.alergias.length > 0 && (
+                                    <p><strong>Alergias:</strong> {foodData.alergias.join(", ")}</p>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-md hover:bg-blue-50"
+                            >
+                                <EditPencil01 className="w-3 h-3 mr-1" />
+                                Editar item
+                            </button>
+                        </div>
+                        {(!foodData.descricao || foodData.descricao.trim() === "") && (
+                            <p className="text-xs text-gray-500">Nenhuma descrição cadastrada</p>
                         )}
                     </div>
                 </div>
@@ -109,10 +221,19 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                     )}
                 </div>
             </div>
-            <div className="font-inter flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="font-inter flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <button
+                    onClick={handleDeleteItem}
+                    disabled={deletingItem || savingItem}
+                    className="flex items-center gap-2 px-4 py-2 rounded border border-red-200 text-red-600 font-semibold hover:bg-red-50 disabled:opacity-60"
+                >
+                    <TrashFull className="w-4 h-4" />
+                    {deletingItem ? "Removendo..." : "Excluir item"}
+                </button>
                 <button
                     onClick={onClose}
-                    className="cursor-pointer font-bold text-[#334155] px-4 py-2 rounded bg-white border border-gray-300 hover:bg-gray-50"
+                    disabled={deletingItem}
+                    className="cursor-pointer font-bold text-[#334155] px-4 py-2 rounded bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-60"
                 >
                     Fechar
                 </button>
@@ -122,7 +243,15 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
             <EditFoodIngredientsModal
                 isOpen={isIngredientsModalOpen}
                 onClose={handleIngredientsModalClose}
-                item={food}
+                item={foodData}
+            />
+
+            <EditFoodModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                food={foodData}
+                onSubmit={handleItemUpdate}
+                saving={savingItem}
             />
         </BaseModalWithHeader>
     );

@@ -15,11 +15,23 @@ export const CardapioProvider = ({ children }) => {
       const dados = await listarItensCardapio();
 
       // ✅ Normaliza cada item para ter o campo `price`
-      const normalizados = dados.map((item) => ({
-        ...item,
-        // Tenta pegar o campo certo, senão usa 0 como fallback
-        price: Number(item.price ?? item.preco ?? item.valor ?? 0),
-      }));
+      const normalizados = dados.map((item) => {
+        const categoriasSanitizadas = Array.isArray(item.categorias)
+          ? item.categorias.map((cat) => {
+              if (typeof cat === "string") return cat;
+              if (cat?.value) return cat.value;
+              if (cat?.label) return cat.label;
+              return String(cat);
+            })
+          : [];
+
+        return {
+          ...item,
+          categorias: categoriasSanitizadas,
+          // Tenta pegar o campo certo, senão usa 0 como fallback
+          price: Number(item.price ?? item.preco ?? item.valor ?? 0),
+        };
+      });
 
       setItems(normalizados);
     } catch (err) {
