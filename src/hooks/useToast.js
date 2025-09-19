@@ -1,7 +1,8 @@
+import { useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 
 export function useToast() {
-  const notify = (message, status = 'success') => {
+  const notify = useCallback((message, status = 'success') => {
     const styles = {
       success: {
         style: { background: '#16a34a', color: '#fff', borderRadius: '8px', padding: '12px 16px' },
@@ -23,7 +24,7 @@ export function useToast() {
     } else {
       toast(message, config);
     }
-  };
+  }, []);
 
   return { notify };
 }

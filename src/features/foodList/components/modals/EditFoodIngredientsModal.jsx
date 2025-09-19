@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Coffee, Save, CloseLg } from 'react-coolicons';
 import BaseModalWithHeader from '@/components/BaseModalWithHeader';
 import IngredientesSelector from '@/features/foodList/components/ingredientes/IngredientesSelector';
@@ -13,13 +13,9 @@ const EditFoodIngredientsModal = ({ isOpen, onClose, item }) => {
   const [loadingIngredientes, setLoadingIngredientes] = useState(false);
   const { buscarIngredientes, adicionarIngredientes } = useIngredientes();
 
-  useEffect(() => {
-    if (isOpen && item && idRestaurante) {
-      carregarIngredientes();
-    }
-  }, [isOpen, item, idRestaurante]);
+  const carregarIngredientes = useCallback(async () => {
+    if (!item?.id) return;
 
-  const carregarIngredientes = async () => {
     setLoadingIngredientes(true);
     try {
       const ingredientesExistentes = await buscarIngredientes(item.id);
@@ -30,7 +26,13 @@ const EditFoodIngredientsModal = ({ isOpen, onClose, item }) => {
     } finally {
       setLoadingIngredientes(false);
     }
-  };
+  }, [buscarIngredientes, item?.id]);
+
+  useEffect(() => {
+    if (isOpen && item?.id && idRestaurante) {
+      carregarIngredientes();
+    }
+  }, [isOpen, item?.id, idRestaurante, carregarIngredientes]);
 
   const handleSave = async () => {
     if (!item || !idRestaurante) return;

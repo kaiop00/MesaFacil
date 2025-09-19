@@ -1,4 +1,4 @@
-import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { storage, auth } from "@/config/firebaseConfig";
 import { v4 as uuid } from "uuid";
 
@@ -29,4 +29,18 @@ export async function uploadMenuImage(file, restId) {
 
     const downloadURL = await getDownloadURL(task.snapshot.ref);
     return { downloadURL, storagePath };
+}
+
+export async function deleteMenuImage(storagePath) {
+    if (!storagePath) return;
+
+    try {
+        const storageRef = ref(storage, storagePath);
+        await deleteObject(storageRef);
+    } catch (error) {
+        if (error?.code === "storage/object-not-found") {
+            return;
+        }
+        throw error;
+    }
 }

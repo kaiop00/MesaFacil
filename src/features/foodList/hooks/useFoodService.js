@@ -1,5 +1,5 @@
-import { create, getAll } from "@/services/firebase/firestoreService";
-import { uploadMenuImage } from "@/services/firebase/storageUpload";
+import { create, getAll, update, remove } from "@/services/firebase/firestoreService";
+import { uploadMenuImage, deleteMenuImage } from "@/services/firebase/storageUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { adicionarIngredientes } from "@/services/ingredientes/ingredientesService";
 
@@ -60,5 +60,32 @@ export function useFoodService() {
     return docRef;
   };
 
-  return { listarItensCardapio, salvarNovoItem };
+  const atualizarItemCardapio = async (itemId, dados) => {
+    if (!itemId) throw new Error("ID do item não informado para atualização.");
+
+    const payload = {
+      nome: dados.nome,
+      descricao: dados.descricao ?? "",
+      categorias: Array.isArray(dados.categorias) ? dados.categorias : [],
+      valor: dados.valor != null ? Number(dados.valor) : 0,
+    };
+
+    await update(idRestaurante, "cardapio", itemId, payload);
+  };
+
+  const removerItemCardapio = async (itemId, storagePath) => {
+    if (!itemId) throw new Error("ID do item não informado para exclusão.");
+
+    await remove(idRestaurante, "cardapio", itemId);
+
+    if (storagePath) {
+      try {
+        await deleteMenuImage(storagePath);
+      } catch (err) {
+        console.warn("Não foi possível remover a imagem do armazenamento:", err);
+      }
+    }
+  };
+
+  return { listarItensCardapio, salvarNovoItem, atualizarItemCardapio, removerItemCardapio };
 }
