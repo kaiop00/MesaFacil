@@ -103,6 +103,8 @@ export async function remove(idRestaurante, subcollectionName, docId) {
  * @param {number} [options.limit=10]
  * @param {string} [options.orderByField='createdAt']
  * @param {string} [options.order='desc']
+ * @param {Date} [options.startDate] - Data de início do filtro
+ * @param {Date} [options.endDate] - Data de fim do filtro
  */
 export async function getMovimentacoesByItem(idRestaurante, itemId, options = {}) {
   const colRef = getSubcollectionRef(idRestaurante, 'movimentos');
@@ -110,6 +112,15 @@ export async function getMovimentacoesByItem(idRestaurante, itemId, options = {}
   const queryConstraints = [
     where('itemId', '==', itemId)
   ];
+
+  // Adiciona filtros de data se fornecidos
+  if (options.startDate) {
+    queryConstraints.push(where('createdAt', '>=', options.startDate.toISOString()));
+  }
+
+  if (options.endDate) {
+    queryConstraints.push(where('createdAt', '<=', options.endDate.toISOString()));
+  }
 
   if (options.orderByField) {
     queryConstraints.push(orderBy(options.orderByField, options.order || 'desc'));
