@@ -8,6 +8,7 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMovimentacoesByItem } from "@/services/firebase/firestoreService";
+import { pluralizeUnit } from "@/services/utils/unitConversionService";
 
 const ItemDetailsModal = ({ isOpen, onClose, item }) => {
   const { idRestaurante } = useAuth();
@@ -15,20 +16,34 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
   const [loadingMovimentacoes, setLoadingMovimentacoes] = useState(false);
 
   const carregarMovimentacoes = useCallback(async () => {
+    const hoje = new Date();
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(hoje.getDate() - 30);
+
+    if (!item?.id || !idRestaurante) {
+      return;
+    }
+
     setLoadingMovimentacoes(true);
     try {
-      // Buscar movimentações do item com filtros aplicados no Firestore
       const movimentacoesItem = await getMovimentacoesByItem(
         idRestaurante,
-        item.id,
+        item.id, 
         {
-          orderByField: "createdAt",
-          order: "desc",
-          limit: 10, // Últimas 10 movimentações
-        },
+          startDate: trintaDiasAtras,
+          endDate: hoje,
+
+        }
       );
 
-      setMovimentacoes(movimentacoesItem);
+      const movimentacoesOrdenadas = movimentacoesItem
+        .sort((a, b) => {
+          const dateA = new Date(a.data || a.createdAt || 0);
+          const dateB = new Date(b.data || b.createdAt || 0);
+          return dateB - dateA;
+        });
+
+      setMovimentacoes(movimentacoesOrdenadas);
     } catch (error) {
       console.error("Erro ao carregar movimentações:", error);
       setMovimentacoes([]);
@@ -76,10 +91,11 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
   const totalConsumido = movimentacoes
     .filter(
       (mov) =>
-        mov.pedidoReferencia &&
-        !mov.pedidoReferencia.startsWith("CANCELAMENTO"),
+        (mov.pedidoReferencia &&
+        !mov.pedidoReferencia.startsWith("CANCELAMENTO")) ||
+        (mov.tipoMovimentacao === "Saída - Pedido")
     )
-    .reduce((acc, mov) => acc + Math.abs(mov.quantidade || 0), 0);
+    .reduce((acc, mov) => acc + (mov.quantidade || 0), 0);
 
   return (
     <BaseModalWithHeader
@@ -142,7 +158,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                 </p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {formatValue(item.estoqueAtual)}{" "}
-                  {(item.unidadeArmazenamento || 'un').toLowerCase() + (item.estoqueAtual > 1 ? 's' : '')}
+                  {pluralizeUnit(item.unidadeArmazenamento || 'Unidade', item.estoqueAtual).toLowerCase()}
                 </p>
               </div>
               <div
@@ -194,7 +210,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                 </span>
               </div>
               <p className="text-lg font-semibold text-orange-600 mt-1">
-                {totalConsumido.toFixed(2)} {item.unidadeArmazenamento || "un"}
+                {totalConsumido.toFixed(2)} {pluralizeUnit(item.unidadeArmazenamento || "Unidade", totalConsumido).toLowerCase()}
               </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-3">
@@ -238,14 +254,16 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                       className={`w-2 h-2 rounded-full ${
                         mov.pedidoReferencia?.startsWith("CANCELAMENTO")
                           ? "bg-red-500"
-                          : mov.pedidoReferencia
+                          : mov.tipoMovimentacao === "Saída - Pedido" || 
+                            mov.tipoMovimentacao === "Saida" || 
+                            mov.pedidoReferencia
                             ? "bg-orange-500"
                             : "bg-green-500"
                       }`}
-                    ></div>
+                      ></div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {mov.tipoMovimentacao || "Movimentação"}
+                        {mov.tipoMovimentacao || (mov.pedidoReferencia ? "Saída - Pedido" : "Movimentação")}
                       </p>
                       <p className="text-xs text-gray-500">
                         {mov.data
@@ -266,19 +284,25 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                   <div className="text-right">
                     <p
                       className={`text-sm font-semibold flex items-center space-x-1 ${
-                        mov.quantidade < 0 ? "text-red-600" : "text-green-600"
+                        mov.tipoMovimentacao === "Saída - Pedido" || 
+                        mov.tipoMovimentacao === "Saida" || 
+                        mov.pedidoReferencia ? "text-red-600" : "text-green-600"
                       }`}
                     >
                       <TrendingDown
-                        className={`w-3 h-3 ${mov.quantidade < 0 ? "rotate-0" : "rotate-180"}`}
+                        className={`w-3 h-3 ${mov.tipoMovimentacao === "Saída - Pedido" || 
+                          mov.tipoMovimentacao === "Saida" || 
+                          mov.pedidoReferencia ? "rotate-0" : "rotate-180"}`}
                       />
                       <span>
-                        {mov.quantidade < 0 ? "" : "+"}
-                        {mov.quantidade} {mov.unidadeArmazenamento || "un"}
+                        {mov.tipoMovimentacao === "Saída - Pedido" || 
+                         mov.tipoMovimentacao === "Saida" || 
+                         mov.pedidoReferencia ? "-" : "+"}
+                        {mov.quantidade || 0} {pluralizeUnit(mov.unidadeArmazenamento || "Unidade", Math.abs(mov.quantidade || 0)).toLowerCase()}
                       </span>
                     </p>
                     <p className="text-xs text-gray-500">
-                      Saldo: {mov.novoSaldo}
+                      Saldo: {mov.novoSaldo !== undefined ? mov.novoSaldo : "N/A"}
                     </p>
                   </div>
                 </div>

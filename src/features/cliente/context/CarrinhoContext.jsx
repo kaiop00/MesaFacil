@@ -18,10 +18,17 @@ export default function CarrinhoProvider({ children }) {
                 return atualizados;
             }
 
+            // Garante que o preço promocional seja usado se houver promoção
+            const priceToUse = item.temPromocao ? item.valor : (item.price ?? item.valor ?? 0);
+
             return [...prev, {
                 ...item,
-                price: item.price ?? item.valor ?? 0,
+                price: priceToUse,
                 quantity: item.quantity ?? 1,
+                // Preserva informações de promoção no carrinho
+                temPromocao: item.temPromocao || false,
+                promocao: item.promocao || null,
+                valorOriginal: item.valorOriginal || item.valor || item.price
             }];
         });
     }

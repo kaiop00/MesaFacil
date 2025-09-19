@@ -1,6 +1,7 @@
 import { CircleWarning, CloseLg } from "react-coolicons";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function ConfirmModal({
     isOpen,
@@ -9,6 +10,7 @@ export default function ConfirmModal({
     title,
     message,
 }) {
+    const { t } = useTranslation("common");
     const [loadingConfirm, setLoadingConfirm] = useState(false);
 
     if (!isOpen) return null;
@@ -43,7 +45,7 @@ export default function ConfirmModal({
                         onClick={onCancel}
                         className="px-5 py-3 text-sm rounded-md bg-gray-100 cursor-pointer"
                     >
-                        Cancelar
+                        {t("cancel")}
                     </button>
                     <button
                         onClick={handleConfirm}
@@ -52,7 +54,7 @@ export default function ConfirmModal({
                         {loadingConfirm ? (
                             <LoadingSpinner size={4}/>
                         ) : (
-                            "Confirmar"
+                            t("confirm")
                         )
                         }
                     </button>

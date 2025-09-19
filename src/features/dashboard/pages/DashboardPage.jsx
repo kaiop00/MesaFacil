@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { AplicaCorDoSistema } from "@/components/AplicaCorDoSistema";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTables } from "@/features/config/hooks/useTables";
@@ -24,6 +25,7 @@ import {
 import { Bar } from 'react-chartjs-2';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Link } from "react-router-dom";
 
 ChartJS.register(
   CategoryScale,
@@ -35,6 +37,7 @@ ChartJS.register(
 );
 
 const DashboardPage = () => {
+  const { t } = useTranslation("dashboard");
   const { idRestaurante } = useAuth();
   const { mesasAndamento, tables } = useTables(idRestaurante);
 
@@ -171,9 +174,9 @@ const DashboardPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-6 space-y-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold text-gray-900">Dashboard</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">{t("title")}</h1>
           <p className="text-gray-500 mt-1">
-            Acompanhe o andamento do seu negócio
+            {t("subtitle")}
           </p>
         </div>
 
@@ -183,15 +186,15 @@ const DashboardPage = () => {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-orange-400"></div>
               <h2 className="text-lg font-medium text-gray-900">
-                Pedidos em Andamento
+                {t("ordersInProgress")}
               </h2>
             </div>
-            <button className="text-sm text-gray-500 hover:text-gray-700">
-              Ver Todos
-            </button>
+            <Link to="/home/pedidos" className="text-sm text-gray-500 hover:text-gray-700">
+              {t("viewAll")}
+            </Link>
           </div>
           {mesasAndamentoDisplay.length === 0 ? (
-            <p>Nenhum pedido em andamento</p>
+            <p>{t("noOrdersInProgress")}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {mesasAndamentoDisplay.slice(0, 4).map((mesa) => (
@@ -200,15 +203,14 @@ const DashboardPage = () => {
                     <div className="p-2 bg-orange-50 rounded-lg">
                       <Notebook className="w-5 h-5 text-orange-500" />
                     </div>
-                    <MoreHorizontal className="w-5 h-5 text-gray-400" />
                   </div>
 
                   <div className="space-y-1">
                     <h3 className="font-medium text-gray-900">
-                      Mesa {mesa.numero}
+                      {t("table")} {mesa.numero}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Pedido {mesa.timeAgo}
+                      {t("order")} {mesa.timeAgo}
                     </p>
                     <p className="text-lg font-semibold text-orange-500 mt-3">
                       {formatCurrency(Number(mesa.total))}
@@ -234,16 +236,16 @@ const DashboardPage = () => {
                   onChange={(e) => setSalesFilter(e.target.value)}
                   className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                 >
-                  <option value="Hoje">Hoje</option>
-                  <option value="Semanal">Semanal</option>
-                  <option value="Mensal">Mensal</option>
+                  <option value="Hoje">{t("today")}</option>
+                  <option value="Semanal">{t("weekly")}</option>
+                  <option value="Mensal">{t("monthly")}</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
             <div className="space-y-1">
-              <p className="text-sm text-gray-600">Total Vendas</p>
+              <p className="text-sm text-gray-600">{t("totalSales")}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(stats.totalSales)}
               </p>
@@ -262,16 +264,16 @@ const DashboardPage = () => {
                   onChange={(e) => setOrdersFilter(e.target.value)}
                   className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                 >
-                  <option value="Hoje">Hoje</option>
-                  <option value="Semanal">Semanal</option>
-                  <option value="Mensal">Mensal</option>
+                  <option value="Hoje">{t("today")}</option>
+                  <option value="Semanal">{t("weekly")}</option>
+                  <option value="Mensal">{t("monthly")}</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
             <div className="space-y-1">
-              <p className="text-sm text-gray-600">Quantidade de Pedidos</p>
+              <p className="text-sm text-gray-600">{t("totalOrders")}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats.totalOrders}
               </p>
@@ -290,9 +292,9 @@ const DashboardPage = () => {
                   onChange={(e) => setTimeFilter(e.target.value)}
                   className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                 >
-                  <option value="Hoje">Hoje</option>
-                  <option value="Semanal">Semanal</option>
-                  <option value="Mensal">Mensal</option>
+                  <option value="Hoje">{t("today")}</option>
+                  <option value="Semanal">{t("weekly")}</option>
+                  <option value="Mensal">{t("monthly")}</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
@@ -300,7 +302,7 @@ const DashboardPage = () => {
 
             <div className="space-y-1">
               <p className="text-sm text-gray-600">
-                Tempo Médio de Atendimento
+                {t("avgServiceTime")}
               </p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatServiceTime(stats.avgServiceTime)}
@@ -315,7 +317,7 @@ const DashboardPage = () => {
           <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-gray-900">
-                Evolução de Vendas
+                {t("salesEvolution")}
               </h3>
               <div className="flex items-center gap-4">
                 <div className="relative">
@@ -324,11 +326,11 @@ const DashboardPage = () => {
                     onChange={(e) => setCategoryFilter(e.target.value)}
                     className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                   >
-                    <option value="Todas">Todas</option>
-                    <option value="Guarnição">Guarnição</option>
-                    <option value="Sobremesa">Sobremesa</option>
-                    <option value="Carne">Carne</option>
-                    <option value="Acompanhamento">Acompanhamento</option>
+                    <option value="Todas">{t("all")}</option>
+                    <option value="Guarnição">{t("garrison")}</option>
+                    <option value="Sobremesa">{t("dessert")}</option>
+                    <option value="Carne">{t("meat")}</option>
+                    <option value="Acompanhamento">{t("accompaniment")}</option>
                   </select>
                   <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -338,8 +340,8 @@ const DashboardPage = () => {
                     onChange={(e) => setChartFilter(e.target.value)}
                     className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                   >
-                    <option value="Mensal">Mensal</option>
-                    <option value="Anual">Anual</option>
+                    <option value="Mensal">{t("monthly")}</option>
+                    <option value="Anual">{t("yearly")}</option>
                   </select>
                   <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -428,7 +430,7 @@ const DashboardPage = () => {
                 />
               ) : (
                 <div className="flex items-center justify-center w-full h-full text-gray-500">
-                  Nenhum dado disponível
+                  {t("noDataAvailable")}
                 </div>
               )}
             </div>
@@ -438,7 +440,7 @@ const DashboardPage = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-gray-900">
-                Produtos Mais Vendidos
+                {t("topSellingProducts")}
               </h3>
               <div className="relative">
                 <select
@@ -446,8 +448,8 @@ const DashboardPage = () => {
                   onChange={(e) => setProductsFilter(e.target.value)}
                   className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                 >
-                  <option value="Mensal">Mensal</option>
-                  <option value="Anual">Anual</option>
+                  <option value="Mensal">{t("monthly")}</option>
+                  <option value="Anual">{t("yearly")}</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
@@ -462,8 +464,8 @@ const DashboardPage = () => {
                 {topProducts.length > 0 ? (
                   <>
                     <div className="flex items-center justify-between text-sm font-medium text-gray-500 border-b border-gray-100 pb-3 mb-1">
-                      <span>Nome</span>
-                      <span>Valor Vendido</span>
+                      <span>{t("name")}</span>
+                      <span>{t("amountSold")}</span>
                     </div>
                     {topProducts.map((product, index) => (
                       <div
@@ -481,7 +483,7 @@ const DashboardPage = () => {
                   </>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
-                    Nenhum produto encontrado
+                    {t("noProductsFound")}
                   </div>
                 )}
               </div>

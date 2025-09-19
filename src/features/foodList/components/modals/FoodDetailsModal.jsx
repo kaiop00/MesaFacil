@@ -2,11 +2,12 @@ import { Coffee, DownloadPackage, EditPencil01, TrashFull } from "react-coolicon
 import { useCallback, useEffect, useState } from "react";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import EditFoodIngredientsModal from "./EditFoodIngredientsModal";
-import { useIngredientes } from "@/hooks/useIngredientes";
 import EditFoodModal from "./EditFoodModal";
+import { useIngredientes } from "@/hooks/useIngredientes";
 import { useFoodService } from "@/features/foodList/hooks/useFoodService";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
 import { useToast } from "@/hooks/useToast";
+import { pluralizeUnit } from "@/services/utils/unitConversionService";
 
 const FoodDetailsModal = ({ isOpen, onClose, food }) => {
     const [isIngredientsModalOpen, setIsIngredientsModalOpen] = useState(false);
@@ -210,7 +211,7 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                                         {ingrediente.itemNome}
                                     </span>
                                     <span className="text-gray-600">
-                                        {ingrediente.quantidade} {ingrediente.unidade?.toLowerCase() || 'un'} por porção
+                                        {ingrediente.quantidade} {pluralizeUnit(ingrediente.unidade, ingrediente.quantidade) || 'un'} por porção
                                     </span>
                                 </div>
                             ))}

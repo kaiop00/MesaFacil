@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AddPlus, TrashFull } from 'react-coolicons';
 import { getAll } from '@/services/firebase/firestoreService';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCompatibleUnits, convertUnit, formatQuantityWithUnit } from '@/services/utils/unitConversionService';
 
 const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
   const { idRestaurante } = useAuth();
@@ -72,6 +73,48 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
 
     setIngredientes(novosIngredientes);
     onChange(novosIngredientes);
+  };
+
+  const getUnidadesCompativeis = (ingrediente) => {
+    if (!ingrediente.itemId) return unidadesDisponiveis;
+    
+    const itemEstoque = itensEstoque.find(item => item.id === ingrediente.itemId);
+    if (!itemEstoque) return unidadesDisponiveis;
+    
+    return getCompatibleUnits(itemEstoque.unidadeArmazenamento);
+  };
+
+  const getConversaoInfo = (ingrediente) => {
+    if (!ingrediente.itemId || !ingrediente.quantidade) return null;
+    
+    const itemEstoque = itensEstoque.find(item => item.id === ingrediente.itemId);
+    if (!itemEstoque) return null;
+    
+    if (ingrediente.unidade === itemEstoque.unidadeArmazenamento) {
+      return {
+        textoConversao: `Usando a mesma unidade do estoque (${itemEstoque.unidadeArmazenamento})`,
+        quantidadeConvertida: ingrediente.quantidade
+      };
+    }
+    
+    const quantidadeConvertida = convertUnit(
+      parseFloat(ingrediente.quantidade),
+      ingrediente.unidade,
+      itemEstoque.unidadeArmazenamento
+    );
+    
+    if (quantidadeConvertida === null) {
+      return {
+        textoConversao: `❌ Não é possível converter de ${ingrediente.unidade} para ${itemEstoque.unidadeArmazenamento}`,
+        quantidadeConvertida: 0,
+        erro: true
+      };
+    }
+    
+    return {
+      textoConversao: `${formatQuantityWithUnit(ingrediente.quantidade, ingrediente.unidade)} = ${formatQuantityWithUnit(quantidadeConvertida, itemEstoque.unidadeArmazenamento)}`,
+      quantidadeConvertida: quantidadeConvertida
+    };
   };
 
   const unidadesDisponiveis = [
@@ -182,7 +225,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
                     disabled={disabled}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    {unidadesDisponiveis.map((unidade) => (
+                    {getUnidadesCompativeis(ingrediente).map((unidade) => (
                       <option key={unidade} value={unidade}>
                         {unidade}
                       </option>
@@ -192,10 +235,34 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
               </div>
 
               {ingrediente.itemId && (
-                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                  <strong>Exemplo:</strong> Se este prato é servido 10 vezes, serão consumidos{' '}
-                  {(parseFloat(ingrediente.quantidade || 0) * 10).toFixed(2)} {ingrediente.unidade.toLowerCase() + (ingrediente.quantidade > 1 ? 's' : '')}{' '}
-                  de {ingrediente.itemNome}
+                <div className="space-y-2">
+                  {(() => {
+                    const conversaoInfo = getConversaoInfo(ingrediente);
+                    const itemEstoque = itensEstoque.find(item => item.id === ingrediente.itemId);
+                    
+                    return (
+                      <>
+                        {conversaoInfo && (
+                          <div className={`text-xs p-2 rounded ${conversaoInfo.erro ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
+                            <strong>Conversão:</strong> {conversaoInfo.textoConversao}
+                          </div>
+                        )}
+                        
+                        {itemEstoque && conversaoInfo && !conversaoInfo.erro && (
+                          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                            <strong>Exemplo:</strong> Se este prato é servido 10 vezes, serão consumidos{' '}
+                            {formatQuantityWithUnit(conversaoInfo.quantidadeConvertida * 10, itemEstoque.unidadeArmazenamento)}{' '}
+                            do estoque de {ingrediente.itemNome}
+                            {conversaoInfo.quantidadeConvertida !== parseFloat(ingrediente.quantidade || 0) && (
+                              <span className="block mt-1 text-gray-400">
+                                (Original: {formatQuantityWithUnit(parseFloat(ingrediente.quantidade || 0) * 10, ingrediente.unidade)})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>

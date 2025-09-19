@@ -3,6 +3,7 @@ import { useState } from "react";
 
 export default function ItemModal({ item, onClose, onAdicionar }) {
     const [quantidade, setQuantidade] = useState(1);
+    const temPromocao = item.temPromocao && item.promocao;
 
     const aumentar = () => setQuantidade((q) => q + 1);
     const diminuir = () => setQuantidade((q) => Math.max(1, q - 1));
@@ -12,12 +13,20 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
     return (
         <div className="fixed inset-0 z-[999] bg-white overflow-auto pb-28">
             {/* Header + imagem */}
-            <div className="mt-5">
-                <div className="absolute flex items-center justify-center top-13 left-5 bg-white w-10 h-10 rounded-full cursor-pointer">
+            <div className="mt-5 relative">
+                <div className="absolute flex items-center justify-center top-13 left-5 bg-white w-10 h-10 rounded-full cursor-pointer z-10">
                     <button onClick={onClose}>
                         <ChevronLeft />
                     </button>
                 </div>
+                
+                {/* Badge de promoção na imagem */}
+                {temPromocao && (
+                    <div className="absolute top-8 right-5 bg-red-500 text-white text-sm px-3 py-1 rounded-lg font-bold z-10">
+                        OFERTA -{item.promocao.porcentagemDesconto}%
+                    </div>
+                )}
+                
                 <img
                     src={item.imagemUrl}
                     alt={item.nome}
@@ -28,7 +37,36 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
             {/* Informações */}
             <div className="p-5 flex flex-col gap-6">
                 <div>
-                    <p className="text-[#D9A23B] font-semibold mb-1">R$ {item.valor.toFixed(2).replace('.', ',')}</p>
+                    {/* Preços - com ou sem promoção */}
+                    <div className="flex items-center gap-3 mb-3">
+                        {temPromocao ? (
+                            <>
+                                <p className="text-[#D9A23B] font-bold text-xl">
+                                    R$ {item.valor.toFixed(2).replace('.', ',')}
+                                </p>
+                                <p className="text-gray-400 text-lg line-through">
+                                    R$ {item.valorOriginal.toFixed(2).replace('.', ',')}
+                                </p>
+                                <span className="bg-green-500 text-white text-sm px-2 py-1 rounded-full font-medium">
+                                    Economize R$ {(item.valorOriginal - item.valor).toFixed(2).replace('.', ',')}
+                                </span>
+                            </>
+                        ) : (
+                            <p className="text-[#D9A23B] font-semibold text-xl">
+                                R$ {item.valor.toFixed(2).replace('.', ',')}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Nome da promoção */}
+                    {temPromocao && item.promocao.nome && (
+                        <div className="mb-3">
+                            <span className="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full border border-yellow-300 font-medium">
+                                🎉 {item.promocao.nome}
+                            </span>
+                        </div>
+                    )}
+
                     <h1 className="text-2xl font-bold mb-1">{item.nome}</h1>
                     <p className="text-gray-600 text-base">{item.descricao}</p>
                 </div>
@@ -62,7 +100,7 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
                     className="bg-[#D9A23B] text-white font-medium px-4 py-2 rounded-md hover:opacity-90 transition flex items-center gap-3"
                 >
                     Adicionar
-                    <span className="font-semibold">{total.toFixed(2).replace('.', ',')}</span>
+                    <span className="font-semibold">R$ {total.toFixed(2).replace('.', ',')}</span>
                 </button>
             </div>
         </div>
