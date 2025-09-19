@@ -1,6 +1,7 @@
 import { useCliente } from "./ClienteContext";
 import { createContext, useContext, useState, useEffect } from "react";
 import { getAll } from '@/services/firebase/firestoreService';
+import { getPromocoesAtivas, aplicarPromocoesAosItens } from '../services/promocoesService';
 
 const CardapioClienteContext = createContext();
 
@@ -8,6 +9,7 @@ export default function CardapioClienteProvider({ children }) {
     const { idRestaurante } = useCliente();
     const [loadingCardapio, setLoadingCardapio] = useState(true);
     const [items, setItems] = useState([]);
+    const [promocoes, setPromocoes] = useState([]);
 
     const carregarCardapio = async () => {
         try {
@@ -25,19 +27,42 @@ export default function CardapioClienteProvider({ children }) {
             setItems(normalizados);
         } catch (err) {
             console.error("Erro ao carregar itens do cardápio:", err);
-        } finally {
-            setLoadingCardapio(false);
+        }
+    };
+
+    const carregarPromocoes = async () => {
+        try {
+            const promocoesAtivas = await getPromocoesAtivas(idRestaurante);
+            setPromocoes(promocoesAtivas);
+        } catch (err) {
+            console.error("Erro ao carregar promoções:", err);
         }
     };
 
     useEffect(() => {
         if (idRestaurante) {
-            carregarCardapio();
+            const carregarDados = async () => {
+                setLoadingCardapio(true);
+                await Promise.all([
+                    carregarCardapio(),
+                    carregarPromocoes()
+                ]);
+                setLoadingCardapio(false);
+            };
+            
+            carregarDados();
         }
     }, [idRestaurante]);
 
+    // Aplicar promoções aos itens sempre que houver mudança
+    const itemsComPromocoes = aplicarPromocoesAosItens(items, promocoes);
+
     return (
-        <CardapioClienteContext.Provider value={{ items, loadingCardapio }}>
+        <CardapioClienteContext.Provider value={{ 
+            items: itemsComPromocoes, 
+            loadingCardapio,
+            promocoes 
+        }}>
             {children}
         </CardapioClienteContext.Provider>
     );
