@@ -16,6 +16,10 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
   const [loadingMovimentacoes, setLoadingMovimentacoes] = useState(false);
 
   const carregarMovimentacoes = useCallback(async () => {
+    const hoje = new Date();
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(hoje.getDate() - 30);
+
     if (!item?.id || !idRestaurante) {
       return;
     }
@@ -24,7 +28,12 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
     try {
       const movimentacoesItem = await getMovimentacoesByItem(
         idRestaurante,
-        item.id
+        item.id, 
+        {
+          startDate: trintaDiasAtras,
+          endDate: hoje,
+
+        }
       );
 
       const movimentacoesOrdenadas = movimentacoesItem
