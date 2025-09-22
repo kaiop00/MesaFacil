@@ -10,7 +10,13 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 export default function SacolaPage() {
     const { notify } = useToast();
     const { mesaId, idRestaurante } = useCliente();
-    const { carrinhoItems, limparCarrinho, total } = useCarrinho();
+    const {
+        carrinhoItems,
+        limparCarrinho,
+        total,
+        incrementarQuantidadeCarrinho,
+        decrementarQuantidadeCarrinho,
+    } = useCarrinho();
     const observacoesRef = useRef();
     const [loading, setLoading] = useState(false);
 
@@ -56,7 +62,12 @@ export default function SacolaPage() {
                     {/* GRID RESPONSIVO: 1 (mobile), 2 (tablet e desktop) */}
                     <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
                         {carrinhoItems.map((item) => (
-                            <CardCarrinho key={item.id} item={item} />
+                            <CardCarrinho
+                                key={item.id}
+                                item={item}
+                                onIncrement={() => incrementarQuantidadeCarrinho(item.id)}
+                                onDecrement={() => decrementarQuantidadeCarrinho(item.id)}
+                            />
                         ))}
                     </div>
 

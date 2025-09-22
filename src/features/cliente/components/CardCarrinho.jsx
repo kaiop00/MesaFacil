@@ -54,7 +54,8 @@ export default function CardCarrinho({ item, onIncrement, onDecrement }) {
 
             <div className="flex items-center gap-3 bg-[#F8FAFC] rounded px-2 py-1">
                 <button
-                    // onClick={() => onDecrement?.(item)}
+                    type="button"
+                    onClick={() => onDecrement?.(item)}
                     className="text-[#D9A23B] text-lg font-bold"
                 >
                     −
@@ -63,7 +64,8 @@ export default function CardCarrinho({ item, onIncrement, onDecrement }) {
                     {item.quantity ?? item.quantidade ?? 1}
                 </span>
                 <button
-                    // onClick={() => onIncrement?.(item)}
+                    type="button"
+                    onClick={() => onIncrement?.(item)}
                     className="text-[#D9A23B] text-lg font-bold"
                 >
                     +

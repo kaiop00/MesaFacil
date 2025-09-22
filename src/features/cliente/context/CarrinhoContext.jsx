@@ -37,6 +37,50 @@ export default function CarrinhoProvider({ children }) {
         setCarrinhoItems((prev) => prev.filter((item) => item.id !== id));
     }
 
+    function atualizarQuantidadeCarrinho(id, updater) {
+        setCarrinhoItems((prev) => {
+            let itemEncontrado = false;
+
+            const atualizados = prev.reduce((acc, item) => {
+                if (item.id !== id) {
+                    acc.push(item);
+                    return acc;
+                }
+
+                itemEncontrado = true;
+                const quantidadeAtual = item.quantity ?? 1;
+                const novaQuantidade = typeof updater === "function"
+                    ? updater(quantidadeAtual)
+                    : updater;
+
+                if (novaQuantidade == null || Number.isNaN(novaQuantidade)) {
+                    return acc;
+                }
+
+                if (novaQuantidade <= 0) {
+                    return acc;
+                }
+
+                acc.push({ ...item, quantity: novaQuantidade });
+                return acc;
+            }, []);
+
+            if (!itemEncontrado) {
+                return prev;
+            }
+
+            return atualizados;
+        });
+    }
+
+    function incrementarQuantidadeCarrinho(id) {
+        atualizarQuantidadeCarrinho(id, (quantidadeAtual) => quantidadeAtual + 1);
+    }
+
+    function decrementarQuantidadeCarrinho(id) {
+        atualizarQuantidadeCarrinho(id, (quantidadeAtual) => quantidadeAtual - 1);
+    }
+
     function limparCarrinho() {
         setCarrinhoItems([]);
     }
@@ -57,6 +101,9 @@ export default function CarrinhoProvider({ children }) {
             adicionarItemCarrinho,
             removerItemCarrinho,
             limparCarrinho,
+            atualizarQuantidadeCarrinho,
+            incrementarQuantidadeCarrinho,
+            decrementarQuantidadeCarrinho,
             total,
             quantidade,
         }}>
