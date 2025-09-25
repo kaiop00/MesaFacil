@@ -8,6 +8,8 @@ import { SearchMagnifyingGlass } from "react-coolicons";
 import useCategoriasCliente from "@/features/cliente/hooks/useCategoriasCliente";
 import CategoryTabs from "@/features/cliente/components/CategoryTabs";
 import { useCliente } from "../context/ClienteContext";
+import { solicitarGarcom } from "../services/garcomService";
+import { useToast } from "@/hooks/useToast";
 
 export default function MesaPage() {
     const { mesa, loading, error } = useMesa();
@@ -15,7 +17,10 @@ export default function MesaPage() {
     const [itemSelecionado, setItemSelecionado] = useState(null);
     const { adicionarItemCarrinho } = useCarrinho();
     const [searchItem, setSearchItem] = useState("");
-    const { idRestaurante } = useCliente();
+    const { idRestaurante, mesaId: mesaIdContext, numero: numeroMesaContext } = useCliente();
+    const { notify } = useToast();
+    const [garcomLoading, setGarcomLoading] = useState(false);
+    const [garcomSolicitado, setGarcomSolicitado] = useState(false);
 
     const {
         tabs,
@@ -35,9 +40,54 @@ export default function MesaPage() {
     if (error) return <p>{error}</p>;
     if (!mesa) return <p>Mesa nao encontrada</p>;
 
+    const mesaId = mesa?.id || mesaIdContext;
+    const mesaNumero = mesa?.numero ?? numeroMesaContext ?? mesaId ?? "-";
+
+    const handleChamarGarcom = async () => {
+        if (!idRestaurante || !mesaId) {
+            notify("Não foi possível identificar a mesa.", "error");
+            return;
+        }
+
+        if (garcomLoading || garcomSolicitado) {
+            return;
+        }
+
+        setGarcomLoading(true);
+
+        try {
+            await solicitarGarcom({
+                idRestaurante,
+                mesaId,
+                mesaNumero,
+                motivo: "Solicitação de atendimento",
+                registrarNotificacao: false,
+                registrarPedidoEvento: true,
+                evento: "assistencia",
+            });
+            setGarcomSolicitado(true);
+            notify("Chamado enviado. O garçom vem até a sua mesa em instantes.", "success");
+        } catch (err) {
+            console.error("Erro ao solicitar garçom", err);
+            notify("Não foi possível chamar o garçom. Tente novamente.", "error");
+        } finally {
+            setGarcomLoading(false);
+        }
+    };
+
     return (
         <div className="p-4 mb-20 md:pb-28 md:px-6 lg:px-8 max-w-6xl mx-auto">
-            <h1 className="text-2xl font-semibold md:text-3xl">Mesa {mesa.numero}</h1>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-4">
+                <h1 className="text-2xl font-semibold md:text-3xl">Mesa {mesaNumero}</h1>
+                <button
+                    type="button"
+                    onClick={handleChamarGarcom}
+                    disabled={garcomLoading || garcomSolicitado}
+                    className="inline-flex items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-amber-300 disabled:text-white"
+                >
+                    {garcomLoading ? "Chamando..." : garcomSolicitado ? "Chamado enviado" : "Chamar garçom"}
+                </button>
+            </div>
 
             <div className="relative mb-4 md:mb-6">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
