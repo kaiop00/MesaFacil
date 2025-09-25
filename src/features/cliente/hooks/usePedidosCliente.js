@@ -45,7 +45,7 @@ export function usePedidosCliente() {
                         items,
                         total,
                     };
-                });
+                }).filter((pedido) => pedido.pedidoEvento !== true || pedido.evento !== "assistencia");
 
                 setPedidos(todosPedidos);
                 setLoading(false);
@@ -72,4 +72,3 @@ export function usePedidosCliente() {
         idRestaurante,
     };
 }
-
