@@ -77,7 +77,7 @@ export default function MesaPage() {
 
     return (
         <div className="p-4 mb-20 md:pb-28 md:px-6 lg:px-8 max-w-6xl mx-auto">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-4">
                 <h1 className="text-2xl font-semibold md:text-3xl">Mesa {mesaNumero}</h1>
                 <button
                     type="button"
