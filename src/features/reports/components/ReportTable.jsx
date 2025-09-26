@@ -7,10 +7,12 @@ import {
 import { generatePDF } from "@/utils/pdfGenerator";
 import { useState } from "react";
 import { Download } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 
 const ReportTable = ({ reportData, startDate, endDate }) => {
+  const { t } = useTranslation('reports');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { notify } = useToast();
 
@@ -21,15 +23,15 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
   const getReportTitle = () => {
     switch (reportData.type) {
       case "vendas":
-        return "Relatório de Vendas";
+        return t('table.titles.sales');
       case "periodo":
-        return "Relatório por Período";
+        return t('table.titles.period');
       case "produto":
-        return "Relatório por Produto";
+        return t('table.titles.product');
       case "garcom":
-        return "Relatório por Garçom";
+        return t('table.titles.waiter');
       default:
-        return "Relatório";
+        return t('table.titles.sales');
     }
   };
 
@@ -51,11 +53,11 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
   const handleExportPDF = async () => {
     try {
       setIsGeneratingPDF(true);
-      await generatePDF(reportData, startDate, endDate);
-      notify('PDF gerado com sucesso!', 'success');
+      await generatePDF(reportData, startDate, endDate, t);
+      notify(t('table.pdfSuccess'), 'success');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      notify('Erro ao gerar PDF. Tente novamente.', 'error');
+      notify(t('table.pdfError'), 'error');
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -69,7 +71,7 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
             {getReportTitle()}
           </h3>
           <p className="text-sm text-gray-500 truncate">
-            Período: {new Date(startDate + "T00:00:00").toLocaleDateString('pt-BR')} até {new Date(endDate + "T23:59:59").toLocaleDateString('pt-BR')}
+            {t('table.period')}: {new Date(startDate + "T00:00:00").toLocaleDateString('pt-BR')} {t('table.from')} {new Date(endDate + "T23:59:59").toLocaleDateString('pt-BR')}
           </p>
         </div>
         {hasData() && (
@@ -81,16 +83,16 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
             >
               {isGeneratingPDF ? (
                 <>
-                  <span className="hidden sm:inline">Gerando PDF...</span>
-                  <span className="sm:hidden">Gerando...</span>
+                  <span className="hidden sm:inline">{t('table.generatingPDF')}</span>
+                  <span className="sm:hidden">{t('table.generatingPDFShort')}</span>
                   <div className="ml-2">
                     <LoadingSpinnerDynamic size={4} />
                   </div>
                 </>
               ) : (
                 <>
-                  <span className="hidden sm:inline">Exportar PDF</span>
-                  <span className="sm:hidden">PDF</span>
+                  <span className="hidden sm:inline">{t('table.exportPDF')}</span>
+                  <span className="sm:hidden">{t('table.exportPDFShort')}</span>
                   <Download className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </>
               )}
@@ -131,7 +133,7 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
 
       {!hasData() && (
         <div className="text-center py-8 text-gray-500">
-          Nenhum dado encontrado para o período selecionado
+          {t('table.noData')}
         </div>
       )}
     </div>

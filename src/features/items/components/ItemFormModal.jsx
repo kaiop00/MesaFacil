@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import { FileDocument } from "react-coolicons";
 
@@ -8,6 +9,7 @@ const ItemFormModal = ({
   item = null, 
   onSave 
 }) => {
+  const { t } = useTranslation("items");
   const [formData, setFormData] = useState({
     nome: "",
     marca: "",
@@ -66,13 +68,13 @@ const ItemFormModal = ({
     const errors = {};
     
     if (!formData.nome.trim()) {
-      errors.nome = "O nome do item é obrigatório";
+      errors.nome = t("form.fields.nameRequired");
     }
     
     if (!formData.estoqueAtual) {
-      errors.estoqueAtual = "O estoque atual é obrigatório";
+      errors.estoqueAtual = t("form.fields.currentStockRequired");
     } else if (isNaN(formData.estoqueAtual) || parseInt(formData.estoqueAtual) < 0) {
-      errors.estoqueAtual = "Estoque inválido";
+      errors.estoqueAtual = t("form.fields.currentStockInvalid");
     }
     
     setFormErrors(errors);
@@ -96,14 +98,14 @@ const ItemFormModal = ({
     <BaseModalWithHeader
       isOpen={isOpen}
       onClose={onClose}
-      title={item ? item.nome || "Editar Item" : "Novo Item"}
-      subTitle={item ? "Preencha as informações para editar" : "Preencha as informações para adicionar"}
+      title={item ? item.nome || t("form.titleEdit") : t("form.titleCreate")}
+      subTitle={item ? t("form.subtitleEdit") : t("form.subtitleCreate")}
       icon={FileDocument}
     >
       <form onSubmit={handleSubmit} className="space-y-4 mt-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nome *
+            {t("form.fields.name")} {t("form.required")}
           </label>
           <input
             type="text"
@@ -111,7 +113,7 @@ const ItemFormModal = ({
             className={`w-full px-3 py-2 border ${
               formErrors.nome ? 'border-red-500' : 'border-gray-300'
             } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500`}
-            placeholder="Nome do item"
+            placeholder={t("form.fields.namePlaceholder")}
             value={formData.nome}
             onChange={handleInputChange}
           />
@@ -122,13 +124,13 @@ const ItemFormModal = ({
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Marca
+            {t("form.fields.brand")}
           </label>
           <input
             type="text"
             name="marca"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-            placeholder="Marca do item"
+            placeholder={t("form.fields.brandPlaceholder")}
             value={formData.marca}
             onChange={handleInputChange}
           />
@@ -137,7 +139,7 @@ const ItemFormModal = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Unidade de Armazenamento
+              {t("form.fields.storageUnit")}
             </label>
             <select
               name="unidadeArmazenamento"
@@ -145,17 +147,17 @@ const ItemFormModal = ({
               value={formData.unidadeArmazenamento}
               onChange={handleInputChange}
             >
-              <option value="Unidade">Unidade</option>
-              <option value="Quilograma">Quilograma</option>
-              <option value="Grama">Grama</option>
-              <option value="Litro">Litro</option>
-              <option value="Mililitro">Mililitro</option>
+              <option value="Unidade">{t("form.units.storage.unidade")}</option>
+              <option value="Quilograma">{t("form.units.storage.quilograma")}</option>
+              <option value="Grama">{t("form.units.storage.grama")}</option>
+              <option value="Litro">{t("form.units.storage.litro")}</option>
+              <option value="Mililitro">{t("form.units.storage.mililitro")}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Unidade Compra
+              {t("form.fields.purchaseUnit")}
             </label>
             <select
               name="unidadeCompra"
@@ -163,17 +165,17 @@ const ItemFormModal = ({
               value={formData.unidadeCompra}
               onChange={handleInputChange}
             >
-              <option value="Unidade">Unidade</option>
-              <option value="Caixa">Caixa</option>
-              <option value="Pacote">Pacote</option>
-              <option value="Fardo">Fardo</option>
+              <option value="Unidade">{t("form.units.purchase.unidade")}</option>
+              <option value="Caixa">{t("form.units.purchase.caixa")}</option>
+              <option value="Pacote">{t("form.units.purchase.pacote")}</option>
+              <option value="Fardo">{t("form.units.purchase.fardo")}</option>
             </select>
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Estoque Atual *
+            {t("form.fields.currentStock")} {t("form.required")}
           </label>
           <input
             type="number"
@@ -182,7 +184,7 @@ const ItemFormModal = ({
             className={`w-full px-3 py-2 border ${
               formErrors.estoqueAtual ? 'border-red-500' : 'border-gray-300'
             } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500`}
-            placeholder="Quantidade em estoque"
+            placeholder={t("form.fields.currentStockPlaceholder")}
             value={formData.estoqueAtual}
             onChange={handleInputChange}
           />
@@ -194,7 +196,7 @@ const ItemFormModal = ({
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estoque Baixo
+              {t("form.fields.lowStock")}
             </label>
             <input
               type="number"
@@ -208,7 +210,7 @@ const ItemFormModal = ({
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estoque Médio
+              {t("form.fields.mediumStock")}
             </label>
             <input
               type="number"
@@ -222,7 +224,7 @@ const ItemFormModal = ({
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estoque Alto
+              {t("form.fields.highStock")}
             </label>
             <input
               type="number"
@@ -241,13 +243,13 @@ const ItemFormModal = ({
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
           >
-            Cancelar
+            {t("form.actions.cancel")}
           </button>
           <button
             type="submit"
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-dynamic hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
           >
-            Salvar
+            {t("form.actions.save")}
           </button>
         </div>
       </form>

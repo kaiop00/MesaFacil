@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { create, getAll, update, remove } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
@@ -9,6 +10,7 @@ import ItemDetailsModal from "@/features/items/components/ItemDetailsModal";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 const ItemsPage = () => {
+  const { t } = useTranslation("items");
   const { idRestaurante } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -80,7 +82,7 @@ const ItemsPage = () => {
   };
 
   const handleDeleteItem = async (item) => {
-    if (window.confirm(`Tem certeza que deseja excluir o item "${item.nome}"?`)) {
+    if (window.confirm(t("page.deleteConfirm", { itemName: item.nome }))) {
       try {
         // Delete from Firestore
         await remove(idRestaurante, 'itens', item.id);
@@ -150,33 +152,33 @@ const ItemsPage = () => {
   return (
     <div className="mt-10 space-y-6">
       <CardHeader
-        title="Itens"
-        subtitle="Gerencie os itens do seu restaurante"
+        title={t("page.title")}
+        subtitle={t("page.subtitle")}
         onNewClick={handleNewItem}
-        buttonTitle="Novo Item"
+        buttonTitle={t("page.newButton")}
       />
 
       <div className="mt-5 bg-white p-6">
         <div className="mx-auto">
           {isLoading ? (
             <div className="flex items-center justify-center min-h-[400px]">
-              Carregando...
+              {t("page.loading")}
             </div>
           ) : error ? (
             <div className="p-6 text-center text-red-500">
-              <p>Erro ao carregar itens. Tente novamente.</p>
+              <p>{t("page.errorLoading")}</p>
             </div>
           ) : (
             <>
               <header className="mb-6">
                 <div className="relative max-w-md">
                   <label htmlFor="search" className="sr-only">
-                    Procure o item que deseja encontrar
+                    {t("page.searchLabel")}
                   </label>
                   <input
                     type="search"
                     id="search"
-                    placeholder="Procure por nome ou marca"
+                    placeholder={t("page.searchPlaceholder")}
                     value={searchTerm}
                     onChange={handleSearch}
                     className="w-full pl-4 pr-12 py-3

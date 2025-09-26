@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MoreHorizontal,
   EditPencil01,
@@ -25,6 +26,7 @@ const MovementsTable = ({
   searchTerm,
   onSearchChange,
 }) => {
+  const { t } = useTranslation("movements");
   const [openDropdown, setOpenDropdown] = useState(null);
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
@@ -56,7 +58,7 @@ const MovementsTable = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        Carregando...
+        {t("page.loading")}
       </div>
     );
   }
@@ -77,13 +79,13 @@ const MovementsTable = ({
         <div className="mb-6">
           <form className="relative max-w-md">
             <label htmlFor="search" className="sr-only">
-              Procure a movimentação que deseja encontrar
+              {t("table.searchPlaceholder")}
             </label>
 
             <input
               type="search"
               id="search"
-              placeholder="Procure a movimentação que deseja encontrar"
+              placeholder={t("table.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full pl-4 pr-12 py-3
@@ -103,23 +105,23 @@ const MovementsTable = ({
             {/* Table Header */}
             <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
               <div className="flex items-center text-sm font-medium text-gray-600">
-                Nome
+                {t("table.columns.name")}
                 <ChevronDown className="ml-1 w-4 h-4" />
               </div>
               <div className="flex items-center text-sm font-medium text-gray-600">
-                Tipo
+                {t("table.columns.type")}
                 <ChevronDown className="ml-1 w-4 h-4" />
               </div>
               <div className="flex items-center text-sm font-medium text-gray-600">
-                Qtd
+                {t("table.columns.quantity")}
                 <ChevronDown className="ml-1 w-4 h-4" />
               </div>
               <div className="flex items-center text-sm font-medium text-gray-600">
-                Saldo
+                {t("table.columns.balance")}
                 <ChevronDown className="ml-1 w-4 h-4" />
               </div>
               <div className="flex items-center text-sm font-medium text-gray-600">
-                Referência
+                {t("table.columns.reference")}
                 <ChevronDown className="ml-1 w-4 h-4" />
               </div>
               <div></div>
@@ -128,7 +130,7 @@ const MovementsTable = ({
             {/* Table Body */}
             {movements.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">Nenhum movimento encontrado</p>
+                <p className="text-gray-500">{t("page.noMovementsFound")}</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
@@ -141,7 +143,7 @@ const MovementsTable = ({
                       className="grid grid-cols-6 gap-4 px-6 py-4 hover:bg-gray-50"
                     >
                       <div className="flex items-center text-sm text-gray-900">
-                        {movement.itemNome || 'Sem nome'}
+                        {movement.itemNome || t("table.noName")}
                       </div>
                       <div className="flex items-center">
                         <span 
@@ -155,7 +157,7 @@ const MovementsTable = ({
                               : 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {movement.tipoMovimentacao || 'Não especificado'}
+                          {movement.tipoMovimentacao || t("table.notSpecified")}
                         </span>
                       </div>
                       <div className="flex items-center text-sm text-gray-500">
@@ -172,14 +174,14 @@ const MovementsTable = ({
                         {movement.pedidoReferencia ? (
                           <div className="flex flex-col">
                             <span className="text-blue-600 font-medium">
-                              {movement.pedidoReferencia.startsWith('CANCELAMENTO') ? 'Cancelamento' : 'Pedido'}
+                              {movement.pedidoReferencia.startsWith('CANCELAMENTO') ? t("table.reference.cancellation") : t("table.reference.order")}
                             </span>
                             <span className="text-gray-400">
                               {movement.pedidoReferencia.replace('CANCELAMENTO-', '').substring(0, 8)}...
                             </span>
                           </div>
                         ) : (
-                          <span>Manual</span>
+                          <span>{t("table.reference.manual")}</span>
                         )}
                       </div>
                       <div className="flex justify-end">
@@ -202,7 +204,7 @@ const MovementsTable = ({
                                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
                               >
                                 <UnfoldMore className="mr-2 h-4 w-4" />
-                                Visualizar
+                                {t("table.actions.view")}
                               </button>
                               <button
                                 onClick={() => {
@@ -212,7 +214,7 @@ const MovementsTable = ({
                                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               >
                                 <EditPencil01 className="mr-2 h-4 w-4" />
-                                Editar
+                                {t("table.actions.edit")}
                               </button>
                               <button
                                 onClick={() => {
@@ -222,7 +224,7 @@ const MovementsTable = ({
                                 className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
                               >
                                 <TrashFull className="mr-2 h-4 w-4" />
-                                Excluir
+                                {t("table.actions.delete")}
                               </button>
                             </div>
                           )}
@@ -238,7 +240,7 @@ const MovementsTable = ({
         {/* Pagination Footer */}
         <footer className="flex flex-wrap items-center justify-between gap-4 mt-6">
           <p className="text-sm text-gray-600">
-            Página {currentPage} de {totalPages}
+            {t("table.pagination.page")} {currentPage} {t("table.pagination.of")} {totalPages}
           </p>
 
           <nav className="flex flex-wrap items-center space-x-4 gap-4">
@@ -264,7 +266,7 @@ const MovementsTable = ({
 
             <div className="flex items-center space-x-2">
               <label htmlFor="itemsPerPage" className="text-sm text-zinc-500">
-                Mostrar
+                {t("table.pagination.show")}
               </label>
 
               <select
@@ -273,14 +275,14 @@ const MovementsTable = ({
                 onChange={(e) => onItemsPerPageChange?.(Number(e.target.value))}
                 className="border border-gray-300 rounded-lg p-2 text-sm text-yellow-500 bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
               >
-                <option value={10}>10 Linhas</option>
-                <option value={25}>25 Linhas</option>
-                <option value={50}>50 Linhas</option>
-                <option value={100}>100 Linhas</option>
+                <option value={10}>10 {t("table.pagination.lines")}</option>
+                <option value={25}>25 {t("table.pagination.lines")}</option>
+                <option value={50}>50 {t("table.pagination.lines")}</option>
+                <option value={100}>100 {t("table.pagination.lines")}</option>
               </select>
 
               <span className="text-sm text-zinc-500">
-                de {totalItems} Registros
+                {t("table.pagination.of")} {totalItems} {t("table.pagination.records")}
               </span>
             </div>
           </nav>

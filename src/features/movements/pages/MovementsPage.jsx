@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAll, create, update, remove } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
@@ -8,6 +9,7 @@ import MovementDetailsModal from "../components/MovementDetailsModal";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 const MovementsPage = () => {
+  const { t } = useTranslation("movements");
   const { idRestaurante } = useAuth();
   const [allMovements, setAllMovements] = useState([]);
   const [movements, setMovements] = useState([]);
@@ -41,12 +43,12 @@ const MovementsPage = () => {
       
       setAllMovements(movementsData);
     } catch (err) {
-      setError("Erro ao carregar movimentações");
+      setError(t("page.errorLoading"));
       console.error("Error loading movements:", err);
     } finally {
       setLoading(false);
     }
-  }, [idRestaurante]);
+  }, [idRestaurante, t]);
 
   // Filter and paginate movements based on search and pagination
   useEffect(() => {
@@ -80,11 +82,11 @@ const MovementsPage = () => {
       setItems(itemsData);
     } catch (error) {
       console.error("Error loading items:", error);
-      setError("Erro ao carregar itens");
+      setError(t("page.errorLoadingItems"));
     } finally {
       setItemsLoading(false);
     }
-  }, [idRestaurante]);
+  }, [idRestaurante, t]);
 
   // Load data on component mount
   useEffect(() => {
@@ -106,7 +108,7 @@ const MovementsPage = () => {
   const handleDelete = async (movement) => {
     if (
       window.confirm(
-        `Tem certeza que deseja excluir a movimentação de "${movement.itemNome}"?`,
+        t("page.deleteConfirm", { itemName: movement.itemNome }),
       )
     ) {
       try {
@@ -118,11 +120,10 @@ const MovementsPage = () => {
         // Remove from local state
         setAllMovements((prev) => prev.filter((m) => m.id !== movement.id));
 
-        alert("Movimentação excluída com sucesso!");
+        alert(t("page.deleteSuccess"));
       } catch (err) {
         console.error("Error deleting movement:", err);
-        setError("Erro ao excluir movimentação");
-        setError("Erro ao excluir movimentação");
+        setError(t("page.errorDeleting"));
         console.error("Error deleting movement:", err);
       } finally {
         setLoading(false);
@@ -190,7 +191,7 @@ const MovementsPage = () => {
           )
         );
         
-        alert("Movimentação atualizada com sucesso!");
+        alert(t("page.updateSuccess"));
       } else {
         // Create new movement in Firestore
         const newMovement = {
@@ -223,14 +224,14 @@ const MovementsPage = () => {
           );
         }
         
-        alert("Movimentação criada com sucesso!");
+        alert(t("page.createSuccess"));
       }
 
       setIsFormModalOpen(false);
       setSelectedMovement(null);
     } catch (err) {
       console.error("Error saving movement:", err);
-      setError("Erro ao salvar movimentação. Por favor, tente novamente.");
+      setError(t("page.errorSaving"));
     } finally {
       setModalLoading(false);
     }
@@ -253,10 +254,10 @@ const MovementsPage = () => {
   return (
     <div className="mt-10 space-y-6">
       <CardHeader
-        title="Entradas e Saídas"
-        subtitle="Gerencie as movimentações do seu restaurante"
+        title={t("page.title")}
+        subtitle={t("page.subtitle")}
         onNewClick={handleCreate}
-        buttonTitle="Nova movimentação"
+        buttonTitle={t("page.newButton")}
       />
         {/* Loading state */}
         {(loading || itemsLoading) ? (

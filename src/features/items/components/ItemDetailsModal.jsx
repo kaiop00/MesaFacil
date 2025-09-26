@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import {
   FileDocument,
@@ -11,6 +12,7 @@ import { getMovimentacoesByItem } from "@/services/firebase/firestoreService";
 import { pluralizeUnit } from "@/services/utils/unitConversionService";
 
 const ItemDetailsModal = ({ isOpen, onClose, item }) => {
+  const { t } = useTranslation("items");
   const { idRestaurante } = useAuth();
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [loadingMovimentacoes, setLoadingMovimentacoes] = useState(false);
@@ -61,22 +63,22 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
   if (!item) return null;
 
   const formatValue = (value) => {
-    if (value === undefined || value === null) return "-";
+    if (value === undefined || value === null) return t("details.defaultValue");
     return value;
   };
 
   const getStatusEstoque = (atual, baixo, medio, alto) => {
     if (atual <= baixo) {
-      return { color: "text-red-600", bg: "bg-red-100", status: "Baixo" };
+      return { color: "text-red-600", bg: "bg-red-100", status: t("details.stockStatus.low") };
     } else if (atual <= medio) {
-      return { color: "text-yellow-600", bg: "bg-yellow-100", status: "Médio" };
+      return { color: "text-yellow-600", bg: "bg-yellow-100", status: t("details.stockStatus.medium") };
     } else if (atual <= alto) {
-      return { color: "text-green-600", bg: "bg-green-100", status: "Alto" };
+      return { color: "text-green-600", bg: "bg-green-100", status: t("details.stockStatus.high") };
     } else {
       return {
         color: "text-blue-600",
         bg: "bg-blue-100",
-        status: "Muito Alto",
+        status: t("details.stockStatus.veryHigh"),
       };
     }
   };
@@ -101,24 +103,24 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
     <BaseModalWithHeader
       isOpen={isOpen}
       onClose={onClose}
-      title={item.nome || "Detalhes do Item"}
-      subTitle="Relação de dados cadastrados do Item"
+      title={item.nome || t("details.title")}
+      subTitle={t("details.subtitle")}
       icon={FileDocument}
     >
       <div className="space-y-4 mt-4">
         <div className="border-b border-gray-200 pb-4">
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Informações Básicas
+            {t("details.sections.basicInfo")}
           </h3>
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Nome</p>
+              <p className="text-sm font-medium text-gray-500">{t("details.fields.name")}</p>
               <p className="mt-1 text-sm text-gray-900">
                 {formatValue(item.nome)}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Marca</p>
+              <p className="text-sm font-medium text-gray-500">{t("details.fields.brand")}</p>
               <p className="mt-1 text-sm text-gray-900">
                 {formatValue(item.marca)}
               </p>
@@ -127,11 +129,11 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
         </div>
 
         <div className="border-b border-gray-200 pb-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Unidades</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t("details.sections.units")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-gray-500">
-                Unidade de Armazenamento
+                {t("details.fields.storageUnit")}
               </p>
               <p className="mt-1 text-sm text-gray-900">
                 {formatValue(item.unidadeArmazenamento || "Unidade")}
@@ -139,7 +141,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">
-                Unidade de Compra
+                {t("details.fields.purchaseUnit")}
               </p>
               <p className="mt-1 text-sm text-gray-900">
                 {formatValue(item.unidadeCompra || "Unidade")}
@@ -149,12 +151,12 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
         </div>
 
         <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Estoque</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t("details.sections.stock")}</h3>
           <div className="grid grid-cols-1 gap-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">
-                  Estoque Atual
+                  {t("details.fields.currentStock")}
                 </p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {formatValue(item.estoqueAtual)}{" "}
@@ -170,7 +172,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-sm font-medium text-gray-500">
-                  Estoque Baixo
+                  {t("details.fields.lowStock")}
                 </p>
                 <p className="mt-1 text-sm text-gray-900">
                   {formatValue(item.estoqueBaixo)}
@@ -178,7 +180,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">
-                  Estoque Médio
+                  {t("details.fields.mediumStock")}
                 </p>
                 <p className="mt-1 text-sm text-gray-900">
                   {formatValue(item.estoqueMedio)}
@@ -186,7 +188,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">
-                  Estoque Alto
+                  {t("details.fields.highStock")}
                 </p>
                 <p className="mt-1 text-sm text-gray-900">
                   {formatValue(item.estoqueAlto)}
@@ -199,14 +201,14 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
         {/* Estatísticas de Consumo */}
         <div className="border-b border-gray-200 pb-4">
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Consumo por Pedidos
+            {t("details.sections.consumption")}
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-orange-50 rounded-lg p-3">
               <div className="flex items-center space-x-2">
                 <Note className="w-4 h-4 text-orange-600" />
                 <span className="text-sm font-medium text-orange-800">
-                  Total Consumido
+                  {t("details.consumption.totalConsumed")}
                 </span>
               </div>
               <p className="text-lg font-semibold text-orange-600 mt-1">
@@ -217,7 +219,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
               <div className="flex items-center space-x-2">
                 <DownloadPackage className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-800">
-                  Movimentações
+                  {t("details.consumption.movements")}
                 </span>
               </div>
               <p className="text-lg font-semibold text-blue-600 mt-1">
@@ -230,17 +232,17 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
         {/* Movimentações Recentes */}
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Movimentações Recentes
+            {t("details.sections.recentMovements")}
           </h3>
           {loadingMovimentacoes ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-              <span className="ml-2 text-sm text-gray-500">Carregando...</span>
+              <span className="ml-2 text-sm text-gray-500">{t("details.movements.loading")}</span>
             </div>
           ) : movimentacoes.length === 0 ? (
             <div className="text-center py-6 text-gray-500">
               <DownloadPackage className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nenhuma movimentação encontrada</p>
+              <p className="text-sm">{t("details.movements.noMovements")}</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -268,10 +270,10 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                       <p className="text-xs text-gray-500">
                         {mov.data
                           ? new Date(mov.data).toLocaleDateString("pt-BR")
-                          : "Data não informada"}
+                          : t("details.movements.noDate")}
                         {mov.pedidoReferencia && (
                           <span className="ml-2">
-                            • Pedido{" "}
+                            • {t("details.movements.order")}{" "}
                             {mov.pedidoReferencia
                               .replace("CANCELAMENTO-", "")
                               .substring(0, 8)}
@@ -302,7 +304,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
                       </span>
                     </p>
                     <p className="text-xs text-gray-500">
-                      Saldo: {mov.novoSaldo !== undefined ? mov.novoSaldo : "N/A"}
+                      {t("details.movements.balance")}: {mov.novoSaldo !== undefined ? mov.novoSaldo : "N/A"}
                     </p>
                   </div>
                 </div>
@@ -317,7 +319,7 @@ const ItemDetailsModal = ({ isOpen, onClose, item }) => {
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
           >
-            Fechar
+            {t("details.actions.close")}
           </button>
         </div>
       </div>

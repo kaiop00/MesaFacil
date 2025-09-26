@@ -1,16 +1,19 @@
+import { useTranslation } from "react-i18next";
+
 const ProductReportTable = ({ products, formatCurrency }) => {
+  const { t } = useTranslation('reports');
   return (
     <table className="min-w-full divide-y divide-gray-200">
       <thead className="bg-gray-50">
         <tr>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Produto
+            {t('tables.product.columns.product')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Quantidade Vendida
+            {t('tables.product.columns.quantitySold')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Valor Total
+            {t('tables.product.columns.totalValue')}
           </th>
         </tr>
       </thead>

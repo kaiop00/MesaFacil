@@ -1,0 +1,122 @@
+{
+  "page": {
+    "title": "Items",
+    "subtitle": "Manage your restaurant items",
+    "newButton": "New Item",
+    "loading": "Loading...",
+    "errorLoading": "Error loading items. Please try again.",
+    "searchPlaceholder": "Search by name or brand",
+    "searchLabel": "Search for the item you want to find",
+    "deleteConfirm": "Are you sure you want to delete the item \"{itemName}\"?",
+    "noItemsFound": "No items found"
+  },
+  "table": {
+    "columns": {
+      "name": "Name",
+      "brand": "Brand",
+      "stock": "Stock"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "show": "Show",
+      "lines": "Lines",
+      "records": "Records"
+    },
+    "stockStatus": {
+      "low": "Low stock",
+      "medium": "Medium stock",
+      "high": "High stock"
+    },
+    "noBrand": "-"
+  },
+  "form": {
+    "titleCreate": "New Item",
+    "titleEdit": "Edit Item",
+    "subtitleCreate": "Fill in the information to add",
+    "subtitleEdit": "Fill in the information to edit",
+    "fields": {
+      "name": "Name",
+      "namePlaceholder": "Item name",
+      "nameRequired": "Item name is required",
+      "brand": "Brand",
+      "brandPlaceholder": "Item brand",
+      "storageUnit": "Storage Unit",
+      "purchaseUnit": "Purchase Unit",
+      "currentStock": "Current Stock",
+      "currentStockPlaceholder": "Quantity in stock",
+      "currentStockRequired": "Current stock is required",
+      "currentStockInvalid": "Invalid stock",
+      "lowStock": "Low Stock",
+      "mediumStock": "Medium Stock",
+      "highStock": "High Stock"
+    },
+    "units": {
+      "storage": {
+        "unidade": "Unit",
+        "quilograma": "Kilogram",
+        "grama": "Gram",
+        "litro": "Liter",
+        "mililitro": "Milliliter"
+      },
+      "purchase": {
+        "unidade": "Unit",
+        "caixa": "Box",
+        "pacote": "Package",
+        "fardo": "Bundle"
+      }
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "required": "*"
+  },
+  "details": {
+    "title": "Item Details",
+    "subtitle": "List of registered item data",
+    "sections": {
+      "basicInfo": "Basic Information",
+      "units": "Units",
+      "stock": "Stock",
+      "consumption": "Order Consumption",
+      "recentMovements": "Recent Movements"
+    },
+    "fields": {
+      "name": "Name",
+      "brand": "Brand",
+      "storageUnit": "Storage Unit",
+      "purchaseUnit": "Purchase Unit",
+      "currentStock": "Current Stock",
+      "lowStock": "Low Stock",
+      "mediumStock": "Medium Stock",
+      "highStock": "High Stock"
+    },
+    "stockStatus": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "veryHigh": "Very High"
+    },
+    "consumption": {
+      "totalConsumed": "Total Consumed",
+      "movements": "Movements"
+    },
+    "movements": {
+      "loading": "Loading...",
+      "noMovements": "No movements found",
+      "balance": "Balance",
+      "order": "Order",
+      "noDate": "No date informed"
+    },
+    "actions": {
+      "close": "Close"
+    },
+    "defaultValue": "-"
+  }
+}

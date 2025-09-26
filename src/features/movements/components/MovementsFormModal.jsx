@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, FileDocument } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 
@@ -10,6 +11,7 @@ const MovementsFormModal = ({
   items = [],
   loading = false,
 }) => {
+  const { t } = useTranslation("movements");
   const [formData, setFormData] = useState({
     itemId: "",
     unidadeArmazenamento: "",
@@ -31,10 +33,10 @@ const MovementsFormModal = ({
 
   // Movement types
   const movementTypes = [
-    { value: "Entrada", label: "Entrada" },
-    { value: "Saida", label: "Saída" },
-    { value: "Ajuste", label: "Ajuste" },
-    { value: "Transferencia", label: "Transferência" },
+    { value: "Entrada", label: t("form.movementTypes.entrada") },
+    { value: "Saida", label: t("form.movementTypes.saida") },
+    { value: "Ajuste", label: t("form.movementTypes.ajuste") },
+    { value: "Transferencia", label: t("form.movementTypes.transferencia") },
   ];
 
   useEffect(() => {
@@ -155,13 +157,13 @@ const MovementsFormModal = ({
     const newErrors = {};
 
     if (!formData.itemId) {
-      newErrors.itemId = "Item é obrigatório";
+      newErrors.itemId = t("form.validation.itemRequired");
     }
     if (!formData.tipoMovimentacao) {
-      newErrors.tipoMovimentacao = "Tipo de movimentação é obrigatório";
+      newErrors.tipoMovimentacao = t("form.validation.movementTypeRequired");
     }
     if (!formData.qtd) {
-      newErrors.qtd = "Quantidade é obrigatória";
+      newErrors.qtd = t("form.validation.quantityRequired");
     }
 
     setErrors(newErrors);
@@ -191,17 +193,17 @@ const MovementsFormModal = ({
     <BaseModalWithHeader
       isOpen={isOpen}
       onClose={handleCancel}
-      title={isEditing ? "Atualizar Movimentação" : "Nova Movimentação"}
+      title={isEditing ? t("form.titleEdit") : t("form.titleCreate")}
       subTitle={isEditing
-        ? "Preencha as informações para editar"
-        : "Preencha as informações para adicionar"}
+        ? t("form.subtitleEdit")
+        : t("form.subtitleCreate")}
       icon={FileDocument}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
           {/* Item Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Item
+              {t("form.fields.item")}
             </label>
             <div className="relative">
               <button
@@ -216,7 +218,7 @@ const MovementsFormModal = ({
                 <span
                   className={selectedItem ? "text-gray-900" : "text-gray-500"}
                 >
-                  {selectedItem ? selectedItem.nome : "Escolha uma Opção"}
+                  {selectedItem ? selectedItem.nome : t("form.fields.itemPlaceholder")}
                 </span>
                 <ChevronDown className="w-5 h-5 text-gray-400" />
               </button>
@@ -245,7 +247,7 @@ const MovementsFormModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Unidade de Armazenamento
+                {t("form.fields.storageUnit")}
               </label>
               <input
                 type="text"
@@ -256,7 +258,7 @@ const MovementsFormModal = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Unidade Compra
+                {t("form.fields.purchaseUnit")}
               </label>
               <input
                 type="text"
@@ -273,7 +275,7 @@ const MovementsFormModal = ({
            formData.unidadeArmazenamento !== formData.unidadeCompra && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fator de Transformação ({formData.unidadeCompra} para {formData.unidadeArmazenamento})
+                {t("form.fields.transformationFactor")} ({formData.unidadeCompra} {t("form.fields.transformationHelp", { purchaseUnit: "", storageUnit: "" }).split(" ")[2]} {formData.unidadeArmazenamento})
               </label>
               <input
                 type="number"
@@ -284,11 +286,11 @@ const MovementsFormModal = ({
                   handleInputChange("fatorTransformacao", e.target.value)
                 }
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                placeholder={`Ex: 1 ${formData.unidadeCompra} = 0.05 ${formData.unidadeArmazenamento}`}
+                placeholder={t("form.fields.transformationPlaceholder", { purchaseUnit: formData.unidadeCompra, storageUnit: formData.unidadeArmazenamento })}
                 required
               />
               <p className="mt-1 text-sm text-gray-500">
-                1 {formData.unidadeCompra} = {formData.fatorTransformacao || '1.00'} {formData.unidadeArmazenamento}
+                {t("form.fields.transformationHelp", { purchaseUnit: formData.unidadeCompra, factor: formData.fatorTransformacao || '1.00', storageUnit: formData.unidadeArmazenamento })}
               </p>
             </div>
           )}
@@ -296,7 +298,7 @@ const MovementsFormModal = ({
           {/* Movement Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Movimentação
+              {t("form.fields.movementType")}
             </label>
             <div className="relative">
               <button
@@ -318,7 +320,7 @@ const MovementsFormModal = ({
                 >
                   {selectedMovementType
                     ? selectedMovementType.label
-                    : "Escolha uma Opção"}
+                    : t("form.fields.itemPlaceholder")}
                 </span>
                 <ChevronDown className="w-5 h-5 text-gray-400" />
               </button>
@@ -349,7 +351,7 @@ const MovementsFormModal = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Qtd Atual
+                {t("form.fields.currentQty")}
               </label>
               <input
                 type="number"
@@ -360,7 +362,7 @@ const MovementsFormModal = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Qtd
+                {t("form.fields.quantity")}
               </label>
               <input
                 type="number"
@@ -370,7 +372,7 @@ const MovementsFormModal = ({
                 className={`w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
                   errors.qtd ? "border-red-500" : "border-gray-300"
                 }`}
-                placeholder="Digite a quantidade"
+                placeholder={t("form.fields.quantityPlaceholder")}
               />
               {errors.qtd && (
                 <p className="mt-1 text-sm text-red-600">{errors.qtd}</p>
@@ -378,7 +380,7 @@ const MovementsFormModal = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Novo Saldo
+                {t("form.fields.newBalance")}
               </label>
               <input
                 type="number"
@@ -396,14 +398,14 @@ const MovementsFormModal = ({
             onClick={handleCancel}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
           >
-            Cancelar
+            {t("form.actions.cancel")}
           </button>
           <button
             type="submit"
             disabled={loading}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-dynamic hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Salvando..." : "Salvar"}
+            {loading ? t("form.actions.saving") : t("form.actions.save")}
           </button>
         </div>
       </form>

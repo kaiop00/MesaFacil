@@ -1,22 +1,29 @@
+import { useTranslation } from "react-i18next";
+
 const SalesReportTable = ({ orders, formatCurrency }) => {
+  const { t } = useTranslation('reports');
+
+  const getStatusText = (status) => {
+    return status === 'Finalizado' ? t('status.finished') : t('status.pending');
+  };
   return (
     <table className="min-w-full divide-y divide-gray-200">
       <thead className="bg-gray-50">
         <tr>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Nº Pedido
+            {t('tables.sales.columns.orderNumber')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Mesa
+            {t('tables.sales.columns.table')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Data
+            {t('tables.sales.columns.date')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Valor
+            {t('tables.sales.columns.value')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Status
+            {t('tables.sales.columns.status')}
           </th>
         </tr>
       </thead>
@@ -27,7 +34,7 @@ const SalesReportTable = ({ orders, formatCurrency }) => {
               {order.numero.slice(-8)}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              Mesa {order.mesa}
+              {t('tables.sales.tablePrefix')} {order.mesa}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {order.data}
@@ -41,7 +48,7 @@ const SalesReportTable = ({ orders, formatCurrency }) => {
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-yellow-100 text-yellow-800'
               }`}>
-                {order.status}
+                {getStatusText(order.status)}
               </span>
             </td>
           </tr>

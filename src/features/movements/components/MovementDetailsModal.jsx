@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { FileDocument, DownloadPackage, TrendingDown, Note } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 
@@ -8,6 +9,7 @@ const MovementDetailsModal = ({
   movement = null,
   loading = false,
 }) => {
+  const { t } = useTranslation("movements");
   const handleEdit = () => {
     onEdit?.(movement);
   };
@@ -25,8 +27,8 @@ const MovementDetailsModal = ({
     <BaseModalWithHeader
       isOpen={isOpen}
       onClose={handleCancel}
-      title="Detalhes da Movimentação"
-      subTitle={isMovimentoPedido ? "Consumo automatico por pedido" : isMovimentoCancelamento ? "Reversão por cancelamento" : "Movimentação manual"}
+      title={t("details.title")}
+      subTitle={isMovimentoPedido ? t("details.subtitleOrder") : isMovimentoCancelamento ? t("details.subtitleCancellation") : t("details.subtitleManual")}
       icon={isMovimentoPedido ? Note : FileDocument}
     >
       <div className="space-y-6">
@@ -36,13 +38,13 @@ const MovementDetailsModal = ({
             <div className="flex items-center space-x-2">
               <DownloadPackage className={`w-4 h-4 ${isMovimentoCancelamento ? 'text-red-600' : 'text-blue-600'}`} />
               <span className={`text-sm font-medium ${isMovimentoCancelamento ? 'text-red-800' : 'text-blue-800'}`}>
-                {isMovimentoCancelamento ? 'Estorno por Cancelamento' : 'Consumo Automático'}
+                {isMovimentoCancelamento ? t("details.alerts.cancellationRefund") : t("details.alerts.automaticConsumption")}
               </span>
             </div>
             <p className={`text-xs mt-1 ${isMovimentoCancelamento ? 'text-red-700' : 'text-blue-700'}`}>
               {isMovimentoCancelamento
-                ? 'Esta movimentação foi gerada pelo cancelamento de um pedido'
-                : 'Esta movimentação foi gerada automaticamente quando um pedido foi confirmado'
+                ? t("details.alerts.cancellationRefundText")
+                : t("details.alerts.automaticConsumptionText")
               }
             </p>
           </div>
@@ -51,14 +53,14 @@ const MovementDetailsModal = ({
         {/* Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Item
+            {t("details.fields.item")}
           </label>
           <div className="text-gray-900 font-medium">
             {movement.itemNome || "N/A"}
           </div>
           {movement.marca && (
             <div className="text-sm text-gray-500 mt-1">
-              Marca: {movement.marca}
+              {t("details.fields.brand")}: {movement.marca}
             </div>
           )}
         </div>
@@ -67,7 +69,7 @@ const MovementDetailsModal = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tipo de Movimentação
+              {t("details.fields.movementType")}
             </label>
             <div className="flex items-center space-x-2">
               <span
@@ -81,7 +83,7 @@ const MovementDetailsModal = ({
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                {movement.tipoMovimentacao || "Entrada"}
+                {movement.tipoMovimentacao || t("form.movementTypes.entrada")}
               </span>
             </div>
           </div>
@@ -89,7 +91,7 @@ const MovementDetailsModal = ({
           {movement.pedidoReferencia && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Referência do Pedido
+                {t("details.fields.orderReference")}
               </label>
               <div className="text-gray-900 font-mono text-sm">
                 {movement.pedidoReferencia.replace('CANCELAMENTO-', '')}
@@ -102,7 +104,7 @@ const MovementDetailsModal = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Quantidade
+              {t("details.fields.quantity")}
             </label>
             <div className={`text-lg font-semibold flex items-center space-x-1`}>
               <span>
@@ -113,7 +115,7 @@ const MovementDetailsModal = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Saldo Anterior
+              {t("details.fields.previousBalance")}
             </label>
             <div className="text-gray-900 font-medium">
               {movement.saldoAtual || "0"} {movement.unidadeArmazenamento || 'un'}
@@ -122,7 +124,7 @@ const MovementDetailsModal = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Novo Saldo
+              {t("details.fields.newBalance")}
             </label>
             <div className="text-gray-900 font-semibold">
               {movement.novoSaldo || "0"} {movement.unidadeArmazenamento || 'un'}
@@ -134,7 +136,7 @@ const MovementDetailsModal = ({
         {movement.detalhesConsumo && movement.detalhesConsumo.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Detalhamento do Consumo
+              {t("details.fields.consumptionDetails")}
             </label>
             <div className="bg-gray-50 rounded-lg p-3 space-y-2">
               {movement.detalhesConsumo.map((detalhe, index) => (
@@ -153,7 +155,7 @@ const MovementDetailsModal = ({
               ))}
               <div className="border-t border-gray-200 pt-2 mt-2">
                 <div className="flex justify-between items-center font-medium">
-                  <span>Total Consumido:</span>
+                  <span>{t("details.fields.totalConsumed")}:</span>
                   <span className="text-orange-600">
                     {movement.detalhesConsumo.reduce((acc, det) => acc + det.consumoTotal, 0).toFixed(2)} {movement.unidadeArmazenamento || 'un'}
                   </span>
@@ -166,10 +168,10 @@ const MovementDetailsModal = ({
         {/* Data da movimentação */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Data da Movimentação
+            {t("details.fields.movementDate")}
           </label>
           <div className="text-gray-900">
-            {movement.data ? new Date(movement.data).toLocaleString('pt-BR') : 'Não informada'}
+            {movement.data ? new Date(movement.data).toLocaleString('pt-BR') : t("details.fields.notInformed")}
           </div>
         </div>
 
@@ -180,7 +182,7 @@ const MovementDetailsModal = ({
             onClick={handleCancel}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
           >
-            Cancelar
+            {t("details.actions.cancel")}
           </button>
           <button
             type="button"
@@ -188,7 +190,7 @@ const MovementDetailsModal = ({
             disabled={loading}
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-dynamic hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Carregando..." : "Editar"}
+            {loading ? t("details.actions.loading") : t("details.actions.edit")}
           </button>
         </div>
       </div>

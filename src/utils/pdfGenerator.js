@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logo from '../assets/mesafacil.png';
 
-export const generatePDF = async (reportData, startDate, endDate) => {
+export const generatePDF = async (reportData, startDate, endDate, t = null) => {
   const doc = new jsPDF();
 
   // Colors
@@ -20,17 +20,22 @@ export const generatePDF = async (reportData, startDate, endDate) => {
   // Title
   doc.setFontSize(20);
   doc.setTextColor(...secondaryColor);
-  doc.text(getReportTitle(reportData.type), 70, 20);
+  doc.text(getReportTitle(reportData.type, t), 70, 20);
 
   // Subtitle with period
   doc.setFontSize(12);
   doc.setTextColor(100, 100, 100);
-  const periodText = `Período: ${formatDateBR(startDate)} até ${formatDateBR(endDate)}`;
+  const periodText = t 
+    ? `${t('table.period')}: ${formatDateBR(startDate)} ${t('table.from')} ${formatDateBR(endDate)}`
+    : `Período: ${formatDateBR(startDate)} até ${formatDateBR(endDate)}`;
   doc.text(periodText, 70, 28);
 
   // Add generation date
   doc.setFontSize(10);
-  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 15, 40);
+  const generatedText = t 
+    ? `${t('pdf.generatedAt')}: ${new Date().toLocaleString('pt-BR')}`
+    : `Gerado em: ${new Date().toLocaleString('pt-BR')}`;
+  doc.text(generatedText, 15, 40);
 
   // Add separator line
   doc.setDrawColor(...primaryColor);
@@ -42,21 +47,21 @@ export const generatePDF = async (reportData, startDate, endDate) => {
   // Generate table based on report type
   switch (reportData.type) {
     case 'vendas':
-      generateSalesTable(doc, reportData.orders, startY);
+      generateSalesTable(doc, reportData.orders, startY, t);
       break;
     case 'periodo':
-      generatePeriodTable(doc, reportData.data, startY);
+      generatePeriodTable(doc, reportData.data, startY, t);
       break;
     case 'produto':
-      generateProductTable(doc, reportData.products, startY);
+      generateProductTable(doc, reportData.products, startY, t);
       break;
     case 'garcom':
-      generateWaiterTable(doc, reportData.waiters, startY);
+      generateWaiterTable(doc, reportData.waiters, startY, t);
       break;
   }
 
   // Add footer
-  addFooter(doc);
+  addFooter(doc, t);
 
   // Generate filename
   const reportTypeName = getReportTitle(reportData.type).replace(/\s+/g, '_');
@@ -65,18 +70,34 @@ export const generatePDF = async (reportData, startDate, endDate) => {
   doc.save(filename);
 };
 
-const getReportTitle = (type) => {
+const getReportTitle = (type, t = null) => {
+  if (!t) {
+    // Fallback to Portuguese if no translation function provided
+    switch (type) {
+      case "vendas":
+        return "Relatório de Vendas";
+      case "periodo":
+        return "Relatório por Período";
+      case "produto":
+        return "Relatório por Produto";
+      case "garcom":
+        return "Relatório por Garçom";
+      default:
+        return "Relatório";
+    }
+  }
+
   switch (type) {
     case "vendas":
-      return "Relatório de Vendas";
+      return t('table.titles.sales');
     case "periodo":
-      return "Relatório por Período";
+      return t('table.titles.period');
     case "produto":
-      return "Relatório por Produto";
+      return t('table.titles.product');
     case "garcom":
-      return "Relatório por Garçom";
+      return t('table.titles.waiter');
     default:
-      return "Relatório";
+      return t('table.titles.sales');
   }
 };
 
@@ -105,14 +126,27 @@ const checkPageSpace = (doc, currentY, requiredSpace = 30) => {
   return currentY;
 };
 
-const generateSalesTable = (doc, orders, startY) => {
-  const tableColumns = ['Nº Pedido', 'Mesa', 'Data', 'Valor', 'Status'];
+const generateSalesTable = (doc, orders, startY, t = null) => {
+  const tableColumns = t ? [
+    t('tables.sales.columns.orderNumber'),
+    t('tables.sales.columns.table'),
+    t('tables.sales.columns.date'),
+    t('tables.sales.columns.value'),
+    t('tables.sales.columns.status')
+  ] : ['Nº Pedido', 'Mesa', 'Data', 'Valor', 'Status'];
+
+  const tablePrefix = t ? t('tables.sales.tablePrefix') : 'Mesa';
+  const getStatusText = (status) => {
+    if (!t) return status;
+    return status === 'Finalizado' ? t('status.finished') : t('status.pending');
+  };
+
   const tableRows = orders.map(order => [
     order.numero.slice(-8),
-    `Mesa ${order.mesa}`,
+    `${tablePrefix} ${order.mesa}`,
     order.data,
     formatCurrency(order.valor),
-    order.status
+    getStatusText(order.status)
   ]);
 
   autoTable(doc, {
@@ -148,12 +182,19 @@ const generateSalesTable = (doc, orders, startY) => {
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
-  doc.text(`Total de Pedidos: ${orders.length}`, 15, finalY);
-  doc.text(`Valor Total: ${formatCurrency(totalValue)}`, 15, finalY + 8);
+  const totalOrdersText = t ? t('pdf.summary.totalOrders') : 'Total de Pedidos';
+  const totalValueText = t ? t('pdf.summary.totalValue') : 'Valor Total';
+  doc.text(`${totalOrdersText}: ${orders.length}`, 15, finalY);
+  doc.text(`${totalValueText}: ${formatCurrency(totalValue)}`, 15, finalY + 8);
 };
 
-const generatePeriodTable = (doc, data, startY) => {
-  const tableColumns = ['Data', 'Total de Pedidos', 'Valor Total'];
+const generatePeriodTable = (doc, data, startY, t = null) => {
+  const tableColumns = t ? [
+    t('tables.period.columns.date'),
+    t('tables.period.columns.totalOrders'),
+    t('tables.period.columns.totalValue')
+  ] : ['Data', 'Total de Pedidos', 'Valor Total'];
+
   const tableRows = data.map(day => [
     day.data,
     day.totalPedidos.toString(),
@@ -194,12 +235,19 @@ const generatePeriodTable = (doc, data, startY) => {
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
-  doc.text(`Total de Pedidos no Período: ${totalOrders}`, 15, finalY);
-  doc.text(`Valor Total do Período: ${formatCurrency(totalValue)}`, 15, finalY + 8);
+  const totalOrdersPeriodText = t ? t('pdf.summary.totalOrdersPeriod') : 'Total de Pedidos no Período';
+  const totalValuePeriodText = t ? t('pdf.summary.totalValuePeriod') : 'Valor Total do Período';
+  doc.text(`${totalOrdersPeriodText}: ${totalOrders}`, 15, finalY);
+  doc.text(`${totalValuePeriodText}: ${formatCurrency(totalValue)}`, 15, finalY + 8);
 };
 
-const generateProductTable = (doc, products, startY) => {
-  const tableColumns = ['Produto', 'Quantidade Vendida', 'Valor Total'];
+const generateProductTable = (doc, products, startY, t = null) => {
+  const tableColumns = t ? [
+    t('tables.product.columns.product'),
+    t('tables.product.columns.quantitySold'),
+    t('tables.product.columns.totalValue')
+  ] : ['Produto', 'Quantidade Vendida', 'Valor Total'];
+
   const tableRows = products.map(product => [
     product.produto,
     product.quantidadeVendida.toString(),
@@ -240,12 +288,19 @@ const generateProductTable = (doc, products, startY) => {
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
-  doc.text(`Total de Produtos Vendidos: ${totalQuantity}`, 15, finalY);
-  doc.text(`Valor Total em Produtos: ${formatCurrency(totalValue)}`, 15, finalY + 8);
+  const totalProductsSoldText = t ? t('pdf.summary.totalProductsSold') : 'Total de Produtos Vendidos';
+  const totalValueProductsText = t ? t('pdf.summary.totalValueProducts') : 'Valor Total em Produtos';
+  doc.text(`${totalProductsSoldText}: ${totalQuantity}`, 15, finalY);
+  doc.text(`${totalValueProductsText}: ${formatCurrency(totalValue)}`, 15, finalY + 8);
 };
 
-const generateWaiterTable = (doc, waiters, startY) => {
-  const tableColumns = ['Garçom', 'Nº de Pedidos Atendidos', 'Valor Total Gerado'];
+const generateWaiterTable = (doc, waiters, startY, t = null) => {
+  const tableColumns = t ? [
+    t('tables.waiter.columns.waiter'),
+    t('tables.waiter.columns.ordersAttended'),
+    t('tables.waiter.columns.totalValueGenerated')
+  ] : ['Garçom', 'Nº de Pedidos Atendidos', 'Valor Total Gerado'];
+
   const tableRows = waiters.map(waiter => [
     waiter.garcom,
     waiter.numeroPedidos.toString(),
@@ -286,21 +341,27 @@ const generateWaiterTable = (doc, waiters, startY) => {
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
-  doc.text(`Total de Pedidos Atendidos: ${totalOrders}`, 15, finalY);
-  doc.text(`Valor Total Gerado pelos Garçons: ${formatCurrency(totalValue)}`, 15, finalY + 8);
+  const totalOrdersAttendedText = t ? t('pdf.summary.totalOrdersAttended') : 'Total de Pedidos Atendidos';
+  const totalValueWaitersText = t ? t('pdf.summary.totalValueWaiters') : 'Valor Total Gerado pelos Garçons';
+  doc.text(`${totalOrdersAttendedText}: ${totalOrders}`, 15, finalY);
+  doc.text(`${totalValueWaitersText}: ${formatCurrency(totalValue)}`, 15, finalY + 8);
 };
 
-const addFooter = (doc) => {
+const addFooter = (doc, t = null) => {
   const pageHeight = doc.internal.pageSize.height;
 
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
-  doc.text('Gerado por MesaFácil - Sistema de Gestão de Restaurantes', 15, pageHeight - 10);
+  const generatedByText = t ? t('pdf.generatedBy') : 'Gerado por MesaFácil - Sistema de Gestão de Restaurantes';
+  doc.text(generatedByText, 15, pageHeight - 10);
 
   // Add page number
   const pageCount = doc.internal.getNumberOfPages();
+  const pageText = t ? t('pdf.page') : 'Página';
+  const ofText = t ? t('pdf.of') : 'de';
+  
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.text(`Página ${i} de ${pageCount}`, 180, pageHeight - 10);
+    doc.text(`${pageText} ${i} ${ofText} ${pageCount}`, 180, pageHeight - 10);
   }
 };

@@ -13,7 +13,7 @@ i18n
       "pt-BR": {
         ...ptBRTranslations,
       },
-      en: {
+      "en": {
         ...enTranslations,
       },
     },

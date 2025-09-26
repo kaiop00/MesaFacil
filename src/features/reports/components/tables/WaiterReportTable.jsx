@@ -1,16 +1,19 @@
+import { useTranslation } from "react-i18next";
+
 const WaiterReportTable = ({ waiters, formatCurrency }) => {
+  const { t } = useTranslation('reports');
   return (
     <table className="min-w-full divide-y divide-gray-200">
       <thead className="bg-gray-50">
         <tr>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Garçom
+            {t('tables.waiter.columns.waiter')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Nº de Pedidos Atendidos
+            {t('tables.waiter.columns.ordersAttended')}
           </th>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Valor Total Gerado
+            {t('tables.waiter.columns.totalValueGenerated')}
           </th>
         </tr>
       </thead>

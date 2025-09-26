@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MoreHorizontal, EditPencil01, UnfoldMore, TrashFull, ChevronLeft, ChevronRight, ChevronDown } from "react-coolicons";
 
 const ItemsTable = ({
@@ -14,6 +15,7 @@ const ItemsTable = ({
   onDelete,
   totalItems = 0
 }) => {
+  const { t } = useTranslation("items");
   const [openDropdown, setOpenDropdown] = useState(null);
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
@@ -24,21 +26,21 @@ const ItemsTable = ({
   const getStockStatus = (current, low, medium) => {
     if (current <= low) {
       return {
-        text: "Estoque baixo",
+        text: t("table.stockStatus.low"),
         color: "text-red-600",
         bgColor: "bg-red-50",
         borderColor: "border-red-100"
       };
     } else if (current <= medium) {
       return {
-        text: "Estoque médio",
+        text: t("table.stockStatus.medium"),
         color: "text-yellow-600",
         bgColor: "bg-yellow-50",
         borderColor: "border-yellow-100"
       };
     } else {
       return {
-        text: "Estoque alto",
+        text: t("table.stockStatus.high"),
         color: "text-green-600",
         bgColor: "bg-green-50",
         borderColor: "border-green-100"
@@ -50,7 +52,7 @@ const ItemsTable = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        Carregando...
+        {t("page.loading")}
       </div>
     );
   }
@@ -68,7 +70,7 @@ const ItemsTable = ({
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Nenhum item encontrado</p>
+        <p className="text-gray-500">{t("page.noItemsFound")}</p>
       </div>
     );
   }
@@ -79,15 +81,15 @@ const ItemsTable = ({
         <div className="min-w-lg">
           <div className="grid grid-cols-4 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center text-sm font-medium text-gray-600">
-              Nome
+              {t("table.columns.name")}
               <ChevronDown className="ml-1 w-4 h-4" />
             </div>
             <div className="flex items-center text-sm font-medium text-gray-600">
-              Marca
+              {t("table.columns.brand")}
               <ChevronDown className="ml-1 w-4 h-4" />
             </div>
             <div className="flex items-center text-sm font-medium text-gray-600">
-              Estoque
+              {t("table.columns.stock")}
               <ChevronDown className="ml-1 w-4 h-4" />
             </div>
             <div></div>
@@ -107,7 +109,7 @@ const ItemsTable = ({
                     {item.nome}
                   </div>
                   <div className="flex items-center text-sm text-gray-500">
-                    {item.marca || '-'}
+                    {item.marca || t("table.noBrand")}
                   </div>
                   <div className="flex items-center">
                     <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.borderColor} ${status.color}`}>
@@ -134,7 +136,7 @@ const ItemsTable = ({
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
                           >
                             <UnfoldMore className="mr-2 h-4 w-4" />
-                            Visualizar
+                            {t("table.actions.view")}
                           </button>
                           <button
                             onClick={() => {
@@ -144,7 +146,7 @@ const ItemsTable = ({
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             <EditPencil01 className="mr-2 h-4 w-4" />
-                            Editar
+                            {t("table.actions.edit")}
                           </button>
                           <button
                             onClick={() => {
@@ -154,7 +156,7 @@ const ItemsTable = ({
                             className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
                           >
                             <TrashFull className="mr-2 h-4 w-4" />
-                            Excluir
+                            {t("table.actions.delete")}
                           </button>
                         </div>
                       )}
@@ -169,7 +171,7 @@ const ItemsTable = ({
 
       <footer className="flex flex-wrap items-center justify-between gap-4 mt-6">
         <p className="text-sm text-gray-600">
-          Página {currentPage} de {totalPages}
+          {t("table.pagination.page")} {currentPage} {t("table.pagination.of")} {totalPages}
         </p>
 
         <nav className="flex flex-wrap items-center space-x-4 gap-4">
@@ -193,7 +195,7 @@ const ItemsTable = ({
           
           <div className="flex items-center space-x-2">
             <label htmlFor="itemsPerPage" className="text-sm text-zinc-500">
-              Mostrar
+              {t("table.pagination.show")}
             </label>
 
             <select
@@ -202,14 +204,14 @@ const ItemsTable = ({
               onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
               className="border border-gray-300 rounded-lg p-2 text-sm text-yellow-500 bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
             >
-              <option value={10}>10 Linhas</option>
-              <option value={25}>25 Linhas</option>
-              <option value={50}>50 Linhas</option>
-              <option value={100}>100 Linhas</option>
+              <option value={10}>10 {t("table.pagination.lines")}</option>
+              <option value={25}>25 {t("table.pagination.lines")}</option>
+              <option value={50}>50 {t("table.pagination.lines")}</option>
+              <option value={100}>100 {t("table.pagination.lines")}</option>
             </select>
 
             <span className="text-sm text-zinc-500">
-              de {totalItems} Registros
+              {t("table.pagination.of")} {totalItems} {t("table.pagination.records")}
             </span>
           </div>
         </nav>

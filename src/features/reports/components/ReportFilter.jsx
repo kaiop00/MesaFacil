@@ -1,4 +1,5 @@
 import { Printer } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 const ReportFilter = ({
@@ -12,6 +13,7 @@ const ReportFilter = ({
   loading,
   disabled = false
 }) => {
+  const { t } = useTranslation('reports');
   return (
     <div className="bg-white rounded-lg p-6 shadow-md w-full">
       <div className="space-y-6">
@@ -21,7 +23,7 @@ const ReportFilter = ({
             htmlFor="reportType"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Tipo de Relatório
+            {t('filter.reportType')}
           </label>
           <div className="relative">
             <select
@@ -32,11 +34,11 @@ const ReportFilter = ({
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="" disabled>
-                Escolha o tipo de relatório que deseja
+                {t('filter.selectReport')}
               </option>
-              <option value="vendas">Relatório de Vendas</option>
-              <option value="periodo">Relatório por Período</option>
-              <option value="produto">Relatório por Produto</option>
+              <option value="vendas">{t('filter.types.sales')}</option>
+              <option value="periodo">{t('filter.types.period')}</option>
+              <option value="produto">{t('filter.types.product')}</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -58,7 +60,7 @@ const ReportFilter = ({
               htmlFor="startDate"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Data Início
+              {t('filter.startDate')}
             </label>
             <div className="relative">
               <input
@@ -81,7 +83,7 @@ const ReportFilter = ({
               htmlFor="endDate"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Data Fim
+              {t('filter.endDate')}
             </label>
             <div className="relative">
               <input
@@ -108,14 +110,14 @@ const ReportFilter = ({
           >
             {loading ? (
               <>
-                Gerando...
+                {t('filter.generating')}
                 <div className="ml-2">
                   <LoadingSpinnerDynamic size={4} />
                 </div>
               </>
             ) : (
               <>
-                Gerar Relatório
+                {t('filter.generateButton')}
                 <Printer className="ml-2 h-5 w-5" />
               </>
             )}
