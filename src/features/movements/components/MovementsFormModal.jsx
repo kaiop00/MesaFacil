@@ -12,6 +12,18 @@ const MovementsFormModal = ({
   loading = false,
 }) => {
   const { t } = useTranslation("movements");
+  const { t: tItems } = useTranslation("items");
+  
+  // Function to translate unit names for display
+  const translateUnit = (unitValue) => {
+    if (!unitValue) return "";
+    const unitKey = unitValue.toLowerCase();
+    // Try storage units first, then purchase units
+    return tItems(`form.units.storage.${unitKey}`, { defaultValue: 
+      tItems(`form.units.purchase.${unitKey}`, { defaultValue: unitValue })
+    });
+  };
+  
   const [formData, setFormData] = useState({
     itemId: "",
     unidadeArmazenamento: "",
@@ -251,7 +263,7 @@ const MovementsFormModal = ({
               </label>
               <input
                 type="text"
-                value={formData.unidadeArmazenamento}
+                value={translateUnit(formData.unidadeArmazenamento)}
                 readOnly
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
               />
@@ -262,7 +274,7 @@ const MovementsFormModal = ({
               </label>
               <input
                 type="text"
-                value={formData.unidadeCompra}
+                value={translateUnit(formData.unidadeCompra)}
                 readOnly
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
               />
@@ -275,7 +287,7 @@ const MovementsFormModal = ({
            formData.unidadeArmazenamento !== formData.unidadeCompra && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("form.fields.transformationFactor")} ({formData.unidadeCompra} {t("form.fields.transformationHelp", { purchaseUnit: "", storageUnit: "" }).split(" ")[2]} {formData.unidadeArmazenamento})
+                {t("form.fields.transformationFactor")} ({translateUnit(formData.unidadeCompra)} → {translateUnit(formData.unidadeArmazenamento)})
               </label>
               <input
                 type="number"
@@ -286,11 +298,11 @@ const MovementsFormModal = ({
                   handleInputChange("fatorTransformacao", e.target.value)
                 }
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                placeholder={t("form.fields.transformationPlaceholder", { purchaseUnit: formData.unidadeCompra, storageUnit: formData.unidadeArmazenamento })}
+                placeholder={`Ex: 1 ${translateUnit(formData.unidadeCompra)} = 0.05 ${translateUnit(formData.unidadeArmazenamento)}`}
                 required
               />
               <p className="mt-1 text-sm text-gray-500">
-                {t("form.fields.transformationHelp", { purchaseUnit: formData.unidadeCompra, factor: formData.fatorTransformacao || '1.00', storageUnit: formData.unidadeArmazenamento })}
+                {`1 ${translateUnit(formData.unidadeCompra)} = ${formData.fatorTransformacao || '1.00'} ${translateUnit(formData.unidadeArmazenamento)}`}
               </p>
             </div>
           )}
