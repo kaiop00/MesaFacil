@@ -1,0 +1,141 @@
+{
+  "page": {
+    "title": "Menu",
+    "subtitle": "Manage your restaurant menu",
+    "newItemButton": "New Item",
+    "downloadPDFButton": "Download Menu PDF",
+    "generatingPDF": "Generating PDF...",
+    "noCategoriesMessage": "You don't have categories yet. Register in Settings > Categories before adding items.",
+    "categoriesError": "Error checking categories. Please try again.",
+    "noItemsForPDF": "There are no menu items to generate the PDF.",
+    "pdfSuccess": "Menu PDF generated successfully!",
+    "pdfError": "Error generating menu PDF."
+  },
+  "search": {
+    "placeholder": "Search for the menu item you want to find"
+  },
+  "filter": {
+    "allCategories": "All categories"
+  },
+  "grid": {
+    "loading": "Loading...",
+    "noImage": "No image"
+  },
+  "form": {
+    "labels": {
+      "itemName": "Item Name",
+      "categories": "Categories",
+      "allergies": "Allergies (optional)",
+      "value": "Price",
+      "description": "Description",
+      "ingredients": "Ingredients"
+    },
+    "placeholders": {
+      "chooseCategories": "Choose one or more categories",
+      "chooseAllergies": "Choose one or more allergies",
+      "loadingCategories": "Loading categories...",
+      "noCategoriesFound": "No categories found",
+      "loading": "Loading..."
+    }
+  },
+  "modals": {
+    "newItem": {
+      "title": "New Menu Item",
+      "subtitle": "Fill in the information to add"
+    },
+    "editItem": {
+      "title": "Edit menu item",
+      "subtitle": "Update the information",
+      "subtitleWithName": "Updating {{name}}"
+    },
+    "itemDetails": {
+      "title": "Item Details",
+      "subtitle": "Viewing item",
+      "editItemButton": "Edit item",
+      "editIngredientsButton": "Edit",
+      "deleteButton": "Delete item",
+      "deleting": "Deleting...",
+      "close": "Close",
+      "deleteConfirmation": "Are you sure you want to remove the item \"{{itemName}}\" from the menu?",
+      "fields": {
+        "name": "Name",
+        "price": "Price",
+        "categories": "Categories",
+        "description": "Description",
+        "allergies": "Allergies",
+        "ingredients": "Ingredients"
+      },
+      "noDescription": "No description registered",
+      "loadingIngredients": "Loading ingredients...",
+      "noIngredients": "No ingredients configured. Click \"Edit\" to add ingredients.",
+      "perPortion": "per portion",
+      "totalIngredients": "Total",
+      "ingredient": "ingredient",
+      "ingredients": "ingredients"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "saveChanges": "Save changes"
+    }
+  },
+  "validation": {
+    "nameRequired": "Enter the item name.",
+    "categoryRequired": "Select at least one category.",
+    "categoriesRequired": "Choose at least one category.",
+    "valueRequired": "Enter a valid price.",
+    "imageRequired": "Include an item image.",
+    "missingFields": "Fill in the required fields: {{fields}}.",
+    "fieldLabels": {
+      "name": "name",
+      "category": "category",
+      "value": "price",
+      "image": "image"
+    }
+  },
+  "success": {
+    "itemAdded": "Item added successfully!",
+    "itemUpdated": "Item updated successfully!",
+    "itemDeleted": "Item removed successfully!"
+  },
+  "errors": {
+    "saveItem": "Error saving item.",
+    "updateItem": "Could not update the item.",
+    "deleteItem": "Could not remove the item.",
+    "saveChanges": "Could not save changes.",
+    "loadIngredients": "Error loading ingredients"
+  },
+  "ingredients": {
+    "title": "Ingredients",
+    "addButton": "Add",
+    "noIngredients": "No ingredients added. Click \"Add\" to include ingredients.",
+    "ingredientNumber": "Ingredient {{number}}",
+    "labels": {
+      "stockItem": "Stock Item",
+      "quantityPerPortion": "Quantity per Portion",
+      "unit": "Unit"
+    },
+    "placeholders": {
+      "selectItem": "Select an item",
+      "quantity": "0.00"
+    },
+    "loading": "Loading stock items...",
+    "conversion": "Conversion",
+    "sameUnit": "Using the same unit as stock ({{unit}})",
+    "cannotConvert": "❌ Cannot convert from {{from}} to {{to}}",
+    "example": "Example",
+    "exampleText": "If this dish is served {{times}} times, {{amount}} will be consumed from {{item}} stock",
+    "originalAmount": "(Original: {{amount}})",
+    "tip": "Tip: Quantities should be per individual portion. The system will automatically calculate total consumption based on the number of dishes ordered.",
+    "required": "*"
+  },
+  "allergies": {
+    "options": {
+      "gluten": "Gluten",
+      "lactose": "Lactose",
+      "soy": "Soy",
+      "peanut": "Peanut",
+      "egg": "Egg"
+    }
+  }
+}

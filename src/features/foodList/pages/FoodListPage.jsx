@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import CardHeader from "@/components/CardHeader";
 import FilterBar from "@/features/foodList/components/FilterBar";
 import FoodGrid from "@/features/foodList/components/FoodGrid";
@@ -11,6 +12,7 @@ import { usePDFGenerator } from "@/features/foodList/hooks/usePDFGenerator";
 import { Download } from "react-coolicons";
 
 const FoodListPage = () => {
+  const { t } = useTranslation('foodList');
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,15 +28,15 @@ const FoodListPage = () => {
 
       if (!nomes || nomes.length === 0) {
         notify(
-          "Você ainda não possui categorias. Cadastre em Configurações > Categorias antes de adicionar itens.",
+          t('page.noCategoriesMessage'),
           "info"
         );
         return; // NÃO abre o modal
       }
 
       setIsModalOpen(true); // abre modal apenas se tiver categorias
-    } catch (error) {
-      notify("Erro ao verificar categorias. Tente novamente.", "error");
+    } catch {
+      notify(t('page.categoriesError'), "error");
     }
   };
 
@@ -47,15 +49,15 @@ const FoodListPage = () => {
       setIsGeneratingPDF(true);
       
       if (!items || items.length === 0) {
-        notify("Não há itens no cardápio para gerar o PDF.", "info");
+        notify(t('page.noItemsForPDF'), "info");
         return;
       }
       
       await generateMenuPDF(items);
-      notify("PDF do cardápio gerado com sucesso!", "success");
+      notify(t('page.pdfSuccess'), "success");
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      notify("Erro ao gerar PDF do cardápio.", "error");
+      notify(t('page.pdfError'), "error");
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -65,10 +67,10 @@ const FoodListPage = () => {
     <div className="sm:px-6 md:px-8 mt-10 mb-10 space-y-10">
       {(role.create_menu_items || role === "admin") && (
         <CardHeader
-          title="Cardápio"
-          subtitle="Gerencie o cardápio da sua loja"
+          title={t('page.title')}
+          subtitle={t('page.subtitle')}
           onNewClick={handleNew}
-          buttonTitle="Novo Item"
+          buttonTitle={t('page.newItemButton')}
         />
       )}
 
@@ -90,7 +92,7 @@ const FoodListPage = () => {
           >
             <Download className="w-4 h-4" />
             <span className="text-sm font-medium">
-              {isGeneratingPDF ? "Gerando PDF..." : "Baixar Cardápio PDF"}
+              {isGeneratingPDF ? t('page.generatingPDF') : t('page.downloadPDFButton')}
             </span>
           </button>
         </div>

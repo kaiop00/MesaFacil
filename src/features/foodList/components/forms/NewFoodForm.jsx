@@ -1,9 +1,11 @@
+import { useTranslation } from "react-i18next";
 import UploadImageFirebase from "@/features/foodList/components/UploadWidget";
 import CategoriaSelect from "@/features/foodList/components/selects/CategoriaSelect";
 import AlergiaSelect from "@/features/foodList/components/selects/AlergiaSelect";
 import IngredientesSelector from "@/features/foodList/components/ingredientes/IngredientesSelector";
 
 const NewFoodForm = ({ formData, setFormData }) => {
+  const { t } = useTranslation('foodList');
   const setFile = (file) => setFormData((p) => ({ ...p, file }));
   const setPreviewUrl = (url) => setFormData((p) => ({ ...p, previewUrl: url }));
   const setIngredientes = (ingredientes) => setFormData((p) => ({ ...p, ingredientes }));
@@ -17,7 +19,7 @@ const NewFoodForm = ({ formData, setFormData }) => {
       />
 
       <div>
-        <label className="block mb-1 font-medium text-gray-700">Nome do Item</label>
+        <label className="block mb-1 font-medium text-gray-700">{t('form.labels.itemName')}</label>
         <input
           type="text"
           value={formData.nome}
@@ -39,7 +41,7 @@ const NewFoodForm = ({ formData, setFormData }) => {
       />
 
       <div>
-        <label className="block mb-1 font-medium text-gray-700">Valor</label>
+        <label className="block mb-1 font-medium text-gray-700">{t('form.labels.value')}</label>
         <input
           type="number"
           step="0.01"
@@ -52,7 +54,7 @@ const NewFoodForm = ({ formData, setFormData }) => {
       </div>
 
       <div>
-        <label className="block mb-1 font-medium text-gray-700">Descrição</label>
+        <label className="block mb-1 font-medium text-gray-700">{t('form.labels.description')}</label>
         <textarea
           value={formData.descricao}
           onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}

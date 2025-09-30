@@ -1,5 +1,6 @@
 import { Coffee, DownloadPackage, EditPencil01, TrashFull } from "react-coolicons";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import EditFoodIngredientsModal from "./EditFoodIngredientsModal";
 import EditFoodModal from "./EditFoodModal";
@@ -10,6 +11,7 @@ import { useToast } from "@/hooks/useToast";
 import { pluralizeUnit } from "@/services/utils/unitConversionService";
 
 const FoodDetailsModal = ({ isOpen, onClose, food }) => {
+    const { t } = useTranslation('foodList');
     const [isIngredientsModalOpen, setIsIngredientsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [savingItem, setSavingItem] = useState(false);
@@ -88,7 +90,7 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                 valor,
                 descricao,
             });
-            notify("Item atualizado com sucesso!", "success");
+            notify(t('success.itemUpdated'), "success");
             setFoodData((prev) => ({
                 ...prev,
                 nome,
@@ -99,7 +101,7 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
             await carregarItens();
         } catch (error) {
             console.error("Erro ao atualizar item", error);
-            notify(error?.message || "Não foi possível atualizar o item.", "error");
+            notify(error?.message || t('errors.updateItem'), "error");
             throw error;
         } finally {
             setSavingItem(false);
@@ -109,21 +111,21 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
     const handleDeleteItem = async () => {
         if (!foodData?.id) return;
         const confirmar = window.confirm(
-            `Tem certeza que deseja remover o item "${foodData.nome}" do cardápio?`
+            t('modals.itemDetails.deleteConfirmation', { itemName: foodData.nome })
         );
         if (!confirmar) return;
 
         setDeletingItem(true);
         try {
             await removerItemCardapio(foodData.id, foodData.storagePath);
-            notify("Item removido com sucesso!", "success");
+            notify(t('success.itemDeleted'), "success");
             await carregarItens();
             setIsEditModalOpen(false);
             setIsIngredientsModalOpen(false);
             onClose();
         } catch (error) {
             console.error("Erro ao remover item", error);
-            notify(error?.message || "Não foi possível remover o item.", "error");
+            notify(error?.message || t('errors.deleteItem'), "error");
         } finally {
             setDeletingItem(false);
         }
@@ -137,8 +139,8 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
         <BaseModalWithHeader
             isOpen={isOpen}
             onClose={onClose}
-            title="Detalhes do Item"
-            subTitle={`Visualizando item`}
+            title={t('modals.itemDetails.title')}
+            subTitle={t('modals.itemDetails.subtitle')}
             icon={Coffee}
         >
             <div className="font-inter space-y-4 text-sm p-6">
@@ -147,20 +149,20 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                         <img src={foodData.imagemUrl} alt={foodData.nome} className="w-32 h-32 rounded-md object-cover" />
                     ) : (
                         <div className="w-32 h-32 rounded-md bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
-                            Sem imagem
+                            {t('grid.noImage')}
                         </div>
                     )}
                     <div className="flex-1 space-y-2">
                         <div className="flex justify-between items-start">
                             <div className="space-y-2">
-                                <p><strong>Nome:</strong> {foodData.nome}</p>
-                                <p><strong>Preço:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(foodData.valor)}</p>
-                                <p><strong>Categorias:</strong> {Array.isArray(foodData.categorias) && foodData.categorias.length > 0 ? foodData.categorias.join(", ") : "-"}</p>
+                                <p><strong>{t('modals.itemDetails.fields.name')}:</strong> {foodData.nome}</p>
+                                <p><strong>{t('modals.itemDetails.fields.price')}:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(foodData.valor)}</p>
+                                <p><strong>{t('modals.itemDetails.fields.categories')}:</strong> {Array.isArray(foodData.categorias) && foodData.categorias.length > 0 ? foodData.categorias.join(", ") : "-"}</p>
                                 {foodData.descricao && (
-                                    <p><strong>Descrição:</strong> {foodData.descricao}</p>
+                                    <p><strong>{t('modals.itemDetails.fields.description')}:</strong> {foodData.descricao}</p>
                                 )}
                                 {foodData.alergias && foodData.alergias.length > 0 && (
-                                    <p><strong>Alergias:</strong> {foodData.alergias.join(", ")}</p>
+                                    <p><strong>{t('modals.itemDetails.fields.allergies')}:</strong> {foodData.alergias.join(", ")}</p>
                                 )}
                             </div>
                             <button
@@ -168,11 +170,11 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                                 className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-md hover:bg-blue-50"
                             >
                                 <EditPencil01 className="w-3 h-3 mr-1" />
-                                Editar item
+                                {t('modals.itemDetails.editItemButton')}
                             </button>
                         </div>
                         {(!foodData.descricao || foodData.descricao.trim() === "") && (
-                            <p className="text-xs text-gray-500">Nenhuma descrição cadastrada</p>
+                            <p className="text-xs text-gray-500">{t('modals.itemDetails.noDescription')}</p>
                         )}
                     </div>
                 </div>
@@ -182,26 +184,26 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="font-medium text-gray-900 flex items-center">
                             <DownloadPackage className="w-4 h-4 mr-2 text-blue-600" />
-                            Ingredientes
+                            {t('modals.itemDetails.fields.ingredients')}
                         </h3>
                         <button
                             onClick={handleEditIngredients}
                             className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-md hover:bg-blue-50"
                         >
                             <EditPencil01 className="w-3 h-3 mr-1" />
-                            Editar
+                            {t('modals.itemDetails.editIngredientsButton')}
                         </button>
                     </div>
 
                     {loadingIngredientes ? (
                         <div className="flex items-center space-x-2 text-gray-500">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                            <span className="text-sm">Carregando ingredientes...</span>
+                            <span className="text-sm">{t('modals.itemDetails.loadingIngredients')}</span>
                         </div>
                     ) : ingredientes.length === 0 ? (
                         <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
                             <DownloadPackage className="w-4 h-4 inline mr-2 opacity-50" />
-                            Nenhum ingrediente configurado. Clique em "Editar" para adicionar ingredientes.
+                            {t('modals.itemDetails.noIngredients')}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -211,12 +213,12 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                                         {ingrediente.itemNome}
                                     </span>
                                     <span className="text-gray-600">
-                                        {ingrediente.quantidade} {pluralizeUnit(ingrediente.unidade, ingrediente.quantidade) || 'un'} por porção
+                                        {ingrediente.quantidade} {pluralizeUnit(ingrediente.unidade, ingrediente.quantidade) || 'un'} {t('modals.itemDetails.perPortion')}
                                     </span>
                                 </div>
                             ))}
                             <div className="text-xs text-gray-500 mt-2">
-                                <strong>Total:</strong> {ingredientes.length} {ingredientes.length === 1 ? 'ingrediente' : 'ingredientes'}
+                                <strong>{t('modals.itemDetails.totalIngredients')}:</strong> {ingredientes.length} {ingredientes.length === 1 ? t('modals.itemDetails.ingredient') : t('modals.itemDetails.ingredients')}
                             </div>
                         </div>
                     )}
@@ -229,14 +231,14 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                     className="flex items-center gap-2 px-4 py-2 rounded border border-red-200 text-red-600 font-semibold hover:bg-red-50 disabled:opacity-60"
                 >
                     <TrashFull className="w-4 h-4" />
-                    {deletingItem ? "Removendo..." : "Excluir item"}
+                    {deletingItem ? t('modals.itemDetails.deleting') : t('modals.itemDetails.deleteButton')}
                 </button>
                 <button
                     onClick={onClose}
                     disabled={deletingItem}
                     className="cursor-pointer font-bold text-[#334155] px-4 py-2 rounded bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-60"
                 >
-                    Fechar
+                    {t('modals.itemDetails.close')}
                 </button>
             </div>
 

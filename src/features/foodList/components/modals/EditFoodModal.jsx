@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Coffee } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import CategoriaSelect from "@/features/foodList/components/selects/CategoriaSelect";
@@ -12,6 +13,7 @@ const initialState = {
 };
 
 export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving }) {
+    const { t } = useTranslation('foodList');
     const [formData, setFormData] = useState(initialState);
     const [errors, setErrors] = useState({});
     const [submitError, setSubmitError] = useState("");
@@ -37,13 +39,13 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
 
     const validate = () => {
         const nextErrors = {};
-        if (!formData.nome?.trim()) nextErrors.nome = "Informe o nome do item.";
+        if (!formData.nome?.trim()) nextErrors.nome = t('validation.nameRequired');
         if (!Array.isArray(formData.categorias) || formData.categorias.length === 0) {
-            nextErrors.categorias = "Escolha ao menos uma categoria.";
+            nextErrors.categorias = t('validation.categoriesRequired');
         }
         const valorNumber = Number(formData.valor);
         if (!Number.isFinite(valorNumber) || valorNumber <= 0) {
-            nextErrors.valor = "Informe um valor válido.";
+            nextErrors.valor = t('validation.valueRequired');
         }
         setErrors(nextErrors);
         return Object.keys(nextErrors).length === 0;
@@ -62,7 +64,7 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
             });
             onClose();
         } catch (err) {
-            setSubmitError(err?.message || "Não foi possível salvar as alterações.");
+            setSubmitError(err?.message || t('errors.saveChanges'));
         }
     };
 
@@ -70,13 +72,13 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
         <BaseModalWithHeader
             isOpen={isOpen}
             onClose={onClose}
-            title="Editar item do cardápio"
-            subTitle={food?.nome ? `Atualizando ${food.nome}` : "Atualize as informações"}
+            title={t('modals.editItem.title')}
+            subTitle={food?.nome ? t('modals.editItem.subtitleWithName', { name: food.nome }) : t('modals.editItem.subtitle')}
             icon={Coffee}
         >
             <div className="p-6 space-y-4 text-sm font-inter">
                 <div>
-                    <label className="block mb-1 font-medium text-gray-700">Nome</label>
+                    <label className="block mb-1 font-medium text-gray-700">{t('form.labels.itemName')}</label>
                     <input
                         type="text"
                         value={formData.nome}
@@ -95,7 +97,7 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
                 {errors.categorias && <p className="text-xs text-red-500">{errors.categorias}</p>}
 
                 <div>
-                    <label className="block mb-1 font-medium text-gray-700">Valor</label>
+                    <label className="block mb-1 font-medium text-gray-700">{t('form.labels.value')}</label>
                     <input
                         type="number"
                         step="0.01"
@@ -109,7 +111,7 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
                 </div>
 
                 <div>
-                    <label className="block mb-1 font-medium text-gray-700">Descrição</label>
+                    <label className="block mb-1 font-medium text-gray-700">{t('form.labels.description')}</label>
                     <textarea
                         value={formData.descricao}
                         onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
@@ -126,14 +128,14 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
                     className="px-4 py-2 rounded border border-gray-300 bg-white text-[#334155] font-semibold hover:bg-gray-100"
                     disabled={saving}
                 >
-                    Cancelar
+                    {t('modals.buttons.cancel')}
                 </button>
                 <button
                     onClick={handleSubmit}
                     className="px-6 py-2 rounded bg-primary-dynamic text-white font-semibold disabled:opacity-60"
                     disabled={saving}
                 >
-                    {saving ? <LoadingSpinner size={5} /> : "Salvar alterações"}
+                    {saving ? <LoadingSpinner size={5} /> : t('modals.buttons.saveChanges')}
                 </button>
             </div>
         </BaseModalWithHeader>

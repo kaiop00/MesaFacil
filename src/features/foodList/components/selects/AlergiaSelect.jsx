@@ -1,12 +1,5 @@
+import { useTranslation } from "react-i18next";
 import Select from "react-select";
-
-const alergiaOptions = [
-  { value: "Glúten", label: "Glúten" },
-  { value: "Lactose", label: "Lactose" },
-  { value: "Soja", label: "Soja" },
-  { value: "Amendoim", label: "Amendoim" },
-  { value: "Ovo", label: "Ovo" },
-];
 
 const customSelectStyles = {
   control: (base) => ({
@@ -21,18 +14,30 @@ const customSelectStyles = {
   }),
 };
 
-const AlergiaSelect = ({ value, onChange }) => (
-  <div>
-    <label className="block mb-1 font-medium text-gray-700">Alergias (opcional)</label>
-    <Select
-      isMulti
-      options={alergiaOptions}
-      value={value}
-      onChange={onChange}
-      styles={customSelectStyles}
-      placeholder="Escolha uma ou mais alergias"
-    />
-  </div>
-);
+const AlergiaSelect = ({ value, onChange }) => {
+  const { t } = useTranslation('foodList');
+  
+  const alergiaOptions = [
+    { value: "Glúten", label: t('allergies.options.gluten') },
+    { value: "Lactose", label: t('allergies.options.lactose') },
+    { value: "Soja", label: t('allergies.options.soy') },
+    { value: "Amendoim", label: t('allergies.options.peanut') },
+    { value: "Ovo", label: t('allergies.options.egg') },
+  ];
+  
+  return (
+    <div>
+      <label className="block mb-1 font-medium text-gray-700">{t('form.labels.allergies')}</label>
+      <Select
+        isMulti
+        options={alergiaOptions}
+        value={value}
+        onChange={onChange}
+        styles={customSelectStyles}
+        placeholder={t('form.placeholders.chooseAllergies')}
+      />
+    </div>
+  );
+};
 
 export default AlergiaSelect;

@@ -3,6 +3,7 @@ import common from "./common.json";
 import movements from "./movements.json";
 import items from "./items.json";
 import reports from "./reports.json";
+import foodList from "./foodList.json";
 
 export default {
   dashboard,
@@ -10,4 +11,5 @@ export default {
   movements,
   items,
   reports,
+  foodList,
 };

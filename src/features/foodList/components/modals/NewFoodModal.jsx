@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Coffee } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import NewFoodForm from "../forms/NewFoodForm";
@@ -19,6 +20,7 @@ const initialFormData = {
 };
 
 const NewFoodModal = ({ isOpen, onClose }) => {
+    const { t } = useTranslation('foodList');
     const [formData, setFormData] = useState(initialFormData);
     const [loading, setLoading] = useState(false);
     const { carregarItens } = useCardapioContext();
@@ -42,20 +44,18 @@ const NewFoodModal = ({ isOpen, onClose }) => {
 
         if (faltando.length > 0) {
             if (faltando.length === 1 && faltando[0] === "categoria") {
-                notify("Selecione pelo menos uma categoria.", "error");
+                notify(t('validation.categoryRequired'), "error");
             } else if (faltando.length === 1 && faltando[0] === "imagem") {
-                notify("Inclua uma imagem do item.", "error");
+                notify(t('validation.imageRequired'), "error");
             } else {
                 const labels = {
-                    nome: "nome",
-                    categoria: "categoria",
-                    valor: "valor",
-                    imagem: "imagem",
+                    nome: t('validation.fieldLabels.name'),
+                    categoria: t('validation.fieldLabels.category'),
+                    valor: t('validation.fieldLabels.value'),
+                    imagem: t('validation.fieldLabels.image'),
                 };
                 notify(
-                    `Preencha os campos obrigatórios: ${faltando
-                        .map((k) => labels[k])
-                        .join(", ")}.`,
+                    t('validation.missingFields', { fields: faltando.map((k) => labels[k]).join(", ") }),
                     "error"
                 );
             }
@@ -70,12 +70,12 @@ const NewFoodModal = ({ isOpen, onClose }) => {
         setLoading(true);
         try {
             await salvarNovoItem(formData);
-            notify("Item adicionado com sucesso!", "success");
+            notify(t('success.itemAdded'), "success");
             onClose();
             carregarItens();
         } catch (err) {
             console.error("Erro ao salvar item:", err);
-            notify(err?.message || "Erro ao salvar item.", "error");
+            notify(err?.message || t('errors.saveItem'), "error");
         } finally {
             setLoading(false);
         }
@@ -85,8 +85,8 @@ const NewFoodModal = ({ isOpen, onClose }) => {
         <BaseModalWithHeader
             isOpen={isOpen}
             onClose={onClose}
-            title="Novo Item do Cardapio"
-            subTitle="Preencha as informações para adicionar"
+            title={t('modals.newItem.title')}
+            subTitle={t('modals.newItem.subtitle')}
             icon={Coffee}
         >
             <div className="p-6">
@@ -98,14 +98,14 @@ const NewFoodModal = ({ isOpen, onClose }) => {
                     onClick={onClose}
                     className="font-bold text-[#334155] px-4 py-2 rounded bg-[#F1F5F9] hover:bg-gray-100"
                 >
-                    Cancelar
+                    {t('modals.buttons.cancel')}
                 </button>
                 <button
                     onClick={handleSalvar}
                     className="font-bold bg-primary-dynamic text-white px-6 py-2 rounded"
                     disabled={loading}
                 >
-                    {loading ? <LoadingSpinner /> : <span>Salvar</span>}
+                    {loading ? <LoadingSpinner /> : <span>{t('modals.buttons.save')}</span>}
                 </button>
             </div>
         </BaseModalWithHeader>

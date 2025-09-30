@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Select from "react-select";
 import { getCategoriaNomes } from "@/features/config/services/CategoriasService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,16 +20,20 @@ export default function CategoriaSelect({
   value,
   onChange,
   isMulti = true,
-  label = "Categorias",
-  placeholder = "Escolha uma ou mais categorias",
+  label,
+  placeholder,
   styles = customSelectStyles,
   idRestaurante: idRestauranteProp,
   unique = true,
   sort = true,
   enabled = true,
 }) {
+  const { t } = useTranslation('foodList');
   const { idRestaurante: idFromContext } = useAuth();
   const idRestaurante = idRestauranteProp ?? idFromContext;
+  
+  const defaultLabel = label || t('form.labels.categories');
+  const defaultPlaceholder = placeholder || t('form.placeholders.chooseCategories');
 
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -79,16 +84,16 @@ export default function CategoriaSelect({
 
   return (
     <div>
-      <label className="block mb-1 font-medium text-gray-700">{label}</label>
+      <label className="block mb-1 font-medium text-gray-700">{defaultLabel}</label>
       <Select
         isMulti={isMulti}
         options={options}
         value={valueOptions}
         onChange={handleChange}
         styles={styles}
-        placeholder={loading ? "Carregando categorias..." : placeholder}
+        placeholder={loading ? t('form.placeholders.loadingCategories') : defaultPlaceholder}
         isLoading={loading}
-        noOptionsMessage={() => (loading ? "Carregando..." : "Nenhuma categoria encontrada")}
+        noOptionsMessage={() => (loading ? t('form.placeholders.loading') : t('form.placeholders.noCategoriesFound'))}
         isDisabled={!enabled || !idRestaurante}
       />
     </div>

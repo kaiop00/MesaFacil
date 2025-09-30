@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddPlus, TrashFull } from 'react-coolicons';
 import { getAll } from '@/services/firebase/firestoreService';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCompatibleUnits, convertUnit, formatQuantityWithUnit } from '@/services/utils/unitConversionService';
 
 const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
+  const { t } = useTranslation('foodList');
   const { idRestaurante } = useAuth();
   const [itensEstoque, setItensEstoque] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +94,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
     
     if (ingrediente.unidade === itemEstoque.unidadeArmazenamento) {
       return {
-        textoConversao: `Usando a mesma unidade do estoque (${itemEstoque.unidadeArmazenamento})`,
+        textoConversao: t('ingredients.sameUnit', { unit: itemEstoque.unidadeArmazenamento }),
         quantidadeConvertida: ingrediente.quantidade
       };
     }
@@ -105,7 +107,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
     
     if (quantidadeConvertida === null) {
       return {
-        textoConversao: `❌ Não é possível converter de ${ingrediente.unidade} para ${itemEstoque.unidadeArmazenamento}`,
+        textoConversao: t('ingredients.cannotConvert', { from: ingrediente.unidade, to: itemEstoque.unidadeArmazenamento }),
         quantidadeConvertida: 0,
         erro: true
       };
@@ -129,9 +131,9 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          Ingredientes
+          {t('ingredients.title')}
         </label>
-        <div className="text-sm text-gray-500">Carregando itens do estoque...</div>
+        <div className="text-sm text-gray-500">{t('ingredients.loading')}</div>
       </div>
     );
   }
@@ -140,7 +142,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <label className="block text-sm font-medium text-gray-700">
-          Ingredientes
+          {t('ingredients.title')}
         </label>
         <button
           type="button"
@@ -149,14 +151,14 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
           className="inline-flex items-center px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
         >
           <AddPlus className="w-4 h-4 mr-1" />
-          Adicionar
+          {t('ingredients.addButton')}
         </button>
       </div>
 
       {ingredientes.length === 0 ? (
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
           <p className="text-sm text-gray-500">
-            Nenhum ingrediente adicionado. Clique em "Adicionar" para incluir ingredientes.
+            {t('ingredients.noIngredients')}
           </p>
         </div>
       ) : (
@@ -165,7 +167,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
             <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
                 <h4 className="text-sm font-medium text-gray-700">
-                  Ingrediente {index + 1}
+                  {t('ingredients.ingredientNumber', { number: index + 1 })}
                 </h4>
                 <button
                   type="button"
@@ -180,7 +182,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Item do Estoque *
+                    {t('ingredients.labels.stockItem')} {t('ingredients.required')}
                   </label>
                   <select
                     value={ingrediente.itemId}
@@ -189,7 +191,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
-                    <option value="">Selecione um item</option>
+                    <option value="">{t('ingredients.placeholders.selectItem')}</option>
                     {itensEstoque.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.nome} {item.marca && `(${item.marca})`}
@@ -200,7 +202,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
 
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Quantidade por Porção *
+                    {t('ingredients.labels.quantityPerPortion')} {t('ingredients.required')}
                   </label>
                   <input
                     type="number"
@@ -210,14 +212,14 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
                     onChange={(e) => atualizarIngrediente(index, 'quantidade', e.target.value)}
                     disabled={disabled}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0.00"
+                    placeholder={t('ingredients.placeholders.quantity')}
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Unidade
+                    {t('ingredients.labels.unit')}
                   </label>
                   <select
                     value={ingrediente.unidade}
@@ -244,18 +246,20 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
                       <>
                         {conversaoInfo && (
                           <div className={`text-xs p-2 rounded ${conversaoInfo.erro ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
-                            <strong>Conversão:</strong> {conversaoInfo.textoConversao}
+                            <strong>{t('ingredients.conversion')}:</strong> {conversaoInfo.textoConversao}
                           </div>
                         )}
                         
                         {itemEstoque && conversaoInfo && !conversaoInfo.erro && (
                           <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                            <strong>Exemplo:</strong> Se este prato é servido 10 vezes, serão consumidos{' '}
-                            {formatQuantityWithUnit(conversaoInfo.quantidadeConvertida * 10, itemEstoque.unidadeArmazenamento)}{' '}
-                            do estoque de {ingrediente.itemNome}
+                            <strong>{t('ingredients.example')}:</strong> {t('ingredients.exampleText', {
+                              times: 10,
+                              amount: formatQuantityWithUnit(conversaoInfo.quantidadeConvertida * 10, itemEstoque.unidadeArmazenamento),
+                              item: ingrediente.itemNome
+                            })}
                             {conversaoInfo.quantidadeConvertida !== parseFloat(ingrediente.quantidade || 0) && (
                               <span className="block mt-1 text-gray-400">
-                                (Original: {formatQuantityWithUnit(parseFloat(ingrediente.quantidade || 0) * 10, ingrediente.unidade)})
+                                {t('ingredients.originalAmount', { amount: formatQuantityWithUnit(parseFloat(ingrediente.quantidade || 0) * 10, ingrediente.unidade) })}
                               </span>
                             )}
                           </div>
@@ -272,8 +276,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
 
       {ingredientes.length > 0 && (
         <div className="text-xs text-gray-500 mt-2">
-          <strong>Dica:</strong> As quantidades devem ser por porção individual.
-          O sistema calculará automaticamente o consumo total baseado no número de pratos pedidos.
+          <strong>{t('ingredients.tip')}</strong>
         </div>
       )}
     </div>
