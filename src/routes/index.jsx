@@ -14,6 +14,7 @@ import LoginPage from "@/features/auth/pages/login/LoginPage";
 import RegisterPage from "@/features/auth/pages/register/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
 import MainPage from "@/features/auth/pages/MainPage";
+import PlanSelectionPage from "@/features/auth/pages/planSelection/PlanSelectionPage";
 
 
 // Importação das páginas privadas
@@ -57,6 +58,10 @@ const router = createBrowserRouter([
   {
     path: "/recuperar-senha",
     element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/selecionar-plano",
+    element: <PlanSelectionPage />,
   },
   {
     path: "/politica-privacidade",

@@ -10,6 +10,7 @@ import CategoriaConfigModal from "@/features/config/components/modals/Categorias
 import NotificationsModal from "@/features/notifications/components/NotificationsModal";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
+import PlanInfo from "@/components/PlanInfo";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -46,6 +47,11 @@ const Header = () => {
 
       {/* Ações à direita */}
       <div className="flex items-center space-x-4 sm:space-x-6">
+        {/* Informações do plano (oculto em mobile) */}
+        <div className="hidden lg:block">
+          <PlanInfo />
+        </div>
+
         <button
           className="relative p-1 rounded-full hover:bg-gray-100"
           onClick={() => setIsNotificationsOpen(true)}
