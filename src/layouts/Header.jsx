@@ -3,6 +3,7 @@ import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
 import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
+import PlanManagementModal from "@/features/config/components/modals/PlanManagementModal";
 import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
@@ -18,6 +19,7 @@ const Header = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
+  const [isPlanManagementModalOpen, setIsPlanManagementModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
@@ -126,6 +128,16 @@ const Header = () => {
                     >
                       Categorias
                     </button>
+                    <button
+                      onClick={() => {
+                        setIsPlanManagementModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Plano
+                    </button>
                   </div>
                 )}
               </div>
@@ -160,6 +172,10 @@ const Header = () => {
           <CategoriaConfigModal
             isOpen={isCategoriaConfigModalOpen}
             onClose={() => setIsCategoriaConfigModalOpen(false)}
+          />
+          <PlanManagementModal
+            isOpen={isPlanManagementModalOpen}
+            onClose={() => setIsPlanManagementModalOpen(false)}
           />
         </div>
       </div>
