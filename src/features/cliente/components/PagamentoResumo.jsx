@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { QrCodePix } from "qrcode-pix";
 import { useCliente } from "../context/ClienteContext";
 import { formatCurrency } from "../utils/pedidos";
+import { useToast } from "@/hooks/useToast";
+import { getRestauranteInfo } from "@/features/config/services/ConfigRestauranteService";
 
 export default function PagamentoResumo({
     pedidos = [],
@@ -14,10 +17,17 @@ export default function PagamentoResumo({
     mesaNumero,
     onConfirmarPix,
 }) {
-    const { numero } = useCliente();
+    const { numero, idRestaurante } = useCliente();
     const mesaNumeroExibicao = mesaNumero || numero;
     const [selectedOption, setSelectedOption] = useState(null);
     const [selectionError, setSelectionError] = useState(false);
+    const { notify } = useToast();
+    const [pixConfig, setPixConfig] = useState(null);
+    const [pixPayload, setPixPayload] = useState("");
+    const [pixQrCode, setPixQrCode] = useState("");
+    const [pixLoading, setPixLoading] = useState(false);
+    const [pixError, setPixError] = useState(null);
+    const [copyingPix, setCopyingPix] = useState(false);
 
     const itensResumo = useMemo(() => {
         return pedidos.flatMap((pedido) => {
@@ -63,6 +73,150 @@ export default function PagamentoResumo({
             onConfirmarPix();
         }
     };
+
+    const ensurePixData = useCallback(async () => {
+        if (!idRestaurante) {
+            setPixError("Restaurante não identificado para gerar o Pix.");
+            return null;
+        }
+
+        if (pixConfig) {
+            return pixConfig;
+        }
+
+        try {
+            const info = await getRestauranteInfo(idRestaurante);
+            const pixInfo = info?.pix;
+
+            if (!pixInfo?.chave) {
+                setPixError("Configurações de Pix não encontradas.");
+                return null;
+            }
+
+            const normalizedCity = (pixInfo.cidade || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toUpperCase();
+
+            const config = {
+                chave: pixInfo.chave,
+                nome: pixInfo.nome || "",
+                cidade: normalizedCity,
+            };
+
+            setPixConfig(config);
+            setPixError(null);
+            return config;
+        } catch (errorFetch) {
+            console.error("Erro ao buscar configurações de Pix", errorFetch);
+            setPixError("Erro ao carregar configurações de Pix.");
+            return null;
+        }
+    }, [idRestaurante, pixConfig]);
+
+    useEffect(() => {
+        if (selectedOption !== "pix") {
+            return;
+        }
+
+        let cancelled = false;
+
+        const generatePixCode = async () => {
+            setPixLoading(true);
+            setPixError(null);
+
+            try {
+                const config = await ensurePixData();
+                if (!config || cancelled) {
+                    if (!cancelled) {
+                        setPixPayload("");
+                        setPixQrCode("");
+                    }
+                    return;
+                }
+
+                const valueNumber = Number(totalPedidos) || 0;
+                const sanitizedName = (config.nome || "Restaurante")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toUpperCase();
+
+                const buildTransactionId = () => {
+                    const mesaId = (mesaNumeroExibicao || numero || "0")
+                        .toString()
+                        .replace(/[^a-zA-Z0-9]/g, "")
+                        .toUpperCase()
+                        .slice(-6);
+                    const timestamp = Date.now().toString(36).toUpperCase();
+                    return `MF${mesaId}${timestamp}`.slice(0, 25);
+                };
+
+                const qrCodePix = QrCodePix({
+                    version: "01",
+                    key: config.chave,
+                    name: sanitizedName || "RESTAURANTE",
+                    city: config.cidade || "SAO PAULO",
+                    transactionId: buildTransactionId(),
+                    message: mesaNumeroExibicao ? `Mesa ${mesaNumeroExibicao}` : undefined,
+                    value: valueNumber > 0 ? Number(valueNumber.toFixed(2)) : undefined,
+                });
+
+                const payload = qrCodePix.payload();
+                const base64 = await qrCodePix.base64();
+
+                if (cancelled) {
+                    return;
+                }
+
+                setPixPayload(payload);
+                setPixQrCode(base64);
+            } catch (errorGenerate) {
+                console.error("Erro ao gerar QR Code Pix", errorGenerate);
+                if (!cancelled) {
+                    setPixError("Não foi possível gerar o QR Code Pix.");
+                    setPixPayload("");
+                    setPixQrCode("");
+                }
+            } finally {
+                if (!cancelled) {
+                    setPixLoading(false);
+                }
+            }
+        };
+
+        generatePixCode();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [ensurePixData, mesaNumeroExibicao, numero, selectedOption, totalPedidos]);
+
+    const handleCopyPix = useCallback(async () => {
+        if (!pixPayload) return;
+
+        setCopyingPix(true);
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(pixPayload);
+            } else {
+                const element = document.createElement("textarea");
+                element.value = pixPayload;
+                element.setAttribute("readonly", "");
+                element.style.position = "absolute";
+                element.style.left = "-9999px";
+                document.body.appendChild(element);
+                element.select();
+                document.execCommand("copy");
+                document.body.removeChild(element);
+            }
+            notify("Código Pix copiado", "success");
+        } catch (errorCopy) {
+            console.error("Erro ao copiar código Pix", errorCopy);
+            notify("Não foi possível copiar o código Pix", "error");
+        } finally {
+            setCopyingPix(false);
+        }
+    }, [notify, pixPayload]);
 
     return (
         <div className="flex flex-col items-center mt-6 px-4 pb-6">
@@ -189,6 +343,57 @@ export default function PagamentoResumo({
                             )}
                         </div>
                     </section>
+
+                    {selectedOption === "pix" && (
+                        <section className="space-y-3">
+                            <div className="border border-[#10B981]/40 rounded-xl p-4 bg-[#F0FDF4] text-center text-sm text-gray-700">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-32 h-32 flex items-center justify-center bg-white border border-[#10B981]/30 rounded-xl overflow-hidden">
+                                        {pixLoading ? (
+                                            <span className="text-xs text-gray-500">Gerando QR Code...</span>
+                                        ) : pixQrCode ? (
+                                            <img src={pixQrCode} alt="QR Code Pix" className="w-full h-full object-contain" />
+                                        ) : (
+                                            <span className="text-xs text-red-500">
+                                                {pixError || "QR Code não disponível"}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-gray-600">
+                                            Abra o aplicativo do seu banco, escaneie o QR Code ou copie e cole o código Pix
+                                            no campo apropriado.
+                                        </p>
+                                        <p className="text-xs font-semibold text-[#D9A23B]">
+                                            Tempo de Expiração: <span className="font-bold">5 minutos</span>
+                                        </p>
+                                    </div>
+
+                                    {pixError && (
+                                        <p className="text-xs text-red-500">{pixError}</p>
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        onClick={handleCopyPix}
+                                        disabled={!pixPayload || copyingPix || pixLoading}
+                                        className="w-full bg-[#D9A23B] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#c48f32] transition disabled:bg-[#D9A23B]/60"
+                                    >
+                                        {copyingPix ? "Copiando..." : "Copiar QR Code"}
+                                    </button>
+
+                                    {pixPayload && (
+                                        <div className="bg-white border border-dashed border-[#10B981]/40 rounded-lg p-3 text-left">
+                                            <p className="text-[11px] text-gray-500 break-all leading-relaxed">
+                                                {pixPayload}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </section>
+                    )}
 
                     <div className="flex flex-col gap-3">
                         <button
