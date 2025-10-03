@@ -18,3 +18,26 @@ export const updateRestauranteInfo = async (idRestaurante, data) => {
         });
     }
 };
+
+/**
+ * Recupera as informações do restaurante.
+ * @param {string} idRestaurante
+ * @returns {Promise<object|null>}
+ */
+export const getRestauranteInfo = async (idRestaurante) => {
+    if (!idRestaurante) {
+        throw new Error("idRestaurante é obrigatório");
+    }
+
+    const ref = doc(db, "restaurantes", idRestaurante);
+    const snapshot = await getDoc(ref);
+
+    if (!snapshot.exists()) {
+        return null;
+    }
+
+    return {
+        id: snapshot.id,
+        ...snapshot.data(),
+    };
+};

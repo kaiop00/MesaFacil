@@ -10,6 +10,7 @@ import CategoriaConfigModal from "@/features/config/components/modals/Categorias
 import NotificationsModal from "@/features/notifications/components/NotificationsModal";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
+import PixConfigModal from "@/features/config/components/modals/PixConfigModal";
 
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -17,6 +18,7 @@ const Header = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
+  const [isPixConfigModalOpen, setIsPixConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
@@ -102,6 +104,16 @@ const Header = () => {
                     </button>
                     <button
                       onClick={() => {
+                        setIsPixConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Pix
+                    </button>
+                    <button
+                      onClick={() => {
                         setIsColorsConfigModalOpen(true);
                         setIsDropdownOpen(false);
                         setIsSubMenuOpen(false);
@@ -154,6 +166,10 @@ const Header = () => {
           <CategoriaConfigModal
             isOpen={isCategoriaConfigModalOpen}
             onClose={() => setIsCategoriaConfigModalOpen(false)}
+          />
+          <PixConfigModal
+            isOpen={isPixConfigModalOpen}
+            onClose={() => setIsPixConfigModalOpen(false)}
           />
         </div>
       </div>
