@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { QrCodePix } from "qrcode-pix";
+import { useEffect, useMemo, useState } from "react";
 import { useCliente } from "../context/ClienteContext";
-import { formatCurrency } from "../utils/pedidos";
-import { useToast } from "@/hooks/useToast";
-import { getRestauranteInfo } from "@/features/config/services/ConfigRestauranteService";
+import PaymentSummary from "./PaymentSummary";
+import PaymentOptionSelector from "./PaymentOptionSelector";
+import PixPaymentCard from "./PixPaymentCard";
+import PaymentActions from "./PaymentActions";
+import { usePixPayment } from "../hooks/usePixPayment";
 
 export default function PagamentoResumo({
     pedidos = [],
@@ -21,13 +22,13 @@ export default function PagamentoResumo({
     const mesaNumeroExibicao = mesaNumero || numero;
     const [selectedOption, setSelectedOption] = useState(null);
     const [selectionError, setSelectionError] = useState(false);
-    const { notify } = useToast();
-    const [pixConfig, setPixConfig] = useState(null);
-    const [pixPayload, setPixPayload] = useState("");
-    const [pixQrCode, setPixQrCode] = useState("");
-    const [pixLoading, setPixLoading] = useState(false);
-    const [pixError, setPixError] = useState(null);
-    const [copyingPix, setCopyingPix] = useState(false);
+
+    const pix = usePixPayment({
+        enabled: selectedOption === "pix",
+        total: totalPedidos,
+        mesaNumero: mesaNumeroExibicao,
+        idRestaurante,
+    });
 
     const itensResumo = useMemo(() => {
         return pedidos.flatMap((pedido) => {
@@ -74,149 +75,7 @@ export default function PagamentoResumo({
         }
     };
 
-    const ensurePixData = useCallback(async () => {
-        if (!idRestaurante) {
-            setPixError("Restaurante não identificado para gerar o Pix.");
-            return null;
-        }
-
-        if (pixConfig) {
-            return pixConfig;
-        }
-
-        try {
-            const info = await getRestauranteInfo(idRestaurante);
-            const pixInfo = info?.pix;
-
-            if (!pixInfo?.chave) {
-                setPixError("Configurações de Pix não encontradas.");
-                return null;
-            }
-
-            const normalizedCity = (pixInfo.cidade || "")
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .toUpperCase();
-
-            const config = {
-                chave: pixInfo.chave,
-                nome: pixInfo.nome || "",
-                cidade: normalizedCity,
-            };
-
-            setPixConfig(config);
-            setPixError(null);
-            return config;
-        } catch (errorFetch) {
-            console.error("Erro ao buscar configurações de Pix", errorFetch);
-            setPixError("Erro ao carregar configurações de Pix.");
-            return null;
-        }
-    }, [idRestaurante, pixConfig]);
-
-    useEffect(() => {
-        if (selectedOption !== "pix") {
-            return;
-        }
-
-        let cancelled = false;
-
-        const generatePixCode = async () => {
-            setPixLoading(true);
-            setPixError(null);
-
-            try {
-                const config = await ensurePixData();
-                if (!config || cancelled) {
-                    if (!cancelled) {
-                        setPixPayload("");
-                        setPixQrCode("");
-                    }
-                    return;
-                }
-
-                const valueNumber = Number(totalPedidos) || 0;
-                const sanitizedName = (config.nome || "Restaurante")
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .toUpperCase();
-
-                const buildTransactionId = () => {
-                    const mesaId = (mesaNumeroExibicao || numero || "0")
-                        .toString()
-                        .replace(/[^a-zA-Z0-9]/g, "")
-                        .toUpperCase()
-                        .slice(-6);
-                    const timestamp = Date.now().toString(36).toUpperCase();
-                    return `MF${mesaId}${timestamp}`.slice(0, 25);
-                };
-
-                const qrCodePix = QrCodePix({
-                    version: "01",
-                    key: config.chave,
-                    name: sanitizedName || "RESTAURANTE",
-                    city: config.cidade || "SAO PAULO",
-                    transactionId: buildTransactionId(),
-                    message: mesaNumeroExibicao ? `Mesa ${mesaNumeroExibicao}` : undefined,
-                    value: valueNumber > 0 ? Number(valueNumber.toFixed(2)) : undefined,
-                });
-
-                const payload = qrCodePix.payload();
-                const base64 = await qrCodePix.base64();
-
-                if (cancelled) {
-                    return;
-                }
-
-                setPixPayload(payload);
-                setPixQrCode(base64);
-            } catch (errorGenerate) {
-                console.error("Erro ao gerar QR Code Pix", errorGenerate);
-                if (!cancelled) {
-                    setPixError("Não foi possível gerar o QR Code Pix.");
-                    setPixPayload("");
-                    setPixQrCode("");
-                }
-            } finally {
-                if (!cancelled) {
-                    setPixLoading(false);
-                }
-            }
-        };
-
-        generatePixCode();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [ensurePixData, mesaNumeroExibicao, numero, selectedOption, totalPedidos]);
-
-    const handleCopyPix = useCallback(async () => {
-        if (!pixPayload) return;
-
-        setCopyingPix(true);
-        try {
-            if (navigator?.clipboard?.writeText) {
-                await navigator.clipboard.writeText(pixPayload);
-            } else {
-                const element = document.createElement("textarea");
-                element.value = pixPayload;
-                element.setAttribute("readonly", "");
-                element.style.position = "absolute";
-                element.style.left = "-9999px";
-                document.body.appendChild(element);
-                element.select();
-                document.execCommand("copy");
-                document.body.removeChild(element);
-            }
-            notify("Código Pix copiado", "success");
-        } catch (errorCopy) {
-            console.error("Erro ao copiar código Pix", errorCopy);
-            notify("Não foi possível copiar o código Pix", "error");
-        } finally {
-            setCopyingPix(false);
-        }
-    }, [notify, pixPayload]);
+    const garcomDisabled = chamarGarcomLoading || garcomSolicitado;
 
     return (
         <div className="flex flex-col items-center mt-6 px-4 pb-6">
@@ -228,196 +87,38 @@ export default function PagamentoResumo({
                         <p className="text-sm text-gray-500">Escolha uma opção para prosseguir</p>
                     </div>
 
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <span className="flex-1 h-px bg-[#D9A23B]/30" />
-                            <span className="text-xs font-semibold text-[#D9A23B] tracking-widest uppercase">
-                                Resumo da Compra
-                            </span>
-                            <span className="flex-1 h-px bg-[#D9A23B]/30" />
-                        </div>
+                    <PaymentSummary
+                        items={itensResumo}
+                        loading={loading}
+                        error={error}
+                        subtotal={totalPedidos}
+                    />
 
-                        <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-                            {loading && <p>Carregando pedidos...</p>}
-                            {!loading && error && <p className="text-red-500">{error}</p>}
+                    <PaymentOptionSelector
+                        selectedOption={selectedOption}
+                        onSelect={handleSelectOption}
+                        garcomDisabled={garcomDisabled}
+                        garcomSolicitado={garcomSolicitado}
+                        showSelectionError={selectionError}
+                    />
 
-                            {!loading && !error && itensResumo.length === 0 && (
-                                <p className="text-sm text-gray-500">Nenhum item disponível para pagamento no momento.</p>
-                            )}
+                    <PixPaymentCard
+                        visible={selectedOption === "pix"}
+                        loading={pix.loading}
+                        error={pix.error}
+                        qrCode={pix.qrCode}
+                        payload={pix.payload}
+                        copying={pix.copying}
+                        onCopy={pix.handleCopy}
+                    />
 
-                            {!loading && !error && itensResumo.length > 0 && (
-                                <ul className="space-y-2">
-                                    {itensResumo.map((item) => (
-                                        <li key={item.id} className="flex justify-between text-sm text-gray-700">
-                                            <span>
-                                                {item.quantity > 1 ? `${item.quantity}x ` : ""}
-                                                {item.nome}
-                                            </span>
-                                            <span>{formatCurrency(item.total)}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-
-                            {!loading && !error && (
-                                <div className="flex justify-between items-center border-t border-gray-100 pt-3 font-semibold text-gray-900">
-                                    <span>Subtotal</span>
-                                    <span>{formatCurrency(totalPedidos)}</span>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-
-                    <section className="space-y-3">
-                        <h3 className="text-sm font-semibold text-gray-900">Escolha uma das opções</h3>
-
-                        <div className="space-y-3">
-                            {[
-                                {
-                                    id: "pix",
-                                    title: "Pagar com Pix",
-                                    description: "",
-                                    accent: "border-[#10B981]",
-                                    badge: "Pix",
-                                },
-                                {
-                                    id: "garcom",
-                                    title: "Chamar Garçom",
-                                    description: "O garçom irá até sua mesa auxiliar no pagamento",
-                                    accent: "border-[#D9A23B]",
-                                    badge: "Garçom",
-                                },
-                            ].map((option) => {
-                                const isSelected = selectedOption === option.id;
-                                const baseClasses = [
-                                    "w-full",
-                                    "border",
-                                    "rounded-xl",
-                                    "p-4",
-                                    "flex",
-                                    "items-center",
-                                    "gap-3",
-                                    "transition",
-                                    "text-left",
-                                    option.id === "garcom" && garcomSolicitado ? "opacity-80" : "",
-                                ].filter(Boolean);
-
-                                if (isSelected) {
-                                    baseClasses.push(option.id === "garcom" ? "bg-[#FDF0D8]" : "bg-[#ECFDF5]");
-                                    baseClasses.push(option.accent);
-                                    baseClasses.push("border-2");
-                                } else {
-                                    baseClasses.push("border-gray-200");
-                                    baseClasses.push("hover:border-[#D9A23B]/60");
-                                }
-
-                                return (
-                                    <button
-                                        type="button"
-                                        key={option.id}
-                                        className={baseClasses.join(" ")}
-                                        onClick={() => handleSelectOption(option.id)}
-                                        disabled={option.id === "garcom" && (chamarGarcomLoading || garcomSolicitado)}
-                                    >
-                                        <span
-                                            className={`h-5 w-5 rounded-full border ${
-                                                isSelected ? option.accent : "border-gray-300"
-                                            } flex items-center justify-center text-[10px] uppercase font-semibold`}
-                                        >
-                                            {isSelected ? "•" : ""}
-                                        </span>
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-gray-900 text-sm">{option.title}</p>
-                                            {option.description && (
-                                                <p className="text-xs text-gray-600 mt-1">{option.description}</p>
-                                            )}
-                                        </div>
-                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
-                                            {option.badge}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                            {selectionError && (
-                                <p className="text-xs text-red-500">Selecione uma opção para continuar.</p>
-                            )}
-                        </div>
-                    </section>
-
-                    {selectedOption === "pix" && (
-                        <section className="space-y-3">
-                            <div className="border border-[#10B981]/40 rounded-xl p-4 bg-[#F0FDF4] text-center text-sm text-gray-700">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-32 h-32 flex items-center justify-center bg-white border border-[#10B981]/30 rounded-xl overflow-hidden">
-                                        {pixLoading ? (
-                                            <span className="text-xs text-gray-500">Gerando QR Code...</span>
-                                        ) : pixQrCode ? (
-                                            <img src={pixQrCode} alt="QR Code Pix" className="w-full h-full object-contain" />
-                                        ) : (
-                                            <span className="text-xs text-red-500">
-                                                {pixError || "QR Code não disponível"}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-gray-600">
-                                            Abra o aplicativo do seu banco, escaneie o QR Code ou copie e cole o código Pix
-                                            no campo apropriado.
-                                        </p>
-                                        <p className="text-xs font-semibold text-[#D9A23B]">
-                                            Tempo de Expiração: <span className="font-bold">5 minutos</span>
-                                        </p>
-                                    </div>
-
-                                    {pixError && (
-                                        <p className="text-xs text-red-500">{pixError}</p>
-                                    )}
-
-                                    <button
-                                        type="button"
-                                        onClick={handleCopyPix}
-                                        disabled={!pixPayload || copyingPix || pixLoading}
-                                        className="w-full bg-[#D9A23B] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#c48f32] transition disabled:bg-[#D9A23B]/60"
-                                    >
-                                        {copyingPix ? "Copiando..." : "Copiar QR Code"}
-                                    </button>
-
-                                    {pixPayload && (
-                                        <div className="bg-white border border-dashed border-[#10B981]/40 rounded-lg p-3 text-left">
-                                            <p className="text-[11px] text-gray-500 break-all leading-relaxed">
-                                                {pixPayload}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </section>
-                    )}
-
-                    <div className="flex flex-col gap-3">
-                        <button
-                            type="button"
-                            className="w-full bg-[#D9A23B] text-white font-semibold py-3 rounded-xl shadow-sm hover:bg-[#c48f32] transition disabled:bg-[#D9A23B]/60"
-                            onClick={handleContinuar}
-                            disabled={(selectedOption === "garcom" && (chamarGarcomLoading || garcomSolicitado)) || chamarGarcomLoading}
-                        >
-                            {selectedOption === "garcom"
-                                ? garcomSolicitado
-                                    ? "Garçom a caminho"
-                                    : chamarGarcomLoading
-                                        ? "Chamando..."
-                                        : "Confirmar chamada do garçom"
-                                : "Continuar"}
-                        </button>
-                        <button
-                            type="button"
-                            className="w-full text-sm text-gray-500 underline"
-                            onClick={onVoltar}
-                        >
-                            Voltar para pedidos
-                        </button>
-                    </div>
+                    <PaymentActions
+                        selectedOption={selectedOption}
+                        onContinuar={handleContinuar}
+                        onVoltar={onVoltar}
+                        garcomSolicitado={garcomSolicitado}
+                        chamarGarcomLoading={chamarGarcomLoading}
+                    />
                 </div>
             </div>
         </div>
