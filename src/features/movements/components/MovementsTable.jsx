@@ -1,0 +1,295 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  MoreHorizontal,
+  EditPencil01,
+  UnfoldMore,
+  TrashFull,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  SearchMagnifyingGlass,
+} from "react-coolicons";
+
+const MovementsTable = ({
+  movements = [],
+  loading,
+  error,
+  itemsPerPage,
+  onItemsPerPageChange,
+  currentPage,
+  onPageChange,
+  onEdit,
+  onView,
+  onDelete,
+  totalItems = 0,
+  searchTerm,
+  onSearchChange,
+}) => {
+  const { t } = useTranslation("movements");
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  const toggleDropdown = (movementId) => {
+    setOpenDropdown(openDropdown === movementId ? null : movementId);
+  };
+
+  const getBalanceStatus = (balance) => {
+    // Different color logic based on balance value and type
+    if (balance <= 10) {
+      return {
+        color: "text-white",
+        bgColor: "bg-red-500",
+      };
+    } else if (balance <= 15) {
+      return {
+        color: "text-white",
+        bgColor: "bg-yellow-500",
+      };
+    } else {
+      return {
+        color: "text-white",
+        bgColor: "bg-blue-500",
+      };
+    }
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        {t("page.loading")}
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-auto p-6 sm:overflow-visible min-h-[50vh]">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <form className="relative max-w-md">
+            <label htmlFor="search" className="sr-only">
+              {t("table.searchPlaceholder")}
+            </label>
+
+            <input
+              type="search"
+              id="search"
+              placeholder={t("table.searchPlaceholder")}
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full pl-4 pr-12 py-3
+              border border-gray-300 rounded-lg
+              bg-white text-gray-900 placeholder-gray-500
+              focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+
+            <SearchMagnifyingGlass className="absolute right-4 top-1/2
+            transform -translate-y-1/2 
+            text-orange-500 w-5 h-5" />
+          </form>
+        </div>
+
+        <div className="overflow-auto rounded-lg shadow-sm border border-gray-200">
+          <div className="min-w-lg min-h-80">
+            {/* Table Header */}
+            <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                {t("table.columns.name")}
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                {t("table.columns.type")}
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                {t("table.columns.quantity")}
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                {t("table.columns.balance")}
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div className="flex items-center text-sm font-medium text-gray-600">
+                {t("table.columns.reference")}
+                <ChevronDown className="ml-1 w-4 h-4" />
+              </div>
+              <div></div>
+            </div>
+
+            {/* Table Body */}
+            {movements.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">{t("page.noMovementsFound")}</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {movements.map((movement) => {
+                  const balanceStatus = getBalanceStatus(movement.saldo);
+
+                  return (
+                    <div
+                      key={movement.id}
+                      className="grid grid-cols-6 gap-4 px-6 py-4 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center text-sm text-gray-900">
+                        {movement.itemNome || t("table.noName")}
+                      </div>
+                      <div className="flex items-center">
+                        <span 
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            movement.tipoMovimentacao?.includes('Pedido') 
+                              ? 'bg-orange-100 text-orange-800' 
+                              : movement.tipoMovimentacao?.includes('CANCELAMENTO')
+                              ? 'bg-red-100 text-red-800'
+                              : movement.tipoMovimentacao?.includes('Entrada')
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {movement.tipoMovimentacao || t("table.notSpecified")}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        {movement.quantidade} {movement.quantidade > 1 ? `${movement.unidadeArmazenamento}s` : movement.unidadeArmazenamento || ''}
+                      </div>
+                      <div className="flex items-center">
+                        <div
+                          className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[40px] ${balanceStatus.bgColor} ${balanceStatus.color}`}
+                        >
+                          {movement.novoSaldo}
+                        </div>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        {movement.pedidoReferencia ? (
+                          <div className="flex flex-col">
+                            <span className="text-blue-600 font-medium">
+                              {movement.pedidoReferencia.startsWith('CANCELAMENTO') ? t("table.reference.cancellation") : t("table.reference.order")}
+                            </span>
+                            <span className="text-gray-400">
+                              {movement.pedidoReferencia.replace('CANCELAMENTO-', '').substring(0, 8)}...
+                            </span>
+                          </div>
+                        ) : (
+                          <span>{t("table.reference.manual")}</span>
+                        )}
+                      </div>
+                      <div className="flex justify-end">
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => toggleDropdown(movement.id)}
+                            className="text-gray-400 hover:text-gray-500"
+                          >
+                            <MoreHorizontal className="h-5 w-5" />
+                          </button>
+
+                          {openDropdown === movement.id && (
+                            <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-gray-300 ring-opacity-5 focus:outline-none">
+                              <button
+                                onClick={() => {
+                                  onView?.(movement);
+                                  setOpenDropdown(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-md"
+                              >
+                                <UnfoldMore className="mr-2 h-4 w-4" />
+                                {t("table.actions.view")}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  onEdit?.(movement);
+                                  setOpenDropdown(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                <EditPencil01 className="mr-2 h-4 w-4" />
+                                {t("table.actions.edit")}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  onDelete?.(movement);
+                                  setOpenDropdown(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 last:rounded-b-md"
+                              >
+                                <TrashFull className="mr-2 h-4 w-4" />
+                                {t("table.actions.delete")}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Pagination Footer */}
+        <footer className="flex flex-wrap items-center justify-between gap-4 mt-6">
+          <p className="text-sm text-gray-600">
+            {t("table.pagination.page")} {currentPage} {t("table.pagination.of")} {totalPages}
+          </p>
+
+          <nav className="flex flex-wrap items-center space-x-4 gap-4">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => onPageChange?.(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="p-2 border border-gray-300 cursor-pointer rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() =>
+                  onPageChange?.(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="p-2 border border-gray-300 cursor-pointer rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <label htmlFor="itemsPerPage" className="text-sm text-zinc-500">
+                {t("table.pagination.show")}
+              </label>
+
+              <select
+                id="itemsPerPage"
+                value={itemsPerPage}
+                onChange={(e) => onItemsPerPageChange?.(Number(e.target.value))}
+                className="border border-gray-300 rounded-lg p-2 text-sm text-yellow-500 bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              >
+                <option value={10}>10 {t("table.pagination.lines")}</option>
+                <option value={25}>25 {t("table.pagination.lines")}</option>
+                <option value={50}>50 {t("table.pagination.lines")}</option>
+                <option value={100}>100 {t("table.pagination.lines")}</option>
+              </select>
+
+              <span className="text-sm text-zinc-500">
+                {t("table.pagination.of")} {totalItems} {t("table.pagination.records")}
+              </span>
+            </div>
+          </nav>
+        </footer>
+      </section>
+    </>
+  );
+};
+
+export default MovementsTable;

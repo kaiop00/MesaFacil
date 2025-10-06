@@ -1,0 +1,120 @@
+{
+  "page": {
+    "title": "Entradas e Saídas",
+    "subtitle": "Gerencie as movimentações do seu restaurante",
+    "newButton": "Nova movimentação",
+    "loading": "Carregando...",
+    "noMovementsFound": "Nenhum movimento encontrado",
+    "errorLoading": "Erro ao carregar movimentações",
+    "errorLoadingItems": "Erro ao carregar itens",
+    "errorDeleting": "Erro ao excluir movimentação", 
+    "errorSaving": "Erro ao salvar movimentação. Por favor, tente novamente.",
+    "deleteConfirm": "Tem certeza que deseja excluir a movimentação de \"{itemName}\"?",
+    "deleteSuccess": "Movimentação excluída com sucesso!",
+    "createSuccess": "Movimentação criada com sucesso!",
+    "updateSuccess": "Movimentação atualizada com sucesso!"
+  },
+  "table": {
+    "searchPlaceholder": "Procure a movimentação que deseja encontrar",
+    "columns": {
+      "name": "Nome",
+      "type": "Tipo", 
+      "quantity": "Qtd",
+      "balance": "Saldo",
+      "reference": "Referência"
+    },
+    "actions": {
+      "view": "Visualizar",
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "pagination": {
+      "page": "Página",
+      "of": "de",
+      "show": "Mostrar",
+      "lines": "Linhas",
+      "records": "Registros"
+    },
+    "movementTypes": {
+      "entrada": "Entrada",
+      "saida": "Saída",
+      "ajuste": "Ajuste", 
+      "transferencia": "Transferência",
+      "pedido": "Pedido",
+      "cancelamento": "Cancelamento"
+    },
+    "reference": {
+      "manual": "Manual",
+      "order": "Pedido",
+      "cancellation": "Cancelamento"
+    },
+    "noName": "Sem nome",
+    "notSpecified": "Não especificado"
+  },
+  "form": {
+    "titleCreate": "Nova Movimentação",
+    "titleEdit": "Atualizar Movimentação", 
+    "subtitleCreate": "Preencha as informações para adicionar",
+    "subtitleEdit": "Preencha as informações para editar",
+    "fields": {
+      "item": "Item",
+      "itemPlaceholder": "Escolha uma Opção",
+      "storageUnit": "Unidade de Armazenamento",
+      "purchaseUnit": "Unidade Compra",
+      "transformationFactor": "Fator de Transformação",
+      "transformationPlaceholder": "Ex: 1 {purchaseUnit} = 0.05 {storageUnit}",
+      "transformationHelp": "1 {purchaseUnit} = {factor} {storageUnit}",
+      "movementType": "Tipo de Movimentação", 
+      "currentQty": "Qtd Atual",
+      "quantity": "Qtd",
+      "quantityPlaceholder": "Digite a quantidade",
+      "newBalance": "Novo Saldo"
+    },
+    "movementTypes": {
+      "entrada": "Entrada",
+      "saida": "Saída", 
+      "ajuste": "Ajuste",
+      "transferencia": "Transferência"
+    },
+    "validation": {
+      "itemRequired": "Item é obrigatório",
+      "movementTypeRequired": "Tipo de movimentação é obrigatório",
+      "quantityRequired": "Quantidade é obrigatória"
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "save": "Salvar",
+      "saving": "Salvando..."
+    }
+  },
+  "details": {
+    "title": "Detalhes da Movimentação",
+    "subtitleManual": "Movimentação manual",
+    "subtitleOrder": "Consumo automatico por pedido", 
+    "subtitleCancellation": "Reversão por cancelamento",
+    "alerts": {
+      "automaticConsumption": "Consumo Automático",
+      "automaticConsumptionText": "Esta movimentação foi gerada automaticamente quando um pedido foi confirmado",
+      "cancellationRefund": "Estorno por Cancelamento",
+      "cancellationRefundText": "Esta movimentação foi gerada pelo cancelamento de um pedido"
+    },
+    "fields": {
+      "item": "Item",
+      "brand": "Marca",
+      "movementType": "Tipo de Movimentação",
+      "orderReference": "Referência do Pedido",
+      "quantity": "Quantidade",
+      "previousBalance": "Saldo Anterior", 
+      "newBalance": "Novo Saldo",
+      "consumptionDetails": "Detalhamento do Consumo",
+      "totalConsumed": "Total Consumido",
+      "movementDate": "Data da Movimentação",
+      "notInformed": "Não informada"
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "edit": "Editar",
+      "loading": "Carregando..."
+    }
+  }
+}

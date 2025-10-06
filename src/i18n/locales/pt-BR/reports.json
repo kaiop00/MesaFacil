@@ -1,0 +1,93 @@
+{
+  "page": {
+    "title": "Relatórios",
+    "subtitle": "Preencha as informações para gerar o relatório",
+    "loading": "Carregando mesas... Por favor, aguarde.",
+    "waitingTables": "Aguarde o carregamento das mesas...",
+    "noTables": "Nenhuma mesa disponível para gerar relatórios.",
+    "errorGenerate": "Erro ao gerar relatório. Tente novamente."
+  },
+  "filter": {
+    "reportType": "Tipo de Relatório",
+    "startDate": "Data Início",
+    "endDate": "Data Fim",
+    "selectReport": "Escolha o tipo de relatório que deseja",
+    "generateButton": "Gerar Relatório",
+    "generating": "Gerando...",
+    "types": {
+      "sales": "Relatório de Vendas",
+      "period": "Relatório por Período",
+      "product": "Relatório por Produto"
+    }
+  },
+  "table": {
+    "titles": {
+      "sales": "Relatório de Vendas",
+      "period": "Relatório por Período", 
+      "product": "Relatório por Produto",
+      "waiter": "Relatório por Garçom"
+    },
+    "period": "Período",
+    "from": "até",
+    "exportPDF": "Exportar PDF",
+    "exportPDFShort": "PDF",
+    "generatingPDF": "Gerando PDF...",
+    "generatingPDFShort": "Gerando...",
+    "pdfSuccess": "PDF gerado com sucesso!",
+    "pdfError": "Erro ao gerar PDF. Tente novamente.",
+    "noData": "Nenhum dado encontrado para o período selecionado"
+  },
+  "tables": {
+    "sales": {
+      "columns": {
+        "orderNumber": "Nº Pedido",
+        "table": "Mesa",
+        "date": "Data",
+        "value": "Valor",
+        "status": "Status"
+      },
+      "tablePrefix": "Mesa"
+    },
+    "period": {
+      "columns": {
+        "date": "Data",
+        "totalOrders": "Total de Pedidos",
+        "totalValue": "Valor Total"
+      }
+    },
+    "product": {
+      "columns": {
+        "product": "Produto",
+        "quantitySold": "Quantidade Vendida",
+        "totalValue": "Valor Total"
+      }
+    },
+    "waiter": {
+      "columns": {
+        "waiter": "Garçom",
+        "ordersAttended": "Nº de Pedidos Atendidos",
+        "totalValueGenerated": "Valor Total Gerado"
+      }
+    }
+  },
+  "status": {
+    "finished": "Finalizado",
+    "pending": "Pendente"
+  },
+  "pdf": {
+    "generatedAt": "Gerado em",
+    "generatedBy": "Gerado por MesaFácil - Sistema de Gestão de Restaurantes",
+    "page": "Página",
+    "of": "de",
+    "summary": {
+      "totalOrders": "Total de Pedidos",
+      "totalValue": "Valor Total",
+      "totalOrdersPeriod": "Total de Pedidos no Período",
+      "totalValuePeriod": "Valor Total do Período",
+      "totalProductsSold": "Total de Produtos Vendidos",
+      "totalValueProducts": "Valor Total em Produtos",
+      "totalOrdersAttended": "Total de Pedidos Atendidos",
+      "totalValueWaiters": "Valor Total Gerado pelos Garçons"
+    }
+  }
+}

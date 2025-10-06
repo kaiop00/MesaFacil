@@ -1,0 +1,122 @@
+{
+  "page": {
+    "title": "Itens",
+    "subtitle": "Gerencie os itens do seu restaurante",
+    "newButton": "Novo Item",
+    "loading": "Carregando...",
+    "errorLoading": "Erro ao carregar itens. Tente novamente.",
+    "searchPlaceholder": "Procure por nome ou marca",
+    "searchLabel": "Procure o item que deseja encontrar",
+    "deleteConfirm": "Tem certeza que deseja excluir o item \"{itemName}\"?",
+    "noItemsFound": "Nenhum item encontrado"
+  },
+  "table": {
+    "columns": {
+      "name": "Nome",
+      "brand": "Marca",
+      "stock": "Estoque"
+    },
+    "actions": {
+      "view": "Visualizar",
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "pagination": {
+      "page": "Página",
+      "of": "de",
+      "show": "Mostrar",
+      "lines": "Linhas",
+      "records": "Registros"
+    },
+    "stockStatus": {
+      "low": "Estoque baixo",
+      "medium": "Estoque médio",
+      "high": "Estoque alto"
+    },
+    "noBrand": "-"
+  },
+  "form": {
+    "titleCreate": "Novo Item",
+    "titleEdit": "Editar Item",
+    "subtitleCreate": "Preencha as informações para adicionar",
+    "subtitleEdit": "Preencha as informações para editar",
+    "fields": {
+      "name": "Nome",
+      "namePlaceholder": "Nome do item",
+      "nameRequired": "O nome do item é obrigatório",
+      "brand": "Marca",
+      "brandPlaceholder": "Marca do item",
+      "storageUnit": "Unidade de Armazenamento",
+      "purchaseUnit": "Unidade Compra",
+      "currentStock": "Estoque Atual",
+      "currentStockPlaceholder": "Quantidade em estoque",
+      "currentStockRequired": "O estoque atual é obrigatório",
+      "currentStockInvalid": "Estoque inválido",
+      "lowStock": "Estoque Baixo",
+      "mediumStock": "Estoque Médio",
+      "highStock": "Estoque Alto"
+    },
+    "units": {
+      "storage": {
+        "unidade": "Unidade",
+        "quilograma": "Quilograma",
+        "grama": "Grama",
+        "litro": "Litro",
+        "mililitro": "Mililitro"
+      },
+      "purchase": {
+        "unidade": "Unidade",
+        "caixa": "Caixa",
+        "pacote": "Pacote",
+        "fardo": "Fardo"
+      }
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "save": "Salvar"
+    },
+    "required": "*"
+  },
+  "details": {
+    "title": "Detalhes do Item",
+    "subtitle": "Relação de dados cadastrados do Item",
+    "sections": {
+      "basicInfo": "Informações Básicas",
+      "units": "Unidades",
+      "stock": "Estoque",
+      "consumption": "Consumo por Pedidos",
+      "recentMovements": "Movimentações Recentes"
+    },
+    "fields": {
+      "name": "Nome",
+      "brand": "Marca",
+      "storageUnit": "Unidade de Armazenamento",
+      "purchaseUnit": "Unidade de Compra",
+      "currentStock": "Estoque Atual",
+      "lowStock": "Estoque Baixo",
+      "mediumStock": "Estoque Médio",
+      "highStock": "Estoque Alto"
+    },
+    "stockStatus": {
+      "low": "Baixo",
+      "medium": "Médio",
+      "high": "Alto",
+      "veryHigh": "Muito Alto"
+    },
+    "consumption": {
+      "totalConsumed": "Total Consumido",
+      "movements": "Movimentações"
+    },
+    "movements": {
+      "loading": "Carregando...",
+      "noMovements": "Nenhuma movimentação encontrada",
+      "balance": "Saldo",
+      "order": "Pedido",
+      "noDate": "Data não informada"
+    },
+    "actions": {
+      "close": "Fechar"
+    },
+    "defaultValue": "-"
+  }
+}
