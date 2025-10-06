@@ -1,4 +1,7 @@
-import PedidoInicialImg from "@/assets/images/order/g1.svg";
+import PedidoConfirmadoImg from "@/assets/images/order/g1.svg";
+import PedidoEntregueImg from "@/assets/images/order/g2.svg";
+import RealizarPagamentoImg from "@/assets/images/order/g3.svg";
+import AguardandoGarcomImg from "@/assets/images/order/g4.svg";
 import StepBars from "../components/StepBars";
 import PedidoAndamentoInfo from "../components/PedidoAndamentoInfo";
 import { useEffect, useMemo, useState } from "react";
@@ -60,10 +63,17 @@ export default function PedidoClientePage() {
 
     const statusText = {
         0: "Nenhum pedido em andamento",
-        1: "Pedido Confirmado, seu pedido foi enviado para a cozinha e será preparado dentro de alguns minutos",
-        2: "Pedido entregue",
-        3: "Realize o pagamento para finalizar",
-        4: "O garçom está a caminho",
+        1: "Pedido Confirmado, seu pedido foi enviado para a cozinha e será preparado dentro de alguns minutos", //imagem g1
+        2: "Pedido entregue", // imagem g2
+        3: "Realize o pagamento para finalizar", //imagem g3
+        4: "O garçom está a caminho", // imagem g4
+    };
+
+    const stepImageMap = {
+        1: PedidoConfirmadoImg,
+        2: PedidoEntregueImg,
+        3: RealizarPagamentoImg,
+        4: AguardandoGarcomImg,
     };
 
     const handleVoltarParaPedidos = () => {
@@ -122,7 +132,11 @@ export default function PedidoClientePage() {
 
     return (
         <div className="flex flex-col justify-center items-center gap-3 mt-10">
-            <img src={PedidoInicialImg} loading="lazy" alt="Status do pedido" />
+            <img
+                src={stepImageMap[step] || PedidoConfirmadoImg}
+                loading="lazy"
+                alt="Status do pedido"
+            />
             <StepBars currentStep={step} total={4} />
             <div className="px-7 mt-5 text-center">
                 <p>{statusText[step]}</p>
@@ -134,7 +148,7 @@ export default function PedidoClientePage() {
 
             {step === 2 && (
                 <div className="text-sm mt-5 text-center text-gray-700 px-7">
-                    <p>quando terminar de comer clique em finalizar e o garçom irá até sua mesa</p>
+                    <p>quando terminar de comer clique em realizar pagamento</p>
                     <div className="flex flex-col gap-3">
                         <p>Pedido entregue</p>
                         <TotalPedidos
