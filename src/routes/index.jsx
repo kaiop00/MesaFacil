@@ -15,6 +15,7 @@ import RegisterPage from "@/features/auth/pages/register/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
 import MainPage from "@/features/auth/pages/MainPage";
 import PlanSelectionPage from "@/features/auth/pages/planSelection/PlanSelectionPage";
+import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 
 
 // Importação das páginas privadas
@@ -62,6 +63,10 @@ const router = createBrowserRouter([
   {
     path: "/selecionar-plano",
     element: <PlanSelectionPage />,
+  },
+  {
+    path: "/payment-success",
+    element: <PaymentSuccessPage />,
   },
   {
     path: "/politica-privacidade",

@@ -30,6 +30,7 @@ export const PLANS_DATA = [
     duration: '30 dias',
     discount: null,
     isPopular: true,
+    stripePriceId: import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID,
     features: [
       { text: 'Cadastro ilimitado de produtos e mesas', included: true },
       { text: 'Relatórios completos (diário, semanal e mensal)', included: true },
@@ -50,6 +51,7 @@ export const PLANS_DATA = [
     duration: '60 dias',
     discount: 'Economize 11%',
     isPopular: false,
+    stripePriceId: import.meta.env.VITE_STRIPE_BIMONTHLY_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades do Plano Mensal', included: true },
       { text: 'Controle de estoque', included: true },
@@ -69,6 +71,7 @@ export const PLANS_DATA = [
     duration: '90 dias',
     discount: 'Economize 17%',
     isPopular: false,
+    stripePriceId: import.meta.env.VITE_STRIPE_QUARTERLY_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades do Plano Bimestral', included: true },
       { text: 'Personalização de layout (cores, logo e fotos)', included: true },
@@ -87,6 +90,7 @@ export const PLANS_DATA = [
     duration: '180 dias',
     discount: 'Economize 25%',
     isPopular: false,
+    stripePriceId: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades dos planos anteriores', included: true },
       { text: 'Anúncios de promoções', included: true },

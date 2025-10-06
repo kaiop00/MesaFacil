@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Gift, Calendar, Users, DownloadPackage, TrendingUp, Star } from 'react-coolicons';
+import { Gift, Calendar, Users, DownloadPackage, TrendingUp, Star, CreditCard, Settings } from 'react-coolicons';
 import BaseModalWithHeader from '@/components/BaseModalWithHeader';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import { PLANS_DATA } from '@/features/auth/constants/plansData';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/useToast';
+import stripeService from '@/services/stripeService';
 
 const PlanManagementModal = ({ isOpen, onClose }) => {
   const { 
@@ -26,17 +27,59 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
   const handlePlanChange = async (newPlanId) => {
     if (!newPlanId || changingPlan || !user?.uid) return;
 
-    setChangingPlan(true);
+    const newPlanData = PLANS_DATA.find(p => p.id === newPlanId);
+    
+    // If it's a free plan, update directly
+    if (newPlanId === 'free') {
+      setChangingPlan(true);
+      try {
+        await setUserPlan(user.uid, newPlanId);
+        notify(`Alterado para plano gratuito com sucesso!`, 'success');
+        setSelectedNewPlan(null);
+        onClose();
+      } catch (error) {
+        console.error('Erro ao alterar plano:', error);
+        notify('Erro ao alterar o plano. Tente novamente.', 'error');
+      } finally {
+        setChangingPlan(false);
+      }
+      return;
+    }
+
+    // For paid plans, redirect to Stripe Checkout
+    if (newPlanData?.stripePriceId) {
+      setChangingPlan(true);
+      try {
+        await stripeService.redirectToCheckout(
+          newPlanData.stripePriceId,
+          user.email,
+          {
+            userId: user.uid,
+            planId: newPlanId,
+            planName: newPlanData.name
+          }
+        );
+      } catch (error) {
+        console.error('Erro ao redirecionar para pagamento:', error);
+        notify('Erro ao processar o pagamento. Tente novamente.', 'error');
+        setChangingPlan(false);
+      }
+    } else {
+      notify('Plano não disponível para pagamento no momento.', 'error');
+    }
+  };
+
+  const handleBillingPortal = async () => {
+    if (!user?.stripeCustomerId) {
+      notify('Nenhuma informação de faturamento encontrada.', 'warning');
+      return;
+    }
+
     try {
-      await setUserPlan(user.uid, newPlanId);
-      notify(`Plano alterado com sucesso!`, 'success');
-      setSelectedNewPlan(null);
-      onClose();
+      await stripeService.redirectToBillingPortal(user.stripeCustomerId);
     } catch (error) {
-      console.error('Erro ao alterar plano:', error);
-      notify('Erro ao alterar o plano. Tente novamente.', 'error');
-    } finally {
-      setChangingPlan(false);
+      console.error('Erro ao acessar portal de faturamento:', error);
+      notify('Erro ao acessar o portal de faturamento. Tente novamente.', 'error');
     }
   };
 
@@ -136,7 +179,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
               </div>
 
               {/* Limites do Plano */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <div className="text-lg font-semibold text-blue-600">
                     {currentPlan?.features?.maxProducts === 'unlimited' ? '∞' : currentPlan?.features?.maxProducts || 0}
@@ -150,6 +193,19 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
                   <div className="text-xs text-green-600">Mesas</div>
                 </div>
               </div>
+
+              {/* Billing Portal Button */}
+              {currentPlan?.planId !== 'free' && (
+                <div className="flex justify-center">
+                  <button
+                    onClick={handleBillingPortal}
+                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                  >
+                    <Settings size={16} />
+                    Gerenciar Assinatura
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Planos Disponíveis */}
@@ -224,14 +280,25 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
             {selectedNewPlan && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <h4 className="font-semibold text-yellow-800 mb-2">
-                  Confirmar Mudança de Plano
+                  {selectedNewPlan.id === 'free' ? 'Confirmar Mudança de Plano' : 'Confirmar Assinatura'}
                 </h4>
                 <p className="text-sm text-yellow-700 mb-4">
-                  Deseja alterar para o plano <strong>{selectedNewPlan.name}</strong>?
-                  {selectedNewPlan.id === 'free' && currentPlan?.planId !== 'free' && (
-                    <span className="block mt-1 text-red-600">
-                      ⚠️ Ao downgrade para o plano gratuito, algumas funcionalidades serão limitadas.
-                    </span>
+                  {selectedNewPlan.id === 'free' ? (
+                    <>
+                      Deseja alterar para o plano <strong>{selectedNewPlan.name}</strong>?
+                      {currentPlan?.planId !== 'free' && (
+                        <span className="block mt-1 text-red-600">
+                          ⚠️ Ao downgrade para o plano gratuito, algumas funcionalidades serão limitadas.
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Você será redirecionado para o checkout do Stripe para assinar o plano <strong>{selectedNewPlan.name}</strong>.
+                      <span className="block mt-1 text-blue-600">
+                        💳 Valor: R$ {selectedNewPlan.price.toFixed(2)} - Pagamento seguro via Stripe
+                      </span>
+                    </>
                   )}
                 </p>
                 <div className="flex gap-3">
@@ -241,7 +308,14 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
                     className="bg-primary-dynamic hover:bg-primary-dynamic/90 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                   >
                     {changingPlan && <LoadingSpinner size="sm" />}
-                    Confirmar
+                    {selectedNewPlan.id === 'free' ? (
+                      'Confirmar'
+                    ) : (
+                      <>
+                        <CreditCard size={16} />
+                        Pagar com Stripe
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => setSelectedNewPlan(null)}

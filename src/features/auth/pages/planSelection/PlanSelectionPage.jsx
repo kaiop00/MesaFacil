@@ -6,6 +6,7 @@ import PlanCard from '../../components/PlanCard';
 import { PLANS_DATA } from '../../constants/plansData';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/useToast';
+import stripeService from '@/services/stripeService';
 
 export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -31,19 +32,26 @@ export default function PlanSelectionPage() {
         notify('Plano gratuito ativado com sucesso!', 'success');
         navigate('/home', { replace: true });
       } else {
-        // Para planos pagos, salva temporariamente e redireciona para página de pagamento
-        // Por enquanto, vamos simular a ativação do plano pago
-        await setUserPlan(user.uid, selectedPlan.id);
-        notify(`Plano ${selectedPlan.name} ativado com sucesso!`, 'success');
-        navigate('/home', { replace: true });
-        
-        // TODO: Implementar integração com sistema de pagamento
-        // navigate('/pagamento', { state: { plan: selectedPlan } });
+        // Para planos pagos, redireciona para Stripe Checkout
+        if (selectedPlan.stripePriceId) {
+          await stripeService.redirectToCheckout(
+            selectedPlan.stripePriceId,
+            user.email,
+            {
+              userId: user.uid,
+              planId: selectedPlan.id,
+              planName: selectedPlan.name,
+              source: 'plan_selection'
+            }
+          );
+        } else {
+          notify('Plano não disponível para pagamento no momento.', 'error');
+          setIsProcessing(false);
+        }
       }
     } catch (error) {
       console.error('Erro ao processar seleção do plano:', error);
-      notify('Erro ao ativar o plano. Tente novamente.', 'error');
-    } finally {
+      notify('Erro ao processar o plano. Tente novamente.', 'error');
       setIsProcessing(false);
     }
   };
