@@ -1,5 +1,6 @@
 import TableCard from '@/features/order/components/TableCard'
 import { useEffect } from 'react';
+import { useTranslation } from "react-i18next";
 
 const TableSection = ({
   title,
@@ -7,6 +8,7 @@ const TableSection = ({
   items,
   idRestaurante,
 }) => {
+  const { t } = useTranslation('order');
 
   const dotColorMap = {
     livre: 'bg-green-500',
@@ -28,7 +30,7 @@ const TableSection = ({
           href="#"
           className="ml-auto text-sm text-gray-500 hover:underline"
         >
-          Ver Todos
+          {t('common.actions')}
         </a>
       </header>
 

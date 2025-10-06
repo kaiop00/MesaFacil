@@ -4,6 +4,7 @@ import movements from "./movements.json";
 import items from "./items.json";
 import reports from "./reports.json";
 import foodList from "./foodList.json";
+import order from "./order.json";
 
 export default {
   dashboard,
@@ -12,4 +13,5 @@ export default {
   items,
   reports,
   foodList,
+  order,
 };

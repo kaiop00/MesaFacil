@@ -1,0 +1,159 @@
+{
+  "page": {
+    "title": "Digital Order",
+    "subtitle": "Manage your restaurant orders",
+    "searchTables": "Search tables...",
+    "loading": "Loading...",
+    "errorLoading": "Error loading data"
+  },
+  "tables": {
+    "title": "Tables",
+    "noTables": "No tables found",
+    "tableLetter": "Table {{letter}}",
+    "tableNumber": "{{number}}",
+    "addTable": "Add Table",
+    "status": {
+      "livre": "Available",
+      "andamento": "In Progress", 
+      "entregue": "Delivered"
+    },
+    "actions": {
+      "newOrder": "New Order",
+      "viewOrder": "View Order",
+      "finish": "Finish",
+      "free": "Free Table"
+    }
+  },
+  "modals": {
+    "newOrder": {
+      "title": "New Order",
+      "selectTable": "Select Table",
+      "table": "Table:",
+      "customer": "Customer Name:",
+      "customerPlaceholder": "Enter customer name...",
+      "observations": "Observations",
+      "observationsPlaceholder": "Additional observations...",
+      "buttons": {
+        "cancel": "Cancel",
+        "create": "Create Order"
+      }
+    },
+    "addItems": {
+      "title": "Add Items",
+      "searchItems": "Search items...",
+      "noItems": "No items found",
+      "categories": {
+        "all": "All",
+        "food": "Food",
+        "drinks": "Drinks",
+        "desserts": "Desserts"
+      },
+      "itemDetails": {
+        "price": "Price:",
+        "ingredients": "Ingredients:",
+        "quantity": "Quantity:",
+        "observations": "Observations:",
+        "observationsPlaceholder": "Special observations..."
+      },
+      "buttons": {
+        "addToOrder": "Add to Order",
+        "close": "Close",
+        "cancel": "Cancel",
+        "add": "Add"
+      }
+    },
+    "orderDetail": {
+      "title": "Order Details",
+      "customer": "Customer:",
+      "table": "Table:",
+      "status": "Status:",
+      "observations": "Observations",
+      "orderItems": "Order Items",
+      "noItems": "No items in order",
+      "total": "Total:",
+      "buttons": {
+        "addItems": "Add Items",
+        "finishOrder": "Finish Order", 
+        "close": "Close"
+      }
+    }
+  },
+  "orderItems": {
+    "item": "Item",
+    "quantity": "Qty",
+    "unitPrice": "Unit Price",
+    "total": "Total",
+    "actions": "Actions",
+    "edit": "Edit",
+    "remove": "Remove",
+    "editQuantity": "Edit Quantity",
+    "newQuantity": "New Quantity:",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "cardapio": {
+    "selectCategory": "Select Category",
+    "allCategories": "All Categories",
+    "searchPlaceholder": "Search menu...",
+    "noResults": "No results found",
+    "price": "Price: $ {{price}}",
+    "ingredients": "Ingredients: {{ingredients}}",
+    "outOfStock": "Out of stock",
+    "lowStock": "Low stock",
+    "availableStock": "Available stock"
+  },
+  "forms": {
+    "validation": {
+      "required": "This field is required",
+      "customerRequired": "Customer name is required",
+      "tableRequired": "Please select a table",
+      "quantityRequired": "Quantity is required",
+      "quantityMin": "Quantity must be greater than 0",
+      "quantityMax": "Maximum quantity: {{max}}"
+    }
+  },
+  "messages": {
+    "success": {
+      "orderCreated": "Order created successfully!",
+      "itemAdded": "Item added to order!",
+      "itemUpdated": "Item updated successfully!",
+      "itemRemoved": "Item removed from order!",
+      "orderFinished": "Order finished successfully!",
+      "tableFreed": "Table freed successfully!"
+    },
+    "error": {
+      "createOrder": "Error creating order",
+      "addItem": "Error adding item",
+      "updateItem": "Error updating item", 
+      "removeItem": "Error removing item",
+      "finishOrder": "Error finishing order",
+      "freeTable": "Error freeing table",
+      "loadData": "Error loading data",
+      "stockNotAvailable": "Insufficient stock for this item"
+    },
+    "confirm": {
+      "removeItem": "Are you sure you want to remove this item?",
+      "finishOrder": "Are you sure you want to finish this order?",
+      "freeTable": "Are you sure you want to free this table?"
+    }
+  },
+  "currency": {
+    "symbol": "$",
+    "format": "{{symbol}} {{value}}"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "remove": "Remove",
+    "add": "Add",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "total": "Total",
+    "quantity": "Quantity",
+    "price": "Price",
+    "actions": "See all"
+  }
+}

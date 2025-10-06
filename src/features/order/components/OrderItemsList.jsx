@@ -1,8 +1,10 @@
 // src/features/order/components/OrderItemsList.jsx
 import React, { useState } from "react";
 import { TrashFull, CaretDownMd } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 
 const OrderItemsList = ({ items, updateItemQuantity, removeItem, readOnly = false }) => {
+    const { t } = useTranslation('order');
     const [expandedItemIds, setExpandedItemIds] = useState([]);
 
     const toggleExpand = (id) => {
@@ -86,7 +88,7 @@ const OrderItemsList = ({ items, updateItemQuantity, removeItem, readOnly = fals
 
                                 {item.alergias?.length > 0 && (
                                     <>
-                                        <p className="font-bold mb-1">Alergias</p>
+                                        <p className="font-bold mb-1">{t('cardapio.ingredients')}</p>
                                         <div className="flex gap-2 flex-wrap">
                                             {item.alergias.map((alergia, idx) => (
                                                 <div
@@ -107,7 +109,7 @@ const OrderItemsList = ({ items, updateItemQuantity, removeItem, readOnly = fals
 
             {items.length === 0 && (
                 <div className="h-32 border border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400">
-                    Nenhum item adicionado ainda
+                    {t('modals.orderDetail.noItems')}
                 </div>
             )}
         </div>
