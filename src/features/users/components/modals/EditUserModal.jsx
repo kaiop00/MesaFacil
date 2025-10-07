@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { EditPencil01 } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/useToast";
 import UserModal from "./UserModal";
 import updateUserInFirestore from "../../services/updateUserInFirestore";
 
 const EditUserModal = ({ isOpen, onClose, user, onUserUpdated }) => {
+  const { t } = useTranslation();
   const { notify } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async ({ formData, permissions }) => {
     if (!user?.id) {
-      throw new Error('ID do usuário não encontrado');
+      throw new Error(t("users:messages.userIdNotFound"));
     }
 
     try {
@@ -23,7 +25,7 @@ const EditUserModal = ({ isOpen, onClose, user, onUserUpdated }) => {
         status: formData.status || 'Ativo'
       });
 
-      notify('Usuário atualizado com sucesso', 'success');
+      notify(t("users:messages.updateSuccess"), 'success');
       onClose();
       
       if (onUserUpdated) {
@@ -43,8 +45,8 @@ const EditUserModal = ({ isOpen, onClose, user, onUserUpdated }) => {
       onClose={onClose}
       user={user}
       mode="edit"
-      title="Editar Usuário"
-      subTitle="Atualize as informações do usuário."
+      title={t("users:modal.edit.title")}
+      subTitle={t("users:modal.edit.subtitle")}
       icon={EditPencil01}
       onSubmit={handleSubmit}
       isLoading={isLoading}

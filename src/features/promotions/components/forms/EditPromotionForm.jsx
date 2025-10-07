@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAll } from '@/services/firebase/firestoreService';
@@ -11,6 +12,7 @@ const EditPromotionForm = ({
   onSubmit,
   onCancel,
 }) => {
+  const { t } = useTranslation();
   const [selectedFoods, setSelectedFoods] = useState(promotion?.itens || []);
   const [displayValue, setDisplayValue] = useState('');
   const [menuItems, setMenuItems] = useState([]);
@@ -117,12 +119,12 @@ const EditPromotionForm = ({
     e.preventDefault();
 
     if (selectedFoods.length === 0) {
-      notify('Selecione pelo menos um item do cardápio', 'error');
+      notify(t('promotions:messages.noItems'), 'error');
       return;
     }
 
     if (!formData.valor || formData.valor <= 0) {
-      notify('O valor da promoção deve ser maior que zero', 'error');
+      notify(t('promotions:messages.invalidValue'), 'error');
       return;
     }
 
@@ -141,7 +143,7 @@ const EditPromotionForm = ({
     <form onSubmit={handleSubmit} className="font-inter space-y-6">
       <section>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Nome da Promoção <span className="text-gray-400">(Opcional)</span>
+          {t('promotions:form.name')}
         </label>
         <input
           type="text"
@@ -149,13 +151,13 @@ const EditPromotionForm = ({
           value={formData.nome || ''}
           onChange={handleInputChange}
           className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-          placeholder="Ex: Promoção Especial"
+          placeholder={t('promotions:form.namePlaceholder')}
         />
       </section>
 
       <section>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Itens <span className="text-red-500">*</span>
+          {t('promotions:form.items')}
         </label>
 
         <div className="relative">
@@ -163,7 +165,7 @@ const EditPromotionForm = ({
             <input
               type="text"
               className="w-full border border-gray-300 border-r-0 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-              placeholder="Buscar itens..."
+              placeholder={t('promotions:form.searchItems')}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -184,7 +186,7 @@ const EditPromotionForm = ({
           {isDropdownOpen && (
             <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
               {filteredFoods.length === 0
-                ? (<div className="px-4 py-2 text-gray-500">Nenhum item encontrado</div>)
+                ? (<div className="px-4 py-2 text-gray-500">{t('promotions:form.noItemsFound')}</div>)
                 : (filteredFoods.map((food) => (
                   <div
                     key={food.id}
@@ -265,7 +267,7 @@ const EditPromotionForm = ({
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Valor Total dos Itens
+            {t('promotions:form.totalValue')}
           </label>
           <div className="relative rounded-md shadow-sm mt-1 h-12">
             <input
@@ -279,7 +281,7 @@ const EditPromotionForm = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Valor da Promoção <span className="text-red-500">*</span>
+            {t('promotions:form.promotionValue')}
           </label>
           <div className="mt-1 relative rounded-md shadow-sm h-12">
             <input
@@ -302,7 +304,7 @@ const EditPromotionForm = ({
           disabled={isSending}
           className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
         >
-          Cancelar
+          {t('promotions:form.cancel')}
         </button>
 
         <button
@@ -310,7 +312,7 @@ const EditPromotionForm = ({
           className="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 focus:outline-none disabled:opacity-50"
           disabled={selectedFoods.length === 0 || isSending}
         >
-          {isSending ? 'Atualizando...' : 'Atualizar Promoção'}
+          {isSending ? t('promotions:form.updating') : t('promotions:form.update')}
         </button>
       </section>
     </form>

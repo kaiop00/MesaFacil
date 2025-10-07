@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
 import { logout } from "@/services/firebase/authService";
@@ -13,8 +14,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import PixConfigModal from "@/features/config/components/modals/PixConfigModal";
 
 const Header = () => {
+  const { t, i18n } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
+  const [isLanguageSubMenuOpen, setIsLanguageSubMenuOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
@@ -28,11 +31,19 @@ const Header = () => {
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
 
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('language', lng);
+    setIsDropdownOpen(false);
+    setIsLanguageSubMenuOpen(false);
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
         setIsSubMenuOpen(false);
+        setIsLanguageSubMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -87,7 +98,7 @@ const Header = () => {
                 onMouseEnter={() => setIsSubMenuOpen(true)}
               >
                 <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                  Configurações
+                  {t("common:header.settings")}
                 </button>
 
                 {isSubMenuOpen && (
@@ -100,7 +111,7 @@ const Header = () => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Mesas
+                      {t("common:header.tables")}
                     </button>
                     <button
                       onClick={() => {
@@ -110,7 +121,7 @@ const Header = () => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Pix
+                      {t("common:header.pix")}
                     </button>
                     <button
                       onClick={() => {
@@ -120,7 +131,7 @@ const Header = () => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Foto/Cores
+                      {t("common:header.photoColors")}
                     </button>
                     <button
                       onClick={() => {
@@ -130,8 +141,41 @@ const Header = () => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Categorias
+                      {t("common:header.categories")}
                     </button>
+
+                    <hr className="my-1" />
+
+                    {/* Submenu Idioma dentro de Configurações */}
+                    <div
+                      className="relative"
+                      onMouseEnter={() => setIsLanguageSubMenuOpen(true)}
+                    >
+                      <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        {t("common:header.language")}
+                      </button>
+
+                      {isLanguageSubMenuOpen && (
+                        <div className="absolute top-0 right-full mr-1 w-48 bg-white rounded-md shadow-lg py-1 border z-50">
+                          <button
+                            onClick={() => changeLanguage("pt-BR")}
+                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                              i18n.language === "pt-BR" ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                            }`}
+                          >
+                            {t("common:languages.pt-BR")}
+                          </button>
+                          <button
+                            onClick={() => changeLanguage("en")}
+                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                              i18n.language === "en" ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                            }`}
+                          >
+                            {t("common:languages.en")}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -150,7 +194,7 @@ const Header = () => {
                 }}
                 className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
               >
-                Sair
+                {t("common:header.logout")}
               </a>
             </div>
           )}

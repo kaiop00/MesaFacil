@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { UserAdd } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/contexts/AuthContext";
 import UserModal from "./UserModal";
@@ -7,6 +8,7 @@ import registerUserOnFirebase from "./handlers/registerUserOnFirebase";
 import addUserToFirestore from "../../services/addUserToFirestore";
 
 const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
+  const { t } = useTranslation();
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -15,7 +17,7 @@ const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
     try {
       setIsLoading(true);
       
-      if (!idRestaurante) throw new Error('ID do restaurante não encontrado');
+      if (!idRestaurante) throw new Error(t("users:messages.error"));
       
       const response = await registerUserOnFirebase(formData);
       const data = await response.json();
@@ -23,12 +25,12 @@ const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
       if (response.ok) {
         const uid = data.localId;
         await addUserToFirestore(uid, formData.name, formData.email, permissions, idRestaurante);
-        notify('Usuário adicionado com sucesso', 'success');
+        notify(t("users:messages.addSuccess"), 'success');
         onClose();
         if (onUserAdded) onUserAdded();
       } else {
         if (response.status === 400 && data.error.message === 'EMAIL_EXISTS') {
-          throw new Error('Email já cadastrado');
+          throw new Error(t("users:messages.emailExists"));
         }
         throw new Error(JSON.stringify(`${response.status} ${response.statusText}`));
       }
@@ -45,8 +47,8 @@ const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
       isOpen={isOpen}
       onClose={onClose}
       mode="create"
-      title="Novo Usuário"
-      subTitle="Preencha as informações para adicionar."
+      title={t("users:modal.new.title")}
+      subTitle={t("users:modal.new.subtitle")}
       icon={UserAdd}
       onSubmit={handleSubmit}
       isLoading={isLoading}

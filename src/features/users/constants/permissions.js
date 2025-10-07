@@ -1,3 +1,34 @@
+// This function should be called with t() from useTranslation hook
+export const getPermissions = (t) => ({
+  [t('users:permissionCategories.general')]: [
+    { id: 'view_dashboard', label: t('users:permissionLabels.view_dashboard') },
+    { id: 'edit_profile', label: t('users:permissionLabels.edit_profile') },
+  ],
+  [t('users:permissionCategories.users')]: [
+    { id: 'view_users', label: t('users:permissionLabels.view_users') },
+    { id: 'create_users', label: t('users:permissionLabels.create_users') },
+    { id: 'edit_users', label: t('users:permissionLabels.edit_users') },
+    { id: 'delete_users', label: t('users:permissionLabels.delete_users') },
+  ],
+  [t('users:permissionCategories.menu')]: [
+    { id: 'view_menu', label: t('users:permissionLabels.view_menu') },
+    { id: 'create_menu_items', label: t('users:permissionLabels.create_menu_items') },
+    { id: 'edit_menu_items', label: t('users:permissionLabels.edit_menu_items') },
+    { id: 'delete_menu_items', label: t('users:permissionLabels.delete_menu_items') },
+  ],
+  [t('users:permissionCategories.orders')]: [
+    { id: 'view_orders', label: t('users:permissionLabels.view_orders') },
+    { id: 'create_orders', label: t('users:permissionLabels.create_orders') },
+    { id: 'edit_orders', label: t('users:permissionLabels.edit_orders') },
+    { id: 'cancel_orders', label: t('users:permissionLabels.cancel_orders') },
+  ],
+  [t('users:permissionCategories.reports')]: [
+    { id: 'view_reports', label: t('users:permissionLabels.view_reports') },
+    { id: 'export_reports', label: t('users:permissionLabels.export_reports') },
+  ]
+});
+
+// Legacy static export for backward compatibility
 export const PERMISSIONS = {
   'Geral': [
     { id: 'view_dashboard', label: 'Visualizar Painel' },

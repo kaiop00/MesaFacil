@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { FileDocument, Slider01 } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import UserForm from "./forms/UserForm";
@@ -17,6 +18,7 @@ const UserModal = ({
   isLoading = false,
   children,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('dados-gerais');
   const [permissions, setPermissions] = useState({});
   const [selectAll, setSelectAll] = useState(false);
@@ -65,20 +67,20 @@ const UserModal = ({
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("users:form.name")}</label>
               <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
-                {user.name || 'Não informado'}
+                {user.name || t("users:form.notInformed")}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("users:form.email")}</label>
               <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
-                {user.email || 'Não informado'}
+                {user.email || t("users:form.notInformed")}
               </div>
             </div>
             {user.status && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("users:status")}</label>
                 <div className="p-2">
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${user.status === 'Ativo'
@@ -86,7 +88,7 @@ const UserModal = ({
                       : 'bg-gray-100 text-gray-800'
                       }`}
                   >
-                    {user.status}
+                    {user.status === 'Ativo' ? t("users:active") : t("users:inactive")}
                   </span>
                 </div>
               </div>
@@ -147,7 +149,7 @@ const UserModal = ({
               }`}
           >
             <FileDocument className="w-4 h-4 mr-2" />
-            Dados Gerais
+            {t("users:tabs.generalData")}
           </button>
 
           <button
@@ -163,7 +165,7 @@ const UserModal = ({
               }`}
           >
             <Slider01 className="w-4 h-4 mr-2" />
-            Permissões
+            {t("users:tabs.permissions")}
           </button>
         </section>
 
@@ -177,7 +179,7 @@ const UserModal = ({
                 disabled={isLoading}
                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
               >
-                {activeTab === 'dados-gerais' ? 'Cancelar' : 'Voltar'}
+                {activeTab === 'dados-gerais' ? t("users:buttons.cancel") : t("users:buttons.back")}
               </button>
               <button
                 type="submit"
@@ -185,10 +187,10 @@ const UserModal = ({
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
               >
                 {isLoading
-                  ? 'Salvando...'
+                  ? t("users:buttons.saving")
                   : activeTab === 'dados-gerais'
-                    ? 'Próximo'
-                    : 'Salvar'}
+                    ? t("users:buttons.next")
+                    : t("users:buttons.save")}
               </button>
             </div>
           </form>
@@ -201,7 +203,7 @@ const UserModal = ({
                 onClick={onClose}
                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
               >
-                Fechar
+                {t("users:buttons.close")}
               </button>
             </div>
           </>

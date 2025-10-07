@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MoreHorizontal, EditPencil01, TrashEmpty } from "react-coolicons";
+import { useTranslation } from 'react-i18next';
 
 const PromotionCard = ({
   id,
@@ -10,6 +11,7 @@ const PromotionCard = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -77,14 +79,14 @@ const PromotionCard = ({
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <EditPencil01 className="mr-2 text-gray-500" size={16} />
-                Editar
+                {t('promotions:actions.edit')}
               </button>
               <button
                 onClick={handleDelete}
                 className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
               >
                 <TrashEmpty className="mr-2" size={16} />
-                Excluir
+                {t('promotions:actions.delete')}
               </button>
             </div>
           )}

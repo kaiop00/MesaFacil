@@ -1,6 +1,9 @@
+import { useTranslation } from "react-i18next";
 import UserModal from "./UserModal";
 
 const UserDetailsModal = ({ isOpen, onClose, user }) => {
+  const { t } = useTranslation();
+  
   if (!user) return null;
 
   return (
@@ -9,7 +12,7 @@ const UserDetailsModal = ({ isOpen, onClose, user }) => {
       onClose={onClose}
       user={user}
       mode="view"
-      title="Detalhes do Usuário"
+      title={t("users:modal.details.title")}
     />
   );
 };
