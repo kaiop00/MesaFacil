@@ -1,15 +1,13 @@
-/**
- * MesaFácil Stripe Integration - Firebase Cloud Functions
- * 
- * This file contains all the Stripe-related Cloud Functions for MesaFácil
- * using the simplified webhook-free approach.
- */
-
 const {setGlobalOptions} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+
+// Load environment variables for local development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
@@ -18,6 +16,21 @@ if (!admin.apps.length) {
 
 // Define secrets for Stripe (will be configured via Firebase CLI)
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
+
+// Helper function to get Stripe secret key
+function getStripeSecretKey() {
+  // For local development, use environment variable
+  if (process.env.STRIPE_SECRET_KEY) {
+    logger.info('Using STRIPE_SECRET_KEY from environment variable (local dev)');
+    return process.env.STRIPE_SECRET_KEY;
+  }
+  // For production, use Firebase secret
+  if (stripeSecretKey.value()) {
+    logger.info('Using STRIPE_SECRET_KEY from Firebase secret (production)');
+    return stripeSecretKey.value();
+  }
+  throw new Error('STRIPE_SECRET_KEY not configured');
+}
 
 // Set global options for cost control
 setGlobalOptions({ maxInstances: 10 });
@@ -106,7 +119,7 @@ exports.createCheckoutSession = onRequest(
           return res.status(405).json({error: "Method not allowed"});
         }
 
-        const stripe = require("stripe")(stripeSecretKey.value());
+        const stripe = require("stripe")(getStripeSecretKey());
         const {priceId, customerEmail, metadata, successUrl, cancelUrl} = req.body;
 
         // Validate required fields
@@ -179,7 +192,7 @@ exports.verifySession = onRequest(
           return res.status(405).json({error: "Method not allowed"});
         }
 
-        const stripe = require("stripe")(stripeSecretKey.value());
+        const stripe = require("stripe")(getStripeSecretKey());
         const sessionId = req.params[0]; // Get session ID from URL path
 
         if (!sessionId) {
@@ -227,7 +240,7 @@ exports.activatePlan = onRequest(
           return res.status(405).json({error: "Method not allowed"});
         }
 
-        const stripe = require("stripe")(stripeSecretKey.value());
+        const stripe = require("stripe")(getStripeSecretKey());
         const {userId, planId, stripeCustomerId, stripeSubscriptionId, sessionId} = req.body;
 
         // Validate required fields
@@ -285,7 +298,7 @@ exports.createPortalSession = onRequest(
           return res.status(405).json({error: "Method not allowed"});
         }
 
-        const stripe = require("stripe")(stripeSecretKey.value());
+        const stripe = require("stripe")(getStripeSecretKey());
         const {customerId, returnUrl} = req.body;
 
         if (!customerId || !returnUrl) {
@@ -323,7 +336,7 @@ exports.getCustomerSubscription = onRequest(
           return res.status(405).json({error: "Method not allowed"});
         }
 
-        const stripe = require("stripe")(stripeSecretKey.value());
+        const stripe = require("stripe")(getStripeSecretKey());
         const customerId = req.params[0]; // Get customer ID from URL path
 
         if (!customerId) {
@@ -368,7 +381,7 @@ exports.cancelSubscription = onRequest(
           return res.status(405).json({error: "Method not allowed"});
         }
 
-        const stripe = require("stripe")(stripeSecretKey.value());
+        const stripe = require("stripe")(getStripeSecretKey());
         const subscriptionId = req.params[0]; // Get subscription ID from URL path
 
         if (!subscriptionId) {
