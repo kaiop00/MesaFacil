@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
 import CarrinhoFooter from "../layout/CarrinhoFooter";
@@ -10,6 +11,9 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 export default function SacolaPage() {
     const { notify } = useToast();
     const { mesaId, idRestaurante } = useCliente();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { slug } = useParams();
     const {
         carrinhoItems,
         limparCarrinho,
@@ -39,6 +43,9 @@ export default function SacolaPage() {
             );
             notify("Pedido Enviado Com sucesso", "success");
             limparCarrinho();
+            const search = location.search || "";
+            const target = slug ? `/mesa/${slug}/pedido${search}` : `../pedido${search}`;
+            navigate(target, { replace: true });
         } catch (error) {
             console.error("Erro ao enviar pedido: ", error);
             notify("Erro ao enviar pedido", "error");

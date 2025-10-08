@@ -1,6 +1,9 @@
 import { User01, Mail, Lock } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 
 const UserForm = ({ formData, setFormData, isEditing = false }) => {
+  const { t } = useTranslation();
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -13,7 +16,7 @@ const UserForm = ({ formData, setFormData, isEditing = false }) => {
     <div className="space-y-4">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Nome
+          {t("users:form.name")}
         </label>
 
         <div className="relative">
@@ -28,7 +31,7 @@ const UserForm = ({ formData, setFormData, isEditing = false }) => {
             value={formData.name}
             onChange={handleInputChange}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
-            placeholder="Digite o nome completo"
+            placeholder={t("users:form.namePlaceholder")}
             required
           />
         </div>
@@ -36,7 +39,7 @@ const UserForm = ({ formData, setFormData, isEditing = false }) => {
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          E-mail
+          {t("users:form.email")}
         </label>
 
         <div className="relative">
@@ -52,7 +55,7 @@ const UserForm = ({ formData, setFormData, isEditing = false }) => {
             value={formData.email}
             onChange={handleInputChange}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 disabled:bg-gray-100"
-            placeholder="exemplo@email.com"
+            placeholder={t("users:form.emailPlaceholder")}
             required
           />
         </div>
@@ -61,7 +64,7 @@ const UserForm = ({ formData, setFormData, isEditing = false }) => {
       {!isEditing && (
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Senha
+            {t("users:form.password")}
           </label>
 
           <div className="relative">
@@ -76,7 +79,7 @@ const UserForm = ({ formData, setFormData, isEditing = false }) => {
               value={formData.password || ''}
               onChange={handleInputChange}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
-              placeholder="•••••••"
+              placeholder={t("users:form.passwordPlaceholder")}
               required={!isEditing}
             />
           </div>

@@ -1,0 +1,17 @@
+{
+  "title": "Notifications",
+  "subtitle": "Today's notifications only",
+  "noNotifications": "No notifications today.",
+  "read": "Read",
+  "actions": "Actions",
+  "details": "Details",
+  "markAsRead": "Mark as Read",
+  "marking": "Marking…",
+  "markAllAsRead": "Mark All as Read",
+  "table": "Table",
+  "requestedService": "requested service",
+  "newOrder": "New order arrived - Order from table",
+  "reason": "Reason",
+  "waiterCall": "Waiter call",
+  "alreadyRead": "Already read"
+}

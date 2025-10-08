@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { House02, MoreHorizontal } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
 // import { finalizarPedido } from "@/features/order/services/orderService";
@@ -14,6 +15,7 @@ const TableCard = ({
   mesa,          // ✅ objeto real
   idRestaurante
 }) => {
+  const { t } = useTranslation('order');
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ title: "", message: "" });
@@ -68,7 +70,7 @@ const TableCard = ({
       return;
     } else if (mesa?.status === "entregue") {
       setModalConfig({
-        title: "Finalizar Pedido",
+        title: t('messages.confirm.finishOrder'),
         message: "Você tem certeza que deseja finalizar esse pedido? Esta é uma ação irreversível e vai levar para tela de pagamento do pedido"
       });
     }
@@ -107,7 +109,7 @@ const TableCard = ({
 
         {/* conteúdo */}
         <div className="mt-4">
-          <h3 className="text-lg font-semibold text-gray-900">Mesa {numero}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('tables.tableLetter', { letter: numero })}</h3>
 
           {status !== "livre" && (
             <>

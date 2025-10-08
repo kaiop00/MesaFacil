@@ -5,6 +5,8 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import ptBRTranslations from "./locales/pt-BR";
 import enTranslations from "./locales/en";
 
+const savedLanguage = localStorage.getItem('language');
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -17,6 +19,7 @@ i18n
         ...enTranslations,
       },
     },
+    lng: savedLanguage || undefined,
     fallbackLng: "pt-BR",
     defaultNS: "common",
     interpolation: {

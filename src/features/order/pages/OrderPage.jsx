@@ -10,8 +10,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic"; // ✅ seu spinner
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const OrderPage = () => {
+  const { t } = useTranslation('order');
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
   const [isAddItemsModalOpen, setIsAddItemsModalOpen] = useState(false);
   const [selectedTable, setSelectedtable] = useState(null);
@@ -73,33 +75,33 @@ const OrderPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 space-y-12">
 
           <CardHeader
-            title="Produtos"
-            subtitle="Gerencie os produtos da sua loja"
+            title={t('page.title')}
+            subtitle={t('page.subtitle')}
             onNewClick={handleNew}
-            buttonTitle="Novo Pedido"
+            buttonTitle={t('tables.actions.newOrder')}
           />
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-500">
               <LoadingSpinnerDynamic size={10} />
-              <p className="mt-4">Carregando mesas e pedidos...</p>
+              <p className="mt-4">{t('page.loading')}</p>
             </div>
           ) : (
             <>
               <TableSection
-                title="Pedidos Entregues"
+                title={t('tables.status.entregue')}
                 status="entregue"
                 items={mesasEntreguesDisplay}
                 idRestaurante={idRestaurante}
               />
               <TableSection
-                title="Pedidos em Andamento"
+                title={t('tables.status.andamento')}
                 status="andamento"
                 items={mesasAndamentoDisplay}
                 idRestaurante={idRestaurante}
               />
               <TableSection
-                title="Mesas Livres"
+                title={t('tables.status.livre')}
                 status="livre"
                 items={mesasLivresDisplay}
                 idRestaurante={idRestaurante}

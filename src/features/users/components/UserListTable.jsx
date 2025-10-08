@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronRight, SearchMagnifyingGlass } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import UserListItem from "@/features/users/components/UserListItem";
 
 const UserListTable = ({
@@ -16,11 +17,13 @@ const UserListTable = ({
   onDeactivateClick,
   onActivateClick
 }) => {
+  const { t } = useTranslation();
+  
   // State quando estiver carregando dados
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        Carregando...
+        {t("users:loading")}
       </div>
     );
 
@@ -50,13 +53,13 @@ const UserListTable = ({
         <header className="mb-6">
           <form className="relative max-w-md">
             <label htmlFor="search" className="sr-only">
-              Procure o usuário que deseja encontrar
+              {t("users:searchPlaceholder")}
             </label>
 
             <input
               type="search"
               id="search"
-              placeholder="Procure por nome ou e-mail"
+              placeholder={t("users:searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full pl-4 pr-12 py-3
@@ -73,7 +76,7 @@ const UserListTable = ({
 
         {filteredUsers.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">Nenhum usuário encontrado</p>
+            <p className="text-gray-500">{t("users:noUsersFound")}</p>
           </div>
         ) : (
           <>
@@ -82,17 +85,17 @@ const UserListTable = ({
                 <div className="grid grid-cols-4 gap-4 px-6 py-4 
                 bg-gray-50 border-b border-gray-200">
                   <div className="flex items-center text-sm font-medium text-gray-600">
-                    Nome
+                    {t("users:name")}
                     <ChevronDown className="ml-1 w-4 h-4" />
                   </div>
 
                   <div className="flex items-center text-sm font-medium text-gray-600">
-                    E-mail
+                    {t("users:email")}
                     <ChevronDown className="ml-1 w-4 h-4" />
                   </div>
 
                   <div className="flex items-center text-sm font-medium text-gray-600">
-                    Status
+                    {t("users:status")}
                     <ChevronDown className="ml-1 w-4 h-4" />
                   </div>
 
@@ -115,7 +118,7 @@ const UserListTable = ({
                     </>
                   ) : (
                     <div className="text-center py-10 text-gray-500">
-                      Nenhum usuário encontrado.
+                      {t("users:noUsersFound")}
                     </div>
                   )}
                 </div>
@@ -124,7 +127,7 @@ const UserListTable = ({
 
             <footer className="flex flex-wrap items-center justify-between gap-4 mt-6 sm:mx-6">
               <p className="text-sm text-gray-600">
-                Página {currentPage} de {totalPages}
+                {t("users:page")} {currentPage} {t("users:of")} {totalPages}
               </p>
 
               <nav className="flex flex-wrap items-center space-x-4 gap-4">
@@ -147,7 +150,7 @@ const UserListTable = ({
                 </div>
                 <div className="flex items-center space-x-2">
                   <label htmlFor="itemsPerPage" className="text-sm text-zinc-500">
-                    Mostrar
+                    {t("users:show")}
                   </label>
 
                   <select
@@ -156,14 +159,14 @@ const UserListTable = ({
                     onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
                     className="border border-gray-300 rounded-lg p-3 text-sm text-yellow-500 bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   >
-                    <option value={10}>10 Linhas</option>
-                    <option value={25}>25 Linhas</option>
-                    <option value={50}>50 Linhas</option>
-                    <option value={100}>100 Linhas</option>
+                    <option value={10}>10 {t("users:lines")}</option>
+                    <option value={25}>25 {t("users:lines")}</option>
+                    <option value={50}>50 {t("users:lines")}</option>
+                    <option value={100}>100 {t("users:lines")}</option>
                   </select>
 
                   <span className="text-sm text-zinc-500">
-                    de {filteredUsers.length} Registros
+                    {t("users:of")} {filteredUsers.length} {t("users:records")}
                   </span>
                 </div>
               </nav>

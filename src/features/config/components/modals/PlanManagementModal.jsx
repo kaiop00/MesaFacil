@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gift, Calendar, Users, DownloadPackage, TrendingUp, Star, CreditCard, Settings } from 'react-coolicons';
+import { Gift, Calendar, Users, DownloadPackage, TrendingUp, Star, CreditCard01, Settings } from 'react-coolicons';
 import BaseModalWithHeader from '@/components/BaseModalWithHeader';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { useAuth } from '@/contexts/AuthContext';
@@ -312,7 +312,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
                       'Confirmar'
                     ) : (
                       <>
-                        <CreditCard size={16} />
+                        <CreditCard01 size={16} />
                         Pagar com Stripe
                       </>
                     )}

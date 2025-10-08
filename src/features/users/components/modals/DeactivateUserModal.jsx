@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
+import { useTranslation } from 'react-i18next';
 import { useToast } from "@/hooks/useToast";
 
 const DeactivateUserModal = ({ isOpen, user, onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const { notify } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,12 +19,12 @@ const DeactivateUserModal = ({ isOpen, user, onClose, onSuccess }) => {
         updatedAt: new Date().toISOString()
       });
       
-      notify('Usuário desativado com sucesso!', 'success');
+      notify(t('users:messages.deactivateSuccess'), 'success');
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error deactivating user:', error);
-      notify('Erro ao desativar usuário. Tente novamente.', 'error');
+      notify(t('users:messages.deactivateError'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -35,11 +37,13 @@ const DeactivateUserModal = ({ isOpen, user, onClose, onSuccess }) => {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Desativar Usuário
+            {t('users:modal.deactivate.title')}
           </h3>
+          <p className="text-gray-600 mb-2">
+            {t('users:modal.deactivate.message')} <span className="font-semibold">{user?.name}</span>?
+          </p>
           <p className="text-gray-600 mb-6">
-            Tem certeza que deseja desativar o usuário <span className="font-semibold">{user?.name}</span>?
-            Esta ação não pode ser desfeita.
+            {t('users:modal.deactivate.warning')}
           </p>
           
           <div className="flex justify-end space-x-3">
@@ -49,7 +53,7 @@ const DeactivateUserModal = ({ isOpen, user, onClose, onSuccess }) => {
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              Cancelar
+              {t('common:cancel')}
             </button>
             <button
               type="button"
@@ -57,7 +61,7 @@ const DeactivateUserModal = ({ isOpen, user, onClose, onSuccess }) => {
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
             >
-              {isLoading ? 'Desativando...' : 'Desativar'}
+              {isLoading ? t('users:modal.deactivate.processing') : t('users:modal.deactivate.confirm')}
             </button>
           </div>
         </div>

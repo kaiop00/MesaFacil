@@ -1,0 +1,63 @@
+{
+  "title": "Promoções",
+  "subtitle": "Gerencie as promoções do seu restaurante",
+  "newPromotion": "Nova Promoção",
+  "loading": "Carregando...",
+  "empty": {
+    "title": "Nenhuma promoção cadastrada",
+    "subtitle": "Nenhuma promoção ativa no momento, clique em nova promoção\npara adicionar.",
+    "altText": "Sem promoções"
+  },
+  "card": {
+    "discount": "OFF"
+  },
+  "modal": {
+    "new": {
+      "title": "Nova Promoção",
+      "subtitle": "Preencha as informações para adicionar"
+    },
+    "edit": {
+      "title": "Editar Promoção",
+      "subtitle": "Atualize as informações da promoção"
+    },
+    "details": {
+      "title": "Detalhes da Promoção"
+    }
+  },
+  "form": {
+    "name": "Nome da Promoção",
+    "namePlaceholder": "Ex: Promoção Especial",
+    "optional": "(Opcional)",
+    "required": "*",
+    "items": "Itens",
+    "searchItems": "Buscar itens...",
+    "noItemsFound": "Nenhum item encontrado",
+    "totalValue": "Valor Total dos Itens",
+    "promotionValue": "Valor da Promoção",
+    "valuePlaceholder": "0,00",
+    "cancel": "Cancelar",
+    "saving": "Salvando...",
+    "save": "Salvar Promoção",
+    "updating": "Atualizando...",
+    "update": "Atualizar Promoção"
+  },
+  "actions": {
+    "edit": "Editar",
+    "delete": "Excluir",
+    "deleteConfirm": "Tem certeza que deseja excluir esta promoção?"
+  },
+  "messages": {
+    "createSuccess": "Promoção criada com sucesso!",
+    "createError": "Erro ao criar promoção",
+    "saveError": "Erro ao salvar a promoção. Tente novamente.",
+    "updateSuccess": "Promoção atualizada com sucesso!",
+    "updateError": "Erro ao atualizar a promoção. Tente novamente.",
+    "deleteSuccess": "Promoção excluída com sucesso!",
+    "deleteError": "Erro ao excluir promoção",
+    "notAuthenticated": "Usuário não autenticado. Faça login para criar uma promoção.",
+    "addAtLeastOneItem": "Adicione pelo menos um item à promoção",
+    "setValidValue": "Defina um valor de promoção válido",
+    "selectAtLeastOneItem": "Selecione pelo menos um item do cardápio",
+    "valueGreaterThanZero": "O valor da promoção deve ser maior que zero"
+  }
+}

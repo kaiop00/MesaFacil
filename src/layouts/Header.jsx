@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
 import PlanManagementModal from "@/features/config/components/modals/PlanManagementModal";
@@ -12,15 +13,20 @@ import NotificationsModal from "@/features/notifications/components/Notification
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import PlanInfo from "@/components/PlanInfo";
+import PixConfigModal from "@/features/config/components/modals/PixConfigModal";
 
 const Header = () => {
+  const { t, i18n } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
   const [isPlanManagementModalOpen, setIsPlanManagementModalOpen] = useState(false);
+  const [isPixConfigModalOpen, setIsPixConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
   const { idRestaurante } = useAuth();
@@ -29,11 +35,20 @@ const Header = () => {
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
 
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('language', lng);
+    setIsLanguageDropdownOpen(false);
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
         setIsSubMenuOpen(false);
+      }
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(e.target)) {
+        setIsLanguageDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -52,6 +67,44 @@ const Header = () => {
         {/* Informações do plano (oculto em mobile) */}
         <div className="hidden lg:block">
           <PlanInfo />
+        </div>
+        {/* Language Selector */}
+        <div className="relative" ref={languageDropdownRef}>
+          <button
+            onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <span className="text-xl">
+              {i18n.language === "pt-BR" ? "🇧🇷" : "🇺🇸"}
+            </span>
+            <span className="text-sm font-medium text-gray-700 hidden sm:inline">
+              {i18n.language === "pt-BR" ? "PT-BR" : "EN"}
+            </span>
+            <ChevronDown size={14} className="text-gray-600" />
+          </button>
+
+          {isLanguageDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 border z-50">
+              <button
+                onClick={() => changeLanguage("pt-BR")}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                  i18n.language === "pt-BR" ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                }`}
+              >
+                <span className="mr-2 text-lg">🇧🇷</span>
+                {t("common:languages.pt-BR")}
+              </button>
+              <button
+                onClick={() => changeLanguage("en")}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                  i18n.language === "en" ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                }`}
+              >
+                <span className="mr-2 text-lg">🇺🇸</span>
+                {t("common:languages.en")}
+              </button>
+            </div>
+          )}
         </div>
 
         <button
@@ -93,7 +146,7 @@ const Header = () => {
                 onMouseEnter={() => setIsSubMenuOpen(true)}
               >
                 <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                  Configurações
+                  {t("common:header.settings")}
                 </button>
 
                 {isSubMenuOpen && (
@@ -106,7 +159,17 @@ const Header = () => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Mesas
+                      {t("common:header.tables")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsPixConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      {t("common:header.pix")}
                     </button>
                     <button
                       onClick={() => {
@@ -116,7 +179,7 @@ const Header = () => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Foto/Cores
+                      {t("common:header.photoColors")}
                     </button>
                     <button
                       onClick={() => {
@@ -126,7 +189,7 @@ const Header = () => {
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Categorias
+                      {t("common:header.categories")}
                     </button>
                     <button
                       onClick={() => {
@@ -156,7 +219,7 @@ const Header = () => {
                 }}
                 className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
               >
-                Sair
+                {t("common:header.logout")}
               </a>
             </div>
           )}
@@ -176,6 +239,10 @@ const Header = () => {
           <PlanManagementModal
             isOpen={isPlanManagementModalOpen}
             onClose={() => setIsPlanManagementModalOpen(false)}
+            />
+          <PixConfigModal
+            isOpen={isPixConfigModalOpen}
+            onClose={() => setIsPixConfigModalOpen(false)}
           />
         </div>
       </div>

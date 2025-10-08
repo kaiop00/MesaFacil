@@ -3,5 +3,42 @@
   "cancel": "Cancelar",
   "save": "Salvar",
   "close": "Fechar",
-  "confirm": "Confirmar"
+  "confirm": "Confirmar",
+  "header": {
+    "settings": "Configurações",
+    "tables": "Mesas",
+    "pix": "Pix",
+    "photoColors": "Foto/Cores",
+    "categories": "Categorias",
+    "language": "Idioma",
+    "logout": "Sair"
+  },
+  "languages": {
+    "pt-BR": "Português",
+    "en": "English"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "orders": "Pedidos",
+    "menu": "Cardápio",
+    "reports": "Relatórios",
+    "promotions": "Promoções",
+    "items": "Itens",
+    "movements": "Entradas e Saídas",
+    "users": "Usuários"
+  },
+  "stock": {
+    "impact": "Impacto no Estoque",
+    "hide": "Ocultar",
+    "details": "Detalhes",
+    "calculating": "Calculando impacto no estoque...",
+    "noItems": "Nenhum item deste pedido possui ingredientes configurados.",
+    "willConsume": "Este pedido consumirá",
+    "ingredient": "ingrediente",
+    "ingredients": "ingredientes",
+    "fromStock": "do estoque:",
+    "andMore": "... e mais",
+    "detailsByDish": "Detalhamento por prato:",
+    "total": "Total"
+  }
 }

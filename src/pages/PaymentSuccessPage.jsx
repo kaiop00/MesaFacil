@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, ArrowRight } from 'react-coolicons';
+import { CircleCheck, CloseCircle, Clock, ArrowRightMd } from 'react-coolicons';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { useToast } from '@/hooks/useToast';
@@ -143,9 +143,9 @@ const PaymentSuccessPage = () => {
       case 'loading':
         return <Clock size={64} className="text-blue-500" />;
       case 'success':
-        return <CheckCircle size={64} className="text-green-500" />;
+        return <CircleCheck size={64} className="text-green-500" />;
       case 'error':
-        return <XCircle size={64} className="text-red-500" />;
+        return <CloseCircle size={64} className="text-red-500" />;
       default:
         return <Clock size={64} className="text-blue-500" />;
     }
@@ -248,7 +248,7 @@ const PaymentSuccessPage = () => {
                 className="w-full bg-primary-dynamic hover:bg-primary-dynamic/90 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors duration-200"
               >
                 Continuar para o Dashboard
-                <ArrowRight size={16} />
+                <ArrowRightMd size={16} />
               </button>
             )}
 
@@ -295,7 +295,7 @@ const PaymentSuccessPage = () => {
         {/* Security Note */}
         <div className="mt-6 bg-gray-50 rounded-lg p-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <CheckCircle size={16} className="text-green-500" />
+            <CircleCheck size={16} className="text-green-500" />
             <span>Pagamento processado com segurança via Stripe</span>
           </div>
         </div>

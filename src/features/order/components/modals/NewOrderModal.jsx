@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { SearchMagnifyingGlass, House02 } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import { useTables } from "@/features/config/hooks/useTables";
 import { useOrderContext } from "@/features/order/context/OrderContext";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 
 const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
+    const { t } = useTranslation('order');
     const { mesas } = useTables();
     const { setSelectedTable } = useOrderContext();
     const [selectedTableLocal, setSelectedTableLocal] = useState(null);
@@ -42,11 +44,11 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
         <BaseModalWithHeader
             isOpen={!!isOpen}
             onClose={onClose}
-            title="Novo Pedido"
+            title={t('modals.newOrder.title')}
             subTitle="Preencha as informações e adicione um novo pedido"
         >
             <div className="font-inter">
-                <h3 className="font-medium mb-4 text-lg">Selecione uma mesa para continuar</h3>
+                <h3 className="font-medium mb-4 text-lg">{t('modals.newOrder.selectTable')}</h3>
 
                 {/* Campo de busca */}
                 <div className="relative mb-4">
@@ -55,7 +57,7 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
                     </div>
                     <input
                         type="text"
-                        placeholder="Buscar"
+                        placeholder={t('page.searchTables')}
                         className="w-full pl-10 pr-4 py-2 border rounded-md text-sm border-gray-300 focus:outline-none focus:border-primary-dynamic"
                     />
                 </div>
@@ -73,7 +75,7 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
                                 }`}
                         >
                             <House02 className={`h-10 w-10 p-2 rounded ${getStatusColor(mesa.status)}`}/>
-                            <span>Mesa {mesa.numero}</span>
+                            <span>{t('tables.tableLetter', { letter: mesa.numero })}</span>
                         </button>
                     ))}
                 </div>
@@ -84,14 +86,14 @@ const NewOrderModal = ({ isOpen, onClose, openAddItemsModal }) => {
                         className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
                         onClick={onClose}
                     >
-                        Cancelar
+                        {t('modals.newOrder.buttons.cancel')}
                     </button>
                     <button
                         disabled={!selectedTableLocal}
                         onClick={handleContinue}
                         className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
                     >
-                        Continuar
+                        {t('modals.newOrder.buttons.create')}
                     </button>
                 </div>
             </div>
