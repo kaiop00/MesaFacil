@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* eslint-disable no-undef */
 const {setGlobalOptions} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
@@ -5,8 +7,8 @@ const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 
 // Load environment variables for local development
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config({path: ".env.local"});
 }
 
 // Initialize Firebase Admin

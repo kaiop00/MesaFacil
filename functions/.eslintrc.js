@@ -1,10 +1,12 @@
+/* eslint-env node */
 module.exports = {
   env: {
     es6: true,
     node: true,
   },
   parserOptions: {
-    "ecmaVersion": 2018,
+    ecmaVersion: 2018,
+    sourceType: "script",
   },
   extends: [
     "eslint:recommended",
@@ -14,6 +16,9 @@ module.exports = {
     "no-restricted-globals": ["error", "name", "length"],
     "prefer-arrow-callback": "error",
     "quotes": ["error", "double", {"allowTemplateLiterals": true}],
+    "max-len": ["error", {"code": 120}],
+    "require-jsdoc": "off",
+    "valid-jsdoc": "off",
   },
   overrides: [
     {
@@ -24,5 +29,12 @@ module.exports = {
       rules: {},
     },
   ],
-  globals: {},
+  globals: {
+    require: "readonly",
+    module: "readonly",
+    exports: "writable",
+    process: "readonly",
+    __dirname: "readonly",
+    __filename: "readonly",
+  },
 };
