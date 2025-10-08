@@ -1,7 +1,15 @@
 import { loadStripe } from '@stripe/stripe-js';
 
+// Get Stripe publishable key from environment
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+// Validate key exists
+if (!stripePublishableKey) {
+  console.error('⚠️ VITE_STRIPE_PUBLISHABLE_KEY is not configured in .env file');
+}
+
 // Initialize Stripe with publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 /**
  * Stripe Service for handling payments and billing
@@ -15,7 +23,17 @@ class StripeService {
   }
 
   async init() {
-    this.stripe = await stripePromise;
+    if (!stripePromise) {
+      console.error('Stripe cannot be initialized: Missing VITE_STRIPE_PUBLISHABLE_KEY');
+      return;
+    }
+    
+    try {
+      this.stripe = await stripePromise;
+    } catch (error) {
+      console.error('❌ Error initializing Stripe:', error);
+      throw new Error('Failed to initialize Stripe payment system');
+    }
   }
 
   /**
@@ -27,21 +45,23 @@ class StripeService {
    */
   async createCheckoutSession(priceId, customerEmail, metadata = {}) {
     try {
+      const requestBody = {
+        priceId,
+        customerEmail,
+        metadata: {
+          ...metadata,
+          source: 'mesafacil_app'
+        },
+        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/selecionar-plano?checkout_canceled=true`,
+      };
+
       const response = await fetch(`${this.apiBaseUrl}/createCheckoutSession`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          priceId,
-          customerEmail,
-          metadata: {
-            ...metadata,
-            source: 'mesafacil_app'
-          },
-          successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${window.location.origin}/selecionar-plano?checkout_canceled=true`,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const session = await response.json();
@@ -52,7 +72,7 @@ class StripeService {
 
       return session;
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      console.error('❌ Error creating checkout session:', error);
       throw error;
     }
   }
@@ -92,21 +112,18 @@ class StripeService {
    */
   async redirectToCheckout(priceId, customerEmail, metadata = {}) {
     try {
-      if (!this.stripe) {
-        await this.init();
-      }
-
+      // Create checkout session (this returns the session URL)
       const session = await this.createCheckoutSession(priceId, customerEmail, metadata);
 
-      const { error } = await this.stripe.redirectToCheckout({
-        sessionId: session.id,
-      });
-
-      if (error) {
-        throw error;
+      if (!session || !session.url) {
+        throw new Error('Failed to get checkout URL from session');
       }
+      
+      // Redirect directly to the Stripe Checkout URL
+      // This is the new recommended approach in Stripe.js v8+
+      window.location.href = session.url;
     } catch (error) {
-      console.error('Error redirecting to checkout:', error);
+      console.error('❌ Error redirecting to checkout:', error);
       throw error;
     }
   }
