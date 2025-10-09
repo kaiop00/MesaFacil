@@ -4,9 +4,10 @@ import {
     updateDoc,
     doc,
     serverTimestamp,
+    runTransaction,
+    writeBatch,
 } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
-import { runTransaction } from "firebase/firestore";
 import { 
     calcularConsumoIngredientes, 
     processarBaixaEstoque, 
@@ -292,3 +293,31 @@ export const marcarPedidoComoLido = (idRestaurante, mesaId, pedidoId) =>
 
 export const marcarPedidoComoNaoLido = (idRestaurante, mesaId, pedidoId) =>
     setPedidoReadStatus(idRestaurante, mesaId, pedidoId, false);
+
+/**
+ * Reseta a mesa para um novo cliente, limpando pedidos e status.
+ */
+export const resetMesaParaNovoCliente = async (idRestaurante, mesaId) => {
+    if (!idRestaurante || !mesaId) {
+        throw new Error("Parâmetros inválidos para resetar mesa");
+    }
+
+    const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
+    const pedidosSnapshot = await getDocs(pedidosRef);
+    const batch = writeBatch(db);
+
+    pedidosSnapshot.forEach((pedidoDoc) => {
+        const pedidoRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoDoc.id);
+        batch.delete(pedidoRef);
+    });
+
+    const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
+    batch.update(mesaDocRef, {
+        status: "livre",
+        total: 0,
+        entregueEm: null,
+        atualizadoEm: serverTimestamp(),
+    });
+
+    await batch.commit();
+};

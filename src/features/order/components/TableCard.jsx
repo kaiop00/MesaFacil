@@ -3,8 +3,8 @@ import { House02, MoreHorizontal } from "react-coolicons";
 import { useTranslation } from "react-i18next";
 import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
-// import { finalizarPedido } from "@/features/order/services/orderService";
 import ConfirmModal from "@/components/ConfirmModal";
+import { resetMesaParaNovoCliente } from "@/features/order/services/orderService";
 import { useToast } from "@/hooks/useToast";
 
 const TableCard = ({
@@ -55,12 +55,17 @@ const TableCard = ({
   const currentStyle = statusStyleMap[status] || statusStyleMap["livre"];
 
   const handleConfirm = async () => {
-    // Mantido apenas para o fluxo "entregue" (pagamento futuramente)
     if (mesa?.status === "entregue") {
-      console.log('redirecionar para tela de pagamento!!!');
-      setIsConfirmModalOpen(false);
+      try {
+        await resetMesaParaNovoCliente(idRestaurante, mesa.id);
+        notify(t('messages.success.tableFreed'), "success");
+      } catch (error) {
+        console.error("Erro ao resetar mesa:", error);
+        notify(t('messages.error.freeTable'), "error");
+      }
     }
-  }
+    setIsConfirmModalOpen(false);
+  };
 
   const handleFinalize = () => {
     if (mesa?.status === "andamento") {
@@ -71,7 +76,7 @@ const TableCard = ({
     } else if (mesa?.status === "entregue") {
       setModalConfig({
         title: t('messages.confirm.finishOrder'),
-        message: "Você tem certeza que deseja finalizar esse pedido? Esta é uma ação irreversível e vai levar para tela de pagamento do pedido"
+        message: t('messages.confirm.finishOrderDescription'),
       });
     }
     setIsConfirmModalOpen(true);
