@@ -126,10 +126,6 @@ export default function PedidoClientePage() {
         }
     };
 
-    const handleConfirmarPix = () => {
-        notify("O pagamento via Pix estará disponível em breve.", "info");
-    };
-
     return (
         <div className="flex flex-col justify-center items-center gap-3 mt-10">
             <img
@@ -178,7 +174,6 @@ export default function PedidoClientePage() {
                     chamarGarcomLoading={garcomState.loading}
                     garcomSolicitado={garcomState.solicitado}
                     mesaNumero={mesaNumeroExibicao}
-                    onConfirmarPix={handleConfirmarPix}
                 />
             )}
 

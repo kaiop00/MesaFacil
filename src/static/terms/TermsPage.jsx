@@ -44,7 +44,7 @@ export default function TermsPage() {
                             <li>Acesso ao cardápio digital do restaurante via QR Code;</li>
                             <li>Realização de pedidos diretamente pelo celular;</li>
                             <li>Acompanhamento do status do pedido;</li>
-                            <li>Opção de pagamento via cartão de crédito, débito ou PIX, com possibilidade de dividir a conta.</li>
+                            <li>Solicitação de pagamento com o garçom diretamente pelo sistema, com possibilidade de dividir a conta.</li>
                         </ul>
 
                         <p className="font-medium mb-2">2.2. Para restaurantes parceiros:</p>

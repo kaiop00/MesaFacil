@@ -182,7 +182,7 @@ export default function MainPage() {
                             },
                             {
                                 question: 'Consigo pagar direto pelo sistema?',
-                                answer: 'Sim! Você pode pagar pelo próprio MesaFácil usando PIX, para cartão o garçom vai de imediato até sua mesa. Também é possível dividir a conta com os amigos, cada um pagando sua parte individualmente.'
+                                answer: 'Sim! Você solicita o garçom pelo MesaFácil e finaliza o pagamento direto com a equipe na mesa. Dá para avisar o garçom se quiser dividir a conta e cada pessoa paga sua parte com tranquilidade.'
                             },
                             {
                                 question: 'E se eu ver algum problema com meu pedido?',
@@ -190,7 +190,7 @@ export default function MainPage() {
                             },
                             {
                                 question: 'O sistema é seguro para fazer pagamentos?',
-                                answer: 'Sim. O MesaFácil utiliza protocolos de segurança modernos e parceiros de pagamento confiáveis para garantir total proteção dos seus dados.'
+                                answer: 'Sim. O MesaFácil protege suas informações e envia ao garçom apenas os dados necessários para concluir o pagamento com segurança diretamente no caixa do restaurante.'
                             },
                             {
                                 question: 'Sou dono de restaurante. Posso acompanhar os pedidos em tempo real?',

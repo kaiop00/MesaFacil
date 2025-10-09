@@ -1,8 +1,4 @@
-const getPrimaryLabel = ({ selectedOption, garcomSolicitado, chamarGarcomLoading }) => {
-    if (selectedOption !== "garcom") {
-        return "Continuar";
-    }
-
+const getPrimaryLabel = ({ garcomSolicitado, chamarGarcomLoading }) => {
     if (garcomSolicitado) {
         return "Garçom a caminho";
     }
@@ -11,18 +7,16 @@ const getPrimaryLabel = ({ selectedOption, garcomSolicitado, chamarGarcomLoading
         return "Chamando...";
     }
 
-    return "Confirmar chamada do garçom";
+    return "Chamar garçom para pagamento";
 };
 
 const PaymentActions = ({
-    selectedOption,
     onContinuar,
     onVoltar,
     garcomSolicitado,
     chamarGarcomLoading,
 }) => {
-    const disabledPrimary =
-        (selectedOption === "garcom" && (chamarGarcomLoading || garcomSolicitado)) || chamarGarcomLoading;
+    const disabledPrimary = garcomSolicitado || chamarGarcomLoading;
 
     return (
         <div className="flex flex-col gap-3">
@@ -32,7 +26,7 @@ const PaymentActions = ({
                 onClick={onContinuar}
                 disabled={disabledPrimary}
             >
-                {getPrimaryLabel({ selectedOption, garcomSolicitado, chamarGarcomLoading })}
+                {getPrimaryLabel({ garcomSolicitado, chamarGarcomLoading })}
             </button>
             <button
                 type="button"
