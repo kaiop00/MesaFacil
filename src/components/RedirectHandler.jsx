@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const RedirectHandler = () => {
+  
   const { user, checking } = useAuth();
 
   if (checking) return null;
