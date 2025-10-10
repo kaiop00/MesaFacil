@@ -134,6 +134,7 @@
     "confirm": {
       "removeItem": "Are you sure you want to remove this item?",
       "finishOrder": "Are you sure you want to finish this order?",
+      "finishOrderDescription": "Are you sure you want to finish this order? This action is irreversible and will reset the table for a new customer.",
       "freeTable": "Are you sure you want to free this table?"
     }
   },
