@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CircleCheck, CloseCircle, Clock, ArrowRightMd } from 'react-coolicons';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,7 @@ const PaymentSuccessPage = () => {
   const { user } = useAuth();
   const { setUserPlan } = usePlanManagement();
   const { notify } = useToast();
+  const hasVerified = useRef(false); // Prevent multiple verifications
   
   const [verificationStatus, setVerificationStatus] = useState('loading'); // 'loading', 'success', 'error'
   const [sessionData, setSessionData] = useState(null);
@@ -23,8 +24,14 @@ const PaymentSuccessPage = () => {
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
+    // Prevent multiple verifications
+    if (hasVerified.current) {
+      return;
+    }
+
     const verifyPayment = async () => {
       try {
+        hasVerified.current = true; // Set immediately to prevent duplicate calls
         setVerificationStatus('loading');
 
         // Verify the checkout session
@@ -45,10 +52,23 @@ const PaymentSuccessPage = () => {
 
         // Check if payment was successful
         if (sessionInfo.payment_status === 'paid') {
+          // Extract IDs from expanded objects (Stripe returns full objects when using expand)
+          const customerId = typeof sessionInfo.customer === 'string' 
+            ? sessionInfo.customer 
+            : sessionInfo.customer?.id;
+          
+          const subscriptionId = typeof sessionInfo.subscription === 'string'
+            ? sessionInfo.subscription
+            : sessionInfo.subscription?.id;
+
+          if (!customerId || !subscriptionId) {
+            throw new Error('Customer ID ou Subscription ID não encontrado na sessão');
+          }
+
           // Activate the plan
           await stripeService.activateUserPlan(user.uid, planId, {
-            customerId: sessionInfo.customer,
-            subscriptionId: sessionInfo.subscription,
+            customerId: customerId,
+            subscriptionId: subscriptionId,
             sessionId: sessionId
           });
 
@@ -70,21 +90,27 @@ const PaymentSuccessPage = () => {
     };
 
     if (!sessionId) {
+      hasVerified.current = true;
       setVerificationStatus('error');
       setError('Session ID não encontrado na URL');
       return;
     }
 
     if (!user) {
+      hasVerified.current = true;
       setVerificationStatus('error');
       setError('Usuário não autenticado');
       return;
     }
 
     verifyPayment();
-  }, [sessionId, user, notify, setUserPlan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, user]); // notify and setUserPlan are stable functions
 
   const manualVerifyPayment = async () => {
+    // Reset and immediately set verification flag
+    hasVerified.current = true;
+    
     try {
       setVerificationStatus('loading');
 
@@ -106,10 +132,23 @@ const PaymentSuccessPage = () => {
 
       // Check if payment was successful
       if (sessionInfo.payment_status === 'paid') {
+        // Extract IDs from expanded objects (Stripe returns full objects when using expand)
+        const customerId = typeof sessionInfo.customer === 'string' 
+          ? sessionInfo.customer 
+          : sessionInfo.customer?.id;
+        
+        const subscriptionId = typeof sessionInfo.subscription === 'string'
+          ? sessionInfo.subscription
+          : sessionInfo.subscription?.id;
+
+        if (!customerId || !subscriptionId) {
+          throw new Error('Customer ID ou Subscription ID não encontrado na sessão');
+        }
+
         // Activate the plan
         await stripeService.activateUserPlan(user.uid, planId, {
-          customerId: sessionInfo.customer,
-          subscriptionId: sessionInfo.subscription,
+          customerId: customerId,
+          subscriptionId: subscriptionId,
           sessionId: sessionId
         });
 
@@ -218,7 +257,11 @@ const PaymentSuccessPage = () => {
                 {sessionData.customer && (
                   <div className="flex justify-between">
                     <span>Cliente ID:</span>
-                    <span className="font-medium text-xs">{sessionData.customer}</span>
+                    <span className="font-medium text-xs">
+                      {typeof sessionData.customer === 'string' 
+                        ? sessionData.customer 
+                        : sessionData.customer?.id || 'N/A'}
+                    </span>
                   </div>
                 )}
               </div>
