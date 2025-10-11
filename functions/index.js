@@ -5,6 +5,7 @@ const {onRequest} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const {FieldValue} = require("firebase-admin/firestore");
 
 // Load environment variables for local development
 if (process.env.NODE_ENV !== "production") {
@@ -262,13 +263,13 @@ exports.activatePlan = onRequest(
             stripeCustomerId: stripeCustomerId,
             stripeSubscriptionId: stripeSubscriptionId,
             sessionId: sessionId,
-            activatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            activatedAt: FieldValue.serverTimestamp(),
             expiresAt: new Date(subscription.current_period_end * 1000),
             status: subscription.status,
             features: getPlanFeatures(planId),
           },
           stripeCustomerId: stripeCustomerId, // For easy queries
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
         logger.info("Plan activated", {userId, planId, subscriptionId: stripeSubscriptionId});
