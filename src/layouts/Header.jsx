@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { doc, getDoc } from "firebase/firestore";
 import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
-import PlanManagementModal from "@/features/config/components/modals/PlanManagementModal";
 import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
@@ -14,6 +14,9 @@ import { useNotifications } from "@/features/notifications/hooks/useNotification
 import { useAuth } from "@/contexts/AuthContext";
 import PlanInfo from "@/components/PlanInfo";
 import PixConfigModal from "@/features/config/components/modals/PixConfigModal";
+import stripeService from "@/services/stripeService";
+import { useToast } from "@/hooks/useToast";
+import { db } from "@/config/firebaseConfig";
 
 const Header = () => {
   const { t, i18n } = useTranslation();
@@ -23,15 +26,15 @@ const Header = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
-  const [isPlanManagementModalOpen, setIsPlanManagementModalOpen] = useState(false);
   const [isPixConfigModalOpen, setIsPixConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
-  const { idRestaurante } = useAuth();
+  const { idRestaurante, user } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
+  const { notify } = useToast();
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
 
@@ -39,6 +42,49 @@ const Header = () => {
     i18n.changeLanguage(lng);
     localStorage.setItem('language', lng);
     setIsLanguageDropdownOpen(false);
+  };
+
+  const handleBillingPortal = async () => {
+    try {
+      setIsDropdownOpen(false);
+      setIsSubMenuOpen(false);
+      
+      // Fetch user data from Firestore to get stripeCustomerId
+      if (!user?.uid) {
+        notify('Usuário não autenticado.', 'error');
+        return;
+      }
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      
+      if (!userDocSnap.exists()) {
+        notify('Dados do usuário não encontrados.', 'error');
+        return;
+      }
+
+      const userData = userDocSnap.data();
+      const planId = userData?.plan?.planId;
+      const stripeCustomerId = userData?.plan?.stripeCustomerId;
+
+      // Check if user is on free plan
+      if (planId === 'free') {
+        notify('Você está no plano gratuito. Escolha um plano pago para continuar.', 'info');
+        navigate('/selecionar-plano');
+        return;
+      }
+
+      if (!stripeCustomerId) {
+        notify('Nenhuma assinatura ativa encontrada. Por favor, assine um plano primeiro.', 'warning');
+        return;
+      }
+
+      notify('Redirecionando para o portal de faturamento...', 'info');
+      await stripeService.redirectToBillingPortal(stripeCustomerId);
+    } catch (error) {
+      console.error('Erro ao acessar portal de faturamento:', error);
+      notify('Erro ao acessar o portal de faturamento. Tente novamente.', 'error');
+    }
   };
 
   useEffect(() => {
@@ -192,14 +238,10 @@ const Header = () => {
                       {t("common:header.categories")}
                     </button>
                     <button
-                      onClick={() => {
-                        setIsPlanManagementModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
+                      onClick={handleBillingPortal}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Plano
+                      Gerenciar Assinatura
                     </button>
                   </div>
                 )}
@@ -236,10 +278,6 @@ const Header = () => {
             isOpen={isCategoriaConfigModalOpen}
             onClose={() => setIsCategoriaConfigModalOpen(false)}
           />
-          <PlanManagementModal
-            isOpen={isPlanManagementModalOpen}
-            onClose={() => setIsPlanManagementModalOpen(false)}
-            />
           <PixConfigModal
             isOpen={isPixConfigModalOpen}
             onClose={() => setIsPixConfigModalOpen(false)}
