@@ -10,7 +10,8 @@
     "photoColors": "Foto/Cores",
     "categories": "Categorias",
     "language": "Idioma",
-    "logout": "Sair"
+    "logout": "Sair",
+    "pix": "PIX"
   },
   "languages": {
     "pt-BR": "Português",
