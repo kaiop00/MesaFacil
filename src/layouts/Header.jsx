@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
+import ServiceFeeConfigModal from "@/features/config/components/modals/ServiceFeeConfigModal";
 import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
@@ -20,6 +21,7 @@ const Header = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
+  const [isServiceFeeModalOpen, setIsServiceFeeModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -172,6 +174,16 @@ const Header = () => {
                     >
                       {t("common:header.categories")}
                     </button>
+                    <button
+                      onClick={() => {
+                        setIsServiceFeeModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      {t("common:header.serviceFee", "Taxa de serviço")}
+                    </button>
                   </div>
                 )}
               </div>
@@ -206,6 +218,10 @@ const Header = () => {
           <CategoriaConfigModal
             isOpen={isCategoriaConfigModalOpen}
             onClose={() => setIsCategoriaConfigModalOpen(false)}
+          />
+          <ServiceFeeConfigModal
+            isOpen={isServiceFeeModalOpen}
+            onClose={() => setIsServiceFeeModalOpen(false)}
           />
         </div>
       </div>
