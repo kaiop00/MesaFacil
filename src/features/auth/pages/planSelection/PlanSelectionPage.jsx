@@ -7,6 +7,7 @@ import { PLANS_DATA } from '../../constants/plansData';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/useToast';
 import stripeService from '@/services/stripeService';
+import mesafacil from '@/assets/mesafacil.png';
 
 export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -62,12 +63,7 @@ export default function PlanSelectionPage() {
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-              MesaFácil
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 font-medium">
-              A tecnologia que transforma sua mesa em experiência
-            </p>
+            <img src={mesafacil} alt="MesaFácil Logo" className="h-12 mx-auto mb-4" />
           </div>
         </div>
       </div>
@@ -76,13 +72,6 @@ export default function PlanSelectionPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Título da seção */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-800 mb-4">
-            Planos
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Escolha um plano para prosseguir
-          </p>
-          
           {user && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto mb-8">
               <p className="text-blue-800">
@@ -95,7 +84,7 @@ export default function PlanSelectionPage() {
         </div>
 
         {/* Grid de planos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {PLANS_DATA.map((plan) => (
             <PlanCard
               key={plan.id}
