@@ -12,6 +12,8 @@ import AguardandoGarcom from "../components/AguardandoGarcom";
 import { usePedidosCliente } from "../hooks/usePedidosCliente";
 import { solicitarGarcom } from "../services/garcomService";
 import { useToast } from "@/hooks/useToast";
+import { useServiceFee } from "../hooks/useServiceFee";
+import { computeServiceFeeAmount, computeTotalWithService } from "../utils/pedidos";
 
 export default function PedidoClientePage() {
     const [step, setStep] = useState(0);
@@ -19,6 +21,13 @@ export default function PedidoClientePage() {
     const { pedidos, loading, error, totalPedidos } = usePedidosCliente();
     const { notify } = useToast();
     const [garcomState, setGarcomState] = useState({ loading: false, solicitado: false });
+    const {
+        percent: serviceFeePercent,
+        loading: serviceFeeLoading,
+    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
+
+    const valorServico = computeServiceFeeAmount(totalPedidos, serviceFeePercent);
+    const totalComServico = computeTotalWithService(totalPedidos, serviceFeePercent);
 
     const pedidoAtual = useMemo(() => {
         if (!pedidos || pedidos.length === 0) return null;
@@ -114,6 +123,9 @@ export default function PedidoClientePage() {
                 pedidoId: ultimoPedido?.id || null,
                 itens: itensResumo,
                 total: totalPedidos,
+                taxaServicoPercentual: serviceFeePercent,
+                valorServico,
+                totalComServico,
             });
 
             setGarcomState({ loading: false, solicitado: true });
@@ -152,6 +164,8 @@ export default function PedidoClientePage() {
                             loading={loading}
                             error={error}
                             totalPedidos={totalPedidos}
+                            serviceFeePercent={serviceFeePercent}
+                            serviceFeeLoading={serviceFeeLoading}
                             mesaId={mesaId}
                             idRestaurante={idRestaurante}
                             onRealizarPagamento={() => {
@@ -169,6 +183,8 @@ export default function PedidoClientePage() {
                     loading={loading}
                     error={error}
                     totalPedidos={totalPedidos}
+                    serviceFeePercent={serviceFeePercent}
+                    serviceFeeLoading={serviceFeeLoading}
                     onVoltar={handleVoltarParaPedidos}
                     onChamarGarcom={handleChamarGarcom}
                     chamarGarcomLoading={garcomState.loading}
@@ -178,7 +194,13 @@ export default function PedidoClientePage() {
             )}
 
             {step === 4 && (
-                <AguardandoGarcom pedidos={pedidos} totalPedidos={totalPedidos} mesaNumero={mesaNumeroExibicao} />
+                <AguardandoGarcom
+                    pedidos={pedidos}
+                    totalPedidos={totalPedidos}
+                    serviceFeePercent={serviceFeePercent}
+                    serviceFeeLoading={serviceFeeLoading}
+                    mesaNumero={mesaNumeroExibicao}
+                />
             )}
         </div>
     );

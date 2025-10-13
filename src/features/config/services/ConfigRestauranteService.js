@@ -36,8 +36,14 @@ export const getRestauranteInfo = async (idRestaurante) => {
         return null;
     }
 
+    const data = snapshot.data() || {};
+
     return {
         id: snapshot.id,
-        ...snapshot.data(),
+        ...data,
+        taxa_servico:
+            typeof data.taxa_servico === "number" && Number.isFinite(data.taxa_servico)
+                ? data.taxa_servico
+                : 10,
     };
 };

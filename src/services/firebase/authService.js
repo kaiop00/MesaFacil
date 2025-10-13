@@ -49,6 +49,7 @@ async function criarOuAssociarRestaurante(nomeRestaurante) {
     nome: nomeRestaurante,
     cor_base: "#D9A23B",   
     imagem_restaurante: null, 
+    taxa_servico: 10,
     createdAt: serverTimestamp(),
   });
 

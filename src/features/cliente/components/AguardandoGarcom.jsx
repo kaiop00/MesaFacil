@@ -1,9 +1,40 @@
 import { useCliente } from "../context/ClienteContext";
-import { computeSubtotal, formatCurrency } from "../utils/pedidos";
+import {
+    computeSubtotal,
+    formatCurrency,
+    computeServiceFeeAmount,
+    computeTotalWithService,
+    normalizeServicePercentage,
+    DEFAULT_SERVICE_FEE_PERCENT,
+} from "../utils/pedidos";
 
-export default function AguardandoGarcom({ pedidos = [], totalPedidos = 0, mesaNumero }) {
+export default function AguardandoGarcom({
+    pedidos = [],
+    totalPedidos = 0,
+    serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
+    serviceFeeLoading = false,
+    mesaNumero,
+}) {
     const { numero } = useCliente();
     const mesaNumeroExibicao = mesaNumero || numero;
+    const percentNormalized = normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT);
+    const valorServico = computeServiceFeeAmount(totalPedidos, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
+    const totalComServico = computeTotalWithService(totalPedidos, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
+    const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
+        minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+    });
+    const serviceLabel = percentNormalized > 0
+        ? `Taxa de serviço (${formattedPercent}%)`
+        : "Taxa de serviço";
+    const serviceValueLabel = serviceFeeLoading
+        ? "Carregando..."
+        : percentNormalized > 0
+            ? formatCurrency(valorServico)
+            : "Isento";
+    const totalComServicoLabel = serviceFeeLoading
+        ? "Carregando..."
+        : formatCurrency(totalComServico);
 
     return (
         <div className="flex flex-col items-center mt-6 px-4 pb-6">
@@ -76,9 +107,19 @@ export default function AguardandoGarcom({ pedidos = [], totalPedidos = 0, mesaN
                                 })}
                             </div>
 
-                            <div className="flex justify-between items-center border-t border-gray-100 pt-3 font-semibold text-gray-900">
-                                <span>Subtotal geral</span>
-                                <span>{formatCurrency(totalPedidos)}</span>
+                            <div className="space-y-2 border-t border-gray-100 pt-3 text-gray-900">
+                                <div className="flex justify-between font-semibold">
+                                    <span>Valor sem taxa</span>
+                                    <span>{formatCurrency(totalPedidos)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-medium">
+                                    <span>{serviceLabel}</span>
+                                    <span>{serviceValueLabel}</span>
+                                </div>
+                                <div className="flex justify-between font-semibold">
+                                    <span>Total com taxa</span>
+                                    <span>{totalComServicoLabel}</span>
+                                </div>
                             </div>
                         </div>
                     </section>

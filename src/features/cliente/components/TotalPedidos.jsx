@@ -2,13 +2,22 @@ import { useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCliente } from "../context/ClienteContext";
 import { useMesa } from "../hooks/useMesa";
-import { formatCurrency, formatTimestamp } from "../utils/pedidos";
+import {
+    formatCurrency,
+    formatTimestamp,
+    computeServiceFeeAmount,
+    computeTotalWithService,
+    normalizeServicePercentage,
+    DEFAULT_SERVICE_FEE_PERCENT,
+} from "../utils/pedidos";
 
 export default function TotalPedidos({
     pedidos = [],
     loading = false,
     error = null,
     totalPedidos = 0,
+    serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
+    serviceFeeLoading = false,
     mesaId,
     idRestaurante,
     onRealizarPagamento,
@@ -27,6 +36,34 @@ export default function TotalPedidos({
         }
         return typeof mesa?.total === "number" ? mesa.total : 0;
     }, [pedidos.length, totalGeral, mesa?.total]);
+
+    const percentNormalized = useMemo(
+        () => normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT),
+        [serviceFeePercent]
+    );
+    const valorServico = useMemo(
+        () => computeServiceFeeAmount(totalResumo, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
+        [totalResumo, percentNormalized]
+    );
+    const totalComServico = useMemo(
+        () => computeTotalWithService(totalResumo, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
+        [totalResumo, percentNormalized]
+    );
+    const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
+        minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+    });
+    const serviceLabel = percentNormalized > 0
+        ? `Taxa de serviço (${formattedPercent}%)`
+        : "Taxa de serviço";
+    const serviceValueLabel = serviceFeeLoading
+        ? "Carregando..."
+        : percentNormalized > 0
+            ? formatCurrency(valorServico)
+            : "Isento";
+    const totalComServicoLabel = serviceFeeLoading
+        ? "Carregando..."
+        : formatCurrency(totalComServico);
 
     const search = location.search || "";
 
@@ -123,9 +160,19 @@ export default function TotalPedidos({
 
             {!loading && !error && (
                 <>
-                    <div className="flex justify-between pt-2 border-t border-gray-300 font-semibold text-gray-900">
-                        <span>Total consumido</span>
-                        <span>{formatCurrency(totalResumo)}</span>
+                    <div className="space-y-2 pt-2 border-t border-gray-300 text-gray-900">
+                        <div className="flex justify-between font-semibold">
+                            <span>Valor sem taxa</span>
+                            <span>{formatCurrency(totalResumo)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-medium">
+                            <span>{serviceLabel}</span>
+                            <span>{serviceValueLabel}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold">
+                            <span>Total com taxa</span>
+                            <span>{totalComServicoLabel}</span>
+                        </div>
                     </div>
                     <div className="flex flex-col gap-3">
                         <button

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCliente } from "../context/ClienteContext";
+import { DEFAULT_SERVICE_FEE_PERCENT } from "../utils/pedidos";
 import PaymentSummary from "./PaymentSummary";
 import PaymentOptionSelector from "./PaymentOptionSelector";
 import PixPaymentCard from "./PixPaymentCard";
@@ -11,6 +12,8 @@ export default function PagamentoResumo({
     loading = false,
     error = null,
     totalPedidos = 0,
+    serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
+    serviceFeeLoading = false,
     onVoltar,
     onChamarGarcom,
     chamarGarcomLoading = false,
@@ -92,6 +95,8 @@ export default function PagamentoResumo({
                         loading={loading}
                         error={error}
                         subtotal={totalPedidos}
+                        serviceFeePercent={serviceFeePercent}
+                        serviceFeeLoading={serviceFeeLoading}
                     />
 
                     <PaymentOptionSelector
