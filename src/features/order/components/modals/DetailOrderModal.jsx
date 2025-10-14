@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
 import { getPedidosDaMesa, finalizarPedidoEspecifico } from "@/features/order/services/orderService";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
+import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
+import {
+    computeTotalPedidos,
+    computeServiceFeeAmount,
+    computeTotalWithService,
+    normalizeServicePercentage,
+    DEFAULT_SERVICE_FEE_PERCENT,
+    formatCurrency,
+} from "@/features/cliente/utils/pedidos";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) => {
     const { t } = useTranslation('order');
@@ -12,6 +21,10 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
     const [loading, setLoading] = useState(false);
     const [finalizando, setFinalizando] = useState({}); // { [pedidoId]: boolean }
     const { notify } = useToast();
+    const {
+        percent: serviceFeePercent,
+        loading: serviceFeeLoading,
+    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -50,6 +63,35 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
             setFinalizando(prev => ({ ...prev, [pedidoId]: false }));
         }
     };
+
+    const totalSemTaxa = useMemo(() => computeTotalPedidos(pedidos), [pedidos]);
+    const percentNormalized = useMemo(
+        () => normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT),
+        [serviceFeePercent]
+    );
+    const valorServico = useMemo(
+        () => computeServiceFeeAmount(totalSemTaxa, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
+        [totalSemTaxa, percentNormalized]
+    );
+    const totalComServico = useMemo(
+        () => computeTotalWithService(totalSemTaxa, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
+        [totalSemTaxa, percentNormalized]
+    );
+    const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
+        minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+    });
+    const serviceLabel = percentNormalized > 0
+        ? `Taxa de serviço (${formattedPercent}%)`
+        : "Taxa de serviço";
+    const serviceValueLabel = serviceFeeLoading
+        ? t("page.loading")
+        : percentNormalized > 0
+            ? formatCurrency(valorServico)
+            : "Isento";
+    const totalComServicoLabel = serviceFeeLoading
+        ? t("page.loading")
+        : formatCurrency(totalComServico);
 
     return (
         <BaseModalWithHeader
@@ -133,6 +175,23 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                     </div>
                 ))}
             </div>
+
+            {!loading && pedidos.length > 0 && (
+                <div className="mt-6 border border-gray-200 rounded-lg bg-slate-50 p-4 space-y-2 text-gray-900">
+                    <div className="flex justify-between font-semibold">
+                        <span>Valor sem taxa</span>
+                        <span>{formatCurrency(totalSemTaxa)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-medium">
+                        <span>{serviceLabel}</span>
+                        <span>{serviceValueLabel}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                        <span>Total com taxa</span>
+                        <span>{totalComServicoLabel}</span>
+                    </div>
+                </div>
+            )}
 
             <div className="flex justify-end gap-2 mt-6">
                 <button
