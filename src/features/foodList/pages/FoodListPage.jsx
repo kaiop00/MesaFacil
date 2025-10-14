@@ -4,11 +4,14 @@ import CardHeader from "@/components/CardHeader";
 import FilterBar from "@/features/foodList/components/FilterBar";
 import FoodGrid from "@/features/foodList/components/FoodGrid";
 import NewFoodModal from "@/features/foodList/components/modals/NewFoodModal";
+import LimitCounter from "@/components/LimitCounter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
+import { usePlan } from "@/contexts/PlanContext";
 import { getCategoriaNomes } from "@/features/config/services/CategoriasService";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
 import { usePDFGenerator } from "@/features/foodList/hooks/usePDFGenerator";
+import { FEATURE_FLAGS } from "@/constants/planFeatures";
 import { Download } from "react-coolicons";
 
 const FoodListPage = () => {
@@ -21,9 +24,19 @@ const FoodListPage = () => {
   const { notify } = useToast();
   const { items } = useCardapioContext();
   const { generateMenuPDF } = usePDFGenerator();
+  const { canAddProduct } = usePlan();
 
   const handleNew = async () => {
     try {
+      // Check if user can add more products
+      if (!canAddProduct(items.length)) {
+        notify(
+          "Você atingiu o limite de produtos do seu plano. Faça upgrade para adicionar mais produtos.",
+          "warning"
+        );
+        return;
+      }
+
       const nomes = await getCategoriaNomes(idRestaurante, { unique: true, sort: true });
 
       if (!nomes || nomes.length === 0) {
@@ -73,6 +86,15 @@ const FoodListPage = () => {
           buttonTitle={t('page.newItemButton')}
         />
       )}
+
+      {/* Product Limit Counter */}
+      <LimitCounter
+        limitType="maxProducts"
+        currentCount={items.length}
+        label="Produtos no Cardápio"
+        featureFlag={FEATURE_FLAGS.UNLIMITED_PRODUCTS}
+        showUpgradeLink={true}
+      />
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1">

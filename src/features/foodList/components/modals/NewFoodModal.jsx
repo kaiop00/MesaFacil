@@ -5,6 +5,7 @@ import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import NewFoodForm from "../forms/NewFoodForm";
 import { useFoodService } from "@/features/foodList/hooks/useFoodService";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
+import { usePlan } from "@/contexts/PlanContext";
 import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -23,7 +24,8 @@ const NewFoodModal = ({ isOpen, onClose }) => {
     const { t } = useTranslation('foodList');
     const [formData, setFormData] = useState(initialFormData);
     const [loading, setLoading] = useState(false);
-    const { carregarItens } = useCardapioContext();
+    const { carregarItens, items } = useCardapioContext();
+    const { canAddProduct } = usePlan();
     const { notify } = useToast();
     const { salvarNovoItem } = useFoodService();
 
@@ -66,6 +68,15 @@ const NewFoodModal = ({ isOpen, onClose }) => {
 
     const handleSalvar = async () => {
         if (!validarFormulario()) return;
+
+        // Check plan limit before saving
+        if (!canAddProduct(items.length)) {
+            notify(
+                "Você atingiu o limite de produtos do seu plano. Faça upgrade para adicionar mais produtos.",
+                "warning"
+            );
+            return;
+        }
 
         setLoading(true);
         try {
