@@ -3,10 +3,12 @@ import { Coffee } from "react-coolicons";
 import MesaForm from "@/features/config/components/mesasConfig/MesaForm";
 import MesaTable from "@/features/config/components/mesasConfig/MesaTable";
 import MesaActions from "@/features/config/components/mesasConfig/MesaActions";
+import LimitCounter from "@/components/LimitCounter";
 import { useCrudTables } from "@/features/config/hooks/useCrudTables";
 import { useState } from "react";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { QrCodeModal } from "./QrCodeModal";
+import { FEATURE_FLAGS } from "@/constants/planFeatures";
 
 const ConfigModal = ({ isOpen, onClose }) => {
     const {
@@ -57,6 +59,15 @@ const ConfigModal = ({ isOpen, onClose }) => {
                     </div>
                 ) : (
                     <>
+                        {/* Table Limit Counter */}
+                        <LimitCounter
+                            limitType="maxTables"
+                            currentCount={mesas.length}
+                            label="Mesas Cadastradas"
+                            featureFlag={FEATURE_FLAGS.UNLIMITED_TABLES}
+                            showUpgradeLink={true}
+                        />
+                        
                         <MesaForm
                             tableType={tableType}
                             qtd={qtd}
