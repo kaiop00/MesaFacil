@@ -6,11 +6,12 @@ import { auth, db } from "@/config/firebaseConfig";
 // ✅ Cria o contexto
 const AuthContext = createContext();
 
-// ✅ Provider que centraliza user, role, idRestaurante e loading
+// ✅ Provider que centraliza user, role, idRestaurante, plan e loading
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [idRestaurante, setIdRestaurante] = useState(null);
+  const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,10 +24,12 @@ export const AuthProvider = ({ children }) => {
 
         setRole(data.role || "user");
         setIdRestaurante(data.idRestaurante || null);
+        setPlan(data.plan || null);
       } else {
         setUser(null);
         setRole(null);
         setIdRestaurante(null);
+        setPlan(null);
       }
       setLoading(false);
     });
@@ -35,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, role, idRestaurante, loading }}>
+    <AuthContext.Provider value={{ user, role, idRestaurante, plan, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );
