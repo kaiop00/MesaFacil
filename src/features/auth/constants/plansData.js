@@ -11,6 +11,7 @@ export const PLANS_DATA = [
       { text: 'Cadastro de até 2 mesas', included: true },
       { text: 'Visualização básica dos pedidos', included: true },
       { text: 'Relatório simples (apenas pedidos do dia)', included: true },
+      { text: 'Promoções e anúncios', included: true },
       { text: 'Cadastro ilimitado de produtos', included: false },
       { text: 'Relatórios completos', included: false },
       { text: 'Dashboard completo', included: false },
@@ -36,10 +37,10 @@ export const PLANS_DATA = [
       { text: 'Relatórios completos (diário, semanal e mensal)', included: true },
       { text: 'Dashboard completo', included: true },
       { text: 'Visualização avançada dos pedidos', included: true },
+      { text: 'Promoções e anúncios', included: true },
       { text: 'Suporte técnico prioritário', included: true },
       { text: 'Controle de estoque', included: false },
       { text: 'Personalização de layout', included: false },
-      { text: 'Anúncios de promoções', included: false },
       { text: 'Gerenciamento de funcionários', included: false }
     ],
     limitations: []
@@ -55,11 +56,10 @@ export const PLANS_DATA = [
     features: [
       { text: 'Todas as funcionalidades do Plano Mensal', included: true },
       { text: 'Controle de estoque', included: true },
+      { text: 'Promoções e anúncios', included: true },
       { text: 'Renovação automática a cada 2 meses', included: true },
-      { text: 'Relatórios bimestrais especiais', included: true },
       { text: 'Desconto em relação ao plano mensal', included: true },
       { text: 'Personalização de layout', included: false },
-      { text: 'Anúncios de promoções', included: false },
       { text: 'Gerenciamento de funcionários', included: false }
     ],
     limitations: []
@@ -75,10 +75,10 @@ export const PLANS_DATA = [
     features: [
       { text: 'Todas as funcionalidades do Plano Bimestral', included: true },
       { text: 'Personalização de layout (cores, logo e fotos)', included: true },
+      { text: 'Promoções e anúncios', included: true },
       { text: 'Relatórios de desempenho trimestrais', included: true },
       { text: 'Maior desconto em relação ao bimestral', included: true },
       { text: 'Análises avançadas de vendas', included: true },
-      { text: 'Anúncios de promoções', included: false },
       { text: 'Gerenciamento de funcionários', included: false }
     ],
     limitations: []
@@ -111,41 +111,41 @@ export const PLAN_BENEFITS = {
     maxProducts: 5,
     maxTables: 2,
     reports: ['daily'],
-    features: ['basic_orders', 'simple_dashboard']
+    features: ['basic_orders', 'simple_dashboard', 'promotions_ads']  // Promoções no Free!
   },
   monthly: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
     reports: ['daily', 'weekly', 'monthly'],
-    features: ['advanced_orders', 'full_dashboard', 'priority_support']
+    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads']  // Promoções incluídas
   },
   bimonthly: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly', 'bimonthly'],
-    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'inventory_control']
+    reports: ['daily', 'weekly', 'monthly'],
+    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'inventory_control', 'promotions_ads']  // Promoções incluídas
   },
   quarterly: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly', 'quarterly'],
-    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'inventory_control', 'custom_layout']
+    reports: ['daily', 'weekly', 'monthly'],
+    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'inventory_control', 'custom_layout', 'promotions_ads']  // Promoções incluídas
   },
   semiannual: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly', 'semiannual'],
+    reports: ['daily', 'weekly', 'monthly'],
     features: [
       'advanced_orders', 
       'full_dashboard', 
       'premium_support', 
       'inventory_control', 
       'custom_layout',
-      'promotions_ads',
+      'promotions_ads',  // Promoções incluídas
       'employee_management',
       'advanced_delivery',
       'auto_backup'

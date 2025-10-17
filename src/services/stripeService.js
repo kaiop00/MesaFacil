@@ -203,6 +203,32 @@ class StripeService {
   }
 
   /**
+   * Get current plan from Stripe subscription
+   * Returns plan information mapped to internal plan structure
+   * @param {string} customerId - Stripe Customer ID
+   * @returns {Promise<Object>} Plan information
+   */
+  async getCurrentPlan(customerId) {
+    try {
+      if (!customerId) {
+        return extractPlanFromSubscription(null);
+      }
+
+      const subscriptionData = await this.getCustomerSubscription(customerId);
+      
+      if (!subscriptionData.subscription) {
+        return extractPlanFromSubscription(null);
+      }
+
+      return extractPlanFromSubscription(subscriptionData.subscription);
+    } catch (error) {
+      console.error('Error getting current plan:', error);
+      // Return free plan on error
+      return extractPlanFromSubscription(null);
+    }
+  }
+
+  /**
    * Cancel subscription
    * @param {string} subscriptionId - Stripe Subscription ID
    * @returns {Promise<Object>} Cancellation response
@@ -257,12 +283,13 @@ class StripeService {
 
   /**
    * Activate user plan after successful payment
+   * Saves Stripe customer and subscription references to Firestore
    * @param {string} userId - Firebase User ID
-   * @param {string} planId - Plan identifier
-   * @param {Object} stripeData - Stripe customer and subscription data
+   * @param {string} stripeCustomerId - Stripe Customer ID
+   * @param {string} stripeSubscriptionId - Stripe Subscription ID
    * @returns {Promise<Object>} Activation response
    */
-  async activateUserPlan(userId, planId, stripeData) {
+  async activateUserPlan(userId, stripeCustomerId, stripeSubscriptionId) {
     try {
       const response = await fetch(`${this.apiBaseUrl}/activatePlan`, {
         method: 'POST',
@@ -271,10 +298,8 @@ class StripeService {
         },
         body: JSON.stringify({
           userId,
-          planId,
-          stripeCustomerId: stripeData.customerId,
-          stripeSubscriptionId: stripeData.subscriptionId,
-          sessionId: stripeData.sessionId
+          stripeCustomerId,
+          stripeSubscriptionId
         }),
       });
 
@@ -309,6 +334,58 @@ export const STRIPE_PRICE_IDS = {
   bimonthly: import.meta.env.VITE_STRIPE_BIMONTHLY_PRICE_ID,
   quarterly: import.meta.env.VITE_STRIPE_QUARTERLY_PRICE_ID,
   semiannual: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
+};
+
+/**
+ * Map Stripe Price ID to internal Plan ID
+ * @param {string} stripePriceId - Stripe Price ID from subscription
+ * @returns {string} Internal plan ID (free, monthly, bimonthly, quarterly, semiannual)
+ */
+export const mapStripePriceToPlanId = (stripePriceId) => {
+  if (!stripePriceId) return 'free';
+  
+  // Reverse mapping from price ID to plan ID
+  for (const [planId, priceId] of Object.entries(STRIPE_PRICE_IDS)) {
+    if (priceId === stripePriceId) {
+      return planId;
+    }
+  }
+  
+  // If no match found, return free
+  return 'free';
+};
+
+/**
+ * Extract plan information from Stripe subscription
+ * @param {Object} subscription - Stripe subscription object
+ * @returns {Object} Plan information with planId, status, expiresAt, etc.
+ */
+export const extractPlanFromSubscription = (subscription) => {
+  if (!subscription) {
+    return {
+      planId: 'free',
+      status: 'active',
+      expiresAt: null,
+      stripeSubscriptionId: null,
+      stripePriceId: null
+    };
+  }
+
+  // Get the price ID from the subscription
+  const stripePriceId = subscription.items?.data?.[0]?.price?.id || subscription.plan?.id;
+  
+  // Map to internal plan ID
+  const planId = mapStripePriceToPlanId(stripePriceId);
+  
+  return {
+    planId,
+    status: subscription.status,
+    expiresAt: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null,
+    createdAt: subscription.created ? new Date(subscription.created * 1000) : null,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+    stripeSubscriptionId: subscription.id,
+    stripePriceId
+  };
 };
 
 /**

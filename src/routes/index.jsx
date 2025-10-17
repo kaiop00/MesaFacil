@@ -2,8 +2,10 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 import PrivateRoute from "@/components/PrivateRoute";
+import RequireFeature from "@/components/RequireFeature";
 import RedirectHandler from "@/components/RedirectHandler";
 import { Navigate } from "react-router-dom";
+import { FEATURE_FLAGS } from "@/constants/planFeatures";
 
 //Importação das páginas estáticas
 import PrivacyPage from "@/static/privacy/PrivacyPage";
@@ -99,10 +101,71 @@ const router = createBrowserRouter([
           { path: "pedidos", element: <TablesProvider> <OrderPage /> </TablesProvider> },
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <TablesProvider> <ReportPage /> </TablesProvider> },
-          { path: "promocoes", element: <PromotionPage /> },
-          { path: "usuarios", element: <UsersPage /> },
-          { path: "itens", element: <ItemsPage /> },
-          { path: "movimentacao", element: <MovementsPage /> },
+          { 
+            path: "promocoes", 
+            element: <PromotionPage />  // Promoções disponíveis para todos os planos
+          },
+        { 
+          path: "usuarios", 
+          element: (
+            <RequireFeature
+              feature={FEATURE_FLAGS.EMPLOYEE_MANAGEMENT}
+              featureName="Gerenciamento de Funcionários"
+              requiredPlan="semiannual"
+              description="Gerencie sua equipe com controle completo de permissões e acessos. Adicione funcionários, defina papéis e acompanhe atividades."
+              benefits={[
+                "Criação ilimitada de usuários",
+                "Controle granular de permissões",
+                "Diferentes papéis (admin, garçom, cozinha)",
+                "Histórico de atividades por usuário",
+                "Ativação e desativação de contas",
+                "Gerenciamento de senhas e acessos"
+              ]}
+            >
+              <UsersPage />
+            </RequireFeature>
+          )
+        },
+        { 
+          path: "itens", 
+          element: (
+              <RequireFeature
+                feature={FEATURE_FLAGS.INVENTORY_CONTROL}
+                featureName="Controle de Estoque"
+                requiredPlan="bimonthly"
+                description="Gerencie seu estoque de ingredientes e itens com precisão. Controle entradas, saídas e acompanhe o saldo em tempo real."
+                benefits={[
+                  "Cadastro ilimitado de itens e ingredientes",
+                  "Controle de estoque em tempo real",
+                  "Histórico completo de movimentações",
+                  "Alertas de estoque baixo",
+                  "Relatórios de consumo e desperdício"
+                ]}
+              >
+                <ItemsPage />
+              </RequireFeature>
+            )
+          },
+          { 
+            path: "movimentacao", 
+            element: (
+              <RequireFeature
+                feature={FEATURE_FLAGS.INVENTORY_CONTROL}
+                featureName="Movimentações de Estoque"
+                requiredPlan="bimonthly"
+                description="Registre e acompanhe todas as movimentações do seu estoque. Controle entradas, saídas e ajustes com histórico detalhado."
+                benefits={[
+                  "Registro de todas as entradas e saídas",
+                  "Histórico completo de movimentações",
+                  "Rastreabilidade de produtos",
+                  "Análise de consumo por período",
+                  "Identificação de perdas e desperdícios"
+                ]}
+              >
+                <MovementsPage />
+              </RequireFeature>
+            )
+          },
         ],
       }
     ]

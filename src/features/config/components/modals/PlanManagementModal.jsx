@@ -17,7 +17,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
     getAccessLevel
   } = usePlanManagement();
   
-  const { user } = useAuth();
+  const { user, stripeCustomerId } = useAuth();
   const [changingPlan, setChangingPlan] = useState(false);
   const [selectedNewPlan, setSelectedNewPlan] = useState(null);
   const { notify } = useToast();
@@ -70,13 +70,13 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
   };
 
   const handleBillingPortal = async () => {
-    if (!user?.stripeCustomerId) {
+    if (!stripeCustomerId) {
       notify('Nenhuma informação de faturamento encontrada.', 'warning');
       return;
     }
 
     try {
-      await stripeService.redirectToBillingPortal(user.stripeCustomerId);
+      await stripeService.redirectToBillingPortal(stripeCustomerId);
     } catch (error) {
       console.error('Erro ao acessar portal de faturamento:', error);
       notify('Erro ao acessar o portal de faturamento. Tente novamente.', 'error');

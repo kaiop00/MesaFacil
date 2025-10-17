@@ -51,63 +51,8 @@ const cors = (req, res, next) => {
     return;
   }
   
-  next();
+  next;
 };
-
-/**
- * Helper function to get plan features
- */
-function getPlanFeatures(planId) {
-  const features = {
-    free: {
-      accessLevel: 40,
-      maxProducts: 5,
-      maxTables: 2,
-      reports: ["daily"],
-      features: ["basic_orders", "simple_dashboard"],
-    },
-    monthly: {
-      accessLevel: 100,
-      maxProducts: "unlimited",
-      maxTables: "unlimited",
-      reports: ["daily", "weekly", "monthly"],
-      features: ["advanced_orders", "full_dashboard", "priority_support"],
-    },
-    bimonthly: {
-      accessLevel: 100,
-      maxProducts: "unlimited",
-      maxTables: "unlimited",
-      reports: ["daily", "weekly", "monthly", "bimonthly"],
-      features: ["advanced_orders", "full_dashboard", "priority_support", "inventory_control"],
-    },
-    quarterly: {
-      accessLevel: 100,
-      maxProducts: "unlimited",
-      maxTables: "unlimited",
-      reports: ["daily", "weekly", "monthly", "quarterly"],
-      features: ["advanced_orders", "full_dashboard", "priority_support", "inventory_control", "custom_layout"],
-    },
-    semiannual: {
-      accessLevel: 100,
-      maxProducts: "unlimited",
-      maxTables: "unlimited",
-      reports: ["daily", "weekly", "monthly", "semiannual"],
-      features: [
-        "advanced_orders",
-        "full_dashboard",
-        "premium_support",
-        "inventory_control",
-        "custom_layout",
-        "promotions_ads",
-        "employee_management",
-        "advanced_delivery",
-        "auto_backup",
-      ],
-    },
-  };
-
-  return features[planId] || features.free;
-}
 
 /**
  * Create Stripe Checkout Session
@@ -233,6 +178,9 @@ exports.verifySession = onRequest(
 /**
  * Activate User Plan
  * POST /activatePlan
+ * 
+ * Saves Stripe customer and subscription reference to Firestore.
+ * Plan details are fetched from Stripe API on the frontend.
  */
 exports.activatePlan = onRequest(
   {secrets: [stripeSecretKey]},
@@ -244,44 +192,40 @@ exports.activatePlan = onRequest(
         }
 
         const stripe = require("stripe")(getStripeSecretKey());
-        const {userId, planId, stripeCustomerId, stripeSubscriptionId, sessionId} = req.body;
+        const {userId, stripeCustomerId, stripeSubscriptionId} = req.body;
 
         // Validate required fields
-        if (!userId || !planId || !stripeSubscriptionId) {
+        if (!userId || !stripeCustomerId || !stripeSubscriptionId) {
           return res.status(400).json({
-            error: "Missing required fields: userId, planId, stripeSubscriptionId",
+            error: "Missing required fields: userId, stripeCustomerId, stripeSubscriptionId",
           });
         }
 
-        // Get subscription details from Stripe
+        // Verify subscription exists in Stripe
         const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
 
-        // Update user plan in Firestore
+        if (!subscription) {
+          return res.status(404).json({error: "Subscription not found in Stripe"});
+        }
+
+        // Save only Stripe references to Firestore
+        // Plan details will be fetched from Stripe API on the frontend
         await admin.firestore().collection("users").doc(userId).update({
-          plan: {
-            planId: planId,
-            stripeCustomerId: stripeCustomerId,
-            stripeSubscriptionId: stripeSubscriptionId,
-            sessionId: sessionId,
-            activatedAt: FieldValue.serverTimestamp(),
-            expiresAt: new Date(subscription.current_period_end * 1000),
-            status: subscription.status,
-            features: getPlanFeatures(planId),
-          },
-          stripeCustomerId: stripeCustomerId, // For easy queries
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: stripeSubscriptionId,
           updatedAt: FieldValue.serverTimestamp(),
         });
 
-        logger.info("Plan activated", {userId, planId, subscriptionId: stripeSubscriptionId});
+        logger.info("Stripe references saved", {userId, subscriptionId: stripeSubscriptionId});
 
         res.json({
           success: true,
-          message: "Plan activated successfully",
-          planId,
-          expiresAt: new Date(subscription.current_period_end * 1000),
+          message: "Stripe references saved successfully",
+          subscriptionId: stripeSubscriptionId,
+          customerId: stripeCustomerId,
         });
       } catch (error) {
-        logger.error("Error activating plan", {error: error.message});
+        logger.error("Error saving Stripe references", {error: error.message});
         res.status(500).json({error: error.message});
       }
     });

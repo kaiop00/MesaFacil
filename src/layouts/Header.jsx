@@ -66,18 +66,12 @@ const Header = () => {
       }
 
       const userData = userDocSnap.data();
-      const planId = userData?.plan?.planId;
-      const stripeCustomerId = userData?.plan?.stripeCustomerId;
+      const stripeCustomerId = userData?.stripeCustomerId;
 
-      // Check if user is on free plan
-      if (planId === 'free') {
+      // Check if user has a Stripe customer ID
+      if (!stripeCustomerId) {
         notify('Você está no plano gratuito. Escolha um plano pago para continuar.', 'info');
         navigate('/selecionar-plano');
-        return;
-      }
-
-      if (!stripeCustomerId) {
-        notify('Nenhuma assinatura ativa encontrada. Por favor, assine um plano primeiro.', 'warning');
         return;
       }
 

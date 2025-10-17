@@ -65,15 +65,11 @@ const PaymentSuccessPage = () => {
             throw new Error('Customer ID ou Subscription ID não encontrado na sessão');
           }
 
-          // Activate the plan
-          await stripeService.activateUserPlan(user.uid, planId, {
-            customerId: customerId,
-            subscriptionId: subscriptionId,
-            sessionId: sessionId
-          });
+          // Save Stripe references to Firestore (not plan details)
+          await stripeService.activateUserPlan(user.uid, customerId, subscriptionId);
 
-          // Update local plan state
-          await setUserPlan(user.uid, planId);
+          // Update local plan state (will fetch from Stripe)
+          await setUserPlan(user.uid, customerId, subscriptionId);
 
           setVerificationStatus('success');
           notify(`Plano ${plan.name} ativado com sucesso!`, 'success');
@@ -145,15 +141,11 @@ const PaymentSuccessPage = () => {
           throw new Error('Customer ID ou Subscription ID não encontrado na sessão');
         }
 
-        // Activate the plan
-        await stripeService.activateUserPlan(user.uid, planId, {
-          customerId: customerId,
-          subscriptionId: subscriptionId,
-          sessionId: sessionId
-        });
+        // Save Stripe references to Firestore (not plan details)
+        await stripeService.activateUserPlan(user.uid, customerId, subscriptionId);
 
-        // Update local plan state
-        await setUserPlan(user.uid, planId);
+        // Update local plan state (will fetch from Stripe)
+        await setUserPlan(user.uid, customerId, subscriptionId);
 
         setVerificationStatus('success');
         notify(`Plano ${plan.name} ativado com sucesso!`, 'success');
