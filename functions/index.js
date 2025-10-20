@@ -41,17 +41,17 @@ setGlobalOptions({ maxInstances: 10 });
 /**
  * CORS middleware for handling cross-origin requests
  */
-const cors = (req, res, next) => {
+const corsHandler = (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   
   if (req.method === "OPTIONS") {
     res.status(204).send("");
-    return;
+    return true; // Return true to indicate response was sent
   }
   
-  next;
+  return false; // Return false to continue processing
 };
 
 /**
@@ -61,69 +61,68 @@ const cors = (req, res, next) => {
 exports.createCheckoutSession = onRequest(
   {secrets: [stripeSecretKey]},
   async (req, res) => {
-    cors(req, res, async () => {
-      try {
-        if (req.method !== "POST") {
-          return res.status(405).json({error: "Method not allowed"});
-        }
+    // Handle CORS
+    if (corsHandler(req, res)) return;
 
-        const stripe = require("stripe")(getStripeSecretKey());
-        const {priceId, customerEmail, metadata, successUrl, cancelUrl} = req.body;
-
-        // Validate required fields
-        if (!priceId || !customerEmail || !successUrl || !cancelUrl) {
-          return res.status(400).json({
-            error: "Missing required fields: priceId, customerEmail, successUrl, cancelUrl",
-          });
-        }
-
-        // Create or retrieve existing customer
-        let customer;
-        const existingCustomers = await stripe.customers.list({
-          email: customerEmail,
-          limit: 1,
-        });
-
-        if (existingCustomers.data.length > 0) {
-          customer = existingCustomers.data[0];
-        } else {
-          customer = await stripe.customers.create({
-            email: customerEmail,
-            metadata: {
-              firebase_uid: metadata?.userId || "",
-            },
-          });
-        }
-
-        // Create checkout session
-        const session = await stripe.checkout.sessions.create({
-          customer: customer.id,
-          payment_method_types: ["card"],
-          line_items: [
-            {
-              price: priceId,
-              quantity: 1,
-            },
-          ],
-          mode: "subscription",
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-          metadata: metadata || {},
-          subscription_data: {
-            metadata: metadata || {},
-          },
-          allow_promotion_codes: true,
-          billing_address_collection: "required",
-        });
-
-        logger.info("Checkout session created", {sessionId: session.id, customer: customer.id});
-
-        res.json({id: session.id, url: session.url});
-      } catch (error) {
-        logger.error("Error creating checkout session", {error: error.message});
-        res.status(500).json({error: error.message});
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).json({error: "Method not allowed"});
       }
-    });
+
+      const stripe = require("stripe")(getStripeSecretKey());
+      const {priceId, customerEmail, metadata, successUrl, cancelUrl} = req.body;
+
+      // Validate required fields
+      if (!priceId || !customerEmail || !successUrl || !cancelUrl) {
+        return res.status(400).json({
+          error: "Missing required fields: priceId, customerEmail, successUrl, cancelUrl",
+        });
+      }
+
+      // Create or retrieve existing customer
+      let customer;
+      const existingCustomers = await stripe.customers.list({
+        email: customerEmail,
+        limit: 1,
+      });
+
+      if (existingCustomers.data.length > 0) {
+        customer = existingCustomers.data[0];
+      } else {
+        customer = await stripe.customers.create({
+          email: customerEmail,
+          metadata: {
+            firebase_uid: metadata?.userId || "",
+          },
+        });
+      }
+
+      // Create checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: "subscription",
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: metadata || {},
+        subscription_data: {
+          metadata: metadata || {},
+        },
+        allow_promotion_codes: true,
+        billing_address_collection: "required",
+      });
+
+      res.json({id: session.id, url: session.url});
+    } catch (error) {
+      logger.error("Error creating checkout session", {error: error.message});
+      res.status(500).json({error: error.message});
+    }
   }
 );
 
@@ -134,44 +133,45 @@ exports.createCheckoutSession = onRequest(
 exports.verifySession = onRequest(
   {secrets: [stripeSecretKey]},
   async (req, res) => {
-    cors(req, res, async () => {
-      try {
-        if (req.method !== "GET") {
-          return res.status(405).json({error: "Method not allowed"});
-        }
+    // Handle CORS
+    if (corsHandler(req, res)) return;
 
-        const stripe = require("stripe")(getStripeSecretKey());
-        const sessionId = req.params[0]; // Get session ID from URL path
-
-        if (!sessionId) {
-          return res.status(400).json({error: "Session ID is required"});
-        }
-
-        // Retrieve the checkout session
-        const session = await stripe.checkout.sessions.retrieve(sessionId, {
-          expand: ["subscription", "customer"],
-        });
-
-        logger.info("Session verified", {
-          sessionId: session.id,
-          paymentStatus: session.payment_status,
-        });
-
-        res.json({
-          id: session.id,
-          payment_status: session.payment_status,
-          customer: session.customer,
-          subscription: session.subscription,
-          metadata: session.metadata,
-          amount_total: session.amount_total,
-          currency: session.currency,
-          created: session.created,
-        });
-      } catch (error) {
-        logger.error("Error verifying session", {error: error.message});
-        res.status(500).json({error: error.message});
+    try {
+      if (req.method !== "GET") {
+        return res.status(405).json({error: "Method not allowed"});
       }
-    });
+
+      const stripe = require("stripe")(getStripeSecretKey());
+      const sessionId = req.params[0]; // Get session ID from URL path
+
+      if (!sessionId) {
+        return res.status(400).json({error: "Session ID is required"});
+      }
+
+      // Retrieve the checkout session
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["subscription", "customer"],
+      });
+
+      logger.info("Session verified", {
+        sessionId: session.id,
+        paymentStatus: session.payment_status,
+      });
+
+      res.json({
+        id: session.id,
+        payment_status: session.payment_status,
+        customer: session.customer,
+        subscription: session.subscription,
+        metadata: session.metadata,
+        amount_total: session.amount_total,
+        currency: session.currency,
+        created: session.created,
+      });
+    } catch (error) {
+      logger.error("Error verifying session", {error: error.message});
+      res.status(500).json({error: error.message});
+    }
   }
 );
 
@@ -185,50 +185,51 @@ exports.verifySession = onRequest(
 exports.activatePlan = onRequest(
   {secrets: [stripeSecretKey]},
   async (req, res) => {
-    cors(req, res, async () => {
-      try {
-        if (req.method !== "POST") {
-          return res.status(405).json({error: "Method not allowed"});
-        }
+    // Handle CORS
+    if (corsHandler(req, res)) return;
 
-        const stripe = require("stripe")(getStripeSecretKey());
-        const {userId, stripeCustomerId, stripeSubscriptionId} = req.body;
-
-        // Validate required fields
-        if (!userId || !stripeCustomerId || !stripeSubscriptionId) {
-          return res.status(400).json({
-            error: "Missing required fields: userId, stripeCustomerId, stripeSubscriptionId",
-          });
-        }
-
-        // Verify subscription exists in Stripe
-        const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-
-        if (!subscription) {
-          return res.status(404).json({error: "Subscription not found in Stripe"});
-        }
-
-        // Save only Stripe references to Firestore
-        // Plan details will be fetched from Stripe API on the frontend
-        await admin.firestore().collection("users").doc(userId).update({
-          stripeCustomerId: stripeCustomerId,
-          stripeSubscriptionId: stripeSubscriptionId,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-
-        logger.info("Stripe references saved", {userId, subscriptionId: stripeSubscriptionId});
-
-        res.json({
-          success: true,
-          message: "Stripe references saved successfully",
-          subscriptionId: stripeSubscriptionId,
-          customerId: stripeCustomerId,
-        });
-      } catch (error) {
-        logger.error("Error saving Stripe references", {error: error.message});
-        res.status(500).json({error: error.message});
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).json({error: "Method not allowed"});
       }
-    });
+
+      const stripe = require("stripe")(getStripeSecretKey());
+      const {userId, stripeCustomerId, stripeSubscriptionId} = req.body;
+
+      // Validate required fields
+      if (!userId || !stripeCustomerId || !stripeSubscriptionId) {
+        return res.status(400).json({
+          error: "Missing required fields: userId, stripeCustomerId, stripeSubscriptionId",
+        });
+      }
+
+      // Verify subscription exists in Stripe
+      const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+
+      if (!subscription) {
+        return res.status(404).json({error: "Subscription not found in Stripe"});
+      }
+
+      // Save only Stripe references to Firestore
+      // Plan details will be fetched from Stripe API on the frontend
+      await admin.firestore().collection("users").doc(userId).update({
+        stripeCustomerId: stripeCustomerId,
+        stripeSubscriptionId: stripeSubscriptionId,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      logger.info("Stripe references saved", {userId, subscriptionId: stripeSubscriptionId});
+
+      res.json({
+        success: true,
+        message: "Stripe references saved successfully",
+        subscriptionId: stripeSubscriptionId,
+        customerId: stripeCustomerId,
+      });
+    } catch (error) {
+      logger.error("Error saving Stripe references", {error: error.message});
+      res.status(500).json({error: error.message});
+    }
   }
 );
 
@@ -239,34 +240,35 @@ exports.activatePlan = onRequest(
 exports.createPortalSession = onRequest(
   {secrets: [stripeSecretKey]},
   async (req, res) => {
-    cors(req, res, async () => {
-      try {
-        if (req.method !== "POST") {
-          return res.status(405).json({error: "Method not allowed"});
-        }
+    // Handle CORS
+    if (corsHandler(req, res)) return;
 
-        const stripe = require("stripe")(getStripeSecretKey());
-        const {customerId, returnUrl} = req.body;
-
-        if (!customerId || !returnUrl) {
-          return res.status(400).json({
-            error: "Missing required fields: customerId, returnUrl",
-          });
-        }
-
-        const portalSession = await stripe.billingPortal.sessions.create({
-          customer: customerId,
-          return_url: returnUrl,
-        });
-
-        logger.info("Portal session created", {customerId, portalUrl: portalSession.url});
-
-        res.json({url: portalSession.url});
-      } catch (error) {
-        logger.error("Error creating portal session", {error: error.message});
-        res.status(500).json({error: error.message});
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).json({error: "Method not allowed"});
       }
-    });
+
+      const stripe = require("stripe")(getStripeSecretKey());
+      const {customerId, returnUrl} = req.body;
+
+      if (!customerId || !returnUrl) {
+        return res.status(400).json({
+          error: "Missing required fields: customerId, returnUrl",
+        });
+      }
+
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+      });
+
+      logger.info("Portal session created", {customerId, portalUrl: portalSession.url});
+
+      res.json({url: portalSession.url});
+    } catch (error) {
+      logger.error("Error creating portal session", {error: error.message});
+      res.status(500).json({error: error.message});
+    }
   }
 );
 
@@ -277,41 +279,44 @@ exports.createPortalSession = onRequest(
 exports.getCustomerSubscription = onRequest(
   {secrets: [stripeSecretKey]},
   async (req, res) => {
-    cors(req, res, async () => {
-      try {
-        if (req.method !== "GET") {
-          return res.status(405).json({error: "Method not allowed"});
-        }
+    // Handle CORS
+    if (corsHandler(req, res)) return;
 
-        const stripe = require("stripe")(getStripeSecretKey());
-        const customerId = req.params[0]; // Get customer ID from URL path
-
-        if (!customerId) {
-          return res.status(400).json({error: "Customer ID is required"});
-        }
-
-        const subscriptions = await stripe.subscriptions.list({
-          customer: customerId,
-          status: "all",
-          limit: 1,
-        });
-
-        if (subscriptions.data.length > 0) {
-          const subscription = subscriptions.data[0];
-          res.json({
-            subscription,
-            status: subscription.status,
-            currentPeriodEnd: subscription.current_period_end,
-            currentPeriodStart: subscription.current_period_start,
-          });
-        } else {
-          res.json({subscription: null});
-        }
-      } catch (error) {
-        logger.error("Error getting customer subscription", {error: error.message});
-        res.status(500).json({error: error.message});
+    try {
+      if (req.method !== "GET") {
+        return res.status(405).json({error: "Method not allowed"});
       }
-    });
+
+      const stripe = require("stripe")(getStripeSecretKey());
+      const customerId = req.params[0]; // Get customer ID from URL path
+
+      if (!customerId) {
+        return res.status(400).json({error: "Customer ID is required"});
+      }
+
+      logger.info("Fetching subscriptions for customer", {customerId});
+
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "all",
+        limit: 1,
+      });
+
+      if (subscriptions.data.length > 0) {
+        const subscription = subscriptions.data[0];
+        res.json({
+          subscription,
+          status: subscription.status,
+          currentPeriodEnd: subscription.current_period_end,
+          currentPeriodStart: subscription.current_period_start,
+        });
+      } else {
+        res.json({subscription: null});
+      }
+    } catch (error) {
+      logger.error("Error getting customer subscription", {error: error.message});
+      res.status(500).json({error: error.message});
+    }
   }
 );
 
@@ -322,33 +327,34 @@ exports.getCustomerSubscription = onRequest(
 exports.cancelSubscription = onRequest(
   {secrets: [stripeSecretKey]},
   async (req, res) => {
-    cors(req, res, async () => {
-      try {
-        if (req.method !== "POST") {
-          return res.status(405).json({error: "Method not allowed"});
-        }
+    // Handle CORS
+    if (corsHandler(req, res)) return;
 
-        const stripe = require("stripe")(getStripeSecretKey());
-        const subscriptionId = req.params[0]; // Get subscription ID from URL path
-
-        if (!subscriptionId) {
-          return res.status(400).json({error: "Subscription ID is required"});
-        }
-
-        const subscription = await stripe.subscriptions.update(subscriptionId, {
-          cancel_at_period_end: true,
-        });
-
-        logger.info("Subscription cancellation scheduled", {subscriptionId});
-
-        res.json({
-          subscription,
-          message: "Subscription will be canceled at the end of the current period",
-        });
-      } catch (error) {
-        logger.error("Error canceling subscription", {error: error.message});
-        res.status(500).json({error: error.message});
+    try {
+      if (req.method !== "POST") {
+        return res.status(405).json({error: "Method not allowed"});
       }
-    });
+
+      const stripe = require("stripe")(getStripeSecretKey());
+      const subscriptionId = req.params[0]; // Get subscription ID from URL path
+
+      if (!subscriptionId) {
+        return res.status(400).json({error: "Subscription ID is required"});
+      }
+
+      const subscription = await stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true,
+      });
+
+      logger.info("Subscription cancellation scheduled", {subscriptionId});
+
+      res.json({
+        subscription,
+        message: "Subscription will be canceled at the end of the current period",
+      });
+    } catch (error) {
+      logger.error("Error canceling subscription", {error: error.message});
+      res.status(500).json({error: error.message});
+    }
   }
 );
