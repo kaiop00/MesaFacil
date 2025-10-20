@@ -11,7 +11,7 @@ export const PLANS_DATA = [
       { text: 'Cadastro de até 2 mesas', included: true },
       { text: 'Visualização básica dos pedidos', included: true },
       { text: 'Relatório simples (apenas pedidos do dia)', included: true },
-      { text: 'Promoções e anúncios', included: true },
+      { text: 'Promoções', included: false },
       { text: 'Cadastro ilimitado de produtos', included: false },
       { text: 'Relatórios completos', included: false },
       { text: 'Dashboard completo', included: false },
@@ -37,7 +37,7 @@ export const PLANS_DATA = [
       { text: 'Relatórios completos (diário, semanal e mensal)', included: true },
       { text: 'Dashboard completo', included: true },
       { text: 'Visualização avançada dos pedidos', included: true },
-      { text: 'Promoções e anúncios', included: true },
+      { text: 'Promoções', included: true },
       { text: 'Suporte técnico prioritário', included: true },
       { text: 'Controle de estoque', included: false },
       { text: 'Personalização de layout', included: false },
@@ -56,7 +56,6 @@ export const PLANS_DATA = [
     features: [
       { text: 'Todas as funcionalidades do Plano Mensal', included: true },
       { text: 'Controle de estoque', included: true },
-      { text: 'Promoções e anúncios', included: true },
       { text: 'Renovação automática a cada 2 meses', included: true },
       { text: 'Desconto em relação ao plano mensal', included: true },
       { text: 'Personalização de layout', included: false },
@@ -75,10 +74,7 @@ export const PLANS_DATA = [
     features: [
       { text: 'Todas as funcionalidades do Plano Bimestral', included: true },
       { text: 'Personalização de layout (cores, logo e fotos)', included: true },
-      { text: 'Promoções e anúncios', included: true },
-      { text: 'Relatórios de desempenho trimestrais', included: true },
       { text: 'Maior desconto em relação ao bimestral', included: true },
-      { text: 'Análises avançadas de vendas', included: true },
       { text: 'Gerenciamento de funcionários', included: false }
     ],
     limitations: []
@@ -93,13 +89,9 @@ export const PLANS_DATA = [
     stripePriceId: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades dos planos anteriores', included: true },
-      { text: 'Anúncios de promoções', included: true },
       { text: 'Gerenciamento de funcionários', included: true },
       { text: 'Maior desconto entre todos os planos', included: true },
-      { text: 'Suporte técnico premium', included: true },
-      { text: 'Relatórios semestrais completos', included: true },
-      { text: 'Integração com delivery avançada', included: true },
-      { text: 'Backup automático dos dados', included: true }
+      { text: 'Suporte técnico premium', included: true }
     ],
     limitations: []
   }
