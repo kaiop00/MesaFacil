@@ -17,6 +17,11 @@ export default function PlanInfo({ showDetailed = false }) {
     );
   }
 
+  // Only show for free plan users
+  if (currentPlan.planId !== 'free') {
+    return null;
+  }
+
   const planData = PLANS_DATA.find((p) => p.id === currentPlan.planId);
 
   return (

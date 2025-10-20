@@ -28,10 +28,15 @@ const LimitCounter = ({
   featureFlag,
   showUpgradeLink = true
 }) => {
-  const { getUsageStats } = usePlan();
+  const { getUsageStats, currentPlan } = usePlan();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const stats = getUsageStats(limitType, currentCount);
+
+  // Don't render for paid plans (only show for free plan)
+  if (currentPlan?.planId !== 'free') {
+    return null;
+  }
 
   console.log(stats);
 
@@ -130,8 +135,13 @@ LimitCounter.propTypes = {
  * CompactLimitCounter - Minimal inline version
  */
 export const CompactLimitCounter = ({ limitType, currentCount, label }) => {
-  const { getUsageStats } = usePlan();
+  const { getUsageStats, currentPlan } = usePlan();
   const stats = getUsageStats(limitType, currentCount);
+
+  // Don't render for paid plans (only show for free plan)
+  if (currentPlan?.planId !== 'free') {
+    return null;
+  }
 
   return (
     <span className="text-sm text-gray-600">
