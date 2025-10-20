@@ -75,8 +75,26 @@ const Header = () => {
         return;
       }
 
-      notify('Redirecionando para o portal de faturamento...', 'info');
-      await stripeService.redirectToBillingPortal(stripeCustomerId);
+      // Check if user has an active subscription
+      try {
+        const subscriptionData = await stripeService.getCustomerSubscription(stripeCustomerId);
+        
+        if (!subscriptionData.subscription) {
+          // No subscription found, redirect to plan selection
+          notify('Você não possui uma assinatura ativa. Escolha um plano para continuar.', 'info');
+          navigate('/selecionar-plano');
+          return;
+        }
+
+        // Has subscription, redirect to billing portal
+        notify('Redirecionando para o portal de faturamento...', 'info');
+        await stripeService.redirectToBillingPortal(stripeCustomerId);
+      } catch (error) {
+        console.error('Erro ao verificar assinatura:', error);
+        // On error checking subscription, redirect to plan selection as fallback
+        notify('Redirecionando para seleção de planos...', 'info');
+        navigate('/selecionar-plano');
+      }
     } catch (error) {
       console.error('Erro ao acessar portal de faturamento:', error);
       notify('Erro ao acessar o portal de faturamento. Tente novamente.', 'error');
