@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
@@ -12,10 +12,48 @@ import mesafacil from '@/assets/mesafacil.png';
 export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, stripeCustomerId } = useAuth();
   const { setUserPlan } = usePlanManagement();
   const { notify } = useToast();
+
+  // Check if user has an existing subscription in Stripe
+  useEffect(() => {
+    const checkExistingSubscription = async () => {
+      if (!stripeCustomerId) {
+        // No Stripe customer, show plan selection
+        setIsCheckingSubscription(false);
+        return;
+      }
+
+      try {
+        // Fetch subscription from Stripe
+        const subscriptionData = await stripeService.getCustomerSubscription(stripeCustomerId);
+        
+        // If subscription exists (active or inactive), redirect to Billing Portal
+        if (subscriptionData.subscription) {
+          notify('Você já possui uma assinatura. Redirecionando para o portal de gerenciamento...', 'info');
+          
+          // Redirect to Billing Portal after short delay
+          setTimeout(async () => {
+            await stripeService.redirectToBillingPortal(stripeCustomerId);
+          }, 1500);
+          
+          return; // Don't set isCheckingSubscription to false, keep loading state
+        }
+        
+        // No subscription found, show plan selection
+        setIsCheckingSubscription(false);
+      } catch (error) {
+        console.error('Error checking existing subscription:', error);
+        // On error, show plan selection anyway
+        setIsCheckingSubscription(false);
+      }
+    };
+
+    checkExistingSubscription();
+  }, [stripeCustomerId, notify]);
 
   const handlePlanSelect = (plan) => {
     setSelectedPlan(plan);
@@ -59,14 +97,24 @@ export default function PlanSelectionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
-      {/* Header com slogan */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Show loading while checking for existing subscription */}
+      {isCheckingSubscription ? (
+        <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <img src={mesafacil} alt="MesaFácil Logo" className="h-12 mx-auto mb-4" />
+            <LoadingSpinner size="lg" />
+            <p className="mt-4 text-gray-600">Verificando sua assinatura...</p>
           </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Header com slogan */}
+          <div className="bg-white shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="text-center">
+                <img src={mesafacil} alt="MesaFácil Logo" className="h-12 mx-auto mb-4" />
+              </div>
+            </div>
+          </div>
 
       {/* Corpo principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -185,6 +233,8 @@ export default function PlanSelectionPage() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
