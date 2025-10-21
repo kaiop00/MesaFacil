@@ -14,21 +14,21 @@ Documento conciso com os pontos essenciais sobre o sistema de planos, integraç�
 	- Uso: ideal para testes e pequenos estabelecimentos que começam a operar.
 
 - monthly
-	- Limites: produtos e mesas ilimitados.
-	- Acesso: dashboard completo (gráficos), relatórios diário/semana/mês, prioridade no suporte.
-	- Uso: operação plena com analytics e remoção de limites.
+	- Limites: produtos e mesas ilimitados, funcionários ilimitados.
+	- Acesso: dashboard completo (gráficos), relatórios diário/semana/mês, controle de estoque (itens e movimentações), gerenciamento de funcionários, prioridade no suporte.
+	- Uso: operação plena com analytics, estoque, equipe e remoção de limites.
 
 - bimonthly
-	- Acrescenta: controle de estoque (itens e movimentações), relatórios bimestrais.
-	- Uso: restaurantes que precisam gerenciar inventário e monitorar custos.
+	- Acrescenta: relatórios bimestrais.
+	- Uso: restaurantes que precisam de relatórios agregados mais longos.
 
 - quarterly
 	- Acrescenta: personalização de layout (cores, logo), relatórios trimestrais.
 	- Uso: marcas que precisam de identidade visual e relatórios agregados.
 
 - semiannual
-	- Tudo incluso: promoções/ads, gerenciamento de funcionários (ilimitado), backup automático e suporte premium.
-	- Uso: clientes com operação maior e equipe estruturada.
+	- Tudo incluso: backup automático e suporte premium.
+	- Uso: clientes com operação maior que precisam de backup e suporte diferenciado.
 
 ## Código / componentes no app
 - `src/constants/planFeatures.js` — feature flags e `PLAN_FEATURE_MAP`.

@@ -39,9 +39,6 @@ export const PLANS_DATA = [
       { text: 'Visualização avançada dos pedidos', included: true },
       { text: 'Promoções', included: true },
       { text: 'Suporte técnico prioritário', included: true },
-      { text: 'Controle de estoque', included: false },
-      { text: 'Personalização de layout', included: false },
-      { text: 'Gerenciamento de funcionários', included: false }
     ],
     limitations: []
   },
@@ -58,8 +55,6 @@ export const PLANS_DATA = [
       { text: 'Controle de estoque', included: true },
       { text: 'Renovação automática a cada 2 meses', included: true },
       { text: 'Desconto em relação ao plano mensal', included: true },
-      { text: 'Personalização de layout', included: false },
-      { text: 'Gerenciamento de funcionários', included: false }
     ],
     limitations: []
   },

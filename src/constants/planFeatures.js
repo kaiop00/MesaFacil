@@ -49,7 +49,7 @@ export const PLAN_LIMITS = {
   monthly: {
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    maxEmployees: 1
+    maxEmployees: 'unlimited'
   },
   bimonthly: {
     maxProducts: 'unlimited',
@@ -87,7 +87,9 @@ export const PLAN_FEATURE_MAP = {
     FEATURE_FLAGS.WEEKLY_REPORTS,
     FEATURE_FLAGS.MONTHLY_REPORTS,
     FEATURE_FLAGS.PROMOTIONS_ADS,  // Promoções incluídas
-    FEATURE_FLAGS.PRIORITY_SUPPORT
+    FEATURE_FLAGS.PRIORITY_SUPPORT,
+    FEATURE_FLAGS.INVENTORY_CONTROL,  // Controle de estoque incluído
+    FEATURE_FLAGS.EMPLOYEE_MANAGEMENT  // Gerenciamento de funcionários incluído
   ],
   bimonthly: [
     // All monthly features
