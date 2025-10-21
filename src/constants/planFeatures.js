@@ -54,12 +54,12 @@ export const PLAN_LIMITS = {
   bimonthly: {
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    maxEmployees: 1
+    maxEmployees: 'unlimited'
   },
   quarterly: {
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    maxEmployees: 3
+    maxEmployees: 'unlimited'
   },
   semiannual: {
     maxProducts: 'unlimited',
@@ -102,10 +102,12 @@ export const PLAN_FEATURE_MAP = {
     FEATURE_FLAGS.DAILY_REPORTS,
     FEATURE_FLAGS.WEEKLY_REPORTS,
     FEATURE_FLAGS.MONTHLY_REPORTS,
-    FEATURE_FLAGS.PROMOTIONS_ADS,  // Promoções incluídas
+    FEATURE_FLAGS.PROMOTIONS_ADS,
     FEATURE_FLAGS.PRIORITY_SUPPORT,
+    FEATURE_FLAGS.INVENTORY_CONTROL,
+    FEATURE_FLAGS.EMPLOYEE_MANAGEMENT,
     // Plus bimonthly features
-    FEATURE_FLAGS.INVENTORY_CONTROL  // Controle de estoque exclusivo do bimestral+
+    FEATURE_FLAGS.BIMONTHLY_REPORTS
   ],
   quarterly: [
     // All bimonthly features
@@ -118,11 +120,14 @@ export const PLAN_FEATURE_MAP = {
     FEATURE_FLAGS.DAILY_REPORTS,
     FEATURE_FLAGS.WEEKLY_REPORTS,
     FEATURE_FLAGS.MONTHLY_REPORTS,
-    FEATURE_FLAGS.PROMOTIONS_ADS,  // Promoções incluídas
+    FEATURE_FLAGS.BIMONTHLY_REPORTS,
+    FEATURE_FLAGS.PROMOTIONS_ADS,
     FEATURE_FLAGS.PRIORITY_SUPPORT,
     FEATURE_FLAGS.INVENTORY_CONTROL,
+    FEATURE_FLAGS.EMPLOYEE_MANAGEMENT,
     // Plus quarterly features
-    FEATURE_FLAGS.CUSTOM_LAYOUT  // Personalização exclusiva do trimestral+
+    FEATURE_FLAGS.QUARTERLY_REPORTS,
+    FEATURE_FLAGS.CUSTOM_LAYOUT
   ],
   semiannual: [
     // All quarterly features
@@ -135,12 +140,15 @@ export const PLAN_FEATURE_MAP = {
     FEATURE_FLAGS.DAILY_REPORTS,
     FEATURE_FLAGS.WEEKLY_REPORTS,
     FEATURE_FLAGS.MONTHLY_REPORTS,
-    FEATURE_FLAGS.PROMOTIONS_ADS,  // Promoções incluídas
+    FEATURE_FLAGS.BIMONTHLY_REPORTS,
+    FEATURE_FLAGS.QUARTERLY_REPORTS,
+    FEATURE_FLAGS.PROMOTIONS_ADS,
     FEATURE_FLAGS.PRIORITY_SUPPORT,
     FEATURE_FLAGS.INVENTORY_CONTROL,
+    FEATURE_FLAGS.EMPLOYEE_MANAGEMENT,
     FEATURE_FLAGS.CUSTOM_LAYOUT,
     // Plus semiannual features
-    FEATURE_FLAGS.EMPLOYEE_MANAGEMENT,  // Gerenciamento de funcionários exclusivo do semestral
+    FEATURE_FLAGS.SEMIANNUAL_REPORTS,
     FEATURE_FLAGS.PREMIUM_SUPPORT,
     FEATURE_FLAGS.AUTO_BACKUP
   ]

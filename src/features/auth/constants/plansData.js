@@ -38,6 +38,8 @@ export const PLANS_DATA = [
       { text: 'Dashboard completo', included: true },
       { text: 'Visualização avançada dos pedidos', included: true },
       { text: 'Promoções', included: true },
+      { text: 'Controle de estoque (itens e movimentações)', included: true },
+      { text: 'Gerenciamento de funcionários ilimitado', included: true },
       { text: 'Suporte técnico prioritário', included: true },
     ],
     limitations: []
@@ -52,7 +54,7 @@ export const PLANS_DATA = [
     stripePriceId: import.meta.env.VITE_STRIPE_BIMONTHLY_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades do Plano Mensal', included: true },
-      { text: 'Controle de estoque', included: true },
+      { text: 'Relatórios bimestrais', included: true },
       { text: 'Renovação automática a cada 2 meses', included: true },
       { text: 'Desconto em relação ao plano mensal', included: true },
     ],
@@ -69,8 +71,8 @@ export const PLANS_DATA = [
     features: [
       { text: 'Todas as funcionalidades do Plano Bimestral', included: true },
       { text: 'Personalização de layout (cores, logo e fotos)', included: true },
+      { text: 'Relatórios trimestrais', included: true },
       { text: 'Maior desconto em relação ao bimestral', included: true },
-      { text: 'Gerenciamento de funcionários', included: false }
     ],
     limitations: []
   },
@@ -84,9 +86,10 @@ export const PLANS_DATA = [
     stripePriceId: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades dos planos anteriores', included: true },
-      { text: 'Gerenciamento de funcionários', included: true },
+      { text: 'Relatórios semestrais', included: true },
+      { text: 'Backup automático', included: true },
+      { text: 'Suporte técnico premium', included: true },
       { text: 'Maior desconto entre todos os planos', included: true },
-      { text: 'Suporte técnico premium', included: true }
     ],
     limitations: []
   }
@@ -105,36 +108,35 @@ export const PLAN_BENEFITS = {
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
     reports: ['daily', 'weekly', 'monthly'],
-    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads']  // Promoções incluídas
+    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads', 'inventory_control', 'employee_management']
   },
   bimonthly: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly'],
-    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'inventory_control', 'promotions_ads']  // Promoções incluídas
+    reports: ['daily', 'weekly', 'monthly', 'bimonthly'],
+    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads', 'inventory_control', 'employee_management']
   },
   quarterly: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly'],
-    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'inventory_control', 'custom_layout', 'promotions_ads']  // Promoções incluídas
+    reports: ['daily', 'weekly', 'monthly', 'bimonthly', 'quarterly'],
+    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads', 'inventory_control', 'employee_management', 'custom_layout']
   },
   semiannual: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly'],
+    reports: ['daily', 'weekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual'],
     features: [
       'advanced_orders', 
       'full_dashboard', 
       'premium_support', 
       'inventory_control', 
       'custom_layout',
-      'promotions_ads',  // Promoções incluídas
+      'promotions_ads',
       'employee_management',
-      'advanced_delivery',
       'auto_backup'
     ]
   }

@@ -9,25 +9,28 @@ Documento conciso com os pontos essenciais sobre o sistema de planos, integraç�
 
 ## Planos — descrição por nível
 - free
-	- Limites: até 5 produtos, até 2 mesas.
+	- Limites: até 5 produtos, até 2 mesas, 1 funcionário.
 	- Acesso: dashboard básico, pedidos básicos, relatórios diários, promoções liberadas.
 	- Uso: ideal para testes e pequenos estabelecimentos que começam a operar.
 
 - monthly
-	- Limites: produtos e mesas ilimitados, funcionários ilimitados.
-	- Acesso: dashboard completo (gráficos), relatórios diário/semana/mês, controle de estoque (itens e movimentações), gerenciamento de funcionários, prioridade no suporte.
+	- Limites: produtos, mesas e funcionários ilimitados.
+	- Acesso: dashboard completo (gráficos), relatórios diário/semana/mês, controle de estoque (itens e movimentações), gerenciamento de funcionários, promoções, prioridade no suporte.
 	- Uso: operação plena com analytics, estoque, equipe e remoção de limites.
 
 - bimonthly
+	- Herda: tudo do plano mensal.
 	- Acrescenta: relatórios bimestrais.
 	- Uso: restaurantes que precisam de relatórios agregados mais longos.
 
 - quarterly
+	- Herda: tudo do plano bimestral.
 	- Acrescenta: personalização de layout (cores, logo), relatórios trimestrais.
-	- Uso: marcas que precisam de identidade visual e relatórios agregados.
+	- Uso: marcas que precisam de identidade visual customizada.
 
 - semiannual
-	- Tudo incluso: backup automático e suporte premium.
+	- Herda: tudo do plano trimestral.
+	- Acrescenta: relatórios semestrais, backup automático e suporte premium.
 	- Uso: clientes com operação maior que precisam de backup e suporte diferenciado.
 
 ## Código / componentes no app
