@@ -12,7 +12,7 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 
 const formatCurrency = (value) => currencyFormatter.format(Number(value || 0));
 
-const KitchenOrderCard = ({ order, onFinalize, finalizing }) => {
+const KitchenOrderCard = ({ order, onFinalize, onPrint, finalizing }) => {
   const { t } = useTranslation("kitchen");
 
   const timeAgo = useMemo(() => {
@@ -47,13 +47,16 @@ const KitchenOrderCard = ({ order, onFinalize, finalizing }) => {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-600 cursor-pointer"
-        >
-          {t("cards.print")}
-          <Printer size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPrint?.(order)}
+            className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-600 hover:bg-amber-100 cursor-pointer"
+          >
+            {t("cards.print")}
+            <Printer size={18} />
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-col gap-3">
@@ -98,4 +101,3 @@ const KitchenOrderCard = ({ order, onFinalize, finalizing }) => {
 };
 
 export default KitchenOrderCard;
-

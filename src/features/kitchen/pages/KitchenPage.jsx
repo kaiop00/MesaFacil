@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
 import KitchenOrderCard from "@/features/kitchen/components/KitchenOrderCard";
 import { useKitchenOrders } from "@/features/kitchen/hooks/useKitchenOrders";
+import { useKitchenPrint } from "@/features/kitchen/hooks/useKitchenPrint";
 import { finalizarPedidoEspecifico } from "@/features/order/services/orderService";
 
 const KitchenPage = () => {
@@ -13,6 +14,7 @@ const KitchenPage = () => {
   const { notify } = useToast();
   const { idRestaurante } = useAuth();
   const { orders, loading, error, refetch } = useKitchenOrders(idRestaurante);
+  const { printOrder } = useKitchenPrint();
   const [finalizingId, setFinalizingId] = useState(null);
 
   const handleFinalize = async (order) => {
@@ -83,6 +85,7 @@ const KitchenPage = () => {
               key={order.id}
               order={order}
               onFinalize={handleFinalize}
+              onPrint={printOrder}
               finalizing={finalizingId === order.id}
             />
           ))}

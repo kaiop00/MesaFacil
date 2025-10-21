@@ -27,6 +27,22 @@
     "finalizing": "Finishing...",
     "print": "Print"
   },
+  "print": {
+    "windowTitle": "Print order",
+    "header": "Kitchen Ticket",
+    "ticketNumber": "Order #{{number}}",
+    "table": "Table",
+    "createdAt": "Created at",
+    "items": "Items",
+    "emptyItems": "No items registered.",
+    "ingredientsLabel": "Add-ons",
+    "total": "Total",
+    "observations": "Notes",
+    "noObservations": "No observations added",
+    "footerThanks": "Thank you!",
+    "generatedAt": "Generated on {{date}}",
+    "unknownDate": "Date unavailable"
+  },
   "item": {
     "unknown": "Item",
     "labels": {
@@ -35,4 +51,3 @@
     "noDetails": "No additional information."
   }
 }
-

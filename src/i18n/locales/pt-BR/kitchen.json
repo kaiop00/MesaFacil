@@ -27,6 +27,22 @@
     "finalizing": "Finalizando...",
     "print": "Imprimir"
   },
+  "print": {
+    "windowTitle": "Imprimir pedido",
+    "header": "Mesa Fácil - Cozinha",
+    "ticketNumber": "Pedido #{{number}}",
+    "table": "Mesa",
+    "createdAt": "Criado em",
+    "items": "Itens",
+    "emptyItems": "Nenhum item registrado.",
+    "ingredientsLabel": "Complementos",
+    "total": "Total",
+    "observations": "Observações",
+    "noObservations": "Nenhuma observação adicionada",
+    "footerThanks": "Obrigado!",
+    "generatedAt": "Gerado em {{date}}",
+    "unknownDate": "Data não disponível"
+  },
   "item": {
     "unknown": "Item",
     "labels": {
@@ -35,4 +51,3 @@
     "noDetails": "Nenhuma informação adicional."
   }
 }
-
