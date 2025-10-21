@@ -11,6 +11,7 @@ import {
   Users,
   Notebook,
   Slider01,
+  Building03,
 } from "react-coolicons";
 
 const Sidebar = () => {
@@ -29,6 +30,7 @@ const Sidebar = () => {
   const navLinks = [
     { name: t("common:sidebar.dashboard"), icon: <House03 size={20} />, path: "/home" },
     { name: t("common:sidebar.orders"), icon: <ListUnordered size={20} />, path: "/home/pedidos" },
+    { name: t("common:sidebar.kitchen"), icon: <Building03 size={20} />, path: "/home/cozinha" },
     { name: t("common:sidebar.menu"), icon: <Coffee size={20} />, path: "/home/cardapio" },
     {
       name: t("common:sidebar.reports"),

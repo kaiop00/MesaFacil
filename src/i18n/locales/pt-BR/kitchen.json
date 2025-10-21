@@ -1,0 +1,38 @@
+{
+  "page": {
+    "title": "Cozinha",
+    "subtitle": "Realize os pedidos solicitados",
+    "refresh": "Atualizar lista",
+    "tryAgain": "Tentar novamente"
+  },
+  "states": {
+    "loading": "Carregando pedidos...",
+    "empty": "Nenhum pedido pendente no momento."
+  },
+  "errors": {
+    "load": "Não foi possível carregar os pedidos. Tente novamente mais tarde."
+  },
+  "messages": {
+    "success": "Pedido finalizado com sucesso!",
+    "error": "Não foi possível finalizar o pedido."
+  },
+  "cards": {
+    "table": "Mesa {{numero}}",
+    "orderedAt": "Pedido {{tempo}}",
+    "unknownTime": "Tempo de criação indisponível",
+    "items": "Itens",
+    "observations": "Observações",
+    "noObservations": "Nenhuma observação adicionada",
+    "finish": "Finalizar",
+    "finalizing": "Finalizando...",
+    "print": "Imprimir"
+  },
+  "item": {
+    "unknown": "Item",
+    "labels": {
+      "ingredients": "Ingredientes"
+    },
+    "noDetails": "Nenhuma informação adicional."
+  }
+}
+
