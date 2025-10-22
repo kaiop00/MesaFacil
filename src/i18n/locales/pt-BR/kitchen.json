@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Cozinha",
+    "subtitle": "Realize os pedidos solicitados",
+    "refresh": "Atualizar lista",
+    "tryAgain": "Tentar novamente"
+  },
+  "states": {
+    "loading": "Carregando pedidos...",
+    "empty": "Nenhum pedido pendente no momento."
+  },
+  "errors": {
+    "load": "Não foi possível carregar os pedidos. Tente novamente mais tarde."
+  },
+  "messages": {
+    "success": "Pedido finalizado com sucesso!",
+    "error": "Não foi possível finalizar o pedido."
+  },
+  "cards": {
+    "table": "Mesa {{numero}}",
+    "orderedAt": "Pedido {{tempo}}",
+    "unknownTime": "Tempo de criação indisponível",
+    "items": "Itens",
+    "observations": "Observações",
+    "noObservations": "Nenhuma observação adicionada",
+    "finish": "Finalizar",
+    "finalizing": "Finalizando...",
+    "print": "Imprimir"
+  },
+  "print": {
+    "windowTitle": "Imprimir pedido",
+    "header": "Mesa Fácil - Cozinha",
+    "ticketNumber": "Pedido #{{number}}",
+    "table": "Mesa",
+    "createdAt": "Criado em",
+    "items": "Itens",
+    "emptyItems": "Nenhum item registrado.",
+    "ingredientsLabel": "Complementos",
+    "total": "Total",
+    "observations": "Observações",
+    "noObservations": "Nenhuma observação adicionada",
+    "footerThanks": "Obrigado!",
+    "generatedAt": "Gerado em {{date}}",
+    "unknownDate": "Data não disponível"
+  },
+  "item": {
+    "unknown": "Item",
+    "labels": {
+      "ingredients": "Ingredientes"
+    },
+    "noDetails": "Nenhuma informação adicional."
+  }
+}

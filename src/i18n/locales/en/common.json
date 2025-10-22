@@ -19,6 +19,7 @@
   "sidebar": {
     "dashboard": "Dashboard",
     "orders": "Orders",
+    "kitchen": "Kitchen",
     "menu": "Menu",
     "reports": "Reports",
     "promotions": "Promotions",

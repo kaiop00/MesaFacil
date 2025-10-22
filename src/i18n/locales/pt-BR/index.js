@@ -8,6 +8,7 @@ import order from "./order.json";
 import users from "./users.json";
 import notifications from "./notifications.json";
 import promotions from "./promotions.json";
+import kitchen from "./kitchen.json";
 
 export default {
   dashboard,
@@ -20,4 +21,5 @@ export default {
   users,
   notifications,
   promotions,
+  kitchen,
 };
