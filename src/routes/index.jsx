@@ -29,6 +29,7 @@ import PromotionPage from "@/features/promotions/pages/PromotionPage";
 import UsersPage from "@/features/users/pages/UsersPage";
 import ItemsPage from "@/features/items/pages/ItemsPage";
 import MovementsPage from "@/features/movements/pages/MovementsPage";
+import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -99,6 +100,7 @@ const router = createBrowserRouter([
         children: [
           { path: "", element: <TablesProvider> <DashboardPage /> </TablesProvider> },
           { path: "pedidos", element: <TablesProvider> <OrderPage /> </TablesProvider> },
+          { path: "cozinha", element: <TablesProvider> <KitchenPage /> </TablesProvider> },
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <TablesProvider> <ReportPage /> </TablesProvider> },
           { 

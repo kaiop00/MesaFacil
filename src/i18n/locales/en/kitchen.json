@@ -1,0 +1,53 @@
+{
+  "page": {
+    "title": "Kitchen",
+    "subtitle": "Monitor and finish pending orders",
+    "refresh": "Refresh list",
+    "tryAgain": "Try again"
+  },
+  "states": {
+    "loading": "Loading orders...",
+    "empty": "No pending orders right now."
+  },
+  "errors": {
+    "load": "We couldn't load the orders. Please try again."
+  },
+  "messages": {
+    "success": "Order finished successfully!",
+    "error": "We couldn't finish the order."
+  },
+  "cards": {
+    "table": "Table {{numero}}",
+    "orderedAt": "Order {{tempo}}",
+    "unknownTime": "Creation time unavailable",
+    "items": "Items",
+    "observations": "Notes",
+    "noObservations": "No observations added",
+    "finish": "Finish",
+    "finalizing": "Finishing...",
+    "print": "Print"
+  },
+  "print": {
+    "windowTitle": "Print order",
+    "header": "Kitchen Ticket",
+    "ticketNumber": "Order #{{number}}",
+    "table": "Table",
+    "createdAt": "Created at",
+    "items": "Items",
+    "emptyItems": "No items registered.",
+    "ingredientsLabel": "Add-ons",
+    "total": "Total",
+    "observations": "Notes",
+    "noObservations": "No observations added",
+    "footerThanks": "Thank you!",
+    "generatedAt": "Generated on {{date}}",
+    "unknownDate": "Date unavailable"
+  },
+  "item": {
+    "unknown": "Item",
+    "labels": {
+      "ingredients": "Ingredients"
+    },
+    "noDetails": "No additional information."
+  }
+}

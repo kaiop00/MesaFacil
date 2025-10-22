@@ -11,6 +11,7 @@ import {
   Users,
   Notebook,
   Slider01,
+  Building03,
   Lock,
 } from "react-coolicons";
 import { usePlan } from "@/contexts/PlanContext";
@@ -33,6 +34,7 @@ const Sidebar = () => {
   const navLinks = [
     { name: t("common:sidebar.dashboard"), icon: <House03 size={20} />, path: "/home", feature: null },
     { name: t("common:sidebar.orders"), icon: <ListUnordered size={20} />, path: "/home/pedidos", feature: null },
+    { name: t("common:sidebar.kitchen"), icon: <Building03 size={20} />, path: "/home/cozinha", feature: null },
     { name: t("common:sidebar.menu"), icon: <Coffee size={20} />, path: "/home/cardapio", feature: null },
     {
       name: t("common:sidebar.reports"),
