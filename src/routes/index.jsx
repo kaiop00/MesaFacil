@@ -113,7 +113,7 @@ const router = createBrowserRouter([
             <RequireFeature
               feature={FEATURE_FLAGS.EMPLOYEE_MANAGEMENT}
               featureName="Gerenciamento de Funcionários"
-              requiredPlan="semiannual"
+              requiredPlan="monthly"
               description="Gerencie sua equipe com controle completo de permissões e acessos. Adicione funcionários, defina papéis e acompanhe atividades."
               benefits={[
                 "Criação ilimitada de usuários",
@@ -134,7 +134,7 @@ const router = createBrowserRouter([
               <RequireFeature
                 feature={FEATURE_FLAGS.INVENTORY_CONTROL}
                 featureName="Controle de Estoque"
-                requiredPlan="bimonthly"
+                requiredPlan="monthly"
                 description="Gerencie seu estoque de ingredientes e itens com precisão. Controle entradas, saídas e acompanhe o saldo em tempo real."
                 benefits={[
                   "Cadastro ilimitado de itens e ingredientes",
@@ -154,7 +154,7 @@ const router = createBrowserRouter([
               <RequireFeature
                 feature={FEATURE_FLAGS.INVENTORY_CONTROL}
                 featureName="Movimentações de Estoque"
-                requiredPlan="bimonthly"
+                requiredPlan="monthly"
                 description="Registre e acompanhe todas as movimentações do seu estoque. Controle entradas, saídas e ajustes com histórico detalhado."
                 benefits={[
                   "Registro de todas as entradas e saídas",
