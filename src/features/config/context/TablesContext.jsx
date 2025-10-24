@@ -1,4 +1,4 @@
-import React, { createContext, use, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +10,11 @@ export const TablesProvider = ({ children }) => {
     const [tables, setTables] = useState([]);
     
     useEffect(() => {
-        if(!idRestaurante) return;
+        if (!idRestaurante) {
+            setTables([]);
+            return;
+        }
+
         const unsubscribe = onSnapshot(
             collection(db, 'restaurantes', idRestaurante, 'mesas'),
             (snapshot) => {
@@ -23,7 +27,7 @@ export const TablesProvider = ({ children }) => {
         );
 
         return () => unsubscribe();
-    }, []);
+    }, [idRestaurante]);
 
     return(
         <TablesContext.Provider value={tables}>

@@ -1,6 +1,8 @@
 import {
     collection,
     getDocs,
+    getDoc,
+    setDoc,
     updateDoc,
     doc,
     serverTimestamp,
@@ -13,6 +15,57 @@ import {
     processarBaixaEstoque, 
     verificarEstoqueDisponivel 
 } from "@/services/ingredientes/ingredientesService";
+
+const historicoCollection = (idRestaurante) =>
+    collection(db, "restaurantes", idRestaurante, "historicoPedidos");
+
+const calcularTotalPedido = (pedidoData = {}) => {
+    if (typeof pedidoData.total === "number") {
+        return pedidoData.total;
+    }
+
+    return (pedidoData.items || []).reduce((acc, item) => {
+        const quantity = Number(item?.quantity || 0);
+        const price = Number(item?.price || 0);
+        return acc + quantity * price;
+    }, 0);
+};
+
+const sanitizeMesaNumero = (mesa = {}, mesaId) => {
+    if (!mesa) return mesaId;
+    return mesa.numero ?? mesa.nome ?? mesaId;
+};
+
+const salvarPedidoNoHistorico = async ({
+    idRestaurante,
+    mesaId,
+    mesaNumero,
+    pedidoId,
+    pedidoData,
+    finalizadoEm,
+    status = "entregue",
+}) => {
+    if (!idRestaurante || !mesaId || !pedidoId || !pedidoData) {
+        return;
+    }
+
+    const historicoRef = doc(historicoCollection(idRestaurante), pedidoId);
+
+    const payload = {
+        pedidoId,
+        mesaId,
+        mesaNumero: mesaNumero ?? mesaId,
+        status,
+        total: calcularTotalPedido(pedidoData),
+        observacoes: pedidoData.observacoes || "",
+        items: pedidoData.items || [],
+        criadoEm: pedidoData.criadoEm || serverTimestamp(),
+        finalizadoEm: finalizadoEm || pedidoData.finalizadoEm || null,
+        archivedAt: serverTimestamp(),
+    };
+
+    await setDoc(historicoRef, payload, { merge: true });
+};
 
 /**
  * Lista mesas separadas por status
@@ -144,17 +197,30 @@ export const finalizarPedido = async (idRestaurante, mesaId) => {
         0
     );
 
+    const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
+    const mesaSnapshot = await getDoc(mesaDocRef);
+    const mesaData = mesaSnapshot.exists() ? mesaSnapshot.data() : {};
+
     await Promise.all(
-        pedidosAndamento.map((docSnap) => {
+        pedidosAndamento.map(async (docSnap) => {
             const pedidoDocRef = doc(pedidosRef, docSnap.id);
-            return updateDoc(pedidoDocRef, {
+            const finalizadoEm = serverTimestamp();
+            await updateDoc(pedidoDocRef, {
                 status: "entregue",
-                finalizadoEm: serverTimestamp(),
+                finalizadoEm,
+            });
+            await salvarPedidoNoHistorico({
+                idRestaurante,
+                mesaId,
+                mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+                pedidoId: docSnap.id,
+                pedidoData: docSnap.data(),
+                finalizadoEm,
+                status: "entregue",
             });
         })
     );
 
-    const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
     await updateDoc(mesaDocRef, {
         status: "entregue",
         entregueEm: serverTimestamp(),
@@ -167,11 +233,34 @@ export const finalizarPedido = async (idRestaurante, mesaId) => {
  * Se não restarem pedidos em andamento, marca a mesa como 'entregue' e soma o total dos pedidos entregues.
  */
 export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId) => {
-    // 1) Finaliza o pedido escolhido
     const pedidoDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoId);
+    const pedidoSnapshot = await getDoc(pedidoDocRef);
+
+    if (!pedidoSnapshot.exists()) {
+        throw new Error("Pedido não encontrado");
+    }
+
+    const pedidoData = pedidoSnapshot.data();
+
+    const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
+    const mesaSnapshot = await getDoc(mesaDocRef);
+    const mesaData = mesaSnapshot.exists() ? mesaSnapshot.data() : {};
+
+    const finalizadoEm = serverTimestamp();
+
     await updateDoc(pedidoDocRef, {
         status: "entregue",
-        finalizadoEm: serverTimestamp(),
+        finalizadoEm,
+    });
+
+    await salvarPedidoNoHistorico({
+        idRestaurante,
+        mesaId,
+        mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+        pedidoId,
+        pedidoData,
+        finalizadoEm,
+        status: "entregue",
     });
 
     // 2) Busca todos os pedidos da mesa para decidir o status da mesa
@@ -180,8 +269,6 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId)
     const pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const temAndamento = pedidos.some(p => p.status === "andamento");
-
-    const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
 
     if (!temAndamento) {
         // Soma total dos pedidos entregues

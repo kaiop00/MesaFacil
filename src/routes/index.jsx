@@ -84,13 +84,17 @@ const router = createBrowserRouter([
     children: [
       {
         path: "",
-        element: <Layout />,
+        element: (
+          <TablesProvider>
+            <Layout />
+          </TablesProvider>
+        ),
         children: [
-          { path: "", element: <TablesProvider> <DashboardPage /> </TablesProvider> },
-          { path: "pedidos", element: <TablesProvider> <OrderPage /> </TablesProvider> },
-          { path: "cozinha", element: <TablesProvider> <KitchenPage /> </TablesProvider> },
+          { path: "", element: <DashboardPage /> },
+          { path: "pedidos", element: <OrderPage /> },
+          { path: "cozinha", element: <KitchenPage /> },
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
-          { path: "relatorios", element: <TablesProvider> <ReportPage /> </TablesProvider> },
+          { path: "relatorios", element: <ReportPage /> },
           { path: "promocoes", element: <PromotionPage /> },
           { path: "usuarios", element: <UsersPage /> },
           { path: "itens", element: <ItemsPage /> },
