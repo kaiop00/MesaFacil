@@ -1,12 +1,17 @@
 import UploadWidget from "@/features/foodList/components/UploadWidget";
+import { useTranslation } from "react-i18next";
 
-const RestauranteImageUpload = ({ imagemUrl, setImagemUrl }) => (
-    <div className="flex flex-col space-y-2">
-        <label className="text-sm font-medium text-gray-700">
-            Foto do Restaurante <span className="text-gray-400">(Opcional)</span>
-        </label>
-        <UploadWidget imagemUrl={imagemUrl} setImagemUrl={setImagemUrl} />
-    </div>
-);
+const RestauranteImageUpload = ({ imagemUrl, setImagemUrl }) => {
+    const { t } = useTranslation();
+
+    return (
+        <div className="flex flex-col space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+                {t("config:components.restauranteImageUpload.label")} <span className="text-gray-400">{t("config:components.restauranteImageUpload.optional")}</span>
+            </label>
+            <UploadWidget imagemUrl={imagemUrl} setImagemUrl={setImagemUrl} />
+        </div>
+    );
+};
 
 export default RestauranteImageUpload;

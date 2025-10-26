@@ -10,7 +10,8 @@
     "photoColors": "Photo/Colors",
     "categories": "Categories",
     "language": "Language",
-    "logout": "Logout"
+    "logout": "Logout",
+    "serviceFee": "Service Fee"
   },
   "languages": {
     "pt-BR": "Português",
