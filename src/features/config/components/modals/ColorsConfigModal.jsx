@@ -8,8 +8,10 @@ import { updateRestauranteInfo } from "@/features/config/services/ConfigRestaura
 import ModalIntro from "@/features/config/components/coresConfig/ModalIntro";
 import RestauranteImageUpload from "@/features/config/components/coresConfig/RestauranteImageUpload";
 import CorInput from "@/features/config/components/coresConfig/CorInput";
+import { useTranslation } from "react-i18next";
 
 const ColorsConfigModal = ({ isOpen, onClose }) => {
+    const { t } = useTranslation();
     const [color, setColor] = useState("#F8912E");
     const [imagemUrl, setImagemUrl] = useState(null);
     const { idRestaurante } = useAuth();
@@ -39,10 +41,10 @@ const ColorsConfigModal = ({ isOpen, onClose }) => {
             document.documentElement.style.setProperty("--color-primary", corFinal);
             localStorage.setItem("cor-primary", corFinal);
 
-            notify("Salvo com sucesso", "success");
+            notify(t("config:modals.colors.success"), "success");
             onClose();
         } catch {
-            notify("Erro ao salvar", "error");
+            notify(t("config:modals.colors.error"), "error");
         } finally {
             setLoading(false);
         }
@@ -53,8 +55,8 @@ const ColorsConfigModal = ({ isOpen, onClose }) => {
         <BaseModalWithHeader
             isOpen={isOpen}
             onClose={onClose}
-            title="Cores"
-            subTitle="Gerencie as configurações de cores"
+            title={t("config:modals.colors.title")}
+            subTitle={t("config:modals.colors.subtitle")}
             icon={Settings}
         >
             <form onSubmit={handleSubmit}>
@@ -74,7 +76,7 @@ const ColorsConfigModal = ({ isOpen, onClose }) => {
                                 disabled={loading}
                                 className="bg-primary-dynamic cursor-pointer text-white text-sm font-medium px-6 py-2 rounded transition min-w-[120px] flex items-center justify-center"
                             >
-                                {loading ? <LoadingSpinner /> : "Continuar"}
+                                {loading ? <LoadingSpinner /> : t("config:modals.colors.buttons.continue")}
                             </button>
                         </div>
                     </div>

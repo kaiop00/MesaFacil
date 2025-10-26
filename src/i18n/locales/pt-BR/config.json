@@ -1,0 +1,168 @@
+{
+  "modals": {
+    "categories": {
+      "title": "Categorias",
+      "subtitle": "Gerencie as Categorias do cardápio",
+      "success": {
+        "created": "Categoria cadastrada com sucesso",
+        "deleted": "Categoria deletada com sucesso"
+      },
+      "error": {
+        "create": "Erro ao cadastrar categoria",
+        "delete": "Erro ao deletar categoria"
+      }
+    },
+    "colors": {
+      "title": "Cores",
+      "subtitle": "Gerencie as configurações de cores",
+      "intro": {
+        "title": "Personalize sua marca",
+        "description": "Escolha a cor principal e adicione a logo do seu restaurante"
+      },
+      "fields": {
+        "restaurantImage": "Imagem do Restaurante",
+        "baseColor": "Cor Base",
+        "uploadImage": "Fazer upload da imagem",
+        "changeImage": "Alterar imagem"
+      },
+      "buttons": {
+        "continue": "Continuar"
+      },
+      "success": "Salvo com sucesso",
+      "error": "Erro ao salvar"
+    },
+    "tables": {
+      "title": "Configurações",
+      "subtitle": "Gerencie as configurações do Sistema",
+      "form": {
+        "tableType": "Tipo de Mesa",
+        "quantity": "Quantidade",
+        "addButton": "Adicionar"
+      },
+      "actions": {
+        "generateQR": "Gerar QR Codes",
+        "printQR": "Imprimir QR Codes"
+      },
+      "table": {
+        "number": "Número",
+        "type": "Tipo",
+        "actions": "Ações",
+        "delete": "Excluir",
+        "viewQR": "Ver QR Code",
+        "noTables": "Nenhuma mesa cadastrada"
+      },
+      "buttons": {
+        "cancel": "Cancelar",
+        "save": "Salvar",
+        "saving": "Salvando..."
+      }
+    },
+    "qrCode": {
+      "title": "QRcode",
+      "subtitle": "QRcode da mesa {{number}}"
+    },
+    "serviceFee": {
+      "title": "Taxa de Serviço",
+      "subtitle": "Defina a porcentagem aplicada na conta final",
+      "info": {
+        "description": "Essa configuração define quanto será adicionado como taxa de serviço na conta final do cliente. Caso não deseje cobrar taxa, utilize o valor 0%.",
+        "currentValue": "Valor atual:"
+      },
+      "fields": {
+        "percentage": "Porcentagem do serviço (%)",
+        "hint": "Aceita valores decimais (ex: 10.5). Máximo permitido: 100%."
+      },
+      "buttons": {
+        "restoreDefault": "Restaurar padrão (10%)",
+        "removeFee": "Remover taxa",
+        "cancel": "Cancelar",
+        "save": "Salvar",
+        "saving": "Salvando..."
+      },
+      "success": {
+        "updated": "Taxa de serviço atualizada com sucesso.",
+        "reset": "Taxa de serviço redefinida para 10%.",
+        "removed": "Taxa de serviço removida."
+      },
+      "error": {
+        "noRestaurant": "Restaurante não identificado.",
+        "invalidValue": "Informe uma porcentagem válida ou deixe 0 para remover.",
+        "save": "Erro ao salvar a taxa de serviço. Tente novamente.",
+        "load": "Não foi possível carregar a taxa de serviço. Usando valor padrão de 10%.",
+        "reset": "Não foi possível redefinir a taxa de serviço.",
+        "remove": "Não foi possível remover a taxa de serviço."
+      }
+    }
+  },
+  "components": {
+    "categoriaForm": {
+      "placeholder": "Nome da categoria (ex: Massas)",
+      "addButton": "Adicionar"
+    },
+    "categoriasTable": {
+      "headers": {
+        "category": "Categoria",
+        "actions": "Ações"
+      },
+      "loading": "Carregando categorias...",
+      "empty": "Nenhuma categoria cadastrada.",
+      "deleteButton": "Excluir",
+      "deleteTitle": "Excluir categoria"
+    },
+    "corInput": {
+      "label": "Cores da Marca",
+      "optional": "(Opcional)",
+      "placeholder": "Selecione uma cor",
+      "colors": {
+        "red": "Vermelho",
+        "blue": "Azul",
+        "green": "Verde",
+        "orange": "Laranja",
+        "purple": "Roxo"
+      }
+    },
+    "modalIntro": {
+      "title": "Antes de Começar,",
+      "subtitle": "precisamos só definir algumas configurações",
+      "description": "Preencha as informações para continuar"
+    },
+    "restauranteImageUpload": {
+      "label": "Foto do Restaurante",
+      "optional": "(Opcional)"
+    },
+    "mesaActions": {
+      "downloadAll": "Baixar Todos os QR Codes",
+      "success": "Download iniciado!",
+      "error": "Erro ao gerar QR codes"
+    },
+    "mesaForm": {
+      "tableType": "Tipo de Mesa",
+      "quantity": "Qtd",
+      "quantityPlaceholder": "0",
+      "includeButton": "Incluir"
+    },
+    "mesaTable": {
+      "headers": {
+        "number": "Numero",
+        "tableType": "Tipo de Mesa",
+        "actions": "Ações"
+      },
+      "chairs": "Cadeiras",
+      "qrCode": "QRCode",
+      "empty": "Nenhuma mesa cadastrada.",
+      "loading": "Carregando mesas..."
+    },
+    "tableType": {
+      "label": "Tipo de Mesa",
+      "placeholder": "Selecione um tipo",
+      "options": {
+        "2": "2 Cadeiras",
+        "4": "4 Cadeiras",
+        "6": "6 Cadeiras",
+        "8": "8 Cadeiras",
+        "10": "10 Cadeiras",
+        "12": "12 Cadeiras"
+      }
+    }
+  }
+}

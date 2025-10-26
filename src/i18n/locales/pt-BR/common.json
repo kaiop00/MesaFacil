@@ -11,7 +11,8 @@
     "categories": "Categorias",
     "language": "Idioma",
     "logout": "Sair",
-    "pix": "PIX"
+    "pix": "PIX",
+    "serviceFee": "Taxa de Serviço"
   },
   "languages": {
     "pt-BR": "Português",

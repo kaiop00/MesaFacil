@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { showAllOrdersFromTable } from "@/features/dashboard/services/mesas";
 
+const toDate = (timestamp) => {
+  if (!timestamp) return null;
+  if (typeof timestamp.toDate === "function") {
+    return timestamp.toDate();
+  }
+  if (typeof timestamp.seconds === "number") {
+    const millis =
+      timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000;
+    return new Date(millis);
+  }
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+  return null;
+};
+
 /**
  * Hook para geração de relatórios otimizado com filtragem no banco de dados
  * @param {string} idRestaurante - ID do restaurante
@@ -39,7 +55,7 @@ export const useReports = (idRestaurante, tables) => {
       );
       return orders.map((order) => ({
         ...order,
-        mesaNumero: table.numero,
+        mesaNumero: order.mesaNumero ?? table.numero,
       }));
     });
 
@@ -50,11 +66,14 @@ export const useReports = (idRestaurante, tables) => {
       type: "vendas",
       orders: allOrders.map((order) => ({
         numero: order.id,
-        data: new Date(order.criadoEm.seconds * 1000).toLocaleDateString(
-          "pt-BR",
-        ),
+        data: (() => {
+          const createdAt = toDate(order.criadoEm);
+          return createdAt ? createdAt.toLocaleDateString("pt-BR") : "-";
+        })(),
         valor: order.total,
-        status: order.finalizadoEm ? "Finalizado" : "Em andamento",
+        status:
+          order.status ||
+          (order.finalizadoEm ? "Finalizado" : "Em andamento"),
         mesa: order.mesaNumero,
       })),
     };
@@ -91,7 +110,12 @@ export const useReports = (idRestaurante, tables) => {
     const ordersByDay = {};
 
     allOrders.forEach((order) => {
-      const orderDate = new Date(order.criadoEm.seconds * 1000);
+      if ((order.status || "").toLowerCase() !== "entregue") {
+        return;
+      }
+
+      const orderDate = toDate(order.criadoEm);
+      if (!orderDate) return;
       const dayKey = orderDate.toLocaleDateString("pt-BR");
 
       if (!ordersByDay[dayKey]) {
@@ -152,7 +176,11 @@ export const useReports = (idRestaurante, tables) => {
     const allOrders = allOrdersArrays.flat();
 
     allOrders.forEach((order) => {
-      if (order.items && Array.isArray(order.items)) {
+      if (
+        (order.status || "").toLowerCase() === "entregue" &&
+        order.items &&
+        Array.isArray(order.items)
+      ) {
         order.items.forEach((item) => {
           const productName = item.nome || "Produto Desconhecido";
           const quantity = item.quantity || 0;
@@ -209,6 +237,10 @@ export const useReports = (idRestaurante, tables) => {
     const allOrders = allOrdersArrays.flat();
 
     allOrders.forEach((order) => {
+      if ((order.status || "").toLowerCase() !== "entregue") {
+        return;
+      }
+
       const waiterName = order.garcom || "Não informado";
 
       if (waiterStats[waiterName]) {

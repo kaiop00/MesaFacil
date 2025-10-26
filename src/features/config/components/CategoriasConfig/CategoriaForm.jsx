@@ -1,4 +1,5 @@
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useTranslation } from "react-i18next";
 
 export default function CategoriaForm({
     value = "",
@@ -7,6 +8,7 @@ export default function CategoriaForm({
     loading = false,
     autoFocus = true,
 }) {
+    const { t } = useTranslation();
 
     function handleSubmit(e) {
         e.preventDefault();
@@ -22,7 +24,7 @@ export default function CategoriaForm({
                     type="text"
                     value={value}
                     onChange={(e) => onChange?.(e.target.value)}
-                    placeholder="Nome da categoria (ex: Massas)"
+                    placeholder={t("config:components.categoriaForm.placeholder")}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
                     autoFocus={autoFocus}
                 />
@@ -31,7 +33,7 @@ export default function CategoriaForm({
                     disabled={loading || !value.trim()}
                     className="bg-primary-dynamic cursor-pointer text-white text-sm font-medium px-6 py-2 rounded transition min-w-[120px] flex items-center justify-center disabled:opacity-60"
                 >
-                    {loading ? <LoadingSpinner /> : "Adicionar"}
+                    {loading ? <LoadingSpinner /> : t("config:components.categoriaForm.addButton")}
                 </button>
             </div>
         </form>

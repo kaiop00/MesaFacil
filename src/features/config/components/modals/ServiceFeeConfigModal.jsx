@@ -8,6 +8,7 @@ import {
     updateRestauranteInfo,
 } from "@/features/config/services/ConfigRestauranteService";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { useTranslation } from "react-i18next";
 
 const DEFAULT_PERCENTUAL = 10;
 
@@ -26,6 +27,7 @@ const parsePercentInput = (value) => {
 };
 
 const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
+    const { t } = useTranslation();
     const { idRestaurante } = useAuth();
     const { notify } = useToast();
     const [inputValue, setInputValue] = useState(DEFAULT_PERCENTUAL.toString());
@@ -51,7 +53,7 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
                 if (mounted) {
                     setInitialValue(DEFAULT_PERCENTUAL);
                     setInputValue(DEFAULT_PERCENTUAL.toString());
-                    notify("Não foi possível carregar a taxa de serviço. Usando valor padrão de 10%.", "warning");
+                    notify(t("config:modals.serviceFee.error.load"), "warning");
                 }
             })
             .finally(() => {
@@ -63,18 +65,18 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
         return () => {
             mounted = false;
         };
-    }, [isOpen, idRestaurante, notify]);
+    }, [isOpen, idRestaurante, notify, t]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (!idRestaurante) {
-            notify("Restaurante não identificado.", "error");
+            notify(t("config:modals.serviceFee.error.noRestaurant"), "error");
             return;
         }
 
         const parsed = parsePercentInput(inputValue);
         if (parsed === null) {
-            notify("Informe uma porcentagem válida ou deixe 0 para remover.", "warning");
+            notify(t("config:modals.serviceFee.error.invalidValue"), "warning");
             return;
         }
 
@@ -84,11 +86,11 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
                 taxa_servico: parsed,
             });
             setInitialValue(parsed);
-            notify("Taxa de serviço atualizada com sucesso.", "success");
+            notify(t("config:modals.serviceFee.success.updated"), "success");
             onClose();
         } catch (error) {
             console.error("Erro ao atualizar taxa de serviço", error);
-            notify("Erro ao salvar a taxa de serviço. Tente novamente.", "error");
+            notify(t("config:modals.serviceFee.error.save"), "error");
         } finally {
             setSaving(false);
         }
@@ -103,10 +105,10 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
             });
             setInitialValue(DEFAULT_PERCENTUAL);
             setInputValue(DEFAULT_PERCENTUAL.toString());
-            notify("Taxa de serviço redefinida para 10%.", "success");
+            notify(t("config:modals.serviceFee.success.reset"), "success");
         } catch (error) {
             console.error("Erro ao redefinir taxa de serviço", error);
-            notify("Não foi possível redefinir a taxa de serviço.", "error");
+            notify(t("config:modals.serviceFee.error.reset"), "error");
         } finally {
             setSaving(false);
         }
@@ -121,10 +123,10 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
             });
             setInitialValue(0);
             setInputValue("0");
-            notify("Taxa de serviço removida.", "success");
+            notify(t("config:modals.serviceFee.success.removed"), "success");
         } catch (error) {
             console.error("Erro ao remover taxa de serviço", error);
-            notify("Não foi possível remover a taxa de serviço.", "error");
+            notify(t("config:modals.serviceFee.error.remove"), "error");
         } finally {
             setSaving(false);
         }
@@ -134,18 +136,17 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
         <BaseModalWithHeader
             isOpen={isOpen}
             onClose={onClose}
-            title="Taxa de Serviço"
-            subTitle="Defina a porcentagem aplicada na conta final"
+            title={t("config:modals.serviceFee.title")}
+            subTitle={t("config:modals.serviceFee.subtitle")}
             icon={Settings}
         >
             <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
                 <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 space-y-3">
                     <p className="text-sm text-slate-700">
-                        Essa configuração define quanto será adicionado como taxa de serviço na conta final do cliente.
-                        Caso não deseje cobrar taxa, utilize o valor 0%.
+                        {t("config:modals.serviceFee.info.description")}
                     </p>
                     <p className="text-xs text-slate-500">
-                        Valor atual:{" "}
+                        {t("config:modals.serviceFee.info.currentValue")}{" "}
                         <span className="font-semibold text-slate-700">
                             {formatPercent(initialValue)}%
                         </span>
@@ -154,7 +155,7 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
 
                 <div className="space-y-2">
                     <label htmlFor="serviceFee" className="text-sm font-medium text-slate-700">
-                        Porcentagem do serviço (%)
+                        {t("config:modals.serviceFee.fields.percentage")}
                     </label>
                     <div className="flex items-center gap-2">
                         <input
@@ -172,7 +173,7 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
                         <span className="text-sm text-slate-500 mr-2">%</span>
                     </div>
                     <p className="text-xs text-slate-500">
-                        Aceita valores decimais (ex: 10.5). Máximo permitido: 100%.
+                        {t("config:modals.serviceFee.fields.hint")}
                     </p>
                 </div>
 
@@ -190,7 +191,7 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
                             disabled={loading || saving}
                             className="text-sm font-semibold px-3 py-2 rounded-lg border border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-60"
                         >
-                            Restaurar padrão (10%)
+                            {t("config:modals.serviceFee.buttons.restoreDefault")}
                         </button>
                         <button
                             type="button"
@@ -198,7 +199,7 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
                             disabled={loading || saving}
                             className="text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-60"
                         >
-                            Remover taxa
+                            {t("config:modals.serviceFee.buttons.removeFee")}
                         </button>
                     </div>
                     <div className="flex gap-3">
@@ -208,14 +209,14 @@ const ServiceFeeConfigModal = ({ isOpen, onClose }) => {
                             disabled={saving}
                             className="text-sm font-semibold text-slate-600 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                         >
-                            Cancelar
+                            {t("config:modals.serviceFee.buttons.cancel")}
                         </button>
                         <button
                             type="submit"
                             disabled={loading || saving}
                             className="text-sm font-semibold text-white bg-amber-500 px-5 py-2 rounded-lg hover:bg-amber-600 disabled:bg-amber-300"
                         >
-                            {saving ? "Salvando..." : "Salvar"}
+                            {saving ? t("config:modals.serviceFee.buttons.saving") : t("config:modals.serviceFee.buttons.save")}
                         </button>
                     </div>
                 </div>

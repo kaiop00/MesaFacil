@@ -6,8 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
 import useCrudCategorias from "../../hooks/useCrudCategorias";
 import CategoriaForm from "../CategoriasConfig/CategoriaForm";
+import { useTranslation } from "react-i18next";
 
 export default function CategoriaConfigModal({ isOpen, onClose }) {
+    const { t } = useTranslation();
     const { idRestaurante } = useAuth();
     const { notify } = useToast();
     const [name, setName] = useState("");
@@ -25,20 +27,20 @@ export default function CategoriaConfigModal({ isOpen, onClose }) {
         try {
             await addCategoria(nome);
             setName("");
-            notify("Categoria cadastrada com sucesso", "success");
+            notify(t("config:modals.categories.success.created"), "success");
         } catch (e) {
             console.error(e);
-            notify("Erro ao cadastrar categoria", "error");
+            notify(t("config:modals.categories.error.create"), "error");
         }
     }
 
     async function handleDelete(categoria) {
         try {
             await deleteCategoria(categoria.id);
-            notify("Categoria deletada com sucesso", "success");
+            notify(t("config:modals.categories.success.deleted"), "success");
         } catch (e) {
             console.error(e);
-            notify("Erro ao deletar categoria", "error");
+            notify(t("config:modals.categories.error.delete"), "error");
         }
     }
 
@@ -46,8 +48,8 @@ export default function CategoriaConfigModal({ isOpen, onClose }) {
         <BaseModalWithHeader
             isOpen={isOpen}
             onClose={onClose}
-            title="Categorias"
-            subTitle="Gerencie as Categorias do cardápio"
+            title={t("config:modals.categories.title")}
+            subTitle={t("config:modals.categories.subtitle")}
             icon={Settings}
         >
             <CategoriaForm
