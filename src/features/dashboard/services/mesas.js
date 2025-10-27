@@ -239,7 +239,7 @@ const calculateStats = (orders) => {
  * @param {string} idRestaurante - ID do restaurante
  * @param {Array} tables - Lista de mesas
  * @param {string} filter - Filtro de período: "Mensal" ou "Anual"
- * @param {string} category - Filtro de categoria: "Todas", "Guarnição", "Sobremesa", "Carne", "Acompanhamento"
+ * @param {string} category - Filtro de categoria: "Todas" ou qualquer categoria personalizada do restaurante
  */
 export const getMonthlySalesData = async (idRestaurante, tables, filter = "Mensal", category = "Todas") => {
   if (!tables || tables.length === 0) {

@@ -26,6 +26,7 @@ import { Bar } from 'react-chartjs-2';
 import { formatDuration, intervalToDuration } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Link } from "react-router-dom";
+import { getCategoriaNomes } from "@/features/config/services/CategoriasService";
 
 ChartJS.register(
   CategoryScale,
@@ -61,6 +62,7 @@ const DashboardPage = () => {
   const [loadingSalesData, setLoadingSalesData] = useState(true);
   const [topProducts, setTopProducts] = useState([]);
   const [loadingTopProducts, setLoadingTopProducts] = useState(true);
+  const [categories, setCategories] = useState(['Todas']);
   const [stats, setStats] = useState({
     totalSales: 0,
     salesGrowth: 12.65,
@@ -86,6 +88,21 @@ const DashboardPage = () => {
       }),
     [mesasAndamento],
   );
+
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!idRestaurante) return;
+      try {
+        const categoriesFromDb = await getCategoriaNomes(idRestaurante);
+        setCategories(['Todas', ...categoriesFromDb]);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories(['Todas']);
+      }
+    };
+    fetchCategories();
+  }, [idRestaurante]);
 
   useEffect(() => {
     const fetchTableStats = async () => {
@@ -326,11 +343,11 @@ const DashboardPage = () => {
                     onChange={(e) => setCategoryFilter(e.target.value)}
                     className="text-sm text-gray-500 bg-transparent border-none cursor-pointer focus:outline-none appearance-none pr-6"
                   >
-                    <option value="Todas">{t("all")}</option>
-                    <option value="Guarnição">{t("garrison")}</option>
-                    <option value="Sobremesa">{t("dessert")}</option>
-                    <option value="Carne">{t("meat")}</option>
-                    <option value="Acompanhamento">{t("accompaniment")}</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category === 'Todas' ? t("all") : category}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="w-4 h-4 text-gray-400 absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none" />
                 </div>
