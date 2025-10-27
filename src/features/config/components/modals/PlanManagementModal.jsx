@@ -17,7 +17,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
     getAccessLevel
   } = usePlanManagement();
   
-  const { user, stripeCustomerId } = useAuth();
+  const { user, idRestaurante, stripeCustomerId } = useAuth();
   const [changingPlan, setChangingPlan] = useState(false);
   const [selectedNewPlan, setSelectedNewPlan] = useState(null);
   const { notify } = useToast();
@@ -25,7 +25,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const handlePlanChange = async (newPlanId) => {
-    if (!newPlanId || changingPlan || !user?.uid) return;
+    if (!newPlanId || changingPlan || !idRestaurante) return;
 
     const newPlanData = PLANS_DATA.find(p => p.id === newPlanId);
     
@@ -33,7 +33,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
     if (newPlanId === 'free') {
       setChangingPlan(true);
       try {
-        await setUserPlan(user.uid, newPlanId);
+        await setUserPlan(idRestaurante, newPlanId);
         notify(`Alterado para plano gratuito com sucesso!`, 'success');
         setSelectedNewPlan(null);
         onClose();
@@ -54,7 +54,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
           newPlanData.stripePriceId,
           user.email,
           {
-            userId: user.uid,
+            idRestaurante: idRestaurante,
             planId: newPlanId,
             planName: newPlanData.name
           }

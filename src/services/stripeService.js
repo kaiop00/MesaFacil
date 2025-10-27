@@ -282,14 +282,14 @@ class StripeService {
   }
 
   /**
-   * Activate user plan after successful payment
-   * Saves Stripe customer and subscription references to Firestore
-   * @param {string} userId - Firebase User ID
+   * Activate restaurant plan after successful payment
+   * Saves Stripe customer and subscription references to restaurant's Firestore document
+   * @param {string} idRestaurante - Restaurant ID
    * @param {string} stripeCustomerId - Stripe Customer ID
    * @param {string} stripeSubscriptionId - Stripe Subscription ID
    * @returns {Promise<Object>} Activation response
    */
-  async activateUserPlan(userId, stripeCustomerId, stripeSubscriptionId) {
+  async activateUserPlan(idRestaurante, stripeCustomerId, stripeSubscriptionId) {
     try {
       const response = await fetch(`${this.apiBaseUrl}/activatePlan`, {
         method: 'POST',
@@ -297,7 +297,7 @@ class StripeService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId,
+          idRestaurante,
           stripeCustomerId,
           stripeSubscriptionId
         }),
@@ -311,7 +311,7 @@ class StripeService {
 
       return result;
     } catch (error) {
-      console.error('Error activating user plan:', error);
+      console.error('Error activating restaurant plan:', error);
       throw error;
     }
   }

@@ -3,6 +3,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebaseConfig";
 import stripeService from "@/services/stripeService";
+import { getStripeCustomerId } from "@/services/firebase/restaurantService";
 
 // ✅ Cria o contexto
 const AuthContext = createContext();
@@ -26,11 +27,19 @@ export const AuthProvider = ({ children }) => {
           const data = userDoc.exists() ? userDoc.data() : {};
 
           setRole(data.role || "user");
-          setIdRestaurante(data.idRestaurante || null);
+          const restaurantId = data.idRestaurante || null;
+          setIdRestaurante(restaurantId);
           
-          // Get Stripe Customer ID from Firestore
-          const customerId = data.stripeCustomerId || null;
-          setStripeCustomerId(customerId);
+          // Get Stripe Customer ID from restaurant document instead of user document
+          let customerId = null;
+          if (restaurantId) {
+            try {
+              customerId = await getStripeCustomerId(restaurantId);
+              setStripeCustomerId(customerId);
+            } catch (error) {
+              console.error("Error getting Stripe customer ID from restaurant:", error);
+            }
+          }
 
           // Fetch plan from Stripe API instead of Firestore
           if (customerId) {

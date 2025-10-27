@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { doc, getDoc } from "firebase/firestore";
 import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
 import ServiceFeeConfigModal from "@/features/config/components/modals/ServiceFeeConfigModal";
@@ -17,7 +16,7 @@ import PlanInfo from "@/components/PlanInfo";
 import PixConfigModal from "@/features/config/components/modals/PixConfigModal";
 import stripeService from "@/services/stripeService";
 import { useToast } from "@/hooks/useToast";
-import { db } from "@/config/firebaseConfig";
+import { getStripeCustomerId } from "@/services/firebase/restaurantService";
 
 const Header = () => {
   const { t, i18n } = useTranslation();
@@ -33,7 +32,7 @@ const Header = () => {
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
-  const { idRestaurante, user } = useAuth();
+  const { idRestaurante } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
   const { notify } = useToast();
@@ -51,31 +50,23 @@ const Header = () => {
       setIsDropdownOpen(false);
       setIsSubMenuOpen(false);
       
-      // Fetch user data from Firestore to get stripeCustomerId
-      if (!user?.uid) {
-        notify('Usuário não autenticado.', 'error');
+      // Check if restaurant has Stripe customer ID
+      if (!idRestaurante) {
+        notify('ID do restaurante não encontrado.', 'error');
         return;
       }
 
-      const userDocRef = doc(db, "users", user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      
-      if (!userDocSnap.exists()) {
-        notify('Dados do usuário não encontrados.', 'error');
-        return;
-      }
+      // Get Stripe customer ID from restaurant document
+      const stripeCustomerId = await getStripeCustomerId(idRestaurante);
 
-      const userData = userDocSnap.data();
-      const stripeCustomerId = userData?.stripeCustomerId;
-
-      // Check if user has a Stripe customer ID
+      // Check if restaurant has a Stripe customer ID
       if (!stripeCustomerId) {
         notify('Você está no plano gratuito. Escolha um plano pago para continuar.', 'info');
         navigate('/selecionar-plano');
         return;
       }
 
-      // Check if user has an active subscription
+      // Check if restaurant has an active subscription
       try {
         const subscriptionData = await stripeService.getCustomerSubscription(stripeCustomerId);
         

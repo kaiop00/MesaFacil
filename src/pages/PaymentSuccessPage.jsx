@@ -11,7 +11,7 @@ import { PLANS_DATA } from '@/features/auth/constants/plansData';
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, idRestaurante } = useAuth();
   const { setUserPlan } = usePlanManagement();
   const { notify } = useToast();
   const hasVerified = useRef(false); // Prevent multiple verifications
@@ -65,11 +65,15 @@ const PaymentSuccessPage = () => {
             throw new Error('Customer ID ou Subscription ID não encontrado na sessão');
           }
 
-          // Save Stripe references to Firestore (not plan details)
-          await stripeService.activateUserPlan(user.uid, customerId, subscriptionId);
+          if (!idRestaurante) {
+            throw new Error('ID do restaurante não encontrado');
+          }
+
+          // Save Stripe references to restaurant's Firestore document (not plan details)
+          await stripeService.activateUserPlan(idRestaurante, customerId, subscriptionId);
 
           // Update local plan state (will fetch from Stripe)
-          await setUserPlan(user.uid, customerId, subscriptionId);
+          await setUserPlan(idRestaurante, customerId, subscriptionId);
 
           setVerificationStatus('success');
           notify(`Plano ${plan.name} ativado com sucesso!`, 'success');
@@ -141,11 +145,15 @@ const PaymentSuccessPage = () => {
           throw new Error('Customer ID ou Subscription ID não encontrado na sessão');
         }
 
-        // Save Stripe references to Firestore (not plan details)
-        await stripeService.activateUserPlan(user.uid, customerId, subscriptionId);
+        if (!idRestaurante) {
+          throw new Error('ID do restaurante não encontrado');
+        }
+
+        // Save Stripe references to restaurant's Firestore document (not plan details)
+        await stripeService.activateUserPlan(idRestaurante, customerId, subscriptionId);
 
         // Update local plan state (will fetch from Stripe)
-        await setUserPlan(user.uid, customerId, subscriptionId);
+        await setUserPlan(idRestaurante, customerId, subscriptionId);
 
         setVerificationStatus('success');
         notify(`Plano ${plan.name} ativado com sucesso!`, 'success');

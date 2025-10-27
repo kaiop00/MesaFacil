@@ -14,7 +14,7 @@ export default function PlanSelectionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const navigate = useNavigate();
-  const { user, stripeCustomerId } = useAuth();
+  const { user, idRestaurante, stripeCustomerId } = useAuth();
   const { setUserPlan } = usePlanManagement();
   const { notify } = useToast();
 
@@ -60,14 +60,14 @@ export default function PlanSelectionPage() {
   };
 
   const handleContinue = async () => {
-    if (!selectedPlan || !user) return;
+    if (!selectedPlan || !user || !idRestaurante) return;
 
     setIsProcessing(true);
     
     try {
       if (selectedPlan.id === 'free') {
         // Para plano gratuito, salva no Firestore e vai direto para o dashboard
-        await setUserPlan(user.uid, 'free');
+        await setUserPlan(idRestaurante, 'free');
         notify('Plano gratuito ativado com sucesso!', 'success');
         navigate('/home', { replace: true });
       } else {
@@ -77,7 +77,7 @@ export default function PlanSelectionPage() {
             selectedPlan.stripePriceId,
             user.email,
             {
-              userId: user.uid,
+              idRestaurante: idRestaurante,
               planId: selectedPlan.id,
               planName: selectedPlan.name,
               source: 'plan_selection'

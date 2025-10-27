@@ -1,28 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/config/firebaseConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import stripeService from '@/services/stripeService';
+import { getStripeCustomerId, updateStripeData } from '@/services/firebase/restaurantService';
 
 export const usePlanManagement = () => {
   const [currentPlan, setCurrentPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
   const [hasActivePlan, setHasActivePlan] = useState(false);
-  const { user, stripeCustomerId, plan: authPlan } = useAuth();
+  const { idRestaurante, stripeCustomerId, plan: authPlan } = useAuth();
 
-  // Check if user has an active plan (from Stripe)
-  const checkUserPlan = useCallback(async (userId) => {
-    if (!userId) return null;
+  // Check if restaurant has an active plan (from Stripe)
+  const checkUserPlan = useCallback(async (restaurantId) => {
+    if (!restaurantId) return null;
     
     try {
-      // Get stripeCustomerId from auth context or fetch from Firestore
+      // Get stripeCustomerId from auth context or fetch from restaurant document
       let customerId = stripeCustomerId;
       
       if (!customerId) {
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        if (userDoc.exists()) {
-          customerId = userDoc.data().stripeCustomerId;
-        }
+        customerId = await getStripeCustomerId(restaurantId);
       }
 
       if (!customerId) {
@@ -51,23 +47,16 @@ export const usePlanManagement = () => {
         return freePlan;
       }
     } catch (error) {
-      console.error('Erro ao verificar plano do usuário:', error);
+      console.error('Erro ao verificar plano do restaurante:', error);
       return null;
     }
   }, [stripeCustomerId]);
 
-  // Save Stripe customer ID to Firestore (only reference data)
-  const setUserPlan = async (userId, customerId, subscriptionId = null) => {
+  // Save Stripe customer ID to restaurant document (only reference data)
+  const setUserPlan = async (restaurantId, customerId, subscriptionId = null) => {
     try {
-      const updateData = {
-        stripeCustomerId: customerId
-      };
-
-      if (subscriptionId) {
-        updateData.stripeSubscriptionId = subscriptionId;
-      }
-
-      await setDoc(doc(db, 'users', userId), updateData, { merge: true });
+      // Update restaurant document with Stripe references
+      await updateStripeData(restaurantId, customerId, subscriptionId);
 
       // Fetch updated plan from Stripe
       const plan = await stripeService.getCurrentPlan(customerId);
@@ -76,7 +65,7 @@ export const usePlanManagement = () => {
       
       return plan;
     } catch (error) {
-      console.error('Erro ao salvar referência do Stripe:', error);
+      console.error('Erro ao salvar referência do Stripe no restaurante:', error);
       throw error;
     }
   };
@@ -130,7 +119,7 @@ export const usePlanManagement = () => {
 
   useEffect(() => {
     const loadUserPlan = async () => {
-      if (user?.uid) {
+      if (idRestaurante) {
         setPlanLoading(true);
         
         try {
@@ -140,10 +129,10 @@ export const usePlanManagement = () => {
             setHasActivePlan(authPlan.status === 'active' || authPlan.status === 'trialing');
           } else {
             // Fallback: fetch directly
-            await checkUserPlan(user.uid);
+            await checkUserPlan(idRestaurante);
           }
         } catch (error) {
-          console.error('Erro ao carregar plano do usuário:', error);
+          console.error('Erro ao carregar plano do restaurante:', error);
         }
         
         setPlanLoading(false);
@@ -151,7 +140,7 @@ export const usePlanManagement = () => {
     };
 
     loadUserPlan();
-  }, [user?.uid, authPlan, checkUserPlan]);
+  }, [idRestaurante, authPlan, checkUserPlan]);
 
   return {
     currentPlan,

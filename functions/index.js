@@ -179,7 +179,7 @@ exports.verifySession = onRequest(
  * Activate User Plan
  * POST /activatePlan
  * 
- * Saves Stripe customer and subscription reference to Firestore.
+ * Saves Stripe customer and subscription reference to restaurant's Firestore document.
  * Plan details are fetched from Stripe API on the frontend.
  */
 exports.activatePlan = onRequest(
@@ -194,12 +194,12 @@ exports.activatePlan = onRequest(
       }
 
       const stripe = require("stripe")(getStripeSecretKey());
-      const {userId, stripeCustomerId, stripeSubscriptionId} = req.body;
+      const {idRestaurante, stripeCustomerId, stripeSubscriptionId} = req.body;
 
       // Validate required fields
-      if (!userId || !stripeCustomerId || !stripeSubscriptionId) {
+      if (!idRestaurante || !stripeCustomerId || !stripeSubscriptionId) {
         return res.status(400).json({
-          error: "Missing required fields: userId, stripeCustomerId, stripeSubscriptionId",
+          error: "Missing required fields: idRestaurante, stripeCustomerId, stripeSubscriptionId",
         });
       }
 
@@ -210,24 +210,24 @@ exports.activatePlan = onRequest(
         return res.status(404).json({error: "Subscription not found in Stripe"});
       }
 
-      // Save only Stripe references to Firestore
+      // Save only Stripe references to restaurant document in Firestore
       // Plan details will be fetched from Stripe API on the frontend
-      await admin.firestore().collection("users").doc(userId).update({
+      await admin.firestore().collection("restaurantes").doc(idRestaurante).update({
         stripeCustomerId: stripeCustomerId,
         stripeSubscriptionId: stripeSubscriptionId,
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      logger.info("Stripe references saved", {userId, subscriptionId: stripeSubscriptionId});
+      logger.info("Stripe references saved to restaurant", {idRestaurante, subscriptionId: stripeSubscriptionId});
 
       res.json({
         success: true,
-        message: "Stripe references saved successfully",
+        message: "Stripe references saved successfully to restaurant",
         subscriptionId: stripeSubscriptionId,
         customerId: stripeCustomerId,
       });
     } catch (error) {
-      logger.error("Error saving Stripe references", {error: error.message});
+      logger.error("Error saving Stripe references to restaurant", {error: error.message});
       res.status(500).json({error: error.message});
     }
   }
