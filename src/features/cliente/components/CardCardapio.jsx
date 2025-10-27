@@ -27,7 +27,9 @@ export default function CardCardapio({ item, onClick, onAddCarrinho }) {
                     )}
 
                 <p className="font-semibold text-gray-800 text-base md:text-lg">{item.nome}</p>
-                <p className="text-gray-500 text-sm leading-snug line-clamp-2 md:line-clamp-3">{item.descricao}</p>
+                <p className="text-gray-500 text-sm leading-snug cliente-card-description">
+                    {item.descricao}
+                </p>
 
             </div>
                 
