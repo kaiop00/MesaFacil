@@ -109,7 +109,8 @@ export const useKitchenPrint = () => {
                 width: 100%;
                 max-width: 72mm;
                 margin: 0 auto;
-                padding: 8px;
+                padding: 12px;
+                box-sizing: border-box;
               }
               .row {
                 display: flex;
@@ -118,6 +119,7 @@ export const useKitchenPrint = () => {
                 margin-bottom: 4px;
                 white-space: pre-wrap;
                 word-break: break-word;
+                padding: 0 4px;
               }
               .center {
                 justify-content: center;
@@ -230,4 +232,3 @@ export const useKitchenPrint = () => {
     printOrder,
   };
 };
-
