@@ -95,7 +95,7 @@ export const useKitchenPrint = () => {
             <title>${t("print.windowTitle")}</title>
             <style>
               @page {
-                margin: 8mm;
+                margin: 4mm;
                 size: 80mm auto;
               }
               body {
@@ -109,17 +109,17 @@ export const useKitchenPrint = () => {
                 width: 100%;
                 max-width: 72mm;
                 margin: 0 auto;
-                padding: 12px;
+                padding: 8px 6px;
                 box-sizing: border-box;
               }
               .row {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                margin-bottom: 4px;
+                margin-bottom: 2px;
                 white-space: pre-wrap;
                 word-break: break-word;
-                padding: 0 4px;
+                padding: 0 2px;
               }
               .center {
                 justify-content: center;
@@ -127,7 +127,7 @@ export const useKitchenPrint = () => {
               }
               .divider {
                 border-top: 1px dashed #9ca3af;
-                margin: 6px 0;
+                margin: 4px 0;
               }
               .title {
                 font-weight: bold;
@@ -135,7 +135,7 @@ export const useKitchenPrint = () => {
                 letter-spacing: 1px;
               }
               .item {
-                margin-bottom: 6px;
+                margin-bottom: 4px;
               }
               .item-header {
                 font-weight: bold;
@@ -148,7 +148,7 @@ export const useKitchenPrint = () => {
                 margin-left: 12px;
               }
               .footer {
-                margin-top: 12px;
+                margin-top: 8px;
                 font-size: 11px;
                 text-align: center;
               }
