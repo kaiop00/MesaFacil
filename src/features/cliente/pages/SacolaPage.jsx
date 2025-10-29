@@ -7,8 +7,10 @@ import { createPedido } from "@/features/order/services/orderService";
 import { useCliente } from "../context/ClienteContext";
 import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useTranslation } from "react-i18next";
 
 export default function SacolaPage() {
+    const { t } = useTranslation("cliente");
     const { notify } = useToast();
     const { mesaId, idRestaurante } = useCliente();
     const navigate = useNavigate();
@@ -41,14 +43,14 @@ export default function SacolaPage() {
                 total,
                 observacoes
             );
-            notify("Pedido Enviado Com sucesso", "success");
+            notify(t("sacola.orderSent"), "success");
             limparCarrinho();
             const search = location.search || "";
             const target = slug ? `/mesa/${slug}/pedido${search}` : `../pedido${search}`;
             navigate(target, { replace: true });
         } catch (error) {
             console.error("Erro ao enviar pedido: ", error);
-            notify("Erro ao enviar pedido", "error");
+            notify(t("sacola.orderError"), "error");
         } finally {
             setLoading(false);
         }
@@ -58,11 +60,11 @@ export default function SacolaPage() {
 
     return (
         <div className="flex flex-col p-4 gap-4 pb-48 md:px-6 lg:px-8 max-w-6xl mx-auto">
-            <h1 className="text-lg font-semibold md:text-xl">Itens</h1>
+            <h1 className="text-lg font-semibold md:text-xl">{t("sacola.title")}</h1>
 
             {vazio ? (
                 <p className="text-sm text-gray-600">
-                    Sua sacola está vazia. Adicione itens pelo cardápio.
+                    {t("sacola.empty")}
                 </p>
             ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -83,13 +85,13 @@ export default function SacolaPage() {
                             htmlFor="observacoes"
                             className="text-sm font-medium text-gray-700"
                         >
-                            Observações
+                            {t("sacola.observations")}
                         </label>
                         <textarea
                             id="observacoes"
                             ref={observacoesRef}
                             rows={3}
-                            placeholder="Ex: sem cebola, ponto da carne..."
+                            placeholder={t("sacola.observationsPlaceholder")}
                             className="w-full border border-gray-300 rounded-md p-2 text-sm"
                         />
                     </div>
@@ -103,7 +105,7 @@ export default function SacolaPage() {
               flex items-center justify-center
             "
                     >
-                        {loading ? <LoadingSpinner /> : "Confirmar Pedido"}
+                        {loading ? <LoadingSpinner /> : t("sacola.confirmOrder")}
                     </button>
                 </form>
             )}

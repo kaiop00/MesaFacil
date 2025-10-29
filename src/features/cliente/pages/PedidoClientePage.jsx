@@ -14,8 +14,10 @@ import { solicitarGarcom } from "../services/garcomService";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "../hooks/useServiceFee";
 import { computeServiceFeeAmount, computeTotalWithService } from "../utils/pedidos";
+import { useTranslation } from "react-i18next";
 
 export default function PedidoClientePage() {
+    const { t } = useTranslation("cliente");
     const [step, setStep] = useState(0);
     const { mesaId, idRestaurante, numero } = useCliente();
     const { pedidos, loading, error, totalPedidos } = usePedidosCliente();
@@ -71,11 +73,11 @@ export default function PedidoClientePage() {
     }, [baseStep, garcomState.solicitado]);
 
     const statusText = {
-        0: "Nenhum pedido em andamento",
-        1: "Pedido Confirmado, seu pedido foi enviado para a cozinha e será preparado dentro de alguns minutos", //imagem g1
-        2: "Pedido entregue", // imagem g2
-        3: "Realize o pagamento para finalizar", //imagem g3
-        4: "O garçom está a caminho", // imagem g4
+        0: t("pedido.status.none"),
+        1: t("pedido.status.confirmed"),
+        2: t("pedido.status.delivered"),
+        3: t("pedido.status.payment"),
+        4: t("pedido.status.waiterComing"),
     };
 
     const stepImageMap = {
@@ -92,7 +94,7 @@ export default function PedidoClientePage() {
 
     const handleChamarGarcom = async () => {
         if (!mesaId || !idRestaurante) {
-            notify("Não foi possível identificar a mesa.", "error");
+            notify(t("pedido.waiterError"), "error");
             return;
         }
 
@@ -130,11 +132,11 @@ export default function PedidoClientePage() {
 
             setGarcomState({ loading: false, solicitado: true });
             setStep(4);
-            notify("O garçom foi acionado. Aguarde um instante.", "success");
+            notify(t("pedido.waiterSuccess"), "success");
         } catch (err) {
             console.error("Erro ao chamar garçom", err);
             setGarcomState({ loading: false, solicitado: false });
-            notify("Não foi possível chamar o garçom. Tente novamente.", "error");
+            notify(t("pedido.waiterError"), "error");
         }
     };
 
@@ -156,9 +158,9 @@ export default function PedidoClientePage() {
 
             {step === 2 && (
                 <div className="text-sm mt-5 text-center text-gray-700 px-7">
-                    <p>quando terminar de comer clique em realizar pagamento</p>
+                    <p>{t("pedido.deliveredMessage")}</p>
                     <div className="flex flex-col gap-3">
-                        <p>Pedido entregue</p>
+                        <p>{t("pedido.status.delivered")}</p>
                         <TotalPedidos
                             pedidos={pedidos}
                             loading={loading}

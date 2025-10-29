@@ -1,4 +1,5 @@
 import { formatCurrency, computeServiceFeeAmount, computeTotalWithService, normalizeServicePercentage, DEFAULT_SERVICE_FEE_PERCENT } from "../utils/pedidos";
+import { useTranslation } from "react-i18next";
 
 const PaymentSummary = ({
     items,
@@ -8,6 +9,7 @@ const PaymentSummary = ({
     serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
     serviceFeeLoading = false,
 }) => {
+    const { t } = useTranslation("cliente");
     const subtotalValue = typeof subtotal === "number" && Number.isFinite(subtotal) ? subtotal : 0;
     const percentNormalized = normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT);
     const serviceAmount = computeServiceFeeAmount(subtotalValue, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
@@ -18,15 +20,15 @@ const PaymentSummary = ({
         maximumFractionDigits: 2,
     });
     const serviceLabel = percentNormalized > 0
-        ? `Taxa de serviço (${formattedPercent}%)`
-        : "Taxa de serviço";
+        ? `${t("payment.summary.serviceFee")} (${formattedPercent}%)`
+        : t("payment.summary.serviceFee");
     const serviceValueLabel = serviceFeeLoading
-        ? "Carregando..."
+        ? t("common.loading")
         : percentNormalized > 0
             ? formatCurrency(serviceAmount)
-            : "Isento";
+            : t("totalPedidos.serviceFeeExempt");
     const totalWithServiceLabel = serviceFeeLoading
-        ? "Carregando..."
+        ? t("common.loading")
         : formatCurrency(totalWithService);
 
     return (
@@ -34,17 +36,17 @@ const PaymentSummary = ({
             <div className="flex items-center gap-3">
                 <span className="flex-1 h-px bg-[#D9A23B]/30" />
                 <span className="text-xs font-semibold text-[#D9A23B] tracking-widest uppercase">
-                    Resumo da Compra
+                    {t("payment.summary.title")}
                 </span>
                 <span className="flex-1 h-px bg-[#D9A23B]/30" />
             </div>
 
             <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-                {loading && <p>Carregando pedidos...</p>}
+                {loading && <p>{t("payment.summary.loading")}</p>}
                 {!loading && error && <p className="text-red-500">{error}</p>}
 
                 {!loading && !error && items.length === 0 && (
-                    <p className="text-sm text-gray-500">Nenhum item disponível para pagamento no momento.</p>
+                    <p className="text-sm text-gray-500">{t("payment.summary.noItems")}</p>
                 )}
 
                 {!loading && !error && items.length > 0 && (
@@ -63,7 +65,7 @@ const PaymentSummary = ({
 
                 {!loading && !error && (
                     <div className="flex justify-between items-center border-t border-gray-100 pt-3 font-semibold text-gray-900">
-                        <span>Valor sem taxa</span>
+                        <span>{t("payment.summary.subtotal")}</span>
                         <span>{formatCurrency(subtotalValue)}</span>
                     </div>
                 )}
@@ -77,7 +79,7 @@ const PaymentSummary = ({
 
                 {!loading && !error && (
                     <div className="flex justify-between items-center border-t border-gray-100 pt-3 font-semibold text-gray-900">
-                        <span>Total com taxa</span>
+                        <span>{t("payment.summary.totalWithFee")}</span>
                         <span>{totalWithServiceLabel}</span>
                     </div>
                 )}

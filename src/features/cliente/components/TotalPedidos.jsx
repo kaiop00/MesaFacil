@@ -10,6 +10,7 @@ import {
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
 } from "../utils/pedidos";
+import { useTranslation } from "react-i18next";
 
 export default function TotalPedidos({
     pedidos = [],
@@ -22,6 +23,7 @@ export default function TotalPedidos({
     idRestaurante,
     onRealizarPagamento,
 }) {
+    const { t } = useTranslation("cliente");
     const navigate = useNavigate();
     const location = useLocation();
     const { slug } = useParams();
@@ -54,15 +56,15 @@ export default function TotalPedidos({
         maximumFractionDigits: 2,
     });
     const serviceLabel = percentNormalized > 0
-        ? `Taxa de serviço (${formattedPercent}%)`
-        : "Taxa de serviço";
+        ? `${t("totalPedidos.serviceFee")} (${formattedPercent}%)`
+        : t("totalPedidos.serviceFee");
     const serviceValueLabel = serviceFeeLoading
-        ? "Carregando..."
+        ? t("common.loading")
         : percentNormalized > 0
             ? formatCurrency(valorServico)
-            : "Isento";
+            : t("totalPedidos.serviceFeeExempt");
     const totalComServicoLabel = serviceFeeLoading
-        ? "Carregando..."
+        ? t("common.loading")
         : formatCurrency(totalComServico);
 
     const search = location.search || "";
@@ -88,21 +90,21 @@ export default function TotalPedidos({
     return (
         <div className="bg-white rounded-xl shadow-md mt-6 px-6 py-4 w-full max-w-md text-sm text-gray-700 space-y-4">
             <div>
-                <p className="font-bold text-gray-900 mb-1">Resumo dos Pedidos</p>
+                <p className="font-bold text-gray-900 mb-1">{t("totalPedidos.title")}</p>
                 <p>
-                    <span className="font-medium">Mesa</span> {numero || mesa?.numero || "-"}
+                    <span className="font-medium">{t("totalPedidos.table")}</span> {numero || mesa?.numero || "-"}
                 </p>
                 <p>
-                    <span className="font-medium">Pedidos registrados</span> {pedidos.length}
+                    <span className="font-medium">{t("totalPedidos.ordersRegistered")}</span> {pedidos.length}
                 </p>
             </div>
 
-            {loading && <p>Carregando pedidos...</p>}
+            {loading && <p>{t("totalPedidos.loading")}</p>}
 
             {!loading && error && <p className="text-red-500">{error}</p>}
 
             {!loading && !error && pedidos.length === 0 && (
-                <p>Nenhum pedido encontrado para esta mesa.</p>
+                <p>{t("totalPedidos.noOrders")}</p>
             )}
 
             {!loading && !error && pedidos.length > 0 && (
@@ -113,14 +115,14 @@ export default function TotalPedidos({
                         return (
                             <div key={pedido.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
                                 <div className="flex flex-col gap-1 text-gray-900">
-                                    <span className="font-semibold">Pedido {idx + 1}</span>
+                                    <span className="font-semibold">{t("totalPedidos.order")} {idx + 1}</span>
                                     {pedido.status && (
                                         <span className="text-xs uppercase tracking-wide text-gray-500">
-                                            Status: {pedido.status}
+                                            {t("totalPedidos.status")}: {pedido.status}
                                         </span>
                                     )}
                                     {criadoEmLabel && (
-                                        <span className="text-xs text-gray-500">Criado em {criadoEmLabel}</span>
+                                        <span className="text-xs text-gray-500">{t("totalPedidos.createdAt")} {criadoEmLabel}</span>
                                     )}
                                 </div>
 
@@ -143,13 +145,13 @@ export default function TotalPedidos({
 
                                 {pedido.observacoes && pedido.observacoes.trim() && (
                                     <div className="pt-2 border-t border-gray-200 text-xs text-gray-600">
-                                        <span className="font-medium text-gray-700">Observações: </span>
+                                        <span className="font-medium text-gray-700">{t("totalPedidos.observations")}: </span>
                                         {pedido.observacoes}
                                     </div>
                                 )}
 
                                 <div className="flex justify-between border-t border-gray-200 pt-2 font-semibold text-gray-900">
-                                    <span>Total</span>
+                                    <span>{t("totalPedidos.total")}</span>
                                     <span>{formatCurrency(pedido.total)}</span>
                                 </div>
                             </div>
@@ -162,7 +164,7 @@ export default function TotalPedidos({
                 <>
                     <div className="space-y-2 pt-2 border-t border-gray-300 text-gray-900">
                         <div className="flex justify-between font-semibold">
-                            <span>Valor sem taxa</span>
+                            <span>{t("totalPedidos.subtotal")}</span>
                             <span>{formatCurrency(totalResumo)}</span>
                         </div>
                         <div className="flex justify-between text-sm font-medium">
@@ -170,7 +172,7 @@ export default function TotalPedidos({
                             <span>{serviceValueLabel}</span>
                         </div>
                         <div className="flex justify-between font-semibold">
-                            <span>Total com taxa</span>
+                            <span>{t("totalPedidos.totalWithFee")}</span>
                             <span>{totalComServicoLabel}</span>
                         </div>
                     </div>
@@ -179,13 +181,13 @@ export default function TotalPedidos({
                             className="w-full bg-[#10B981] text-white p-2 rounded-lg"
                             onClick={handleGoToMenu}
                         >
-                            Pedir mais
+                            {t("totalPedidos.orderMore")}
                         </button>
                         <button
                             className="w-full bg-[#D9A23B] text-white p-2 rounded-lg"
                             onClick={handleGoToPayment}
                         >
-                            Realizar pagamento
+                            {t("totalPedidos.makePayment")}
                         </button>
                     </div>
                 </>

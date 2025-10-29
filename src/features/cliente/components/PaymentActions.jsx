@@ -1,13 +1,15 @@
-const getPrimaryLabel = ({ garcomSolicitado, chamarGarcomLoading }) => {
+import { useTranslation } from "react-i18next";
+
+const getPrimaryLabel = ({ garcomSolicitado, chamarGarcomLoading, t }) => {
     if (garcomSolicitado) {
-        return "Garçom a caminho";
+        return t("payment.actions.waiterCalled");
     }
 
     if (chamarGarcomLoading) {
-        return "Chamando...";
+        return t("payment.actions.waiterCalling");
     }
 
-    return "Chamar garçom para pagamento";
+    return t("payment.actions.callWaiter");
 };
 
 const PaymentActions = ({
@@ -16,6 +18,7 @@ const PaymentActions = ({
     garcomSolicitado,
     chamarGarcomLoading,
 }) => {
+    const { t } = useTranslation("cliente");
     const disabledPrimary = garcomSolicitado || chamarGarcomLoading;
 
     return (
@@ -26,14 +29,14 @@ const PaymentActions = ({
                 onClick={onContinuar}
                 disabled={disabledPrimary}
             >
-                {getPrimaryLabel({ garcomSolicitado, chamarGarcomLoading })}
+                {getPrimaryLabel({ garcomSolicitado, chamarGarcomLoading, t })}
             </button>
             <button
                 type="button"
                 className="w-full text-sm text-gray-500 underline"
                 onClick={onVoltar}
             >
-                Voltar para pedidos
+                {t("payment.actions.back")}
             </button>
         </div>
     );

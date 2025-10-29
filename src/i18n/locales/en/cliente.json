@@ -1,0 +1,118 @@
+{
+  "mesa": {
+    "title": "Table",
+    "loading": "Loading...",
+    "notFound": "Table not found",
+    "callWaiter": "Call Waiter",
+    "calling": "Calling...",
+    "called": "Call sent",
+    "callSuccess": "Call sent. The waiter will come to your table shortly.",
+    "callError": "Could not call the waiter. Please try again.",
+    "identifyError": "Could not identify the table.",
+    "search": "Search"
+  },
+  "cardapio": {
+    "promotion": "OFFER",
+    "save": "Save",
+    "addToCart": "Add"
+  },
+  "itemModal": {
+    "allergies": "Allergies",
+    "add": "Add"
+  },
+  "sacola": {
+    "title": "Items",
+    "empty": "Your bag is empty. Add items from the menu.",
+    "observations": "Observations",
+    "observationsPlaceholder": "E.g.: no onions, meat done...",
+    "confirmOrder": "Confirm Order",
+    "orderSent": "Order sent successfully",
+    "orderError": "Error sending order"
+  },
+  "pedido": {
+    "status": {
+      "none": "No order in progress",
+      "confirmed": "Order Confirmed, your order has been sent to the kitchen and will be prepared within a few minutes",
+      "delivered": "Order delivered",
+      "payment": "Make payment to finish",
+      "waiterComing": "The waiter is on the way"
+    },
+    "deliveredMessage": "when you finish eating, click make payment",
+    "waiterOnWay": "The waiter is on the way",
+    "waiterHelp": "The waiter will come to your table to assist with payment, please wait.",
+    "waiterSuccess": "The waiter has been called. Please wait a moment.",
+    "waiterError": "Could not call the waiter. Please try again."
+  },
+  "totalPedidos": {
+    "title": "Order Summary",
+    "table": "Table",
+    "ordersRegistered": "Registered orders",
+    "loading": "Loading orders...",
+    "noOrders": "No orders found for this table.",
+    "order": "Order",
+    "status": "Status",
+    "createdAt": "Created at",
+    "observations": "Observations",
+    "total": "Total",
+    "subtotal": "Value without fee",
+    "serviceFee": "Service fee",
+    "serviceFeeWith": "Service fee",
+    "serviceFeeExempt": "Exempt",
+    "totalWithFee": "Total with fee",
+    "orderMore": "Order more",
+    "makePayment": "Make payment"
+  },
+  "payment": {
+    "title": "Make Payment",
+    "subtitle": "Choose an option to proceed",
+    "selectOption": "Select a payment method before continuing.",
+    "options": {
+      "pix": "PIX",
+      "pixDescription": "Instant payment via QR Code",
+      "waiter": "Call Waiter",
+      "waiterDescription": "The waiter will come to your table",
+      "waiterCalled": "Waiter already requested"
+    },
+    "pix": {
+      "title": "PIX Payment",
+      "instructions": "Scan the QR Code or copy the code below",
+      "qrCode": "PIX QR Code",
+      "copyCode": "Copy PIX code",
+      "copied": "Copied!",
+      "loading": "Generating PIX code...",
+      "error": "Error generating PIX code"
+    },
+    "actions": {
+      "continue": "Continue",
+      "back": "Back",
+      "callWaiter": "Call Waiter",
+      "waiterCalling": "Calling...",
+      "waiterCalled": "Waiter Requested"
+    },
+    "summary": {
+      "title": "Purchase Summary",
+      "loading": "Loading orders...",
+      "noItems": "No items available for payment at the moment.",
+      "subtotal": "Value without fee",
+      "serviceFee": "Service fee",
+      "totalWithFee": "Total with fee"
+    },
+    "orderDetails": {
+      "title": "Order Details",
+      "table": "Table",
+      "order": "Order",
+      "orderTotal": "Order total"
+    }
+  },
+  "common": {
+    "table": "Table",
+    "order": "Order",
+    "total": "Total",
+    "loading": "Loading...",
+    "error": "Error",
+    "back": "Back",
+    "continue": "Continue",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  }
+}
