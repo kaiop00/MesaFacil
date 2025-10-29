@@ -121,11 +121,15 @@ export const useKitchenPrint = () => {
                 font-size: 3.6mm;
                 line-height: 1.35;
                 color: #1f2937;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
               }
               .ticket {
                 width: 72mm;
                 max-width: 72mm;
-                margin: 0 auto;
+                margin: 0;
                 padding: 4mm 2mm;
               }
               .row {
@@ -185,6 +189,10 @@ export const useKitchenPrint = () => {
                 body {
                   font-size: 3.6mm;
                   line-height: 1.35;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: flex-start;
                 }
                 .ticket {
                   width: 72mm;
