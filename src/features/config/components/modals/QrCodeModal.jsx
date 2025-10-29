@@ -23,10 +23,10 @@ export function QrCodeModal({
             icon={Coffee}
         >
             <div className="flex justify-center py-6 px-4">
-                <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50 via-white to-white p-[1px] shadow-xl">
-                    <div className="flex h-full flex-col items-center gap-8 rounded-3xl bg-white/90 px-10 py-9 text-center backdrop-blur-sm">
+                <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-gray-200 bg-white p-[1px] shadow-xl">
+                    <div className="flex h-full flex-col items-center gap-8 rounded-3xl bg-white px-10 py-9 text-center">
                         <div className="flex flex-col items-center gap-4">
-                            <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-5 py-1.5 text-sm font-semibold uppercase tracking-wide text-amber-700 shadow-sm">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-5 py-1.5 text-sm font-semibold uppercase tracking-wide text-gray-700">
                                 {t("config:modals.qrCode.tableLabel", { number: tableNumber })}
                             </span>
                             <h2 className="text-2xl font-semibold text-gray-800">

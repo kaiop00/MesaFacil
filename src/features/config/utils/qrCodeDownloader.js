@@ -111,12 +111,7 @@ const generateLabeledQRCode = async ({ url, tableLabel, scanTitle, instructions 
     canvas.height = height;
     const ctx = canvas.getContext("2d");
 
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, "#fef3c7");
-    gradient.addColorStop(0.4, "#ffffff");
-    gradient.addColorStop(1, "#fefce8");
-
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = "#f9fafb";
     ctx.fillRect(0, 0, width, height);
 
     const cardX = outerPadding;
@@ -124,17 +119,17 @@ const generateLabeledQRCode = async ({ url, tableLabel, scanTitle, instructions 
     const cardHeight = height - outerPadding * 2;
 
     ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.fillStyle = "#ffffff";
     drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 28);
     ctx.fill();
     ctx.restore();
 
     ctx.save();
-    ctx.shadowColor = "rgba(15, 23, 42, 0.12)";
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 12;
-    ctx.fillStyle = "rgba(255,255,255,0.98)";
-    drawRoundedRect(ctx, cardX + 6, cardY + 6, cardWidth - 12, cardHeight - 12, 26);
+    ctx.shadowColor = "rgba(15, 23, 42, 0.08)";
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 10;
+    drawRoundedRect(ctx, cardX + 4, cardY + 4, cardWidth - 8, cardHeight - 8, 26);
+    ctx.fillStyle = "#ffffff";
     ctx.fill();
     ctx.restore();
 
@@ -149,10 +144,10 @@ const generateLabeledQRCode = async ({ url, tableLabel, scanTitle, instructions 
     ctx.font = `600 16px "Inter", Arial, sans-serif`;
     const badgeWidth = ctx.measureText(tableLabelUpper).width + 44;
     const badgeX = centerX - badgeWidth / 2;
-    ctx.fillStyle = "#fde68a";
+    ctx.fillStyle = "#e5e7eb";
     drawRoundedRect(ctx, badgeX, currentY, badgeWidth, badgeHeight, badgeRadius);
     ctx.fill();
-    ctx.fillStyle = "#92400e";
+    ctx.fillStyle = "#374151";
     ctx.textBaseline = "middle";
     ctx.fillText(tableLabelUpper, centerX, currentY + badgeHeight / 2);
     ctx.restore();
