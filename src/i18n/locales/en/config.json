@@ -59,7 +59,10 @@
     },
     "qrCode": {
       "title": "QR Code",
-      "subtitle": "QR Code for table {{number}}"
+      "subtitle": "QR Code for table {{number}}",
+      "tableLabel": "Table {{number}}",
+      "scanTitle": "Scan & order now",
+      "instructions": "Scan this QR code to open the menu and place your order."
     },
     "serviceFee": {
       "title": "Service Fee",
