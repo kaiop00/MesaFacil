@@ -1,11 +1,14 @@
+import { useTranslation } from "react-i18next";
+
 const PaymentOptionSelector = ({ garcomDisabled, garcomSolicitado }) => {
+    const { t } = useTranslation("cliente");
     const showStatus = garcomSolicitado || garcomDisabled;
-    const statusLabel = garcomSolicitado ? "Garçom a caminho" : "Chamando garçom...";
+    const statusLabel = garcomSolicitado ? t("payment.options.waiterCalled") : t("payment.actions.waiterCalling");
     const statusColor = garcomSolicitado ? "text-[#B7791F]" : "text-[#D97706]";
 
     return (
         <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Pagamento com atendimento</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t("payment.options.waiter")}</h3>
 
             <div
                 className={`w-full border rounded-xl p-4 transition bg-white shadow-sm ${
@@ -14,13 +17,12 @@ const PaymentOptionSelector = ({ garcomDisabled, garcomSolicitado }) => {
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                        <p className="font-semibold text-gray-900 text-sm">Chamar Garçom</p>
+                        <p className="font-semibold text-gray-900 text-sm">{t("payment.options.waiter")}</p>
                         <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                            Toque em &quot;Chamar garçom&quot; para solicitar a presença do garçom e concluir o
-                            pagamento diretamente na mesa.
+                            {t("payment.options.waiterDescription")}
                         </p>
                     </div>
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Garçom</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{t("payment.options.waiter")}</span>
                 </div>
 
                 {showStatus && (
@@ -28,12 +30,11 @@ const PaymentOptionSelector = ({ garcomDisabled, garcomSolicitado }) => {
                         <p className={`font-semibold ${statusColor}`}>Status: {statusLabel}</p>
                         {garcomSolicitado ? (
                             <p className="mt-1">
-                                Aguarde um instante, o garçom já foi notificado e chegará à sua mesa em breve.
+                                {t("pedido.waiterHelp")}
                             </p>
                         ) : (
                             <p className="mt-1">
-                                Estamos acionando o garçom. Você receberá uma confirmação assim que o pedido for
-                                concluído.
+                                {t("payment.actions.waiterCalling")}
                             </p>
                         )}
                     </div>

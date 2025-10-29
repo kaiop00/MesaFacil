@@ -7,6 +7,7 @@ import {
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
 } from "../utils/pedidos";
+import { useTranslation } from "react-i18next";
 
 export default function AguardandoGarcom({
     pedidos = [],
@@ -15,6 +16,7 @@ export default function AguardandoGarcom({
     serviceFeeLoading = false,
     mesaNumero,
 }) {
+    const { t } = useTranslation("cliente");
     const { numero } = useCliente();
     const mesaNumeroExibicao = mesaNumero || numero;
     const percentNormalized = normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT);
@@ -25,15 +27,15 @@ export default function AguardandoGarcom({
         maximumFractionDigits: 2,
     });
     const serviceLabel = percentNormalized > 0
-        ? `Taxa de serviço (${formattedPercent}%)`
-        : "Taxa de serviço";
+        ? `${t("payment.summary.serviceFee")} (${formattedPercent}%)`
+        : t("payment.summary.serviceFee");
     const serviceValueLabel = serviceFeeLoading
-        ? "Carregando..."
+        ? t("common.loading")
         : percentNormalized > 0
             ? formatCurrency(valorServico)
-            : "Isento";
+            : t("totalPedidos.serviceFeeExempt");
     const totalComServicoLabel = serviceFeeLoading
-        ? "Carregando..."
+        ? t("common.loading")
         : formatCurrency(totalComServico);
 
     return (
@@ -41,10 +43,10 @@ export default function AguardandoGarcom({
             <div className="bg-white rounded-xl shadow-md w-full max-w-md overflow-hidden">
                 <div className="px-6 py-6 space-y-6 text-gray-700 text-sm">
                     <div className="space-y-2 text-center">
-                        <p className="text-xs text-[#D9A23B] font-semibold uppercase tracking-[0.2em]">Mesa {mesaNumeroExibicao || "-"}</p>
-                        <h2 className="text-xl font-semibold text-gray-900">O garçom está a caminho</h2>
+                        <p className="text-xs text-[#D9A23B] font-semibold uppercase tracking-[0.2em]">{t("common.table")} {mesaNumeroExibicao || "-"}</p>
+                        <h2 className="text-xl font-semibold text-gray-900">{t("pedido.waiterOnWay")}</h2>
                         <p className="text-sm text-gray-500">
-                            O garçom irá até sua mesa para auxiliar com o pagamento, por favor aguarde.
+                            {t("pedido.waiterHelp")}
                         </p>
                     </div>
 
@@ -52,14 +54,14 @@ export default function AguardandoGarcom({
                         <div className="flex items-center gap-3">
                             <span className="flex-1 h-px bg-[#D9A23B]/30" />
                             <span className="text-xs font-semibold text-[#D9A23B] tracking-widest uppercase">
-                                Detalhes do Pedido
+                                {t("payment.orderDetails.title")}
                             </span>
                             <span className="flex-1 h-px bg-[#D9A23B]/30" />
                         </div>
 
                         <div className="border border-gray-200 rounded-xl p-4 space-y-3">
                             <div className="flex justify-between text-sm text-gray-600">
-                                <span>Mesa</span>
+                                <span>{t("payment.orderDetails.table")}</span>
                                 <span className="font-medium text-gray-900">{mesaNumeroExibicao || "-"}</span>
                             </div>
 
@@ -71,7 +73,7 @@ export default function AguardandoGarcom({
                                     return (
                                         <div key={pedido.id || index} className="space-y-2">
                                             <div className="flex justify-between text-sm text-gray-600">
-                                                <span>Pedido {index + 1}</span>
+                                                <span>{t("payment.orderDetails.order")} {index + 1}</span>
                                                 <span className="font-medium text-gray-900">Nº {pedido.id || "-"}</span>
                                             </div>
 
@@ -99,7 +101,7 @@ export default function AguardandoGarcom({
                                             )}
 
                                             <div className="flex justify-between text-sm font-semibold text-gray-900">
-                                                <span>Total do pedido</span>
+                                                <span>{t("payment.orderDetails.orderTotal")}</span>
                                                 <span>{formatCurrency(totalPedido)}</span>
                                             </div>
                                         </div>
@@ -109,7 +111,7 @@ export default function AguardandoGarcom({
 
                             <div className="space-y-2 border-t border-gray-100 pt-3 text-gray-900">
                                 <div className="flex justify-between font-semibold">
-                                    <span>Valor sem taxa</span>
+                                    <span>{t("payment.summary.subtotal")}</span>
                                     <span>{formatCurrency(totalPedidos)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-medium">
@@ -117,7 +119,7 @@ export default function AguardandoGarcom({
                                     <span>{serviceValueLabel}</span>
                                 </div>
                                 <div className="flex justify-between font-semibold">
-                                    <span>Total com taxa</span>
+                                    <span>{t("payment.summary.totalWithFee")}</span>
                                     <span>{totalComServicoLabel}</span>
                                 </div>
                             </div>

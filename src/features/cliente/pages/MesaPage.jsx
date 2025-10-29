@@ -10,8 +10,10 @@ import CategoryTabs from "@/features/cliente/components/CategoryTabs";
 import { useCliente } from "../context/ClienteContext";
 import { solicitarGarcom } from "../services/garcomService";
 import { useToast } from "@/hooks/useToast";
+import { useTranslation } from "react-i18next";
 
 export default function MesaPage() {
+    const { t } = useTranslation("cliente");
     const { mesa, loading, error } = useMesa();
     const { items, loadingCardapio } = useClienteCardapio();
     const [itemSelecionado, setItemSelecionado] = useState(null);
@@ -36,16 +38,16 @@ export default function MesaPage() {
         return byCat.filter((it) => (it?.nome || "").toLowerCase().includes(q));
     }, [items, searchItem, filterByCategory]);
 
-    if (loading || loadingCardapio || loadingCategorias) return <p>Carregando...</p>;
+    if (loading || loadingCardapio || loadingCategorias) return <p>{t("mesa.loading")}</p>;
     if (error) return <p>{error}</p>;
-    if (!mesa) return <p>Mesa nao encontrada</p>;
+    if (!mesa) return <p>{t("mesa.notFound")}</p>;
 
     const mesaId = mesa?.id || mesaIdContext;
     const mesaNumero = mesa?.numero ?? numeroMesaContext ?? mesaId ?? "-";
 
     const handleChamarGarcom = async () => {
         if (!idRestaurante || !mesaId) {
-            notify("Não foi possível identificar a mesa.", "error");
+            notify(t("mesa.identifyError"), "error");
             return;
         }
 
@@ -66,10 +68,10 @@ export default function MesaPage() {
                 evento: "assistencia",
             });
             setGarcomSolicitado(true);
-            notify("Chamado enviado. O garçom vem até a sua mesa em instantes.", "success");
+            notify(t("mesa.callSuccess"), "success");
         } catch (err) {
             console.error("Erro ao solicitar garçom", err);
-            notify("Não foi possível chamar o garçom. Tente novamente.", "error");
+            notify(t("mesa.callError"), "error");
         } finally {
             setGarcomLoading(false);
         }
@@ -78,14 +80,14 @@ export default function MesaPage() {
     return (
         <div className="p-4 mb-20 md:pb-28 md:px-6 lg:px-8 max-w-6xl mx-auto">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-4">
-                <h1 className="text-2xl font-semibold md:text-3xl">Mesa {mesaNumero}</h1>
+                <h1 className="text-2xl font-semibold md:text-3xl">{t("mesa.title")} {mesaNumero}</h1>
                 <button
                     type="button"
                     onClick={handleChamarGarcom}
                     disabled={garcomLoading || garcomSolicitado}
                     className="inline-flex items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-amber-300 disabled:text-white"
                 >
-                    {garcomLoading ? "Chamando..." : garcomSolicitado ? "Chamado enviado" : "Chamar garçom"}
+                    {garcomLoading ? t("mesa.calling") : garcomSolicitado ? t("mesa.called") : t("mesa.callWaiter")}
                 </button>
             </div>
 
@@ -96,7 +98,7 @@ export default function MesaPage() {
                 <input
                     onChange={(e) => setSearchItem(e.target.value)}
                     type="text"
-                    placeholder="Buscar"
+                    placeholder={t("mesa.search")}
                     className="w-full pl-10 pr-4 py-2 border rounded-md text-sm border-gray-300 focus:outline-none focus:border-amber-600
                      md:text-base md:py-2.5"
                 />

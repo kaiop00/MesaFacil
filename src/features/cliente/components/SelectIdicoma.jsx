@@ -1,20 +1,74 @@
+import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+
 export default function SelectIdioma() {
+    const { t, i18n } = useTranslation();
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    const changeLanguage = (lng) => {
+        i18n.changeLanguage(lng);
+        localStorage.setItem('language', lng);
+        setIsOpen(false);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const currentLanguage = i18n.language || 'pt-BR';
+    const isPortuguese = currentLanguage === 'pt-BR';
+
     return (
-        <div className="flex items-center gap-2 border rounded-full px-3 py-1">
-            <img
-                src="https://flagcdn.com/w40/br.png"
-                alt="PT-BR"
-                className="h-4 w-6 object-cover rounded-sm"
-            />
-            <span className="text-sm font-medium">PT - BR</span>
-            <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 border rounded-full px-3 py-1 hover:bg-gray-50 transition-colors"
             >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+                <span className="text-xl">
+                    {isPortuguese ? "🇧🇷" : "🇺🇸"}
+                </span>
+                <span className="text-sm font-medium">
+                    {isPortuguese ? "PT-BR" : "EN"}
+                </span>
+                <svg
+                    className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {isOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 border z-50">
+                    <button
+                        onClick={() => changeLanguage("pt-BR")}
+                        className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                            isPortuguese ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                        }`}
+                    >
+                        <span className="mr-2 text-lg">🇧🇷</span>
+                        {t("common:languages.pt-BR")}
+                    </button>
+                    <button
+                        onClick={() => changeLanguage("en")}
+                        className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                            !isPortuguese ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                        }`}
+                    >
+                        <span className="mr-2 text-lg">🇺🇸</span>
+                        {t("common:languages.en")}
+                    </button>
+                </div>
+            )}
         </div>
-    )
+    );
 }

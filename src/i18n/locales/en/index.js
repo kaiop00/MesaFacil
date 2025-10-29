@@ -10,6 +10,7 @@ import notifications from "./notifications.json";
 import promotions from "./promotions.json";
 import kitchen from "./kitchen.json";
 import config from "./config.json";
+import cliente from "./cliente.json";
 
 export default {
   dashboard,
@@ -24,4 +25,5 @@ export default {
   promotions,
   kitchen,
   config,
+  cliente,
 };
