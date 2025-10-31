@@ -1,0 +1,118 @@
+{
+  "mesa": {
+    "title": "Table",
+    "loading": "Chargement...",
+    "notFound": "Table introuvable",
+    "callWaiter": "Appeler le serveur",
+    "calling": "Appel en cours...",
+    "called": "Appel envoyé",
+    "callSuccess": "Appel envoyé. Le serveur viendra à votre table sous peu.",
+    "callError": "Impossible d'appeler le serveur. Veuillez réessayer.",
+    "identifyError": "Impossible d'identifier la table.",
+    "search": "Rechercher"
+  },
+  "cardapio": {
+    "promotion": "OFFRE",
+    "save": "Économiser",
+    "addToCart": "Ajouter"
+  },
+  "itemModal": {
+    "allergies": "Allergies",
+    "add": "Ajouter"
+  },
+  "sacola": {
+    "title": "Articles",
+    "empty": "Votre panier est vide. Ajoutez des articles du menu.",
+    "observations": "Observations",
+    "observationsPlaceholder": "Ex: sans oignons, viande bien cuite...",
+    "confirmOrder": "Confirmer la commande",
+    "orderSent": "Commande envoyée avec succès",
+    "orderError": "Erreur lors de l'envoi de la commande"
+  },
+  "pedido": {
+    "status": {
+      "none": "Aucune commande en cours",
+      "confirmed": "Commande confirmée, votre commande a été envoyée à la cuisine et sera préparée dans quelques minutes",
+      "delivered": "Commande livrée",
+      "payment": "Effectuer le paiement pour terminer",
+      "waiterComing": "Le serveur est en route"
+    },
+    "deliveredMessage": "quand vous aurez fini de manger, cliquez sur effectuer le paiement",
+    "waiterOnWay": "Le serveur est en route",
+    "waiterHelp": "Le serveur viendra à votre table pour vous aider avec le paiement, veuillez patienter.",
+    "waiterSuccess": "Le serveur a été appelé. Veuillez patienter un instant.",
+    "waiterError": "Impossible d'appeler le serveur. Veuillez réessayer."
+  },
+  "totalPedidos": {
+    "title": "Résumé de la commande",
+    "table": "Table",
+    "ordersRegistered": "Commandes enregistrées",
+    "loading": "Chargement des commandes...",
+    "noOrders": "Aucune commande trouvée pour cette table.",
+    "order": "Commande",
+    "status": "Statut",
+    "createdAt": "Créé à",
+    "observations": "Observations",
+    "total": "Total",
+    "subtotal": "Valeur sans frais",
+    "serviceFee": "Frais de service",
+    "serviceFeeWith": "Frais de service",
+    "serviceFeeExempt": "Exempté",
+    "totalWithFee": "Total avec frais",
+    "orderMore": "Commander plus",
+    "makePayment": "Effectuer le paiement"
+  },
+  "payment": {
+    "title": "Effectuer le paiement",
+    "subtitle": "Choisissez une option pour continuer",
+    "selectOption": "Sélectionnez un mode de paiement avant de continuer.",
+    "options": {
+      "pix": "PIX",
+      "pixDescription": "Paiement instantané via QR Code",
+      "waiter": "Appeler le serveur",
+      "waiterDescription": "Le serveur viendra à votre table",
+      "waiterCalled": "Serveur déjà demandé"
+    },
+    "pix": {
+      "title": "Paiement PIX",
+      "instructions": "Scannez le QR Code ou copiez le code ci-dessous",
+      "qrCode": "QR Code PIX",
+      "copyCode": "Copier le code PIX",
+      "copied": "Copié !",
+      "loading": "Génération du code PIX...",
+      "error": "Erreur lors de la génération du code PIX"
+    },
+    "actions": {
+      "continue": "Continuer",
+      "back": "Retour",
+      "callWaiter": "Appeler le serveur",
+      "waiterCalling": "Appel en cours...",
+      "waiterCalled": "Serveur demandé"
+    },
+    "summary": {
+      "title": "Résumé de l'achat",
+      "loading": "Chargement des commandes...",
+      "noItems": "Aucun article disponible pour le paiement pour le moment.",
+      "subtotal": "Valeur sans frais",
+      "serviceFee": "Frais de service",
+      "totalWithFee": "Total avec frais"
+    },
+    "orderDetails": {
+      "title": "Détails de la commande",
+      "table": "Table",
+      "order": "Commande",
+      "orderTotal": "Total de la commande"
+    }
+  },
+  "common": {
+    "table": "Table",
+    "order": "Commande",
+    "total": "Total",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "back": "Retour",
+    "continue": "Continuer",
+    "confirm": "Confirmer",
+    "cancel": "Annuler"
+  }
+}

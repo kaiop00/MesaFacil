@@ -1,0 +1,162 @@
+{
+  "page": {
+    "title": "Ordini",
+    "subtitle": "Gestisci gli ordini del tuo ristorante",
+    "searchTables": "Cerca tavoli...",
+    "loading": "Caricamento...",
+    "errorLoading": "Errore nel caricamento dei dati",
+    "noPermission": "Nessun Permesso",
+    "noPermissionMessage": "Non hai il permesso per accedere agli ordini. Contatta l'amministratore."
+  },
+  "tables": {
+    "title": "Tavoli",
+    "noTables": "Nessun tavolo trovato",
+    "tableLetter": "Tavolo {{letter}}",
+    "tableNumber": "{{number}}",
+    "addTable": "Aggiungi Tavolo",
+    "status": {
+      "livre": "Disponibile",
+      "andamento": "In Corso", 
+      "entregue": "Consegnato"
+    },
+    "actions": {
+      "newOrder": "Nuovo Ordine",
+      "viewOrder": "Vedi Ordine",
+      "finish": "Completa",
+      "free": "Libera Tavolo"
+    }
+  },
+  "modals": {
+    "newOrder": {
+      "title": "Nuovo Ordine",
+      "selectTable": "Seleziona Tavolo",
+      "table": "Tavolo:",
+      "customer": "Nome Cliente:",
+      "customerPlaceholder": "Inserisci il nome del cliente...",
+      "observations": "Osservazioni",
+      "observationsPlaceholder": "Osservazioni aggiuntive...",
+      "buttons": {
+        "cancel": "Annulla",
+        "create": "Crea Ordine"
+      }
+    },
+    "addItems": {
+      "title": "Aggiungi Articoli",
+      "searchItems": "Cerca articoli...",
+      "noItems": "Nessun articolo trovato",
+      "categories": {
+        "all": "Tutti",
+        "food": "Cibo",
+        "drinks": "Bevande",
+        "desserts": "Dolci"
+      },
+      "itemDetails": {
+        "price": "Prezzo:",
+        "ingredients": "Ingredienti:",
+        "quantity": "Quantità:",
+        "observations": "Osservazioni:",
+        "observationsPlaceholder": "Osservazioni speciali..."
+      },
+      "buttons": {
+        "addToOrder": "Aggiungi all'Ordine",
+        "close": "Chiudi",
+        "cancel": "Annulla",
+        "add": "Aggiungi"
+      }
+    },
+    "orderDetail": {
+      "title": "Dettagli Ordine",
+      "customer": "Cliente:",
+      "table": "Tavolo:",
+      "status": "Stato:",
+      "observations": "Osservazioni",
+      "orderItems": "Articoli dell'Ordine",
+      "noItems": "Nessun articolo nell'ordine",
+      "total": "Totale:",
+      "buttons": {
+        "addItems": "Aggiungi Articoli",
+        "finishOrder": "Completa Ordine", 
+        "close": "Chiudi"
+      }
+    }
+  },
+  "orderItems": {
+    "item": "Articolo",
+    "quantity": "Qtà",
+    "unitPrice": "Prezzo Unitario",
+    "total": "Totale",
+    "actions": "Azioni",
+    "edit": "Modifica",
+    "remove": "Rimuovi",
+    "editQuantity": "Modifica Quantità",
+    "newQuantity": "Nuova Quantità:",
+    "save": "Salva",
+    "cancel": "Annulla"
+  },
+  "cardapio": {
+    "selectCategory": "Seleziona Categoria",
+    "allCategories": "Tutte le Categorie",
+    "searchPlaceholder": "Cerca nel menù...",
+    "noResults": "Nessun risultato trovato",
+    "price": "Prezzo: $ {{price}}",
+    "ingredients": "Ingredienti: {{ingredients}}",
+    "outOfStock": "Esaurito",
+    "lowStock": "Scorte basse",
+    "availableStock": "Scorte disponibili"
+  },
+  "forms": {
+    "validation": {
+      "required": "Questo campo è obbligatorio",
+      "customerRequired": "Il nome del cliente è obbligatorio",
+      "tableRequired": "Seleziona un tavolo",
+      "quantityRequired": "La quantità è obbligatoria",
+      "quantityMin": "La quantità deve essere maggiore di 0",
+      "quantityMax": "Quantità massima: {{max}}"
+    }
+  },
+  "messages": {
+    "success": {
+      "orderCreated": "Ordine creato con successo!",
+      "itemAdded": "Articolo aggiunto all'ordine!",
+      "itemUpdated": "Articolo aggiornato con successo!",
+      "itemRemoved": "Articolo rimosso dall'ordine!",
+      "orderFinished": "Ordine completato con successo!",
+      "tableFreed": "Tavolo liberato con successo!"
+    },
+    "error": {
+      "createOrder": "Errore nella creazione dell'ordine",
+      "addItem": "Errore nell'aggiunta dell'articolo",
+      "updateItem": "Errore nell'aggiornamento dell'articolo", 
+      "removeItem": "Errore nella rimozione dell'articolo",
+      "finishOrder": "Errore nel completamento dell'ordine",
+      "freeTable": "Errore nella liberazione del tavolo",
+      "loadData": "Errore nel caricamento dei dati",
+      "stockNotAvailable": "Scorte insufficienti per questo articolo"
+    },
+    "confirm": {
+      "removeItem": "Sei sicuro di voler rimuovere questo articolo?",
+      "finishOrder": "Sei sicuro di voler completare questo ordine?",
+      "finishOrderDescription": "Sei sicuro di voler completare questo ordine? Questa azione è irreversibile e reimposterà il tavolo per un nuovo cliente.",
+      "freeTable": "Sei sicuro di voler liberare questo tavolo?"
+    }
+  },
+  "currency": {
+    "symbol": "€",
+    "format": "{{symbol}} {{value}}"
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "edit": "Modifica",
+    "remove": "Rimuovi",
+    "add": "Aggiungi",
+    "close": "Chiudi",
+    "yes": "Sì",
+    "no": "No",
+    "total": "Totale",
+    "quantity": "Quantità",
+    "price": "Prezzo",
+    "actions": "Vedi tutti"
+  }
+}

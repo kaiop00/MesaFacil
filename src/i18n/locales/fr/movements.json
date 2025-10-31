@@ -1,0 +1,122 @@
+{
+  "page": {
+    "title": "Entrées et sorties", 
+    "subtitle": "Gérez les mouvements de votre restaurant",
+    "newButton": "Nouveau mouvement",
+    "loading": "Chargement...",
+    "noMovementsFound": "Aucun mouvement trouvé",
+    "errorLoading": "Erreur lors du chargement des mouvements",
+    "errorLoadingItems": "Erreur lors du chargement des articles", 
+    "errorDeleting": "Erreur lors de la suppression du mouvement",
+    "errorSaving": "Erreur lors de l'enregistrement du mouvement. Veuillez réessayer.",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer le mouvement pour \"{itemName}\" ?",
+    "deleteSuccess": "Mouvement supprimé avec succès !",
+    "createSuccess": "Mouvement créé avec succès !",
+    "updateSuccess": "Mouvement mis à jour avec succès !",
+    "noPermission": "Vous n'avez pas la permission d'effectuer cette action.",
+    "noPermissionMessage": "Vous n'avez pas la permission d'accéder aux mouvements. Veuillez contacter l'administrateur."
+  },
+  "table": {
+    "searchPlaceholder": "Rechercher le mouvement que vous souhaitez trouver",
+    "columns": {
+      "name": "Nom",
+      "type": "Type",
+      "quantity": "Qté", 
+      "balance": "Solde",
+      "reference": "Référence"
+    },
+    "actions": {
+      "view": "Voir",
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "de", 
+      "show": "Afficher",
+      "lines": "Lignes",
+      "records": "Enregistrements"
+    },
+    "movementTypes": {
+      "entrada": "Entrée",
+      "saida": "Sortie",
+      "ajuste": "Ajustement",
+      "transferencia": "Transfert",
+      "pedido": "Commande", 
+      "cancelamento": "Annulation"
+    },
+    "reference": {
+      "manual": "Manuel",
+      "order": "Commande",
+      "cancellation": "Annulation"
+    },
+    "noName": "Pas de nom",
+    "notSpecified": "Non spécifié"
+  },
+  "form": {
+    "titleCreate": "Nouveau mouvement",
+    "titleEdit": "Mettre à jour le mouvement",
+    "subtitleCreate": "Remplissez les informations pour ajouter",
+    "subtitleEdit": "Remplissez les informations pour modifier",
+    "fields": {
+      "item": "Article",
+      "itemPlaceholder": "Choisir une option",
+      "storageUnit": "Unité de stockage",
+      "purchaseUnit": "Unité d'achat", 
+      "transformationFactor": "Facteur de transformation",
+      "transformationPlaceholder": "Ex : 1 {purchaseUnit} = 0.05 {storageUnit}",
+      "transformationHelp": "1 {purchaseUnit} = {factor} {storageUnit}",
+      "movementType": "Type de mouvement",
+      "currentQty": "Qté actuelle", 
+      "quantity": "Qté",
+      "quantityPlaceholder": "Entrez la quantité",
+      "newBalance": "Nouveau solde"
+    },
+    "movementTypes": {
+      "entrada": "Entrée",
+      "saida": "Sortie",
+      "ajuste": "Ajustement", 
+      "transferencia": "Transfert"
+    },
+    "validation": {
+      "itemRequired": "L'article est requis",
+      "movementTypeRequired": "Le type de mouvement est requis",
+      "quantityRequired": "La quantité est requise"
+    },
+    "actions": {
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "saving": "Enregistrement..."
+    }
+  },
+  "details": {
+    "title": "Détails du mouvement",
+    "subtitleManual": "Mouvement manuel", 
+    "subtitleOrder": "Consommation automatique par commande",
+    "subtitleCancellation": "Annulation par annulation",
+    "alerts": {
+      "automaticConsumption": "Consommation automatique",
+      "automaticConsumptionText": "Ce mouvement a été généré automatiquement lors de la confirmation d'une commande",
+      "cancellationRefund": "Remboursement d'annulation",
+      "cancellationRefundText": "Ce mouvement a été généré par l'annulation d'une commande"
+    },
+    "fields": {
+      "item": "Article",
+      "brand": "Marque",
+      "movementType": "Type de mouvement",
+      "orderReference": "Référence de commande", 
+      "quantity": "Quantité",
+      "previousBalance": "Solde précédent",
+      "newBalance": "Nouveau solde",
+      "consumptionDetails": "Détails de consommation",
+      "totalConsumed": "Total consommé",
+      "movementDate": "Date du mouvement",
+      "notInformed": "Non informé"
+    },
+    "actions": {
+      "cancel": "Annuler",
+      "edit": "Modifier",
+      "loading": "Chargement..."
+    }
+  }
+}

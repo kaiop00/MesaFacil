@@ -1,0 +1,125 @@
+{
+  "title": "Utilisateurs",
+  "subtitle": "Gérez les utilisateurs de votre restaurant.",
+  "newUser": "Nouvel utilisateur",
+  "searchPlaceholder": "Rechercher par nom ou e-mail",
+  "noUsersFound": "Aucun utilisateur trouvé",
+  "loading": "Chargement...",
+  "name": "Nom",
+  "email": "E-mail",
+  "status": "Statut",
+  "active": "Actif",
+  "inactive": "Inactif",
+  "page": "Page",
+  "of": "de",
+  "show": "Afficher",
+  "lines": "Lignes",
+  "records": "Enregistrements",
+  "actions": {
+    "label": "Actions",
+    "details": "Détails",
+    "edit": "Modifier",
+    "deactivate": "Désactiver",
+    "activate": "Activer"
+  },
+  "form": {
+    "name": "Nom",
+    "namePlaceholder": "Entrez le nom complet",
+    "email": "E-mail",
+    "emailPlaceholder": "exemple@email.com",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "•••••••",
+    "permissions": "Permissions",
+    "selectAllPermissions": "Sélectionner toutes les permissions",
+    "allowed": "Autorisé",
+    "denied": "Refusé",
+    "cancel": "Annuler",
+    "notInformed": "Non informé"
+  },
+  "tabs": {
+    "generalData": "Données générales",
+    "permissions": "Permissions"
+  },
+  "buttons": {
+    "cancel": "Annuler",
+    "back": "Retour",
+    "next": "Suivant",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "close": "Fermer"
+  },
+  "permissionCategories": {
+    "general": "Général",
+    "users": "Utilisateurs",
+    "menu": "Menu",
+    "inventory": "Inventaire",
+    "orders": "Commandes",
+    "kitchen": "Cuisine",
+    "reports": "Rapports",
+    "config": "Paramètres"
+  },
+  "permissionLabels": {
+    "view_dashboard": "Voir le tableau de bord",
+    "edit_profile": "Modifier le profil",
+    "view_users": "Voir les utilisateurs",
+    "create_users": "Créer des utilisateurs",
+    "edit_users": "Modifier les utilisateurs",
+    "delete_users": "Supprimer les utilisateurs",
+    "view_menu": "Voir le menu",
+    "create_menu_items": "Ajouter des articles",
+    "edit_menu_items": "Modifier les articles",
+    "delete_menu_items": "Supprimer les articles",
+    "view_inventory": "Voir l'inventaire",
+    "create_inventory": "Créer des articles d'inventaire",
+    "edit_inventory": "Modifier l'inventaire",
+    "delete_inventory": "Supprimer de l'inventaire",
+    "view_orders": "Voir les commandes",
+    "create_orders": "Créer des commandes",
+    "edit_orders": "Modifier les commandes",
+    "cancel_orders": "Annuler les commandes",
+    "view_kitchen": "Voir la cuisine",
+    "manage_kitchen": "Gérer la cuisine",
+    "view_reports": "Voir les rapports",
+    "export_reports": "Exporter les rapports",
+    "view_config": "Voir les paramètres",
+    "edit_config": "Modifier les paramètres"
+  },
+  "modal": {
+    "new": {
+      "title": "Nouvel utilisateur",
+      "subtitle": "Remplissez les informations pour ajouter."
+    },
+    "edit": {
+      "title": "Modifier l'utilisateur",
+      "subtitle": "Mettre à jour les informations de l'utilisateur."
+    },
+    "details": {
+      "title": "Détails de l'utilisateur"
+    },
+    "deactivate": {
+      "title": "Désactiver l'utilisateur",
+      "message": "Êtes-vous sûr de vouloir désactiver l'utilisateur",
+      "warning": "Cette action ne peut pas être annulée.",
+      "confirm": "Désactiver",
+      "processing": "Désactivation..."
+    },
+    "activate": {
+      "title": "Activer l'utilisateur",
+      "message": "Êtes-vous sûr de vouloir activer l'utilisateur",
+      "info": "L'utilisateur aura à nouveau accès au système.",
+      "confirm": "Activer",
+      "processing": "Activation..."
+    }
+  },
+  "messages": {
+    "addSuccess": "Utilisateur ajouté avec succès",
+    "updateSuccess": "Utilisateur mis à jour avec succès",
+    "deactivateSuccess": "Utilisateur désactivé avec succès !",
+    "activateSuccess": "Utilisateur activé avec succès !",
+    "deactivateError": "Erreur lors de la désactivation de l'utilisateur. Veuillez réessayer.",
+    "activateError": "Erreur lors de l'activation de l'utilisateur. Veuillez réessayer.",
+    "emailExists": "E-mail déjà enregistré",
+    "error": "ID du restaurant introuvable",
+    "userIdNotFound": "ID de l'utilisateur introuvable"
+  }
+}

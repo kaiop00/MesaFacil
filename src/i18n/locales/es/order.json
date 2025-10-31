@@ -1,0 +1,162 @@
+{
+  "page": {
+    "title": "Pedidos",
+    "subtitle": "Administra los pedidos de tu restaurante",
+    "searchTables": "Buscar mesas...",
+    "loading": "Cargando...",
+    "errorLoading": "Error al cargar datos",
+    "noPermission": "Sin Permiso",
+    "noPermissionMessage": "No tienes permiso para acceder a los pedidos. Por favor, contacta al administrador."
+  },
+  "tables": {
+    "title": "Mesas",
+    "noTables": "No se encontraron mesas",
+    "tableLetter": "Mesa {{letter}}",
+    "tableNumber": "{{number}}",
+    "addTable": "Agregar Mesa",
+    "status": {
+      "livre": "Disponible",
+      "andamento": "En Curso", 
+      "entregue": "Entregado"
+    },
+    "actions": {
+      "newOrder": "Nuevo Pedido",
+      "viewOrder": "Ver Pedido",
+      "finish": "Finalizar",
+      "free": "Liberar Mesa"
+    }
+  },
+  "modals": {
+    "newOrder": {
+      "title": "Nuevo Pedido",
+      "selectTable": "Seleccionar Mesa",
+      "table": "Mesa:",
+      "customer": "Nombre del Cliente:",
+      "customerPlaceholder": "Ingresa el nombre del cliente...",
+      "observations": "Observaciones",
+      "observationsPlaceholder": "Observaciones adicionales...",
+      "buttons": {
+        "cancel": "Cancelar",
+        "create": "Crear Pedido"
+      }
+    },
+    "addItems": {
+      "title": "Agregar Artículos",
+      "searchItems": "Buscar artículos...",
+      "noItems": "No se encontraron artículos",
+      "categories": {
+        "all": "Todos",
+        "food": "Comida",
+        "drinks": "Bebidas",
+        "desserts": "Postres"
+      },
+      "itemDetails": {
+        "price": "Precio:",
+        "ingredients": "Ingredientes:",
+        "quantity": "Cantidad:",
+        "observations": "Observaciones:",
+        "observationsPlaceholder": "Observaciones especiales..."
+      },
+      "buttons": {
+        "addToOrder": "Agregar al Pedido",
+        "close": "Cerrar",
+        "cancel": "Cancelar",
+        "add": "Agregar"
+      }
+    },
+    "orderDetail": {
+      "title": "Detalles del Pedido",
+      "customer": "Cliente:",
+      "table": "Mesa:",
+      "status": "Estado:",
+      "observations": "Observaciones",
+      "orderItems": "Artículos del Pedido",
+      "noItems": "No hay artículos en el pedido",
+      "total": "Total:",
+      "buttons": {
+        "addItems": "Agregar Artículos",
+        "finishOrder": "Finalizar Pedido", 
+        "close": "Cerrar"
+      }
+    }
+  },
+  "orderItems": {
+    "item": "Artículo",
+    "quantity": "Cant",
+    "unitPrice": "Precio Unitario",
+    "total": "Total",
+    "actions": "Acciones",
+    "edit": "Editar",
+    "remove": "Eliminar",
+    "editQuantity": "Editar Cantidad",
+    "newQuantity": "Nueva Cantidad:",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "cardapio": {
+    "selectCategory": "Seleccionar Categoría",
+    "allCategories": "Todas las Categorías",
+    "searchPlaceholder": "Buscar en el menú...",
+    "noResults": "No se encontraron resultados",
+    "price": "Precio: $ {{price}}",
+    "ingredients": "Ingredientes: {{ingredients}}",
+    "outOfStock": "Sin stock",
+    "lowStock": "Stock bajo",
+    "availableStock": "Stock disponible"
+  },
+  "forms": {
+    "validation": {
+      "required": "Este campo es obligatorio",
+      "customerRequired": "El nombre del cliente es obligatorio",
+      "tableRequired": "Por favor, selecciona una mesa",
+      "quantityRequired": "La cantidad es obligatoria",
+      "quantityMin": "La cantidad debe ser mayor que 0",
+      "quantityMax": "Cantidad máxima: {{max}}"
+    }
+  },
+  "messages": {
+    "success": {
+      "orderCreated": "¡Pedido creado con éxito!",
+      "itemAdded": "¡Artículo agregado al pedido!",
+      "itemUpdated": "¡Artículo actualizado con éxito!",
+      "itemRemoved": "¡Artículo eliminado del pedido!",
+      "orderFinished": "¡Pedido finalizado con éxito!",
+      "tableFreed": "¡Mesa liberada con éxito!"
+    },
+    "error": {
+      "createOrder": "Error al crear el pedido",
+      "addItem": "Error al agregar el artículo",
+      "updateItem": "Error al actualizar el artículo", 
+      "removeItem": "Error al eliminar el artículo",
+      "finishOrder": "Error al finalizar el pedido",
+      "freeTable": "Error al liberar la mesa",
+      "loadData": "Error al cargar datos",
+      "stockNotAvailable": "Stock insuficiente para este artículo"
+    },
+    "confirm": {
+      "removeItem": "¿Estás seguro de que deseas eliminar este artículo?",
+      "finishOrder": "¿Estás seguro de que deseas finalizar este pedido?",
+      "finishOrderDescription": "¿Estás seguro de que deseas finalizar este pedido? Esta acción es irreversible y reiniciará la mesa para un nuevo cliente.",
+      "freeTable": "¿Estás seguro de que deseas liberar esta mesa?"
+    }
+  },
+  "currency": {
+    "symbol": "$",
+    "format": "{{symbol}} {{value}}"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "remove": "Eliminar",
+    "add": "Agregar",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No",
+    "total": "Total",
+    "quantity": "Cantidad",
+    "price": "Precio",
+    "actions": "Ver todos"
+  }
+}

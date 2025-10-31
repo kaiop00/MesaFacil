@@ -1,0 +1,124 @@
+{
+  "page": {
+    "title": "Articoli",
+    "subtitle": "Gestisci gli articoli del tuo ristorante",
+    "newButton": "Nuovo Articolo",
+    "loading": "Caricamento...",
+    "errorLoading": "Errore nel caricamento degli articoli. Riprova.",
+    "searchPlaceholder": "Cerca per nome o marca",
+    "searchLabel": "Cerca l'articolo che vuoi trovare",
+    "deleteConfirm": "Sei sicuro di voler eliminare l'articolo \"{itemName}\"?",
+    "noItemsFound": "Nessun articolo trovato",
+    "noPermission": "Non hai il permesso per eseguire questa azione.",
+    "noPermissionMessage": "Non hai il permesso per accedere all'inventario. Contatta l'amministratore."
+  },
+  "table": {
+    "columns": {
+      "name": "Nome",
+      "brand": "Marca",
+      "stock": "Scorte"
+    },
+    "actions": {
+      "view": "Vedi",
+      "edit": "Modifica",
+      "delete": "Elimina"
+    },
+    "pagination": {
+      "page": "Pagina",
+      "of": "di",
+      "show": "Mostra",
+      "lines": "Righe",
+      "records": "Record"
+    },
+    "stockStatus": {
+      "low": "Scorte basse",
+      "medium": "Scorte medie",
+      "high": "Scorte alte"
+    },
+    "noBrand": "-"
+  },
+  "form": {
+    "titleCreate": "Nuovo Articolo",
+    "titleEdit": "Modifica Articolo",
+    "subtitleCreate": "Completa le informazioni per aggiungere",
+    "subtitleEdit": "Completa le informazioni per modificare",
+    "fields": {
+      "name": "Nome",
+      "namePlaceholder": "Nome dell'articolo",
+      "nameRequired": "Il nome dell'articolo è obbligatorio",
+      "brand": "Marca",
+      "brandPlaceholder": "Marca dell'articolo",
+      "storageUnit": "Unità di Stoccaggio",
+      "purchaseUnit": "Unità di Acquisto",
+      "currentStock": "Scorte Attuali",
+      "currentStockPlaceholder": "Quantità in magazzino",
+      "currentStockRequired": "Le scorte attuali sono obbligatorie",
+      "currentStockInvalid": "Scorte non valide",
+      "lowStock": "Scorte Basse",
+      "mediumStock": "Scorte Medie",
+      "highStock": "Scorte Alte"
+    },
+    "units": {
+      "storage": {
+        "unidade": "Unità",
+        "quilograma": "Chilogrammo",
+        "grama": "Grammo",
+        "litro": "Litro",
+        "mililitro": "Millilitro"
+      },
+      "purchase": {
+        "unidade": "Unità",
+        "caixa": "Scatola",
+        "pacote": "Pacchetto",
+        "fardo": "Balla"
+      }
+    },
+    "actions": {
+      "cancel": "Annulla",
+      "save": "Salva"
+    },
+    "required": "*"
+  },
+  "details": {
+    "title": "Dettagli Articolo",
+    "subtitle": "Elenco dei dati dell'articolo registrato",
+    "sections": {
+      "basicInfo": "Informazioni di Base",
+      "units": "Unità",
+      "stock": "Scorte",
+      "consumption": "Consumo Ordini",
+      "recentMovements": "Movimenti Recenti"
+    },
+    "fields": {
+      "name": "Nome",
+      "brand": "Marca",
+      "storageUnit": "Unità di Stoccaggio",
+      "purchaseUnit": "Unità di Acquisto",
+      "currentStock": "Scorte Attuali",
+      "lowStock": "Scorte Basse",
+      "mediumStock": "Scorte Medie",
+      "highStock": "Scorte Alte"
+    },
+    "stockStatus": {
+      "low": "Basse",
+      "medium": "Medie",
+      "high": "Alte",
+      "veryHigh": "Molto Alte"
+    },
+    "consumption": {
+      "totalConsumed": "Totale Consumato",
+      "movements": "Movimenti"
+    },
+    "movements": {
+      "loading": "Caricamento...",
+      "noMovements": "Nessun movimento trovato",
+      "balance": "Saldo",
+      "order": "Ordine",
+      "noDate": "Data non comunicata"
+    },
+    "actions": {
+      "close": "Chiudi"
+    },
+    "defaultValue": "-"
+  }
+}

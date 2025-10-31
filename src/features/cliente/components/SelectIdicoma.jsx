@@ -24,6 +24,28 @@ export default function SelectIdioma() {
 
     const currentLanguage = i18n.language || 'pt-BR';
     const isPortuguese = currentLanguage === 'pt-BR';
+    const isEnglish = currentLanguage === 'en';
+    const isSpanish = currentLanguage === 'es';
+    const isItalian = currentLanguage === 'it';
+    const isFrench = currentLanguage === 'fr';
+
+    const getLanguageFlag = () => {
+        if (isPortuguese) return "🇧🇷";
+        if (isEnglish) return "🇺🇸";
+        if (isSpanish) return "🇪🇸";
+        if (isItalian) return "🇮🇹";
+        if (isFrench) return "�🇷";
+        return "�🇧🇷";
+    };
+
+    const getLanguageLabel = () => {
+        if (isPortuguese) return "PT-BR";
+        if (isEnglish) return "EN";
+        if (isSpanish) return "ES";
+        if (isItalian) return "IT";
+        if (isFrench) return "FR";
+        return "PT-BR";
+    };
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -32,10 +54,10 @@ export default function SelectIdioma() {
                 className="flex items-center gap-2 border rounded-full px-3 py-1 hover:bg-gray-50 transition-colors"
             >
                 <span className="text-xl">
-                    {isPortuguese ? "🇧🇷" : "🇺🇸"}
+                    {getLanguageFlag()}
                 </span>
                 <span className="text-sm font-medium">
-                    {isPortuguese ? "PT-BR" : "EN"}
+                    {getLanguageLabel()}
                 </span>
                 <svg
                     className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -61,11 +83,38 @@ export default function SelectIdioma() {
                     <button
                         onClick={() => changeLanguage("en")}
                         className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                            !isPortuguese ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                            isEnglish ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
                         }`}
                     >
                         <span className="mr-2 text-lg">🇺🇸</span>
                         {t("common:languages.en")}
+                    </button>
+                    <button
+                        onClick={() => changeLanguage("es")}
+                        className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                            isSpanish ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                        }`}
+                    >
+                        <span className="mr-2 text-lg">🇪🇸</span>
+                        {t("common:languages.es")}
+                    </button>
+                    <button
+                        onClick={() => changeLanguage("it")}
+                        className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                            isItalian ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                        }`}
+                    >
+                        <span className="mr-2 text-lg">🇮🇹</span>
+                        {t("common:languages.it")}
+                    </button>
+                    <button
+                        onClick={() => changeLanguage("fr")}
+                        className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                            isFrench ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                        }`}
+                    >
+                        <span className="mr-2 text-lg">🇫🇷</span>
+                        {t("common:languages.fr")}
                     </button>
                 </div>
             )}

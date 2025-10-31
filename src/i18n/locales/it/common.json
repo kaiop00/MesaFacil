@@ -1,0 +1,48 @@
+{
+  "send": "Invia",
+  "cancel": "Annulla",
+  "save": "Salva",
+  "close": "Chiudi",
+  "confirm": "Conferma",
+  "header": {
+    "settings": "Impostazioni",
+    "tables": "Tavoli",
+    "photoColors": "Foto/Colori",
+    "categories": "Categorie",
+    "language": "Lingua",
+    "logout": "Esci",
+    "serviceFee": "Costo del Servizio"
+  },
+  "languages": {
+    "pt-BR": "Português",
+    "en": "English",
+    "es": "Español",
+    "it": "Italiano",
+    "fr": "Français"
+  },
+  "sidebar": {
+    "dashboard": "Pannello",
+    "orders": "Ordini",
+    "kitchen": "Cucina",
+    "menu": "Menù",
+    "reports": "Rapporti",
+    "promotions": "Promozioni",
+    "items": "Articoli",
+    "movements": "Entrate e Uscite",
+    "users": "Utenti"
+  },
+  "stock": {
+    "impact": "Impatto sullo Stock",
+    "hide": "Nascondi",
+    "details": "Dettagli",
+    "calculating": "Calcolo dell'impatto sullo stock...",
+    "noItems": "Nessun articolo di questo ordine ha ingredienti configurati.",
+    "willConsume": "Questo ordine consumerà",
+    "ingredient": "ingrediente",
+    "ingredients": "ingredienti",
+    "fromStock": "dallo stock:",
+    "andMore": "... e altro",
+    "detailsByDish": "Dettaglio per piatto:",
+    "total": "Totale"
+  }
+}

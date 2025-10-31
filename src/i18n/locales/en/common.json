@@ -16,7 +16,10 @@
   },
   "languages": {
     "pt-BR": "Português",
-    "en": "English"
+    "en": "English",
+    "es": "Español",
+    "it": "Italiano",
+    "fr": "Français"
   },
   "sidebar": {
     "dashboard": "Dashboard",

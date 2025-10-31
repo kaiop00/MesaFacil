@@ -1,0 +1,143 @@
+{
+  "page": {
+    "title": "Menù",
+    "subtitle": "Gestisci il menù del tuo ristorante",
+    "newItemButton": "Nuovo Articolo",
+    "downloadPDFButton": "Scarica Menù PDF",
+    "generatingPDF": "Generazione PDF...",
+    "noCategoriesMessage": "Non hai ancora categorie. Registrale in Impostazioni > Categorie prima di aggiungere articoli.",
+    "categoriesError": "Errore nella verifica delle categorie. Riprova.",
+    "noItemsForPDF": "Non ci sono articoli del menù per generare il PDF.",
+    "pdfSuccess": "Menù PDF generato con successo!",
+    "pdfError": "Errore nella generazione del menù PDF.",
+    "noPermission": "Nessun Permesso",
+    "noPermissionMessage": "Non hai il permesso per accedere al menù. Contatta l'amministratore."
+  },
+  "search": {
+    "placeholder": "Cerca l'articolo del menù che vuoi trovare"
+  },
+  "filter": {
+    "allCategories": "Tutte le categorie"
+  },
+  "grid": {
+    "loading": "Caricamento...",
+    "noImage": "Nessuna immagine"
+  },
+  "form": {
+    "labels": {
+      "itemName": "Nome Articolo",
+      "categories": "Categorie",
+      "allergies": "Allergie (facoltativo)",
+      "value": "Prezzo",
+      "description": "Descrizione",
+      "ingredients": "Ingredienti"
+    },
+    "placeholders": {
+      "chooseCategories": "Scegli una o più categorie",
+      "chooseAllergies": "Scegli una o più allergie",
+      "loadingCategories": "Caricamento categorie...",
+      "noCategoriesFound": "Nessuna categoria trovata",
+      "loading": "Caricamento..."
+    }
+  },
+  "modals": {
+    "newItem": {
+      "title": "Nuovo Articolo del Menù",
+      "subtitle": "Completa le informazioni per aggiungere"
+    },
+    "editItem": {
+      "title": "Modifica articolo del menù",
+      "subtitle": "Aggiorna le informazioni",
+      "subtitleWithName": "Aggiornamento {{name}}"
+    },
+    "itemDetails": {
+      "title": "Dettagli Articolo",
+      "subtitle": "Visualizzazione articolo",
+      "editItemButton": "Modifica articolo",
+      "editIngredientsButton": "Modifica",
+      "deleteButton": "Elimina articolo",
+      "deleting": "Eliminazione...",
+      "close": "Chiudi",
+      "deleteConfirmation": "Sei sicuro di voler eliminare l'articolo \"{{itemName}}\" dal menù?",
+      "fields": {
+        "name": "Nome",
+        "price": "Prezzo",
+        "categories": "Categorie",
+        "description": "Descrizione",
+        "allergies": "Allergie",
+        "ingredients": "Ingredienti"
+      },
+      "noDescription": "Nessuna descrizione registrata",
+      "loadingIngredients": "Caricamento ingredienti...",
+      "noIngredients": "Nessun ingrediente configurato. Clicca su \"Modifica\" per aggiungere ingredienti.",
+      "perPortion": "per porzione",
+      "totalIngredients": "Totale",
+      "ingredient": "ingrediente",
+      "ingredients": "ingredienti"
+    },
+    "buttons": {
+      "cancel": "Annulla",
+      "save": "Salva",
+      "saveChanges": "Salva modifiche"
+    }
+  },
+  "validation": {
+    "nameRequired": "Inserisci il nome dell'articolo.",
+    "categoryRequired": "Seleziona almeno una categoria.",
+    "categoriesRequired": "Scegli almeno una categoria.",
+    "valueRequired": "Inserisci un prezzo valido.",
+    "imageRequired": "Includi un'immagine dell'articolo.",
+    "missingFields": "Completa i campi richiesti: {{fields}}.",
+    "fieldLabels": {
+      "name": "nome",
+      "category": "categoria",
+      "value": "prezzo",
+      "image": "immagine"
+    }
+  },
+  "success": {
+    "itemAdded": "Articolo aggiunto con successo!",
+    "itemUpdated": "Articolo aggiornato con successo!",
+    "itemDeleted": "Articolo eliminato con successo!"
+  },
+  "errors": {
+    "saveItem": "Errore nel salvataggio dell'articolo.",
+    "updateItem": "Impossibile aggiornare l'articolo.",
+    "deleteItem": "Impossibile eliminare l'articolo.",
+    "saveChanges": "Impossibile salvare le modifiche.",
+    "loadIngredients": "Errore nel caricamento degli ingredienti"
+  },
+  "ingredients": {
+    "title": "Ingredienti",
+    "addButton": "Aggiungi",
+    "noIngredients": "Nessun ingrediente aggiunto. Clicca su \"Aggiungi\" per includere ingredienti.",
+    "ingredientNumber": "Ingrediente {{number}}",
+    "labels": {
+      "stockItem": "Articolo di Magazzino",
+      "quantityPerPortion": "Quantità per Porzione",
+      "unit": "Unità"
+    },
+    "placeholders": {
+      "selectItem": "Seleziona un articolo",
+      "quantity": "0.00"
+    },
+    "loading": "Caricamento articoli di magazzino...",
+    "conversion": "Conversione",
+    "sameUnit": "Usando la stessa unità del magazzino ({{unit}})",
+    "cannotConvert": "❌ Impossibile convertire da {{from}} a {{to}}",
+    "example": "Esempio",
+    "exampleText": "Se questo piatto viene servito {{times}} volte, verranno consumati {{amount}} dal magazzino di {{item}}",
+    "originalAmount": "(Originale: {{amount}})",
+    "tip": "Suggerimento: Le quantità devono essere per porzione individuale. Il sistema calcolerà automaticamente il consumo totale in base al numero di piatti ordinati.",
+    "required": "*"
+  },
+  "allergies": {
+    "options": {
+      "gluten": "Glutine",
+      "lactose": "Lattosio",
+      "soy": "Soia",
+      "peanut": "Arachidi",
+      "egg": "Uovo"
+    }
+  }
+}

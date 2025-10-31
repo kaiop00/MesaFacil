@@ -126,10 +126,10 @@ const Header = () => {
             className="flex items-center space-x-2 px-3 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 transition-colors"
           >
             <span className="text-xl">
-              {i18n.language === "pt-BR" ? "🇧🇷" : "🇺🇸"}
+              {i18n.language === "pt-BR" ? "🇧🇷" : i18n.language === "es" ? "🇪🇸" : i18n.language === "it" ? "🇮🇹" : i18n.language === "fr" ? "🇫🇷" : "🇺🇸"}
             </span>
             <span className="text-sm font-medium text-gray-700 hidden sm:inline">
-              {i18n.language === "pt-BR" ? "PT-BR" : "EN"}
+              {i18n.language === "pt-BR" ? "PT-BR" : i18n.language === "es" ? "ES" : i18n.language === "it" ? "IT" : i18n.language === "fr" ? "FR" : "EN"}
             </span>
             <ChevronDown size={14} className="text-gray-600" />
           </button>
@@ -153,6 +153,33 @@ const Header = () => {
               >
                 <span className="mr-2 text-lg">🇺🇸</span>
                 {t("common:languages.en")}
+              </button>
+              <button
+                onClick={() => changeLanguage("es")}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                  i18n.language === "es" ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                }`}
+              >
+                <span className="mr-2 text-lg">🇪🇸</span>
+                {t("common:languages.es")}
+              </button>
+              <button
+                onClick={() => changeLanguage("it")}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                  i18n.language === "it" ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                }`}
+              >
+                <span className="mr-2 text-lg">🇮🇹</span>
+                {t("common:languages.it")}
+              </button>
+              <button
+                onClick={() => changeLanguage("fr")}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                  i18n.language === "fr" ? "bg-gray-100 font-semibold text-gray-900" : "text-gray-700"
+                }`}
+              >
+                <span className="mr-2 text-lg">🇫🇷</span>
+                {t("common:languages.fr")}
               </button>
             </div>
           )}

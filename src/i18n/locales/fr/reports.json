@@ -1,0 +1,94 @@
+{
+  "page": {
+    "title": "Rapports",
+    "subtitle": "Remplissez les informations pour générer le rapport",
+    "loading": "Chargement des tables... Veuillez patienter.",
+    "waitingTables": "Veuillez attendre le chargement des tables...",
+    "noTables": "Aucune table disponible pour générer des rapports.",
+    "errorGenerate": "Erreur lors de la génération du rapport. Veuillez réessayer.",
+    "noPermission": "Vous n'avez pas la permission de générer des rapports. Veuillez contacter l'administrateur."
+  },
+  "filter": {
+    "reportType": "Type de rapport",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "selectReport": "Choisissez le type de rapport souhaité",
+    "generateButton": "Générer le rapport",
+    "generating": "Génération...",
+    "types": {
+      "sales": "Rapport de ventes",
+      "period": "Rapport de période",
+      "product": "Rapport de produit"
+    }
+  },
+  "table": {
+    "titles": {
+      "sales": "Rapport de ventes",
+      "period": "Rapport de période",
+      "product": "Rapport de produit", 
+      "waiter": "Rapport des serveurs"
+    },
+    "period": "Période",
+    "from": "à",
+    "exportPDF": "Exporter en PDF",
+    "exportPDFShort": "PDF",
+    "generatingPDF": "Génération du PDF...",
+    "generatingPDFShort": "Génération...",
+    "pdfSuccess": "PDF généré avec succès !",
+    "pdfError": "Erreur lors de la génération du PDF. Veuillez réessayer.",
+    "noData": "Aucune donnée trouvée pour la période sélectionnée"
+  },
+  "tables": {
+    "sales": {
+      "columns": {
+        "orderNumber": "N° de commande",
+        "table": "Table",
+        "date": "Date",
+        "value": "Valeur",
+        "status": "Statut"
+      },
+      "tablePrefix": "Table"
+    },
+    "period": {
+      "columns": {
+        "date": "Date",
+        "totalOrders": "Total de commandes",
+        "totalValue": "Valeur totale"
+      }
+    },
+    "product": {
+      "columns": {
+        "product": "Produit",
+        "quantitySold": "Quantité vendue",
+        "totalValue": "Valeur totale"
+      }
+    },
+    "waiter": {
+      "columns": {
+        "waiter": "Serveur",
+        "ordersAttended": "Commandes servies",
+        "totalValueGenerated": "Valeur totale générée"
+      }
+    }
+  },
+  "status": {
+    "finished": "Terminé",
+    "pending": "En attente"
+  },
+  "pdf": {
+    "generatedAt": "Généré le",
+    "generatedBy": "Généré par MesaFácil - Système de gestion de restaurant",
+    "page": "Page",
+    "of": "de",
+    "summary": {
+      "totalOrders": "Total de commandes",
+      "totalValue": "Valeur totale",
+      "totalOrdersPeriod": "Total de commandes sur la période",
+      "totalValuePeriod": "Valeur totale sur la période",
+      "totalProductsSold": "Total de produits vendus",
+      "totalValueProducts": "Valeur totale en produits",
+      "totalOrdersAttended": "Total de commandes servies",
+      "totalValueWaiters": "Valeur totale générée par les serveurs"
+    }
+  }
+}
