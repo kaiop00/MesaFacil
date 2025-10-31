@@ -12,7 +12,9 @@
     "deleteConfirm": "Are you sure you want to delete the movement for \"{itemName}\"?",
     "deleteSuccess": "Movement deleted successfully!",
     "createSuccess": "Movement created successfully!",
-    "updateSuccess": "Movement updated successfully!"
+    "updateSuccess": "Movement updated successfully!",
+    "noPermission": "You don't have permission to perform this action.",
+    "noPermissionMessage": "You don't have permission to access movements. Please contact the administrator."
   },
   "table": {
     "searchPlaceholder": "Search for the movement you want to find",

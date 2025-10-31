@@ -16,15 +16,29 @@ export const getPermissions = (t) => ({
     { id: 'edit_menu_items', label: t('users:permissionLabels.edit_menu_items') },
     { id: 'delete_menu_items', label: t('users:permissionLabels.delete_menu_items') },
   ],
+  [t('users:permissionCategories.inventory')]: [
+    { id: 'view_inventory', label: t('users:permissionLabels.view_inventory') },
+    { id: 'create_inventory', label: t('users:permissionLabels.create_inventory') },
+    { id: 'edit_inventory', label: t('users:permissionLabels.edit_inventory') },
+    { id: 'delete_inventory', label: t('users:permissionLabels.delete_inventory') },
+  ],
   [t('users:permissionCategories.orders')]: [
     { id: 'view_orders', label: t('users:permissionLabels.view_orders') },
     { id: 'create_orders', label: t('users:permissionLabels.create_orders') },
     { id: 'edit_orders', label: t('users:permissionLabels.edit_orders') },
     { id: 'cancel_orders', label: t('users:permissionLabels.cancel_orders') },
   ],
+  [t('users:permissionCategories.kitchen')]: [
+    { id: 'view_kitchen', label: t('users:permissionLabels.view_kitchen') },
+    { id: 'manage_kitchen', label: t('users:permissionLabels.manage_kitchen') },
+  ],
   [t('users:permissionCategories.reports')]: [
     { id: 'view_reports', label: t('users:permissionLabels.view_reports') },
     { id: 'export_reports', label: t('users:permissionLabels.export_reports') },
+  ],
+  [t('users:permissionCategories.config')]: [
+    { id: 'view_config', label: t('users:permissionLabels.view_config') },
+    { id: 'edit_config', label: t('users:permissionLabels.edit_config') },
   ]
 });
 
@@ -46,14 +60,28 @@ export const PERMISSIONS = {
     { id: 'edit_menu_items', label: 'Editar Itens' },
     { id: 'delete_menu_items', label: 'Remover Itens' },
   ],
+  'Estoque': [
+    { id: 'view_inventory', label: 'Visualizar Estoque' },
+    { id: 'create_inventory', label: 'Criar Itens de Estoque' },
+    { id: 'edit_inventory', label: 'Editar Estoque' },
+    { id: 'delete_inventory', label: 'Excluir do Estoque' },
+  ],
   'Pedidos': [
     { id: 'view_orders', label: 'Visualizar Pedidos' },
     { id: 'create_orders', label: 'Criar Pedidos' },
     { id: 'edit_orders', label: 'Editar Pedidos' },
     { id: 'cancel_orders', label: 'Cancelar Pedidos' },
   ],
+  'Cozinha': [
+    { id: 'view_kitchen', label: 'Visualizar Cozinha' },
+    { id: 'manage_kitchen', label: 'Gerenciar Cozinha' },
+  ],
   'Relatórios': [
     { id: 'view_reports', label: 'Visualizar Relatórios' },
     { id: 'export_reports', label: 'Exportar Relatórios' },
+  ],
+  'Configurações': [
+    { id: 'view_config', label: 'Visualizar Configurações' },
+    { id: 'edit_config', label: 'Editar Configurações' },
   ]
 };

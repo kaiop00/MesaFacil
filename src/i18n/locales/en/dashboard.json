@@ -23,5 +23,7 @@
   "noDataAvailable": "No data available",
   "noProductsFound": "No products found",
   "name": "Name",
-  "amountSold": "Amount Sold"
+  "amountSold": "Amount Sold",
+  "noPermission": "No Permission",
+  "noPermissionMessage": "You don't have permission to access the dashboard. Please contact the administrator."
 }

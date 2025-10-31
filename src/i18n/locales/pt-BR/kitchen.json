@@ -3,7 +3,9 @@
     "title": "Cozinha",
     "subtitle": "Realize os pedidos solicitados",
     "refresh": "Atualizar lista",
-    "tryAgain": "Tentar novamente"
+    "tryAgain": "Tentar novamente",
+    "noPermission": "Sem Permissão",
+    "noPermissionMessage": "Você não tem permissão para acessar a cozinha. Entre em contato com o administrador."
   },
   "states": {
     "loading": "Carregando pedidos...",

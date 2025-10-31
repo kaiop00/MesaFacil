@@ -5,7 +5,8 @@
     "loading": "Loading tables... Please wait.",
     "waitingTables": "Please wait for tables to load...",
     "noTables": "No tables available to generate reports.",
-    "errorGenerate": "Error generating report. Please try again."
+    "errorGenerate": "Error generating report. Please try again.",
+    "noPermission": "You don't have permission to generate reports. Please contact the administrator."
   },
   "filter": {
     "reportType": "Report Type",

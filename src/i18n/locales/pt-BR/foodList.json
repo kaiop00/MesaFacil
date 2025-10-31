@@ -9,7 +9,9 @@
     "categoriesError": "Erro ao verificar categorias. Tente novamente.",
     "noItemsForPDF": "Não há itens no cardápio para gerar o PDF.",
     "pdfSuccess": "PDF do cardápio gerado com sucesso!",
-    "pdfError": "Erro ao gerar PDF do cardápio."
+    "pdfError": "Erro ao gerar PDF do cardápio.",
+    "noPermission": "Sem Permissão",
+    "noPermissionMessage": "Você não tem permissão para acessar o cardápio. Entre em contato com o administrador."
   },
   "search": {
     "placeholder": "Procure o item do cardápio que deseja encontrar"

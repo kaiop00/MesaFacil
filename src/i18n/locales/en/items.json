@@ -8,7 +8,9 @@
     "searchPlaceholder": "Search by name or brand",
     "searchLabel": "Search for the item you want to find",
     "deleteConfirm": "Are you sure you want to delete the item \"{itemName}\"?",
-    "noItemsFound": "No items found"
+    "noItemsFound": "No items found",
+    "noPermission": "You don't have permission to perform this action.",
+    "noPermissionMessage": "You don't have permission to access inventory. Please contact the administrator."
   },
   "table": {
     "columns": {

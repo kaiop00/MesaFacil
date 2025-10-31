@@ -12,7 +12,9 @@
     "deleteConfirm": "Tem certeza que deseja excluir a movimentação de \"{itemName}\"?",
     "deleteSuccess": "Movimentação excluída com sucesso!",
     "createSuccess": "Movimentação criada com sucesso!",
-    "updateSuccess": "Movimentação atualizada com sucesso!"
+    "updateSuccess": "Movimentação atualizada com sucesso!",
+    "noPermission": "Você não tem permissão para realizar esta ação.",
+    "noPermissionMessage": "Você não tem permissão para acessar as movimentações. Entre em contato com o administrador."
   },
   "table": {
     "searchPlaceholder": "Procure a movimentação que deseja encontrar",

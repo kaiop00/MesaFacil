@@ -23,5 +23,7 @@
   "noDataAvailable": "Nenhum dado disponível",
   "noProductsFound": "Nenhum produto encontrado",
   "name": "Nome",
-  "amountSold": "Valor Vendido"
+  "amountSold": "Valor Vendido",
+  "noPermission": "Sem Permissão",
+  "noPermissionMessage": "Você não tem permissão para acessar o dashboard. Entre em contato com o administrador."
 }
