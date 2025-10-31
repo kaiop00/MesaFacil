@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import CardHeader from "@/components/CardHeader";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useTables } from "@/features/config/hooks/useTables";
 import { useReports } from "@/features/reports/hooks/useReports";
 import ReportFilter from "../components/ReportFilter";
@@ -10,6 +11,7 @@ import ReportTable from "../components/ReportTable";
 const ReportPage = () => {
   const { t } = useTranslation('reports');
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const { tables, loading: tablesLoading } = useTables(idRestaurante);
   const { reportData, loading, generateReport, hasValidTables } = useReports(
     idRestaurante,
@@ -21,6 +23,11 @@ const ReportPage = () => {
   const [endDate, setEndDate] = useState("");
 
   const handleSubmit = async () => {
+    if (!hasPermission('view_reports')) {
+      alert(t('page.noPermission'));
+      return;
+    }
+
     if (tablesLoading) {
       alert(t('page.waitingTables'));
       return;

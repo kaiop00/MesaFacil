@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTables } from "@/features/config/hooks/useTables";
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic"; // ✅ seu spinner
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
@@ -20,6 +21,7 @@ const OrderPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [mesaDetalhe, setMesaDetalhe] = useState(null);
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const { mesasLivres, mesasAndamento, mesasEntregues, tables } = useTables(idRestaurante);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -69,17 +71,34 @@ const OrderPage = () => {
     }
   }, [searchParams, tables]);
 
+  if (!hasPermission('view_orders')) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {t('page.noPermission')}
+          </h2>
+          <p className="text-gray-600">
+            {t('page.noPermissionMessage')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <CardapioProvider>
       <OrderProvider>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 space-y-12">
 
-          <CardHeader
-            title={t('page.title')}
-            subtitle={t('page.subtitle')}
-            onNewClick={handleNew}
-            buttonTitle={t('tables.actions.newOrder')}
-          />
+          {hasPermission('create_orders') && (
+            <CardHeader
+              title={t('page.title')}
+              subtitle={t('page.subtitle')}
+              onNewClick={handleNew}
+              buttonTitle={t('tables.actions.newOrder')}
+            />
+          )}
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-500">
