@@ -15,7 +15,7 @@
 - 📋 Visualização do cardápio digital com imagens e categorias
 - 📝 Pedidos com observações e envio em tempo real
 - 🔄 Acompanhamento do status do pedido
-- 💳 Pagamento digital integrado (PIX, cartão, etc.)
+- 💳 Solicitação de pagamento ao garçom direto pelo sistema
 - ✋ Solicitação de atendimento via sistema
 - 🧑‍🍳 Painel de gerenciamento para operadores do restaurante
 - 📈 Relatórios de vendas, pedidos e avaliações
@@ -37,7 +37,7 @@
 - **Banco de Dados**: Firebase
 - **Comunicação em Tempo Real**: WebSocket (Socket.IO)
 - **Hospedagem**: AWS, Vercel ou Azure
-- **Pagamentos**: PIX, Stripe, MercadoPago, PagSeguro
+- **Pagamentos**: atendimento presencial com garçom e integrações via parceiros (em planejamento)
 - **Segurança**: OAuth 2.0, JWT, TLS 1.3
 - **DevOps**: Docker, GitHub Actions
 

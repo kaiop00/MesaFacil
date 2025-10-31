@@ -2,19 +2,20 @@ import { QrCode } from "react-coolicons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
 import { downloadAllQRCodes } from "@/features/config/utils/qrCodeDownloader";
+import { useTranslation } from "react-i18next";
 
 function MesaActions() {
-
+  const { t } = useTranslation();
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
 
   const handleDownloadQRCodes = async () => {
     try {
       await downloadAllQRCodes(idRestaurante);
-      notify("Download iniciado!", "success");
+      notify(t("config:components.mesaActions.success"), "success");
     } catch (e) {
       console.error(e);
-      notify("Erro ao gerar QR codes", "error");
+      notify(t("config:components.mesaActions.error"), "error");
     }
   }
 
@@ -30,7 +31,7 @@ function MesaActions() {
         onClick={handleDownloadQRCodes}
       >
         <QrCode className="w-5 h-5" />
-        <span>Baixar Todos os QR Codes</span>
+        <span>{t("config:components.mesaActions.downloadAll")}</span>
       </button>
     </div>
   )

@@ -59,4 +59,19 @@
   box-shadow: 0 0 0 1px rgba(var(--color-primary), 1);
 }
 
+.cliente-card-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  min-height: 2.5rem; /* ~2 lines for text-sm */
+}
+
+@media (min-width: 768px) {
+  .cliente-card-description {
+    -webkit-line-clamp: 3;
+    min-height: 3.75rem; /* ~3 lines for text-sm */
+  }
+}
 

@@ -1,0 +1,171 @@
+{
+  "modals": {
+    "categories": {
+      "title": "Categories",
+      "subtitle": "Manage menu categories",
+      "success": {
+        "created": "Category created successfully",
+        "deleted": "Category deleted successfully"
+      },
+      "error": {
+        "create": "Error creating category",
+        "delete": "Error deleting category"
+      }
+    },
+    "colors": {
+      "title": "Colors",
+      "subtitle": "Manage color settings",
+      "intro": {
+        "title": "Customize your brand",
+        "description": "Choose the primary color and add your restaurant's logo"
+      },
+      "fields": {
+        "restaurantImage": "Restaurant Image",
+        "baseColor": "Base Color",
+        "uploadImage": "Upload image",
+        "changeImage": "Change image"
+      },
+      "buttons": {
+        "continue": "Continue"
+      },
+      "success": "Saved successfully",
+      "error": "Error saving"
+    },
+    "tables": {
+      "title": "Settings",
+      "subtitle": "Manage system settings",
+      "form": {
+        "tableType": "Table Type",
+        "quantity": "Quantity",
+        "addButton": "Add"
+      },
+      "actions": {
+        "generateQR": "Generate QR Codes",
+        "printQR": "Print QR Codes"
+      },
+      "table": {
+        "number": "Number",
+        "type": "Type",
+        "actions": "Actions",
+        "delete": "Delete",
+        "viewQR": "View QR Code",
+        "noTables": "No tables registered"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving..."
+      }
+    },
+    "qrCode": {
+      "title": "QR Code",
+      "subtitle": "QR Code for table {{number}}",
+      "tableLabel": "Table {{number}}",
+      "scanTitle": "Scan & order now",
+      "instructions": "Scan this QR code to open the menu and place your order."
+    },
+    "serviceFee": {
+      "title": "Service Fee",
+      "subtitle": "Set the percentage applied to the final bill",
+      "info": {
+        "description": "This setting defines how much will be added as a service fee to the customer's final bill. If you don't want to charge a fee, use 0%.",
+        "currentValue": "Current value:"
+      },
+      "fields": {
+        "percentage": "Service percentage (%)",
+        "hint": "Accepts decimal values (e.g., 10.5). Maximum allowed: 100%."
+      },
+      "buttons": {
+        "restoreDefault": "Restore default (10%)",
+        "removeFee": "Remove fee",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving..."
+      },
+      "success": {
+        "updated": "Service fee updated successfully.",
+        "reset": "Service fee reset to 10%.",
+        "removed": "Service fee removed."
+      },
+      "error": {
+        "noRestaurant": "Restaurant not identified.",
+        "invalidValue": "Enter a valid percentage or use 0 to remove.",
+        "save": "Error saving service fee. Please try again.",
+        "load": "Could not load service fee. Using default value of 10%.",
+        "reset": "Could not reset service fee.",
+        "remove": "Could not remove service fee."
+      }
+    }
+  },
+  "components": {
+    "categoriaForm": {
+      "placeholder": "Category name (e.g., Pasta)",
+      "addButton": "Add"
+    },
+    "categoriasTable": {
+      "headers": {
+        "category": "Category",
+        "actions": "Actions"
+      },
+      "loading": "Loading categories...",
+      "empty": "No categories registered.",
+      "deleteButton": "Delete",
+      "deleteTitle": "Delete category"
+    },
+    "corInput": {
+      "label": "Brand Colors",
+      "optional": "(Optional)",
+      "placeholder": "Select a color",
+      "colors": {
+        "red": "Red",
+        "blue": "Blue",
+        "green": "Green",
+        "orange": "Orange",
+        "purple": "Purple"
+      }
+    },
+    "modalIntro": {
+      "title": "Before We Start,",
+      "subtitle": "we just need to set a few configurations",
+      "description": "Fill in the information to continue"
+    },
+    "restauranteImageUpload": {
+      "label": "Restaurant Photo",
+      "optional": "(Optional)"
+    },
+    "mesaActions": {
+      "downloadAll": "Download All QR Codes",
+      "success": "Download started!",
+      "error": "Error generating QR codes"
+    },
+    "mesaForm": {
+      "tableType": "Table Type",
+      "quantity": "Qty",
+      "quantityPlaceholder": "0",
+      "includeButton": "Include"
+    },
+    "mesaTable": {
+      "headers": {
+        "number": "Number",
+        "tableType": "Table Type",
+        "actions": "Actions"
+      },
+      "chairs": "Chairs",
+      "qrCode": "QR Code",
+      "empty": "No tables registered.",
+      "loading": "Loading tables..."
+    },
+    "tableType": {
+      "label": "Table Type",
+      "placeholder": "Select a type",
+      "options": {
+        "2": "2 Chairs",
+        "4": "4 Chairs",
+        "6": "6 Chairs",
+        "8": "8 Chairs",
+        "10": "10 Chairs",
+        "12": "12 Chairs"
+      }
+    }
+  }
+}

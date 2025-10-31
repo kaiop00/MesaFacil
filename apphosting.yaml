@@ -1,0 +1,9 @@
+runConfig:
+  region: us-east4
+
+build:
+  command: npm install && npm run build
+  outputDirectory: dist
+
+run:
+  command: npx serve dist --listen tcp://0.0.0.0:${PORT:-8080} --single

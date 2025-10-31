@@ -1,0 +1,114 @@
+{
+  "title": "Usuários",
+  "subtitle": "Gerencie os usuários do seu restaurante.",
+  "newUser": "Novo Usuário",
+  "searchPlaceholder": "Procure por nome ou e-mail",
+  "noUsersFound": "Nenhum usuário encontrado",
+  "loading": "Carregando...",
+  "name": "Nome",
+  "email": "E-mail",
+  "status": "Status",
+  "active": "Ativo",
+  "inactive": "Inativo",
+  "page": "Página",
+  "of": "de",
+  "show": "Mostrar",
+  "lines": "Linhas",
+  "records": "Registros",
+  "actions": {
+    "label": "Ações",
+    "details": "Detalhes",
+    "edit": "Editar",
+    "deactivate": "Inativar",
+    "activate": "Ativar"
+  },
+  "form": {
+    "name": "Nome",
+    "namePlaceholder": "Digite o nome completo",
+    "email": "E-mail",
+    "emailPlaceholder": "exemplo@email.com",
+    "password": "Senha",
+    "passwordPlaceholder": "•••••••",
+    "permissions": "Permissões",
+    "selectAllPermissions": "Selecionar todas as permissões",
+    "allowed": "Permitido",
+    "denied": "Negado",
+    "cancel": "Cancelar",
+    "notInformed": "Não informado"
+  },
+  "tabs": {
+    "generalData": "Dados Gerais",
+    "permissions": "Permissões"
+  },
+  "buttons": {
+    "cancel": "Cancelar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "close": "Fechar"
+  },
+  "permissionCategories": {
+    "general": "Geral",
+    "users": "Usuários",
+    "menu": "Cardápio",
+    "orders": "Pedidos",
+    "reports": "Relatórios"
+  },
+  "permissionLabels": {
+    "view_dashboard": "Visualizar Painel",
+    "edit_profile": "Editar Perfil",
+    "view_users": "Visualizar Usuários",
+    "create_users": "Criar Usuários",
+    "edit_users": "Editar Usuários",
+    "delete_users": "Excluir Usuários",
+    "view_menu": "Visualizar Cardápio",
+    "create_menu_items": "Adicionar Itens",
+    "edit_menu_items": "Editar Itens",
+    "delete_menu_items": "Remover Itens",
+    "view_orders": "Visualizar Pedidos",
+    "create_orders": "Criar Pedidos",
+    "edit_orders": "Editar Pedidos",
+    "cancel_orders": "Cancelar Pedidos",
+    "view_reports": "Visualizar Relatórios",
+    "export_reports": "Exportar Relatórios"
+  },
+  "modal": {
+    "new": {
+      "title": "Novo Usuário",
+      "subtitle": "Preencha as informações para adicionar."
+    },
+    "edit": {
+      "title": "Editar Usuário",
+      "subtitle": "Atualize as informações do usuário."
+    },
+    "details": {
+      "title": "Detalhes do Usuário"
+    },
+    "deactivate": {
+      "title": "Desativar Usuário",
+      "message": "Tem certeza que deseja desativar o usuário",
+      "warning": "Esta ação não pode ser desfeita.",
+      "confirm": "Desativar",
+      "processing": "Desativando..."
+    },
+    "activate": {
+      "title": "Ativar Usuário",
+      "message": "Tem certeza que deseja ativar o usuário",
+      "info": "O usuário terá acesso ao sistema novamente.",
+      "confirm": "Ativar",
+      "processing": "Ativando..."
+    }
+  },
+  "messages": {
+    "addSuccess": "Usuário adicionado com sucesso",
+    "updateSuccess": "Usuário atualizado com sucesso",
+    "deactivateSuccess": "Usuário desativado com sucesso!",
+    "activateSuccess": "Usuário ativado com sucesso!",
+    "deactivateError": "Erro ao desativar usuário. Tente novamente.",
+    "activateError": "Erro ao ativar usuário. Tente novamente.",
+    "emailExists": "Email já cadastrado",
+    "error": "ID do restaurante não encontrado",
+    "userIdNotFound": "ID do usuário não encontrado"
+  }
+}

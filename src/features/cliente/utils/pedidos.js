@@ -45,3 +45,33 @@ export function computeTotalPedidos(pedidos = []) {
     );
 }
 
+export const DEFAULT_SERVICE_FEE_PERCENT = 10;
+
+export function normalizeServicePercentage(value, fallback = DEFAULT_SERVICE_FEE_PERCENT) {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        return Math.min(value, 100);
+    }
+
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+        return Math.min(parsed, 100);
+    }
+
+    return fallback;
+}
+
+export function computeServiceFeeAmount(total = 0, percentage, fallback = DEFAULT_SERVICE_FEE_PERCENT) {
+    const subtotal = typeof total === "number" && Number.isFinite(total) ? total : 0;
+    const percent = normalizeServicePercentage(
+        percentage,
+        fallback
+    );
+    const amount = subtotal * (percent / 100);
+    return Number(amount.toFixed(2));
+}
+
+export function computeTotalWithService(total = 0, percentage, fallback = DEFAULT_SERVICE_FEE_PERCENT) {
+    const subtotal = typeof total === "number" && Number.isFinite(total) ? total : 0;
+    const serviceAmount = computeServiceFeeAmount(subtotal, percentage, fallback);
+    return Number((subtotal + serviceAmount).toFixed(2));
+}

@@ -1,0 +1,114 @@
+{
+  "title": "Users",
+  "subtitle": "Manage your restaurant users.",
+  "newUser": "New User",
+  "searchPlaceholder": "Search by name or email",
+  "noUsersFound": "No users found",
+  "loading": "Loading...",
+  "name": "Name",
+  "email": "Email",
+  "status": "Status",
+  "active": "Active",
+  "inactive": "Inactive",
+  "page": "Page",
+  "of": "of",
+  "show": "Show",
+  "lines": "Lines",
+  "records": "Records",
+  "actions": {
+    "label": "Actions",
+    "details": "Details",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "activate": "Activate"
+  },
+  "form": {
+    "name": "Name",
+    "namePlaceholder": "Enter full name",
+    "email": "Email",
+    "emailPlaceholder": "example@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "•••••••",
+    "permissions": "Permissions",
+    "selectAllPermissions": "Select all permissions",
+    "allowed": "Allowed",
+    "denied": "Denied",
+    "cancel": "Cancel",
+    "notInformed": "Not informed"
+  },
+  "tabs": {
+    "generalData": "General Data",
+    "permissions": "Permissions"
+  },
+  "buttons": {
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "saving": "Saving...",
+    "close": "Close"
+  },
+  "permissionCategories": {
+    "general": "General",
+    "users": "Users",
+    "menu": "Menu",
+    "orders": "Orders",
+    "reports": "Reports"
+  },
+  "permissionLabels": {
+    "view_dashboard": "View Dashboard",
+    "edit_profile": "Edit Profile",
+    "view_users": "View Users",
+    "create_users": "Create Users",
+    "edit_users": "Edit Users",
+    "delete_users": "Delete Users",
+    "view_menu": "View Menu",
+    "create_menu_items": "Add Items",
+    "edit_menu_items": "Edit Items",
+    "delete_menu_items": "Remove Items",
+    "view_orders": "View Orders",
+    "create_orders": "Create Orders",
+    "edit_orders": "Edit Orders",
+    "cancel_orders": "Cancel Orders",
+    "view_reports": "View Reports",
+    "export_reports": "Export Reports"
+  },
+  "modal": {
+    "new": {
+      "title": "New User",
+      "subtitle": "Fill in the information to add."
+    },
+    "edit": {
+      "title": "Edit User",
+      "subtitle": "Update user information."
+    },
+    "details": {
+      "title": "User Details"
+    },
+    "deactivate": {
+      "title": "Deactivate User",
+      "message": "Are you sure you want to deactivate user",
+      "warning": "This action cannot be undone.",
+      "confirm": "Deactivate",
+      "processing": "Deactivating..."
+    },
+    "activate": {
+      "title": "Activate User",
+      "message": "Are you sure you want to activate user",
+      "info": "The user will have access to the system again.",
+      "confirm": "Activate",
+      "processing": "Activating..."
+    }
+  },
+  "messages": {
+    "addSuccess": "User added successfully",
+    "updateSuccess": "User updated successfully",
+    "deactivateSuccess": "User deactivated successfully!",
+    "activateSuccess": "User activated successfully!",
+    "deactivateError": "Error deactivating user. Please try again.",
+    "activateError": "Error activating user. Please try again.",
+    "emailExists": "Email already registered",
+    "error": "Restaurant ID not found",
+    "userIdNotFound": "User ID not found"
+  }
+}

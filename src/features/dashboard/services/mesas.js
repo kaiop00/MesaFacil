@@ -1,51 +1,114 @@
-import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, Timestamp, orderBy } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 
+const timestampToDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+  if (typeof value.seconds === "number") {
+    const millis = value.seconds * 1000 + (value.nanoseconds || 0) / 1_000_000;
+    return new Date(millis);
+  }
+  return null;
+};
+
+const normalizeDateInput = (value, endOfDay = false) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  if (endOfDay) {
+    parsed.setHours(23, 59, 59, 999);
+  } else {
+    parsed.setHours(0, 0, 0, 0);
+  }
+  return parsed;
+};
+
 /**
- * Lista pedidos de uma mesa com filtro de data usando queries do Firestore
- * @param {string} idRestaurante - ID do restaurante
- * @param {string} mesaId - ID da mesa
- * @param {string|null} dateFilter - Filtro predefinido: 'Hoje', 'Semanal', 'Mensal'
- * @param {string|null} startDate - Data de início personalizada (ISO string)
- * @param {string|null} endDate - Data de fim personalizada (ISO string)
- * @returns {Promise<Array>} Array de pedidos filtrados
+ * Lista pedidos de uma mesa com filtro de data usando queries do Firestore.
+ * Consulta sempre a coleção `historicoPedidos` e faz filtros adicionais em memória
+ * para evitar dependência de índices compostos.
  */
-export const showAllOrdersFromTable = async (idRestaurante, mesaId, dateFilter = null, startDate = null, endDate = null) => {
+export const showAllOrdersFromTable = async (
+  idRestaurante,
+  mesaId,
+  dateFilter = null,
+  startDate = null,
+  endDate = null
+) => {
+  if (!idRestaurante) return [];
+
   const pedidosRef = collection(
     db,
     "restaurantes",
     idRestaurante,
-    "mesas",
-    mesaId,
-    "pedidos",
+    "historicoPedidos"
   );
 
-  let pedidosQuery = pedidosRef;
+  const constraints = [];
 
-  // OTIMIZAÇÃO: Apply custom date range filter directly in Firestore query
-  // This reduces data transfer and improves performance significantly
-  if (startDate && endDate) {
-    const startTimestamp = Timestamp.fromDate(new Date(startDate + "T00:00:00"));
-    const endTimestamp = Timestamp.fromDate(new Date(endDate + "T23:59:59"));
-    pedidosQuery = query(
-      pedidosRef,
-      where("criadoEm", ">=", startTimestamp),
-      where("criadoEm", "<=", endTimestamp)
-    );
+  if (mesaId) {
+    constraints.push(where("mesaId", "==", mesaId));
   }
-  // Apply predefined period filter if no custom range provided
-  else if (dateFilter) {
-    const filterStartDate = getFilterStartDate(dateFilter);
-    if (filterStartDate) {
-      const startTimestamp = Timestamp.fromDate(filterStartDate);
-      pedidosQuery = query(pedidosRef, where("criadoEm", ">=", startTimestamp));
+
+  let pushDateFiltersInQuery = !mesaId;
+
+  if (pushDateFiltersInQuery) {
+    if (startDate && endDate) {
+      const startTimestamp = Timestamp.fromDate(
+        normalizeDateInput(startDate, false)
+      );
+      const endTimestamp = Timestamp.fromDate(
+        normalizeDateInput(endDate, true)
+      );
+      constraints.push(where("criadoEm", ">=", startTimestamp));
+      constraints.push(where("criadoEm", "<=", endTimestamp));
+    } else if (dateFilter) {
+      const filterStartDate = getFilterStartDate(dateFilter);
+      if (filterStartDate) {
+        const startTimestamp = Timestamp.fromDate(filterStartDate);
+        constraints.push(where("criadoEm", ">=", startTimestamp));
+      }
     }
   }
+
+  const shouldOrderByDate = pushDateFiltersInQuery;
+  const queryConstraints = shouldOrderByDate
+    ? [...constraints, orderBy("criadoEm", "asc")]
+    : constraints;
+
+  const pedidosQuery =
+    queryConstraints.length > 0
+      ? query(pedidosRef, ...queryConstraints)
+      : pedidosRef;
 
   const snapshot = await getDocs(pedidosQuery);
   const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-  return pedidos;
+  // Filtro adicional em memória quando somente uma das datas é informada
+  const filtered = pedidos.filter((pedido) => {
+    const createdAt = timestampToDate(pedido.criadoEm);
+    if (!createdAt) return false;
+
+    const start = normalizeDateInput(startDate, false) || getFilterStartDate(dateFilter);
+    const end = normalizeDateInput(endDate, true);
+
+    if (start && createdAt < start) return false;
+    if (end && createdAt > end) return false;
+
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    const dateA = timestampToDate(a.criadoEm)?.getTime() ?? 0;
+    const dateB = timestampToDate(b.criadoEm)?.getTime() ?? 0;
+    return dateA - dateB;
+  });
+
+  return filtered;
 };
 
 /**
@@ -135,7 +198,13 @@ const calculateStats = (orders) => {
   let completedOrders = 0;
 
   orders.forEach((order) => {
-    totalSales += order.total;
+    const status = (order.status || "").toLowerCase();
+    const isDelivered = status === "entregue";
+    if (!isDelivered) {
+      return;
+    }
+
+    totalSales += order.total || 0;
     totalOrders += 1;
 
     // Calculate service time for completed orders
@@ -170,7 +239,7 @@ const calculateStats = (orders) => {
  * @param {string} idRestaurante - ID do restaurante
  * @param {Array} tables - Lista de mesas
  * @param {string} filter - Filtro de período: "Mensal" ou "Anual"
- * @param {string} category - Filtro de categoria: "Todas", "Guarnição", "Sobremesa", "Carne", "Acompanhamento"
+ * @param {string} category - Filtro de categoria: "Todas" ou qualquer categoria personalizada do restaurante
  */
 export const getMonthlySalesData = async (idRestaurante, tables, filter = "Mensal", category = "Todas") => {
   if (!tables || tables.length === 0) {
@@ -238,36 +307,30 @@ const getYearlySalesData = async (idRestaurante, tables, category = "Todas") => 
 /**
  * Busca vendas para um período específico (usado internamente por getMonthlySalesData)
  */
+const toISODate = (date) => {
+  if (!(date instanceof Date)) return date;
+  return date.toISOString().slice(0, 10);
+};
+
 const getMonthlySalesForPeriod = async (idRestaurante, tables, startDate, endDate, category = "Todas") => {
   const promises = tables.map(async (table) => {
-    const pedidosRef = collection(
-      db,
-      "restaurantes",
+    const orders = await showAllOrdersFromTable(
       idRestaurante,
-      "mesas",
       table.id,
-      "pedidos",
+      null,
+      toISODate(startDate),
+      toISODate(endDate)
     );
 
-    const startTimestamp = Timestamp.fromDate(startDate);
-    const endTimestamp = Timestamp.fromDate(endDate);
-
-    const pedidosQuery = query(
-      pedidosRef,
-      where("criadoEm", ">=", startTimestamp),
-      where("criadoEm", "<=", endTimestamp)
+    const deliveredOrders = orders.filter(
+      (order) => (order.status || "").toLowerCase() === "entregue"
     );
 
-    const snapshot = await getDocs(pedidosQuery);
-    const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-    // Calculate total sales for this table in this period with category filter
-    return pedidos.reduce((total, order) => {
+    return deliveredOrders.reduce((total, order) => {
       if (category === "Todas") {
         return total + (order.total || 0);
       }
 
-      // Filter by category
       const categoryTotal = (order.items || []).reduce((itemTotal, item) => {
         if (item.categorias && item.categorias.includes(category)) {
           return itemTotal + (item.price * item.quantity || 0);
@@ -317,26 +380,13 @@ const getTopProductsForPeriod = async (idRestaurante, tables, startDate, endDate
   const productSales = {};
 
   const promises = tables.map(async (table) => {
-    const pedidosRef = collection(
-      db,
-      "restaurantes",
+    const pedidos = (await showAllOrdersFromTable(
       idRestaurante,
-      "mesas",
       table.id,
-      "pedidos",
-    );
-
-    const startTimestamp = Timestamp.fromDate(startDate);
-    const endTimestamp = Timestamp.fromDate(endDate);
-
-    const pedidosQuery = query(
-      pedidosRef,
-      where("criadoEm", ">=", startTimestamp),
-      where("criadoEm", "<=", endTimestamp)
-    );
-
-    const snapshot = await getDocs(pedidosQuery);
-    const pedidos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      null,
+      toISODate(startDate),
+      toISODate(endDate)
+    )).filter((order) => (order.status || "").toLowerCase() === "entregue");
     // Process each order's items
     pedidos.forEach((order) => {
       if (order.items && Array.isArray(order.items)) {

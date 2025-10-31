@@ -1,7 +1,9 @@
 import { ChevronLeft } from "react-coolicons";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function ItemModal({ item, onClose, onAdicionar }) {
+    const { t } = useTranslation("cliente");
     const [quantidade, setQuantidade] = useState(1);
     const temPromocao = item.temPromocao && item.promocao;
 
@@ -23,7 +25,7 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
                 {/* Badge de promoção na imagem */}
                 {temPromocao && (
                     <div className="absolute top-8 right-5 bg-red-500 text-white text-sm px-3 py-1 rounded-lg font-bold z-10">
-                        OFERTA -{item.promocao.porcentagemDesconto}%
+                        {t("cardapio.promotion")} -{item.promocao.porcentagemDesconto}%
                     </div>
                 )}
                 
@@ -48,7 +50,7 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
                                     R$ {item.valorOriginal.toFixed(2).replace('.', ',')}
                                 </p>
                                 <span className="bg-green-500 text-white text-sm px-2 py-1 rounded-full font-medium">
-                                    Economize R$ {(item.valorOriginal - item.valor).toFixed(2).replace('.', ',')}
+                                    {t("cardapio.save")} R$ {(item.valorOriginal - item.valor).toFixed(2).replace('.', ',')}
                                 </span>
                             </>
                         ) : (
@@ -73,7 +75,7 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
 
                 {Array.isArray(item.alergias) && item.alergias.length > 0 && (
                     <div>
-                        <h2 className="text-2xl mb-1">Alergias</h2>
+                        <h2 className="text-2xl mb-1">{t("itemModal.allergies")}</h2>
                         <div className="flex flex-row flex-wrap gap-2">
                             {item.alergias.map((alergia) => (
                                 <div key={alergia} className="flex px-3 h-8 bg-[#F1F5F9] items-center justify-center rounded">
@@ -99,7 +101,7 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
                     onClick={() => onAdicionar({ ...item, quantidade })}
                     className="bg-[#D9A23B] text-white font-medium px-4 py-2 rounded-md hover:opacity-90 transition flex items-center gap-3"
                 >
-                    Adicionar
+                    {t("itemModal.add")}
                     <span className="font-semibold">R$ {total.toFixed(2).replace('.', ',')}</span>
                 </button>
             </div>

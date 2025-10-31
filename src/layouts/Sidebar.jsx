@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   House03,
   ListUnordered,
@@ -10,9 +11,11 @@ import {
   Users,
   Notebook,
   Slider01,
+  Building03,
 } from "react-coolicons";
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -25,18 +28,19 @@ const Sidebar = () => {
 
   const toggleSidebar = () => setIsOpen((open) => !open);
   const navLinks = [
-    { name: "Dashboard", icon: <House03 size={20} />, path: "/home" },
-    { name: "Pedidos", icon: <ListUnordered size={20} />, path: "/home/pedidos" },
-    { name: "Cardápio", icon: <Coffee size={20} />, path: "/home/cardapio" },
+    { name: t("common:sidebar.dashboard"), icon: <House03 size={20} />, path: "/home" },
+    { name: t("common:sidebar.orders"), icon: <ListUnordered size={20} />, path: "/home/pedidos" },
+    { name: t("common:sidebar.kitchen"), icon: <Building03 size={20} />, path: "/home/cozinha" },
+    { name: t("common:sidebar.menu"), icon: <Coffee size={20} />, path: "/home/cardapio" },
     {
-      name: "Relatórios",
+      name: t("common:sidebar.reports"),
       icon: <FileDocument size={20} />,
       path: "/home/relatorios",
     },
-    { name: "Promoções", icon: <ArrowDownUp size={20} />, path: "/home/promocoes" },
-    { name: "Itens", icon: <Notebook size={20} />, path: "/home/itens" },
-    { name: "Entradas e Saídas", icon: <Slider01 size={20} />, path: "/home/movimentacao" },
-    { name: "Usuários", icon: <Users size={20} />, path: "/home/usuarios" },
+    { name: t("common:sidebar.promotions"), icon: <ArrowDownUp size={20} />, path: "/home/promocoes" },
+    { name: t("common:sidebar.items"), icon: <Notebook size={20} />, path: "/home/itens" },
+    { name: t("common:sidebar.movements"), icon: <Slider01 size={20} />, path: "/home/movimentacao" },
+    { name: t("common:sidebar.users"), icon: <Users size={20} />, path: "/home/usuarios" },
   ];
 
   return (

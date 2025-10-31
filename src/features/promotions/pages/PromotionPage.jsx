@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import CardHeader from "@/components/CardHeader";
 import CardPromotionEmpty from "@/features/promotions/components/CardPromotionEmpty";
 import CardPromotion from "@/features/promotions/components/CardPromotion";
@@ -10,6 +11,7 @@ import { create, getAll, remove, update } from "@/services/firebase/firestoreSer
 import { useToast } from "@/hooks/useToast";
 
 const PromotionPage = () => {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
@@ -56,7 +58,7 @@ const PromotionPage = () => {
 
   const handleSavePromotion = async (formData) => {
     if (!idRestaurante) {
-      notify("Usuário não autenticado. Faça login para criar uma promoção.", "error");
+      notify(t("promotions:messages.notAuthenticated"), "error");
       return;
     }
     try {
@@ -67,7 +69,7 @@ const PromotionPage = () => {
       handleCloseModal();
     } catch (error) {
       console.error('Error creating promotion:', error);
-      notify("Erro ao criar promoção", "error");
+      notify(t("promotions:messages.createError"), "error");
     }
   };
 
@@ -88,26 +90,26 @@ const PromotionPage = () => {
       
       setIsEditModalOpen(false);
       setEditingPromotion(null);
-      notify("Promoção atualizada com sucesso!", "success");
+      notify(t("promotions:messages.updateSuccess"), "success");
     } catch (error) {
       console.error("Error updating promotion:", error);
-      notify("Erro ao atualizar a promoção. Tente novamente.", "error");
+      notify(t("promotions:messages.updateError"), "error");
     }
   };
 
   const handleDeletePromotion = async (id) => {
     if (!idRestaurante) {
-      notify("Usuário não autenticado. Faça login para excluir uma promoção.", "error");
+      notify(t("promotions:messages.notAuthenticated"), "error");
       return;
     }
-    if (window.confirm('Tem certeza que deseja excluir esta promoção?')) {
+    if (window.confirm(t("promotions:actions.deleteConfirm"))) {
       try {
         await remove(idRestaurante, 'promocoes', id);
         setPromotions(prev => prev.filter(promo => promo.id !== id));
-        notify("Promoção excluída com sucesso!", "success");
+        notify(t("promotions:messages.deleteSuccess"), "success");
       } catch (error) {
         console.error('Erro ao excluir promoção:', error);
-        notify("Erro ao excluir promoção", "error");
+        notify(t("promotions:messages.deleteError"), "error");
       }
     }
   };
@@ -115,14 +117,14 @@ const PromotionPage = () => {
   return (
     <div className="sm:px-6 md:px-8 mt-10 mb-10 space-y-10">
       <CardHeader
-        title="Promoções"
-        subtitle="Gerencie as promoções do seu restaurante"
+        title={t("promotions:title")}
+        subtitle={t("promotions:subtitle")}
         onNewClick={handleNew}
-        buttonTitle="Nova Promoção"
+        buttonTitle={t("promotions:newPromotion")}
       />
 
       {loading
-        ? (<div className="flex justify-center items-center h-64">Carregando...</div>)
+        ? (<div className="flex justify-center items-center h-64">{t("promotions:loading")}</div>)
         : (error
           ? (<div className="text-red-500">{error.message}</div>)
           : (promotions.length === 0

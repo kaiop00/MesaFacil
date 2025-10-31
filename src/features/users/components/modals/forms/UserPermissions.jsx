@@ -1,4 +1,5 @@
-import { PERMISSIONS } from "../../../constants/permissions";
+import { useTranslation } from "react-i18next";
+import { getPermissions } from "../../../constants/permissions";
 
 const UserPermissions = ({ 
   permissions = {}, 
@@ -7,6 +8,8 @@ const UserPermissions = ({
   setSelectAll,
   readOnly = false 
 }) => {
+  const { t } = useTranslation();
+  const PERMISSIONS = getPermissions(t);
   const ALL_PERMISSION_IDS = Object.values(PERMISSIONS)
     .flatMap(category => category.map(permission => permission.id));
 
@@ -53,11 +56,11 @@ const UserPermissions = ({
                   
                   {permissions[permission.id] ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Permitido
+                      {t("users:form.allowed")}
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      Negado
+                      {t("users:form.denied")}
                     </span>
                   )}
                 </div>
@@ -74,7 +77,7 @@ const UserPermissions = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
         <span className="text-sm font-medium text-gray-700">
-          Selecionar todas as permissões
+          {t("users:form.selectAllPermissions")}
         </span>
 
         <button

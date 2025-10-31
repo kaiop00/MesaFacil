@@ -3,5 +3,43 @@
   "cancel": "Cancel",
   "save": "Save",
   "close": "Close",
-  "confirm": "Confirm"
+  "confirm": "Confirm",
+  "header": {
+    "settings": "Settings",
+    "tables": "Tables",
+    "photoColors": "Photo/Colors",
+    "categories": "Categories",
+    "language": "Language",
+    "logout": "Logout",
+    "serviceFee": "Service Fee"
+  },
+  "languages": {
+    "pt-BR": "Português",
+    "en": "English"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "orders": "Orders",
+    "kitchen": "Kitchen",
+    "menu": "Menu",
+    "reports": "Reports",
+    "promotions": "Promotions",
+    "items": "Items",
+    "movements": "Movements",
+    "users": "Users"
+  },
+  "stock": {
+    "impact": "Stock Impact",
+    "hide": "Hide",
+    "details": "Details",
+    "calculating": "Calculating stock impact...",
+    "noItems": "No items in this order have configured ingredients.",
+    "willConsume": "This order will consume",
+    "ingredient": "ingredient",
+    "ingredients": "ingredients",
+    "fromStock": "from stock:",
+    "andMore": "... and more",
+    "detailsByDish": "Details by dish:",
+    "total": "Total"
+  }
 }

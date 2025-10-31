@@ -1,7 +1,9 @@
 import { MoreHorizontal, MagnifyingGlassPlus, EditPencil01, CloseLg, Check } from "react-coolicons";
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, onActivateClick }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -58,7 +60,7 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
             ? 'bg-green-100 text-green-800'
             : 'bg-yellow-100 text-yellow-800'
           }`}>
-          {user.status === 'Ativo' ? 'Ativo' : 'Inativo'}
+          {user.status === 'Ativo' ? t("users:active") : t("users:inactive")}
         </span>
       </div>
 
@@ -75,7 +77,7 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
           <menu className="absolute right-0 mt-8 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
             <div className="py-1">
               <p className="px-4 py-2 text-xs font-medium text-gray-500 border-b border-gray-100">
-                Ações
+                {t("users:actions.label")}
               </p>
 
               <button
@@ -83,7 +85,7 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <MagnifyingGlassPlus className="w-4 h-4 mr-2 text-gray-500" />
-                Detalhes
+                {t("users:actions.details")}
               </button>
 
               <button
@@ -91,7 +93,7 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <EditPencil01 className="w-4 h-4 mr-2 text-gray-500" />
-                Editar
+                {t("users:actions.edit")}
               </button>
 
               <button
@@ -101,12 +103,12 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
                 {user.status === 'Ativo' ? (
                   <>
                     <CloseLg className="w-4 h-4 mr-2 text-red-500" />
-                    <span className="text-red-500">Inativar</span>
+                    <span className="text-red-500">{t("users:actions.deactivate")}</span>
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span className="text-green-500">Ativar</span>
+                    <span className="text-green-500">{t("users:actions.activate")}</span>
                   </>
                 )}
               </button>

@@ -1,13 +1,5 @@
 import Select from "react-select";
-
-const typeOptions = [
-    { value: 2, label: "2 Cadeiras" },
-    { value: 4, label: "4 Cadeiras" },
-    { value: 6, label: "6 Cadeiras" },
-    { value: 8, label: "8 Cadeiras" },
-    { value: 10, label: "10 Cadeiras" },
-    { value: 12, label: "12 Cadeiras" },
-];
+import { useTranslation } from "react-i18next";
 
 const customSelectStyles = {
     control: (base) => ({
@@ -22,18 +14,31 @@ const customSelectStyles = {
     }),
 };
 
-const TableType = ({ value, onChange }) => (
-    <div>
-        <label className="block mb-1 font-medium text-gray-700">Tipo de Mesa</label>
-        <Select
-            options={typeOptions}
-            value={value}
-            onChange={onChange}
-            styles={customSelectStyles}
-            placeholder="Selecione um tipo"
-            isSearchable={false}
-        />
-    </div>
-);
+const TableType = ({ value, onChange }) => {
+    const { t } = useTranslation();
+
+    const typeOptions = [
+        { value: 2, label: t("config:components.tableType.options.2") },
+        { value: 4, label: t("config:components.tableType.options.4") },
+        { value: 6, label: t("config:components.tableType.options.6") },
+        { value: 8, label: t("config:components.tableType.options.8") },
+        { value: 10, label: t("config:components.tableType.options.10") },
+        { value: 12, label: t("config:components.tableType.options.12") },
+    ];
+
+    return (
+        <div>
+            <label className="block mb-1 font-medium text-gray-700">{t("config:components.tableType.label")}</label>
+            <Select
+                options={typeOptions}
+                value={value}
+                onChange={onChange}
+                styles={customSelectStyles}
+                placeholder={t("config:components.tableType.placeholder")}
+                isSearchable={false}
+            />
+        </div>
+    );
+};
 
 export default TableType;

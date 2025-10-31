@@ -113,7 +113,7 @@ const ItemsTable = ({
                   </div>
                   <div className="flex items-center">
                     <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.borderColor} ${status.color}`}>
-                      {item.estoqueAtual || 0} {(item.unidadeArmazenamento || 'un').toLowerCase() + (item.estoqueAtual > 1 ? 's' : '')}
+                      {item.estoqueAtual.toFixed(2) || 0} {(item.unidadeArmazenamento || 'un').toLowerCase() + (item.estoqueAtual > 1 ? 's' : '')}
                     </div>
                   </div>
                   <div className="flex justify-end">

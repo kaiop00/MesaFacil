@@ -1,0 +1,17 @@
+{
+  "title": "Notificações",
+  "subtitle": "Somente as notificações do dia",
+  "noNotifications": "Sem notificações hoje.",
+  "read": "Lidas",
+  "actions": "Ações",
+  "details": "Detalhes",
+  "markAsRead": "Marcar como Lida",
+  "marking": "Marcando…",
+  "markAllAsRead": "Marcar todas como Lidas",
+  "table": "Mesa",
+  "requestedService": "solicitou atendimento",
+  "newOrder": "Novo pedido chegou - Pedido da mesa",
+  "reason": "Motivo",
+  "waiterCall": "Chamada de garçom",
+  "alreadyRead": "Já lida"
+}

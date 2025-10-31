@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import { ArrowDownUp } from "react-coolicons";
+import { useTranslation } from "react-i18next";
 import NewPromotionForm from "../forms/NewPromotionForm";
 import { useToast } from "@/hooks/useToast";
 
@@ -11,6 +12,7 @@ const initialFormData = {
 };
 
 const NewPromotionModal = ({ isOpen, onClose, onSave }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState(initialFormData);
   const { notify } = useToast();
 
@@ -24,10 +26,10 @@ const NewPromotionModal = ({ isOpen, onClose, onSave }) => {
     try {
       await onSave(formData);
       onClose();
-      notify("Promoção criada com sucesso!", "success");
+      notify(t("promotions:messages.createSuccess"), "success");
     } catch (error) {
       console.error("Error saving promotion:", error);
-      notify("Erro ao salvar a promoção. Tente novamente.", "error");
+      notify(t("promotions:messages.saveError"), "error");
     }
   };
 
@@ -35,8 +37,8 @@ const NewPromotionModal = ({ isOpen, onClose, onSave }) => {
     <BaseModalWithHeader
       isOpen={isOpen}
       onClose={onClose}
-      title="Nova Promoção"
-      subTitle="Preencha as informações para adicionar"
+      title={t("promotions:modal.new.title")}
+      subTitle={t("promotions:modal.new.subtitle")}
       icon={ArrowDownUp}
       iconClassName="text-yellow-500"
     >

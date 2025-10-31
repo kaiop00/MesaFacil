@@ -1,88 +1,43 @@
-const OPTIONS = [
-    {
-        id: "pix",
-        title: "Pagar com Pix",
-        description: "",
-        accentClass: "border-[#10B981]",
-        badge: "Pix",
-    },
-    {
-        id: "garcom",
-        title: "Chamar Garçom",
-        description: "O garçom irá até sua mesa auxiliar no pagamento",
-        accentClass: "border-[#D9A23B]",
-        badge: "Garçom",
-    },
-];
+import { useTranslation } from "react-i18next";
 
-const PaymentOptionSelector = ({
-    selectedOption,
-    onSelect,
-    garcomDisabled,
-    garcomSolicitado,
-    showSelectionError,
-}) => {
+const PaymentOptionSelector = ({ garcomDisabled, garcomSolicitado }) => {
+    const { t } = useTranslation("cliente");
+    const showStatus = garcomSolicitado || garcomDisabled;
+    const statusLabel = garcomSolicitado ? t("payment.options.waiterCalled") : t("payment.actions.waiterCalling");
+    const statusColor = garcomSolicitado ? "text-[#B7791F]" : "text-[#D97706]";
+
     return (
         <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Escolha uma das opções</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{t("payment.options.waiter")}</h3>
 
-            <div className="space-y-3">
-                {OPTIONS.map((option) => {
-                    const isSelected = selectedOption === option.id;
-                    const disabled = option.id === "garcom" ? garcomDisabled : false;
+            <div
+                className={`w-full border rounded-xl p-4 transition bg-white shadow-sm ${
+                    garcomSolicitado ? "border-[#D9A23B] bg-[#FDF0D8]" : "border-gray-200"
+                }`}
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                        <p className="font-semibold text-gray-900 text-sm">{t("payment.options.waiter")}</p>
+                        <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                            {t("payment.options.waiterDescription")}
+                        </p>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{t("payment.options.waiter")}</span>
+                </div>
 
-                    const classes = [
-                        "w-full",
-                        "border",
-                        "rounded-xl",
-                        "p-4",
-                        "flex",
-                        "items-center",
-                        "gap-3",
-                        "transition",
-                        "text-left",
-                        option.id === "garcom" && garcomSolicitado ? "opacity-80" : "",
-                    ].filter(Boolean);
-
-                    if (isSelected) {
-                        classes.push(option.id === "garcom" ? "bg-[#FDF0D8]" : "bg-[#ECFDF5]");
-                        classes.push(option.accentClass);
-                        classes.push("border-2");
-                    } else {
-                        classes.push("border-gray-200");
-                        classes.push("hover:border-[#D9A23B]/60");
-                    }
-
-                    return (
-                        <button
-                            type="button"
-                            key={option.id}
-                            className={classes.join(" ")}
-                            onClick={() => onSelect(option.id)}
-                            disabled={disabled}
-                        >
-                            <span
-                                className={`h-5 w-5 rounded-full border ${
-                                    isSelected ? option.accentClass : "border-gray-300"
-                                } flex items-center justify-center text-[10px] uppercase font-semibold`}
-                            >
-                                {isSelected ? "•" : ""}
-                            </span>
-                            <div className="flex-1">
-                                <p className="font-semibold text-gray-900 text-sm">{option.title}</p>
-                                {option.description && (
-                                    <p className="text-xs text-gray-600 mt-1">{option.description}</p>
-                                )}
-                            </div>
-                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
-                                {option.badge}
-                            </span>
-                        </button>
-                    );
-                })}
-
-                {showSelectionError && (
-                    <p className="text-xs text-red-500">Selecione uma opção para continuar.</p>
+                {showStatus && (
+                    <div className="mt-3 rounded-lg bg-gray-50 border border-dashed border-gray-200 p-3 text-xs text-gray-600">
+                        <p className={`font-semibold ${statusColor}`}>Status: {statusLabel}</p>
+                        {garcomSolicitado ? (
+                            <p className="mt-1">
+                                {t("pedido.waiterHelp")}
+                            </p>
+                        ) : (
+                            <p className="mt-1">
+                                {t("payment.actions.waiterCalling")}
+                            </p>
+                        )}
+                    </div>
                 )}
             </div>
         </section>

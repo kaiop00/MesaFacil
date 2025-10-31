@@ -1,6 +1,6 @@
 {
   "page": {
-    "title": "Comanda Digital",
+    "title": "Pedidos",
     "subtitle": "Gerencie os pedidos do seu restaurante",
     "searchTables": "Pesquisar mesas...",
     "loading": "Carregando...",
@@ -134,6 +134,7 @@
     "confirm": {
       "removeItem": "Tem certeza que deseja remover este item?",
       "finishOrder": "Tem certeza que deseja finalizar esta comanda?",
+      "finishOrderDescription": "Você tem certeza que deseja finalizar esse pedido? Esta é uma ação irreversível e vai resetar a mesa para um novo cliente.",
       "freeTable": "Tem certeza que deseja liberar esta mesa?"
     }
   },

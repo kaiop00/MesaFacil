@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import CardHeader from "@/components/CardHeader";
 import UserListTable from "@/features/users/components/UserListTable";
@@ -11,6 +12,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 
 const UsersPage = () => {
+  const { t } = useTranslation();
   const { idRestaurante, role } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -102,10 +104,10 @@ const UsersPage = () => {
   return (
     <div className="mt-10 mb-10">
       {(role.create_users || role === "admin") && <CardHeader
-        title="Usuarios"
-        subtitle="Gerencie os usuarios do seu restaurante."
+        title={t("users:title")}
+        subtitle={t("users:subtitle")}
         onNewClick={handleNew}
-        buttonTitle="Novo Usuário"
+        buttonTitle={t("users:newUser")}
       />}
 
       <UserListTable

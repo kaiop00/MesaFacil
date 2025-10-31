@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { ArrowDownUp } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
+import { useTranslation } from "react-i18next";
 import EditPromotionForm from "../forms/EditPromotionForm";
 import { useToast } from "@/hooks/useToast";
 
 const EditPromotionModal = ({ isOpen, onClose, promotion, onSave }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
@@ -33,7 +35,7 @@ const EditPromotionModal = ({ isOpen, onClose, promotion, onSave }) => {
       onClose();
     } catch (error) {
       console.error("Error updating promotion:", error);
-      notify("Erro ao atualizar a promoção. Tente novamente.", "error");
+      notify(t("promotions:messages.updateError"), "error");
     }
   };
 
@@ -43,8 +45,8 @@ const EditPromotionModal = ({ isOpen, onClose, promotion, onSave }) => {
     <BaseModalWithHeader
       isOpen={isOpen}
       onClose={onClose}
-      title="Editar Promoção"
-      subTitle="Atualize as informações da promoção"
+      title={t("promotions:modal.edit.title")}
+      subTitle={t("promotions:modal.edit.subtitle")}
       icon={ArrowDownUp}
       iconClassName="text-yellow-500"
     >

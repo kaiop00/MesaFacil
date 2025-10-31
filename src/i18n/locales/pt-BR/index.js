@@ -5,6 +5,12 @@ import items from "./items.json";
 import reports from "./reports.json";
 import foodList from "./foodList.json";
 import order from "./order.json";
+import users from "./users.json";
+import notifications from "./notifications.json";
+import promotions from "./promotions.json";
+import kitchen from "./kitchen.json";
+import config from "./config.json";
+import cliente from "./cliente.json";
 
 export default {
   dashboard,
@@ -14,4 +20,10 @@ export default {
   reports,
   foodList,
   order,
+  users,
+  notifications,
+  promotions,
+  kitchen,
+  config,
+  cliente,
 };
