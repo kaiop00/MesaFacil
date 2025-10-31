@@ -29,8 +29,15 @@ const MIME_TYPES = {
   ".otf": "font/otf",
 };
 
-const portArg = process.argv[2];
-const port = Number.parseInt(portArg || process.env.PORT || "8080", 10);
+const envPort = process.env.PORT;
+const argPort = process.argv[2];
+const portRaw = typeof envPort === "string" && envPort ? envPort : argPort;
+let port = Number.parseInt(portRaw || "8080", 10);
+
+if (!Number.isFinite(port)) {
+  console.error(`[serve-dist] Invalid port "${portRaw}". Falling back to 8080.`);
+  port = 8080;
+}
 
 function resolvePath(urlPath) {
   const decodedPath = decodeURIComponent(urlPath.split("?")[0]);
