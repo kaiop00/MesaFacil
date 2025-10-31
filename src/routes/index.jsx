@@ -3,7 +3,11 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 import PrivateRoute from "@/components/PrivateRoute";
 import RedirectHandler from "@/components/RedirectHandler";
-import { Navigate } from "react-router-dom";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
+//Importação das páginas de erro
+import ErrorPage from "@/pages/ErrorPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 //Importação das páginas estáticas
 import PrivacyPage from "@/static/privacy/PrivacyPage";
@@ -40,36 +44,44 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <RedirectHandler />,
+    errorElement: <ErrorPage />,
   },
 
   //rotas publicas
   {
     path: "/home-page",
     element: <MainPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: "/login",
     element: <LoginPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: "/cadastro",
     element: <RegisterPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: "/recuperar-senha",
     element: <ForgotPasswordPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: "/politica-privacidade",
-    element: <PrivacyPage />
+    element: <PrivacyPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: "/termos",
-    element: <TermsPage />
+    element: <TermsPage />,
+    errorElement: <ErrorPage />,
   },
   {
     path: "mesa/:slug",
     element: <ClienteLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <MesaPage /> },
       { path: "sacola", element: <SacolaPage /> },
@@ -81,6 +93,7 @@ const router = createBrowserRouter([
   {
     path: "/home",
     element: <PrivateRoute />, // garante proteção total do path
+    errorElement: <ErrorPage />,
     children: [
       {
         path: "",
@@ -107,12 +120,16 @@ const router = createBrowserRouter([
   //redirecionamento de rota errada
   {
     path: "*",
-    element: <Navigate to="/" replace />,
+    element: <NotFoundPage />,
   }
 ]);
 
 const AppRouter = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
+  );
 };
 
 export default AppRouter;
