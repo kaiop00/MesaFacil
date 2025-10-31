@@ -1,0 +1,55 @@
+{
+  "page": {
+    "title": "Cocina",
+    "subtitle": "Monitorea y finaliza los pedidos pendientes",
+    "refresh": "Actualizar lista",
+    "tryAgain": "Intentar de nuevo",
+    "noPermission": "Sin Permiso",
+    "noPermissionMessage": "No tienes permiso para acceder a la cocina. Por favor, contacta al administrador."
+  },
+  "states": {
+    "loading": "Cargando pedidos...",
+    "empty": "No hay pedidos pendientes en este momento."
+  },
+  "errors": {
+    "load": "No pudimos cargar los pedidos. Por favor, inténtalo de nuevo."
+  },
+  "messages": {
+    "success": "¡Pedido finalizado con éxito!",
+    "error": "No pudimos finalizar el pedido."
+  },
+  "cards": {
+    "table": "Mesa {{numero}}",
+    "orderedAt": "Pedido {{tempo}}",
+    "unknownTime": "Hora de creación no disponible",
+    "items": "Artículos",
+    "observations": "Notas",
+    "noObservations": "No se agregaron observaciones",
+    "finish": "Finalizar",
+    "finalizing": "Finalizando...",
+    "print": "Imprimir"
+  },
+  "print": {
+    "windowTitle": "Imprimir pedido",
+    "header": "Ticket de Cocina",
+    "ticketNumber": "Pedido #{{number}}",
+    "table": "Mesa",
+    "createdAt": "Creado el",
+    "items": "Artículos",
+    "emptyItems": "No hay artículos registrados.",
+    "ingredientsLabel": "Complementos",
+    "total": "Total",
+    "observations": "Notas",
+    "noObservations": "No se agregaron observaciones",
+    "footerThanks": "¡Gracias!",
+    "generatedAt": "Generado el {{date}}",
+    "unknownDate": "Fecha no disponible"
+  },
+  "item": {
+    "unknown": "Artículo",
+    "labels": {
+      "ingredients": "Ingredientes"
+    },
+    "noDetails": "No hay información adicional."
+  }
+}

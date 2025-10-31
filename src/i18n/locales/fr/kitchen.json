@@ -1,0 +1,55 @@
+{
+  "page": {
+    "title": "Cuisine",
+    "subtitle": "Surveiller et terminer les commandes en attente",
+    "refresh": "Actualiser la liste",
+    "tryAgain": "Réessayer",
+    "noPermission": "Pas d'autorisation",
+    "noPermissionMessage": "Vous n'avez pas la permission d'accéder à la cuisine. Veuillez contacter l'administrateur."
+  },
+  "states": {
+    "loading": "Chargement des commandes...",
+    "empty": "Aucune commande en attente pour le moment."
+  },
+  "errors": {
+    "load": "Nous n'avons pas pu charger les commandes. Veuillez réessayer."
+  },
+  "messages": {
+    "success": "Commande terminée avec succès !",
+    "error": "Nous n'avons pas pu terminer la commande."
+  },
+  "cards": {
+    "table": "Table {{numero}}",
+    "orderedAt": "Commande {{tempo}}",
+    "unknownTime": "Heure de création non disponible",
+    "items": "Articles",
+    "observations": "Notes",
+    "noObservations": "Aucune observation ajoutée",
+    "finish": "Terminer",
+    "finalizing": "Finalisation...",
+    "print": "Imprimer"
+  },
+  "print": {
+    "windowTitle": "Imprimer la commande",
+    "header": "Ticket de cuisine",
+    "ticketNumber": "Commande #{{number}}",
+    "table": "Table",
+    "createdAt": "Créé à",
+    "items": "Articles",
+    "emptyItems": "Aucun article enregistré.",
+    "ingredientsLabel": "Suppléments",
+    "total": "Total",
+    "observations": "Notes",
+    "noObservations": "Aucune observation ajoutée",
+    "footerThanks": "Merci !",
+    "generatedAt": "Généré le {{date}}",
+    "unknownDate": "Date non disponible"
+  },
+  "item": {
+    "unknown": "Article",
+    "labels": {
+      "ingredients": "Ingrédients"
+    },
+    "noDetails": "Aucune information supplémentaire."
+  }
+}

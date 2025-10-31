@@ -1,0 +1,63 @@
+{
+  "title": "Promotions",
+  "subtitle": "Gérez les promotions de votre restaurant",
+  "newPromotion": "Nouvelle promotion",
+  "loading": "Chargement...",
+  "empty": {
+    "title": "Aucune promotion enregistrée",
+    "subtitle": "Aucune promotion active pour le moment, cliquez sur nouvelle promotion\npour en ajouter une.",
+    "altText": "Aucune promotion"
+  },
+  "card": {
+    "discount": "OFF"
+  },
+  "modal": {
+    "new": {
+      "title": "Nouvelle promotion",
+      "subtitle": "Remplissez les informations pour ajouter"
+    },
+    "edit": {
+      "title": "Modifier la promotion",
+      "subtitle": "Mettre à jour les informations de la promotion"
+    },
+    "details": {
+      "title": "Détails de la promotion"
+    }
+  },
+  "form": {
+    "name": "Nom de la promotion",
+    "namePlaceholder": "Ex : Promotion spéciale",
+    "optional": "(Optionnel)",
+    "required": "*",
+    "items": "Articles",
+    "searchItems": "Rechercher des articles...",
+    "noItemsFound": "Aucun article trouvé",
+    "totalValue": "Valeur totale des articles",
+    "promotionValue": "Valeur de la promotion",
+    "valuePlaceholder": "0.00",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "save": "Enregistrer la promotion",
+    "updating": "Mise à jour...",
+    "update": "Mettre à jour la promotion"
+  },
+  "actions": {
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette promotion ?"
+  },
+  "messages": {
+    "createSuccess": "Promotion créée avec succès !",
+    "createError": "Erreur lors de la création de la promotion",
+    "saveError": "Erreur lors de l'enregistrement de la promotion. Veuillez réessayer.",
+    "updateSuccess": "Promotion mise à jour avec succès !",
+    "updateError": "Erreur lors de la mise à jour de la promotion. Veuillez réessayer.",
+    "deleteSuccess": "Promotion supprimée avec succès !",
+    "deleteError": "Erreur lors de la suppression de la promotion",
+    "notAuthenticated": "Utilisateur non authentifié. Veuillez vous connecter pour créer une promotion.",
+    "addAtLeastOneItem": "Ajoutez au moins un article à la promotion",
+    "setValidValue": "Définissez une valeur de promotion valide",
+    "selectAtLeastOneItem": "Sélectionnez au moins un article du menu",
+    "valueGreaterThanZero": "La valeur de la promotion doit être supérieure à zéro"
+  }
+}

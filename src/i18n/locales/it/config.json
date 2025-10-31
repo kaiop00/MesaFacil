@@ -1,0 +1,171 @@
+{
+  "modals": {
+    "categories": {
+      "title": "Categorie",
+      "subtitle": "Gestisci le categorie del menù",
+      "success": {
+        "created": "Categoria creata con successo",
+        "deleted": "Categoria eliminata con successo"
+      },
+      "error": {
+        "create": "Errore nella creazione della categoria",
+        "delete": "Errore nell'eliminazione della categoria"
+      }
+    },
+    "colors": {
+      "title": "Colori",
+      "subtitle": "Gestisci le impostazioni dei colori",
+      "intro": {
+        "title": "Personalizza il tuo brand",
+        "description": "Scegli il colore primario e aggiungi il logo del tuo ristorante"
+      },
+      "fields": {
+        "restaurantImage": "Immagine del Ristorante",
+        "baseColor": "Colore Base",
+        "uploadImage": "Carica immagine",
+        "changeImage": "Cambia immagine"
+      },
+      "buttons": {
+        "continue": "Continua"
+      },
+      "success": "Salvato con successo",
+      "error": "Errore nel salvataggio"
+    },
+    "tables": {
+      "title": "Impostazioni",
+      "subtitle": "Gestisci le impostazioni del sistema",
+      "form": {
+        "tableType": "Tipo di Tavolo",
+        "quantity": "Quantità",
+        "addButton": "Aggiungi"
+      },
+      "actions": {
+        "generateQR": "Genera Codici QR",
+        "printQR": "Stampa Codici QR"
+      },
+      "table": {
+        "number": "Numero",
+        "type": "Tipo",
+        "actions": "Azioni",
+        "delete": "Elimina",
+        "viewQR": "Vedi Codice QR",
+        "noTables": "Nessun tavolo registrato"
+      },
+      "buttons": {
+        "cancel": "Annulla",
+        "save": "Salva",
+        "saving": "Salvataggio..."
+      }
+    },
+    "qrCode": {
+      "title": "Codice QR",
+      "subtitle": "Codice QR per il tavolo {{number}}",
+      "tableLabel": "Tavolo {{number}}",
+      "scanTitle": "Scansiona e ordina ora",
+      "instructions": "Scansiona questo codice QR per aprire il menù e fare il tuo ordine."
+    },
+    "serviceFee": {
+      "title": "Costo del Servizio",
+      "subtitle": "Imposta la percentuale applicata al conto finale",
+      "info": {
+        "description": "Questa impostazione definisce quanto verrà aggiunto come costo del servizio al conto finale del cliente. Se non vuoi applicare un costo, usa 0%.",
+        "currentValue": "Valore attuale:"
+      },
+      "fields": {
+        "percentage": "Percentuale di servizio (%)",
+        "hint": "Accetta valori decimali (es., 10.5). Massimo consentito: 100%."
+      },
+      "buttons": {
+        "restoreDefault": "Ripristina predefinito (10%)",
+        "removeFee": "Rimuovi costo",
+        "cancel": "Annulla",
+        "save": "Salva",
+        "saving": "Salvataggio..."
+      },
+      "success": {
+        "updated": "Costo del servizio aggiornato con successo.",
+        "reset": "Costo del servizio ripristinato al 10%.",
+        "removed": "Costo del servizio rimosso."
+      },
+      "error": {
+        "noRestaurant": "Ristorante non identificato.",
+        "invalidValue": "Inserisci una percentuale valida o usa 0 per rimuovere.",
+        "save": "Errore nel salvataggio del costo del servizio. Riprova.",
+        "load": "Impossibile caricare il costo del servizio. Usando il valore predefinito del 10%.",
+        "reset": "Impossibile ripristinare il costo del servizio.",
+        "remove": "Impossibile rimuovere il costo del servizio."
+      }
+    }
+  },
+  "components": {
+    "categoriaForm": {
+      "placeholder": "Nome della categoria (es., Pasta)",
+      "addButton": "Aggiungi"
+    },
+    "categoriasTable": {
+      "headers": {
+        "category": "Categoria",
+        "actions": "Azioni"
+      },
+      "loading": "Caricamento categorie...",
+      "empty": "Nessuna categoria registrata.",
+      "deleteButton": "Elimina",
+      "deleteTitle": "Elimina categoria"
+    },
+    "corInput": {
+      "label": "Colori del Brand",
+      "optional": "(Facoltativo)",
+      "placeholder": "Seleziona un colore",
+      "colors": {
+        "red": "Rosso",
+        "blue": "Blu",
+        "green": "Verde",
+        "orange": "Arancione",
+        "purple": "Viola"
+      }
+    },
+    "modalIntro": {
+      "title": "Prima di Iniziare,",
+      "subtitle": "dobbiamo solo impostare alcune configurazioni",
+      "description": "Completa le informazioni per continuare"
+    },
+    "restauranteImageUpload": {
+      "label": "Foto del Ristorante",
+      "optional": "(Facoltativo)"
+    },
+    "mesaActions": {
+      "downloadAll": "Scarica Tutti i Codici QR",
+      "success": "Download avviato!",
+      "error": "Errore nella generazione dei codici QR"
+    },
+    "mesaForm": {
+      "tableType": "Tipo di Tavolo",
+      "quantity": "Qtà",
+      "quantityPlaceholder": "0",
+      "includeButton": "Includi"
+    },
+    "mesaTable": {
+      "headers": {
+        "number": "Numero",
+        "tableType": "Tipo di Tavolo",
+        "actions": "Azioni"
+      },
+      "chairs": "Sedie",
+      "qrCode": "Codice QR",
+      "empty": "Nessun tavolo registrato.",
+      "loading": "Caricamento tavoli..."
+    },
+    "tableType": {
+      "label": "Tipo di Tavolo",
+      "placeholder": "Seleziona un tipo",
+      "options": {
+        "2": "2 Sedie",
+        "4": "4 Sedie",
+        "6": "6 Sedie",
+        "8": "8 Sedie",
+        "10": "10 Sedie",
+        "12": "12 Sedie"
+      }
+    }
+  }
+}

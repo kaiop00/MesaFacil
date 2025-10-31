@@ -1,0 +1,63 @@
+{
+  "title": "Promozioni",
+  "subtitle": "Gestisci le promozioni del tuo ristorante",
+  "newPromotion": "Nuova Promozione",
+  "loading": "Caricamento...",
+  "empty": {
+    "title": "Nessuna promozione registrata",
+    "subtitle": "Nessuna promozione attiva al momento, clicca su nuova promozione\nper aggiungerne una.",
+    "altText": "Nessuna promozione"
+  },
+  "card": {
+    "discount": "SCONTO"
+  },
+  "modal": {
+    "new": {
+      "title": "Nuova Promozione",
+      "subtitle": "Completa le informazioni per aggiungere"
+    },
+    "edit": {
+      "title": "Modifica Promozione",
+      "subtitle": "Aggiorna le informazioni della promozione"
+    },
+    "details": {
+      "title": "Dettagli Promozione"
+    }
+  },
+  "form": {
+    "name": "Nome della Promozione",
+    "namePlaceholder": "Es: Promozione Speciale",
+    "optional": "(Facoltativo)",
+    "required": "*",
+    "items": "Articoli",
+    "searchItems": "Cerca articoli...",
+    "noItemsFound": "Nessun articolo trovato",
+    "totalValue": "Valore Totale Articoli",
+    "promotionValue": "Valore Promozione",
+    "valuePlaceholder": "0.00",
+    "cancel": "Annulla",
+    "saving": "Salvataggio...",
+    "save": "Salva Promozione",
+    "updating": "Aggiornamento...",
+    "update": "Aggiorna Promozione"
+  },
+  "actions": {
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "deleteConfirm": "Sei sicuro di voler eliminare questa promozione?"
+  },
+  "messages": {
+    "createSuccess": "Promozione creata con successo!",
+    "createError": "Errore nella creazione della promozione",
+    "saveError": "Errore nel salvataggio della promozione. Riprova.",
+    "updateSuccess": "Promozione aggiornata con successo!",
+    "updateError": "Errore nell'aggiornamento della promozione. Riprova.",
+    "deleteSuccess": "Promozione eliminata con successo!",
+    "deleteError": "Errore nell'eliminazione della promozione",
+    "notAuthenticated": "Utente non autenticato. Effettua il login per creare una promozione.",
+    "addAtLeastOneItem": "Aggiungi almeno un articolo alla promozione",
+    "setValidValue": "Imposta un valore valido per la promozione",
+    "selectAtLeastOneItem": "Seleziona almeno un articolo del menù",
+    "valueGreaterThanZero": "Il valore della promozione deve essere maggiore di zero"
+  }
+}

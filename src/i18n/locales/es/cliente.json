@@ -1,0 +1,118 @@
+{
+  "mesa": {
+    "title": "Mesa",
+    "loading": "Cargando...",
+    "notFound": "Mesa no encontrada",
+    "callWaiter": "Llamar camarero",
+    "calling": "Llamando...",
+    "called": "Llamada enviada",
+    "callSuccess": "Llamada enviada. El camarero vendrá a su mesa en breve.",
+    "callError": "No se pudo llamar al camarero. Por favor, inténtelo de nuevo.",
+    "identifyError": "No se pudo identificar la mesa.",
+    "search": "Buscar"
+  },
+  "cardapio": {
+    "promotion": "OFERTA",
+    "save": "Ahorra",
+    "addToCart": "Agregar"
+  },
+  "itemModal": {
+    "allergies": "Alergias",
+    "add": "Agregar"
+  },
+  "sacola": {
+    "title": "Artículos",
+    "empty": "Tu bolsa está vacía. Agrega artículos del menú.",
+    "observations": "Observaciones",
+    "observationsPlaceholder": "Ej.: sin cebolla, punto de la carne...",
+    "confirmOrder": "Confirmar Pedido",
+    "orderSent": "Pedido enviado con éxito",
+    "orderError": "Error al enviar el pedido"
+  },
+  "pedido": {
+    "status": {
+      "none": "No hay pedido en curso",
+      "confirmed": "Pedido Confirmado, su pedido ha sido enviado a la cocina y será preparado en unos minutos",
+      "delivered": "Pedido entregado",
+      "payment": "Realice el pago para finalizar",
+      "waiterComing": "El camarero está en camino"
+    },
+    "deliveredMessage": "cuando termine de comer, haga clic en realizar pago",
+    "waiterOnWay": "El camarero está en camino",
+    "waiterHelp": "El camarero vendrá a su mesa para ayudar con el pago, por favor espere.",
+    "waiterSuccess": "Se ha llamado al camarero. Por favor, espere un momento.",
+    "waiterError": "No se pudo llamar al camarero. Por favor, inténtelo de nuevo."
+  },
+  "totalPedidos": {
+    "title": "Resumen de Pedidos",
+    "table": "Mesa",
+    "ordersRegistered": "Pedidos registrados",
+    "loading": "Cargando pedidos...",
+    "noOrders": "No se encontraron pedidos para esta mesa.",
+    "order": "Pedido",
+    "status": "Estado",
+    "createdAt": "Creado el",
+    "observations": "Observaciones",
+    "total": "Total",
+    "subtotal": "Valor sin cargo",
+    "serviceFee": "Cargo por servicio",
+    "serviceFeeWith": "Cargo por servicio",
+    "serviceFeeExempt": "Exento",
+    "totalWithFee": "Total con cargo",
+    "orderMore": "Pedir más",
+    "makePayment": "Realizar pago"
+  },
+  "payment": {
+    "title": "Realizar el Pago",
+    "subtitle": "Elija una opción para continuar",
+    "selectOption": "Seleccione un método de pago antes de continuar.",
+    "options": {
+      "pix": "PIX",
+      "pixDescription": "Pago instantáneo vía Código QR",
+      "waiter": "Llamar Camarero",
+      "waiterDescription": "El camarero vendrá a su mesa",
+      "waiterCalled": "Camarero ya solicitado"
+    },
+    "pix": {
+      "title": "Pago vía PIX",
+      "instructions": "Escanee el Código QR o copie el código a continuación",
+      "qrCode": "Código QR PIX",
+      "copyCode": "Copiar código PIX",
+      "copied": "¡Copiado!",
+      "loading": "Generando código PIX...",
+      "error": "Error al generar código PIX"
+    },
+    "actions": {
+      "continue": "Continuar",
+      "back": "Volver",
+      "callWaiter": "Llamar Camarero",
+      "waiterCalling": "Llamando...",
+      "waiterCalled": "Camarero Solicitado"
+    },
+    "summary": {
+      "title": "Resumen de la Compra",
+      "loading": "Cargando pedidos...",
+      "noItems": "No hay artículos disponibles para pago en este momento.",
+      "subtotal": "Valor sin cargo",
+      "serviceFee": "Cargo por servicio",
+      "totalWithFee": "Total con cargo"
+    },
+    "orderDetails": {
+      "title": "Detalles del Pedido",
+      "table": "Mesa",
+      "order": "Pedido",
+      "orderTotal": "Total del pedido"
+    }
+  },
+  "common": {
+    "table": "Mesa",
+    "order": "Pedido",
+    "total": "Total",
+    "loading": "Cargando...",
+    "error": "Error",
+    "back": "Volver",
+    "continue": "Continuar",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  }
+}

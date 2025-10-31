@@ -1,0 +1,17 @@
+{
+  "title": "Notifications",
+  "subtitle": "Notifications d'aujourd'hui seulement",
+  "noNotifications": "Aucune notification aujourd'hui.",
+  "read": "Lu",
+  "actions": "Actions",
+  "details": "Détails",
+  "markAsRead": "Marquer comme lu",
+  "marking": "Marquage…",
+  "markAllAsRead": "Tout marquer comme lu",
+  "table": "Table",
+  "requestedService": "service demandé",
+  "newOrder": "Nouvelle commande arrivée - Commande de la table",
+  "reason": "Raison",
+  "waiterCall": "Appel du serveur",
+  "alreadyRead": "Déjà lu"
+}

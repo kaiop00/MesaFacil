@@ -4,6 +4,9 @@ import LanguageDetector from "i18next-browser-languagedetector";
 
 import ptBRTranslations from "./locales/pt-BR";
 import enTranslations from "./locales/en";
+import esTranslations from "./locales/es";
+import itTranslations from "./locales/it";
+import frTranslations from "./locales/fr";
 
 const savedLanguage = localStorage.getItem('language');
 
@@ -17,6 +20,15 @@ i18n
       },
       "en": {
         ...enTranslations,
+      },
+      "es": {
+        ...esTranslations,
+      },
+      "it": {
+        ...itTranslations,
+      },
+      "fr": {
+        ...frTranslations,
       },
     },
     lng: savedLanguage || undefined,

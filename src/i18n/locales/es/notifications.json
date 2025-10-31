@@ -1,0 +1,17 @@
+{
+  "title": "Notificaciones",
+  "subtitle": "Solo las notificaciones de hoy",
+  "noNotifications": "No hay notificaciones hoy.",
+  "read": "Leído",
+  "actions": "Acciones",
+  "details": "Detalles",
+  "markAsRead": "Marcar como Leído",
+  "marking": "Marcando…",
+  "markAllAsRead": "Marcar Todas como Leídas",
+  "table": "Mesa",
+  "requestedService": "solicitó servicio",
+  "newOrder": "Nuevo pedido llegó - Pedido de la mesa",
+  "reason": "Motivo",
+  "waiterCall": "Llamada de camarero",
+  "alreadyRead": "Ya leído"
+}
