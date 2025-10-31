@@ -6,4 +6,4 @@ build:
   outputDirectory: dist
 
 run:
-  command: npx serve dist --listen ${PORT:-8080}
+  command: npx serve dist --listen tcp://0.0.0.0:${PORT:-8080} --single
