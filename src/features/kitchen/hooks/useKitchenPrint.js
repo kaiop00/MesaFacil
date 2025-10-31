@@ -95,62 +95,113 @@ export const useKitchenPrint = () => {
             <title>${t("print.windowTitle")}</title>
             <style>
               @page {
-                margin: 4mm;
                 size: 80mm auto;
+                margin: 0;
               }
+              :root {
+                color-scheme: light;
+              }
+              *,
+              *::before,
+              *::after {
+                box-sizing: border-box;
+              }
+              html,
               body {
-                font-family: 'Courier New', Courier, monospace;
-                font-size: 12px;
-                color: #1f2937;
+                width: 80mm;
+                max-width: 80mm;
                 margin: 0;
                 padding: 0;
+                background: #ffffff;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              body {
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                font-size: 3.6mm;
+                line-height: 1.35;
+                color: #1f2937;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
               }
               .ticket {
-                width: 100%;
+                width: 72mm;
                 max-width: 72mm;
-                margin: 0 auto;
-                padding: 8px 6px;
-                box-sizing: border-box;
+                margin: 0;
+                padding: 4mm 2mm;
               }
               .row {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                margin-bottom: 2px;
+                margin-bottom: 2mm;
                 white-space: pre-wrap;
                 word-break: break-word;
-                padding: 0 2px;
+                padding: 0;
+                break-inside: avoid;
+                page-break-inside: avoid;
               }
               .center {
                 justify-content: center;
                 text-align: center;
               }
               .divider {
-                border-top: 1px dashed #9ca3af;
-                margin: 4px 0;
+                border-top: 0.3mm dashed #9ca3af;
+                margin: 3mm 0;
               }
               .title {
-                font-weight: bold;
+                font-weight: 600;
                 text-transform: uppercase;
-                letter-spacing: 1px;
+                letter-spacing: 0.2mm;
+                font-size: 3.8mm;
+                margin-bottom: 1.2mm;
               }
               .item {
-                margin-bottom: 4px;
+                margin-bottom: 2.4mm;
+                break-inside: avoid;
+                page-break-inside: avoid;
               }
               .item-header {
-                font-weight: bold;
+                font-weight: 600;
+                font-size: 3.8mm;
               }
-              .item-sub {
-                font-size: 11px;
+              .item-sub,
+              .item-extra {
+                font-size: 3.3mm;
               }
               .item-extra {
-                font-size: 11px;
-                margin-left: 12px;
+                margin-left: 4mm;
               }
               .footer {
-                margin-top: 8px;
-                font-size: 11px;
+                margin-top: 3.5mm;
+                font-size: 3.3mm;
                 text-align: center;
+              }
+              @media print {
+                html,
+                body {
+                  width: 80mm;
+                  max-width: 80mm;
+                  margin: 0;
+                }
+                body {
+                  font-size: 3.6mm;
+                  line-height: 1.35;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: flex-start;
+                }
+                .ticket {
+                  width: 72mm;
+                  max-width: 72mm;
+                  padding: 4mm 2mm;
+                }
+                .row {
+                  margin-bottom: 2mm;
+                }
               }
             </style>
           </head>

@@ -59,7 +59,10 @@
     },
     "qrCode": {
       "title": "QRcode",
-      "subtitle": "QRcode da mesa {{number}}"
+      "subtitle": "QRcode da mesa {{number}}",
+      "tableLabel": "Mesa {{number}}",
+      "scanTitle": "Escaneie e peça agora",
+      "instructions": "Escaneie este QR Code para abrir o cardápio e fazer seu pedido."
     },
     "serviceFee": {
       "title": "Taxa de Serviço",
