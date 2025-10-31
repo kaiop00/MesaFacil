@@ -52,8 +52,11 @@
     "general": "General",
     "users": "Users",
     "menu": "Menu",
+    "inventory": "Inventory",
     "orders": "Orders",
-    "reports": "Reports"
+    "kitchen": "Kitchen",
+    "reports": "Reports",
+    "config": "Settings"
   },
   "permissionLabels": {
     "view_dashboard": "View Dashboard",
@@ -66,12 +69,20 @@
     "create_menu_items": "Add Items",
     "edit_menu_items": "Edit Items",
     "delete_menu_items": "Remove Items",
+    "view_inventory": "View Inventory",
+    "create_inventory": "Create Inventory Items",
+    "edit_inventory": "Edit Inventory",
+    "delete_inventory": "Delete from Inventory",
     "view_orders": "View Orders",
     "create_orders": "Create Orders",
     "edit_orders": "Edit Orders",
     "cancel_orders": "Cancel Orders",
+    "view_kitchen": "View Kitchen",
+    "manage_kitchen": "Manage Kitchen",
     "view_reports": "View Reports",
-    "export_reports": "Export Reports"
+    "export_reports": "Export Reports",
+    "view_config": "View Settings",
+    "edit_config": "Edit Settings"
   },
   "modal": {
     "new": {

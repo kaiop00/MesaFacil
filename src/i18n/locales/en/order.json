@@ -4,7 +4,9 @@
     "subtitle": "Manage your restaurant orders",
     "searchTables": "Search tables...",
     "loading": "Loading...",
-    "errorLoading": "Error loading data"
+    "errorLoading": "Error loading data",
+    "noPermission": "No Permission",
+    "noPermissionMessage": "You don't have permission to access orders. Please contact the administrator."
   },
   "tables": {
     "title": "Tables",

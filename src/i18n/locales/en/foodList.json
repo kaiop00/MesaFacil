@@ -9,7 +9,9 @@
     "categoriesError": "Error checking categories. Please try again.",
     "noItemsForPDF": "There are no menu items to generate the PDF.",
     "pdfSuccess": "Menu PDF generated successfully!",
-    "pdfError": "Error generating menu PDF."
+    "pdfError": "Error generating menu PDF.",
+    "noPermission": "No Permission",
+    "noPermissionMessage": "You don't have permission to access the menu. Please contact the administrator."
   },
   "search": {
     "placeholder": "Search for the menu item you want to find"
