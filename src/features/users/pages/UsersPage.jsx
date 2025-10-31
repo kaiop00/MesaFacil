@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import CardHeader from "@/components/CardHeader";
 import UserListTable from "@/features/users/components/UserListTable";
 import NewUserModal from "@/features/users/components/modals/NewUserModal";
@@ -13,7 +14,8 @@ import { db } from "@/config/firebaseConfig";
 
 const UsersPage = () => {
   const { t } = useTranslation();
-  const { idRestaurante, role } = useAuth();
+  const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -103,7 +105,7 @@ const UsersPage = () => {
 
   return (
     <div className="mt-10 mb-10">
-      {(role.create_users || role === "admin") && <CardHeader
+      {hasPermission('create_users') && <CardHeader
         title={t("users:title")}
         subtitle={t("users:subtitle")}
         onNewClick={handleNew}

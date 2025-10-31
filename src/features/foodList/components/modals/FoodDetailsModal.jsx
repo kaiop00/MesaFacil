@@ -5,6 +5,7 @@ import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import EditFoodIngredientsModal from "./EditFoodIngredientsModal";
 import EditFoodModal from "./EditFoodModal";
 import { useIngredientes } from "@/hooks/useIngredientes";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useFoodService } from "@/features/foodList/hooks/useFoodService";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
 import { useToast } from "@/hooks/useToast";
@@ -12,6 +13,7 @@ import { pluralizeUnit } from "@/services/utils/unitConversionService";
 
 const FoodDetailsModal = ({ isOpen, onClose, food }) => {
     const { t } = useTranslation('foodList');
+    const { hasPermission } = usePermissions();
     const [isIngredientsModalOpen, setIsIngredientsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [savingItem, setSavingItem] = useState(false);
@@ -165,13 +167,15 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                                     <p><strong>{t('modals.itemDetails.fields.allergies')}:</strong> {foodData.alergias.join(", ")}</p>
                                 )}
                             </div>
-                            <button
-                                onClick={() => setIsEditModalOpen(true)}
-                                className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-md hover:bg-blue-50"
-                            >
-                                <EditPencil01 className="w-3 h-3 mr-1" />
-                                {t('modals.itemDetails.editItemButton')}
-                            </button>
+                            {hasPermission('edit_menu_items') && (
+                              <button
+                                  onClick={() => setIsEditModalOpen(true)}
+                                  className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-md hover:bg-blue-50"
+                              >
+                                  <EditPencil01 className="w-3 h-3 mr-1" />
+                                  {t('modals.itemDetails.editItemButton')}
+                              </button>
+                            )}
                         </div>
                         {(!foodData.descricao || foodData.descricao.trim() === "") && (
                             <p className="text-xs text-gray-500">{t('modals.itemDetails.noDescription')}</p>
@@ -186,13 +190,15 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                             <DownloadPackage className="w-4 h-4 mr-2 text-blue-600" />
                             {t('modals.itemDetails.fields.ingredients')}
                         </h3>
-                        <button
-                            onClick={handleEditIngredients}
-                            className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-md hover:bg-blue-50"
-                        >
-                            <EditPencil01 className="w-3 h-3 mr-1" />
-                            {t('modals.itemDetails.editIngredientsButton')}
-                        </button>
+                        {hasPermission('edit_menu_items') && (
+                          <button
+                              onClick={handleEditIngredients}
+                              className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-md hover:bg-blue-50"
+                          >
+                              <EditPencil01 className="w-3 h-3 mr-1" />
+                              {t('modals.itemDetails.editIngredientsButton')}
+                          </button>
+                        )}
                     </div>
 
                     {loadingIngredientes ? (
@@ -225,14 +231,16 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                 </div>
             </div>
             <div className="font-inter flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <button
-                    onClick={handleDeleteItem}
-                    disabled={deletingItem || savingItem}
-                    className="flex items-center gap-2 px-4 py-2 rounded border border-red-200 text-red-600 font-semibold hover:bg-red-50 disabled:opacity-60"
-                >
-                    <TrashFull className="w-4 h-4" />
-                    {deletingItem ? t('modals.itemDetails.deleting') : t('modals.itemDetails.deleteButton')}
-                </button>
+                {hasPermission('delete_menu_items') && (
+                  <button
+                      onClick={handleDeleteItem}
+                      disabled={deletingItem || savingItem}
+                      className="flex items-center gap-2 px-4 py-2 rounded border border-red-200 text-red-600 font-semibold hover:bg-red-50 disabled:opacity-60"
+                  >
+                      <TrashFull className="w-4 h-4" />
+                      {deletingItem ? t('modals.itemDetails.deleting') : t('modals.itemDetails.deleteButton')}
+                  </button>
+                )}
                 <button
                     onClick={onClose}
                     disabled={deletingItem}

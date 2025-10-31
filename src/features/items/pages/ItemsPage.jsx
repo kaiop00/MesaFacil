@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { create, getAll, update, remove } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
 import { SearchMagnifyingGlass } from "react-coolicons";
@@ -12,6 +13,7 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 const ItemsPage = () => {
   const { t } = useTranslation("items");
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -82,6 +84,11 @@ const ItemsPage = () => {
   };
 
   const handleDeleteItem = async (item) => {
+    if (!hasPermission('delete_menu_items')) {
+      alert(t("page.noPermission"));
+      return;
+    }
+    
     if (window.confirm(t("page.deleteConfirm", { itemName: item.nome }))) {
       try {
         // Delete from Firestore
@@ -149,12 +156,27 @@ const ItemsPage = () => {
     currentPage * itemsPerPage
   );
 
+  if (!hasPermission('view_inventory')) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {t("page.noPermission")}
+          </h2>
+          <p className="text-gray-600">
+            {t("page.noPermissionMessage")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-10 space-y-6">
       <CardHeader
         title={t("page.title")}
         subtitle={t("page.subtitle")}
-        onNewClick={handleNewItem}
+        onNewClick={hasPermission('create_inventory') ? handleNewItem : undefined}
         buttonTitle={t("page.newButton")}
       />
 

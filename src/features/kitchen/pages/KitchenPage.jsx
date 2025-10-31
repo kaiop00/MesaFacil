@@ -3,6 +3,7 @@ import CardHeader from "@/components/CardHeader";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/useToast";
 import KitchenOrderCard from "@/features/kitchen/components/KitchenOrderCard";
 import { useKitchenOrders } from "@/features/kitchen/hooks/useKitchenOrders";
@@ -13,6 +14,7 @@ const KitchenPage = () => {
   const { t } = useTranslation("kitchen");
   const { notify } = useToast();
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const { orders, loading, error, refetch } = useKitchenOrders(idRestaurante);
   const { printOrder } = useKitchenPrint();
   const [finalizingId, setFinalizingId] = useState(null);
@@ -34,6 +36,21 @@ const KitchenPage = () => {
       setFinalizingId(null);
     }
   };
+
+  if (!hasPermission('view_kitchen')) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {t("page.noPermission")}
+          </h2>
+          <p className="text-gray-600">
+            {t("page.noPermissionMessage")}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-24 space-y-8 px-4 sm:px-6 md:px-8 max-w-7xl mx-auto">

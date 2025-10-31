@@ -1,9 +1,11 @@
 import { MoreHorizontal, MagnifyingGlassPlus, EditPencil01, CloseLg, Check } from "react-coolicons";
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, onActivateClick }) => {
   const { t } = useTranslation();
+  const { hasPermission } = usePermissions();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -80,38 +82,44 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
                 {t("users:actions.label")}
               </p>
 
-              <button
-                onClick={(e) => handleAction(e, 'details')}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <MagnifyingGlassPlus className="w-4 h-4 mr-2 text-gray-500" />
-                {t("users:actions.details")}
-              </button>
+              {hasPermission('view_users') && (
+                <button
+                  onClick={(e) => handleAction(e, 'details')}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <MagnifyingGlassPlus className="w-4 h-4 mr-2 text-gray-500" />
+                  {t("users:actions.details")}
+                </button>
+              )}
 
-              <button
-                onClick={(e) => handleAction(e, 'edit')}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <EditPencil01 className="w-4 h-4 mr-2 text-gray-500" />
-                {t("users:actions.edit")}
-              </button>
+              {hasPermission('edit_users') && (
+                <button
+                  onClick={(e) => handleAction(e, 'edit')}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <EditPencil01 className="w-4 h-4 mr-2 text-gray-500" />
+                  {t("users:actions.edit")}
+                </button>
+              )}
 
-              <button
-                onClick={(e) => handleAction(e, 'toggleStatus')}
-                className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50"
-              >
-                {user.status === 'Ativo' ? (
-                  <>
-                    <CloseLg className="w-4 h-4 mr-2 text-red-500" />
-                    <span className="text-red-500">{t("users:actions.deactivate")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    <span className="text-green-500">{t("users:actions.activate")}</span>
-                  </>
-                )}
-              </button>
+              {hasPermission('delete_users') && (
+                <button
+                  onClick={(e) => handleAction(e, 'toggleStatus')}
+                  className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50"
+                >
+                  {user.status === 'Ativo' ? (
+                    <>
+                      <CloseLg className="w-4 h-4 mr-2 text-red-500" />
+                      <span className="text-red-500">{t("users:actions.deactivate")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2 text-green-500" />
+                      <span className="text-green-500">{t("users:actions.activate")}</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </menu>
         )}

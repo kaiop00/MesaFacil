@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { getAll, create, update, remove } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
 import MovementsTable from "../components/MovementsTable";
@@ -11,6 +12,7 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 const MovementsPage = () => {
   const { t } = useTranslation("movements");
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const [allMovements, setAllMovements] = useState([]);
   const [movements, setMovements] = useState([]);
   const [items, setItems] = useState([]);
@@ -106,6 +108,11 @@ const MovementsPage = () => {
   };
 
   const handleDelete = async (movement) => {
+    if (!hasPermission('delete_menu_items')) {
+      alert(t("page.noPermission"));
+      return;
+    }
+    
     if (
       window.confirm(
         t("page.deleteConfirm", { itemName: movement.itemNome }),
@@ -250,6 +257,21 @@ const MovementsPage = () => {
     setSelectedMovement(movement);
     setIsFormModalOpen(true);
   };
+
+  if (!hasPermission('view_inventory')) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {t("page.noPermission")}
+          </h2>
+          <p className="text-gray-600">
+            {t("page.noPermissionMessage")}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-10 space-y-6">
