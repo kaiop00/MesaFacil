@@ -6,7 +6,7 @@ build:
   outputDirectory: dist
 
 run:
-  command: node server.mjs ${PORT:-8080}
+  command: node dist/server.mjs ${PORT:-8080}
 env:
   - variable: VITE_FIREBASE_API_KEY
     secret: VITE_FIREBASE_API_KEY
