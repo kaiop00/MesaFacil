@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { AplicaCorDoSistema } from "@/components/AplicaCorDoSistema";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useTables } from "@/features/config/hooks/useTables";
 import { getTableStatsOptimized, getMonthlySalesData, getTopSellingProducts } from "../services/mesas";
 import { useEffect, useState } from "react";
@@ -42,6 +43,7 @@ ChartJS.register(
 const DashboardPage = () => {
   const { t } = useTranslation("dashboard");
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const { mesasAndamento, tables } = useTables(idRestaurante);
 
   // Helper function to format service time
@@ -185,6 +187,21 @@ const DashboardPage = () => {
   const formatCurrency = (value) => {
     return `R$ ${value.toFixed(2).replace(".", ",")}`;
   };
+
+  if (!hasPermission('view_dashboard')) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {t("noPermission")}
+          </h2>
+          <p className="text-gray-600">
+            {t("noPermissionMessage")}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

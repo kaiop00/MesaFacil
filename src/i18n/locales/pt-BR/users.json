@@ -52,8 +52,11 @@
     "general": "Geral",
     "users": "Usuários",
     "menu": "Cardápio",
+    "inventory": "Estoque",
     "orders": "Pedidos",
-    "reports": "Relatórios"
+    "kitchen": "Cozinha",
+    "reports": "Relatórios",
+    "config": "Configurações"
   },
   "permissionLabels": {
     "view_dashboard": "Visualizar Painel",
@@ -66,12 +69,20 @@
     "create_menu_items": "Adicionar Itens",
     "edit_menu_items": "Editar Itens",
     "delete_menu_items": "Remover Itens",
+    "view_inventory": "Visualizar Estoque",
+    "create_inventory": "Criar Itens de Estoque",
+    "edit_inventory": "Editar Estoque",
+    "delete_inventory": "Excluir do Estoque",
     "view_orders": "Visualizar Pedidos",
     "create_orders": "Criar Pedidos",
     "edit_orders": "Editar Pedidos",
     "cancel_orders": "Cancelar Pedidos",
+    "view_kitchen": "Visualizar Cozinha",
+    "manage_kitchen": "Gerenciar Cozinha",
     "view_reports": "Visualizar Relatórios",
-    "export_reports": "Exportar Relatórios"
+    "export_reports": "Exportar Relatórios",
+    "view_config": "Visualizar Configurações",
+    "edit_config": "Editar Configurações"
   },
   "modal": {
     "new": {

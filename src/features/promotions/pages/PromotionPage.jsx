@@ -7,6 +7,7 @@ import NewPromotionModal from "@/features/promotions/components/modals/NewPromot
 import EditPromotionModal from "@/features/promotions/components/modals/EditPromotionModal";
 import PromotionDetailsModal from "@/features/promotions/components/modals/PromotionDetailsModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { create, getAll, remove, update } from "@/services/firebase/firestoreService";
 import { useToast } from "@/hooks/useToast";
 
@@ -20,6 +21,7 @@ const PromotionPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const { notify } = useToast();
 
   useEffect(() => {
@@ -116,12 +118,14 @@ const PromotionPage = () => {
 
   return (
     <div className="sm:px-6 md:px-8 mt-10 mb-10 space-y-10">
-      <CardHeader
-        title={t("promotions:title")}
-        subtitle={t("promotions:subtitle")}
-        onNewClick={handleNew}
-        buttonTitle={t("promotions:newPromotion")}
-      />
+      {hasPermission('create_menu_items') && (
+        <CardHeader
+          title={t("promotions:title")}
+          subtitle={t("promotions:subtitle")}
+          onNewClick={handleNew}
+          buttonTitle={t("promotions:newPromotion")}
+        />
+      )}
 
       {loading
         ? (<div className="flex justify-center items-center h-64">{t("promotions:loading")}</div>)

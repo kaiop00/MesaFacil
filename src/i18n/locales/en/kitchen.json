@@ -3,7 +3,9 @@
     "title": "Kitchen",
     "subtitle": "Monitor and finish pending orders",
     "refresh": "Refresh list",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "noPermission": "No Permission",
+    "noPermissionMessage": "You don't have permission to access the kitchen. Please contact the administrator."
   },
   "states": {
     "loading": "Loading orders...",
