@@ -1,0 +1,125 @@
+{
+  "title": "Utenti",
+  "subtitle": "Gestisci gli utenti del tuo ristorante.",
+  "newUser": "Nuovo Utente",
+  "searchPlaceholder": "Cerca per nome o email",
+  "noUsersFound": "Nessun utente trovato",
+  "loading": "Caricamento...",
+  "name": "Nome",
+  "email": "Email",
+  "status": "Stato",
+  "active": "Attivo",
+  "inactive": "Inattivo",
+  "page": "Pagina",
+  "of": "di",
+  "show": "Mostra",
+  "lines": "Righe",
+  "records": "Record",
+  "actions": {
+    "label": "Azioni",
+    "details": "Dettagli",
+    "edit": "Modifica",
+    "deactivate": "Disattiva",
+    "activate": "Attiva"
+  },
+  "form": {
+    "name": "Nome",
+    "namePlaceholder": "Inserisci il nome completo",
+    "email": "Email",
+    "emailPlaceholder": "esempio@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "•••••••",
+    "permissions": "Permessi",
+    "selectAllPermissions": "Seleziona tutti i permessi",
+    "allowed": "Consentito",
+    "denied": "Negato",
+    "cancel": "Annulla",
+    "notInformed": "Non comunicato"
+  },
+  "tabs": {
+    "generalData": "Dati Generali",
+    "permissions": "Permessi"
+  },
+  "buttons": {
+    "cancel": "Annulla",
+    "back": "Indietro",
+    "next": "Avanti",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "close": "Chiudi"
+  },
+  "permissionCategories": {
+    "general": "Generale",
+    "users": "Utenti",
+    "menu": "Menù",
+    "inventory": "Inventario",
+    "orders": "Ordini",
+    "kitchen": "Cucina",
+    "reports": "Rapporti",
+    "config": "Impostazioni"
+  },
+  "permissionLabels": {
+    "view_dashboard": "Visualizza Pannello",
+    "edit_profile": "Modifica Profilo",
+    "view_users": "Visualizza Utenti",
+    "create_users": "Crea Utenti",
+    "edit_users": "Modifica Utenti",
+    "delete_users": "Elimina Utenti",
+    "view_menu": "Visualizza Menù",
+    "create_menu_items": "Aggiungi Articoli",
+    "edit_menu_items": "Modifica Articoli",
+    "delete_menu_items": "Rimuovi Articoli",
+    "view_inventory": "Visualizza Inventario",
+    "create_inventory": "Crea Articoli Inventario",
+    "edit_inventory": "Modifica Inventario",
+    "delete_inventory": "Elimina dall'Inventario",
+    "view_orders": "Visualizza Ordini",
+    "create_orders": "Crea Ordini",
+    "edit_orders": "Modifica Ordini",
+    "cancel_orders": "Annulla Ordini",
+    "view_kitchen": "Visualizza Cucina",
+    "manage_kitchen": "Gestisci Cucina",
+    "view_reports": "Visualizza Rapporti",
+    "export_reports": "Esporta Rapporti",
+    "view_config": "Visualizza Impostazioni",
+    "edit_config": "Modifica Impostazioni"
+  },
+  "modal": {
+    "new": {
+      "title": "Nuovo Utente",
+      "subtitle": "Completa le informazioni per aggiungere."
+    },
+    "edit": {
+      "title": "Modifica Utente",
+      "subtitle": "Aggiorna le informazioni dell'utente."
+    },
+    "details": {
+      "title": "Dettagli Utente"
+    },
+    "deactivate": {
+      "title": "Disattiva Utente",
+      "message": "Sei sicuro di voler disattivare l'utente",
+      "warning": "Questa azione non può essere annullata.",
+      "confirm": "Disattiva",
+      "processing": "Disattivazione..."
+    },
+    "activate": {
+      "title": "Attiva Utente",
+      "message": "Sei sicuro di voler attivare l'utente",
+      "info": "L'utente avrà nuovamente accesso al sistema.",
+      "confirm": "Attiva",
+      "processing": "Attivazione..."
+    }
+  },
+  "messages": {
+    "addSuccess": "Utente aggiunto con successo",
+    "updateSuccess": "Utente aggiornato con successo",
+    "deactivateSuccess": "Utente disattivato con successo!",
+    "activateSuccess": "Utente attivato con successo!",
+    "deactivateError": "Errore nella disattivazione dell'utente. Riprova.",
+    "activateError": "Errore nell'attivazione dell'utente. Riprova.",
+    "emailExists": "Email già registrata",
+    "error": "ID ristorante non trovato",
+    "userIdNotFound": "ID utente non trovato"
+  }
+}

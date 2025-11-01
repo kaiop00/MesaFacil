@@ -1,0 +1,55 @@
+{
+  "page": {
+    "title": "Cucina",
+    "subtitle": "Monitora e completa gli ordini in sospeso",
+    "refresh": "Aggiorna lista",
+    "tryAgain": "Riprova",
+    "noPermission": "Nessun Permesso",
+    "noPermissionMessage": "Non hai il permesso per accedere alla cucina. Contatta l'amministratore."
+  },
+  "states": {
+    "loading": "Caricamento ordini...",
+    "empty": "Nessun ordine in sospeso al momento."
+  },
+  "errors": {
+    "load": "Impossibile caricare gli ordini. Riprova."
+  },
+  "messages": {
+    "success": "Ordine completato con successo!",
+    "error": "Impossibile completare l'ordine."
+  },
+  "cards": {
+    "table": "Tavolo {{numero}}",
+    "orderedAt": "Ordine {{tempo}}",
+    "unknownTime": "Ora di creazione non disponibile",
+    "items": "Articoli",
+    "observations": "Note",
+    "noObservations": "Nessuna osservazione aggiunta",
+    "finish": "Completa",
+    "finalizing": "Completamento...",
+    "print": "Stampa"
+  },
+  "print": {
+    "windowTitle": "Stampa ordine",
+    "header": "Scontrino Cucina",
+    "ticketNumber": "Ordine #{{number}}",
+    "table": "Tavolo",
+    "createdAt": "Creato il",
+    "items": "Articoli",
+    "emptyItems": "Nessun articolo registrato.",
+    "ingredientsLabel": "Aggiunte",
+    "total": "Totale",
+    "observations": "Note",
+    "noObservations": "Nessuna osservazione aggiunta",
+    "footerThanks": "Grazie!",
+    "generatedAt": "Generato il {{date}}",
+    "unknownDate": "Data non disponibile"
+  },
+  "item": {
+    "unknown": "Articolo",
+    "labels": {
+      "ingredients": "Ingredienti"
+    },
+    "noDetails": "Nessuna informazione aggiuntiva."
+  }
+}

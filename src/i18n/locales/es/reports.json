@@ -1,0 +1,94 @@
+{
+  "page": {
+    "title": "Informes",
+    "subtitle": "Completa la información para generar el informe",
+    "loading": "Cargando mesas... Por favor, espera.",
+    "waitingTables": "Por favor, espera a que se carguen las mesas...",
+    "noTables": "No hay mesas disponibles para generar informes.",
+    "errorGenerate": "Error al generar el informe. Por favor, inténtalo de nuevo.",
+    "noPermission": "No tienes permiso para generar informes. Por favor, contacta al administrador."
+  },
+  "filter": {
+    "reportType": "Tipo de Informe",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
+    "selectReport": "Elige el tipo de informe que deseas",
+    "generateButton": "Generar Informe",
+    "generating": "Generando...",
+    "types": {
+      "sales": "Informe de Ventas",
+      "period": "Informe por Período",
+      "product": "Informe de Productos"
+    }
+  },
+  "table": {
+    "titles": {
+      "sales": "Informe de Ventas",
+      "period": "Informe por Período",
+      "product": "Informe de Productos", 
+      "waiter": "Informe de Camareros"
+    },
+    "period": "Período",
+    "from": "a",
+    "exportPDF": "Exportar PDF",
+    "exportPDFShort": "PDF",
+    "generatingPDF": "Generando PDF...",
+    "generatingPDFShort": "Generando...",
+    "pdfSuccess": "¡PDF generado con éxito!",
+    "pdfError": "Error al generar PDF. Por favor, inténtalo de nuevo.",
+    "noData": "No se encontraron datos para el período seleccionado"
+  },
+  "tables": {
+    "sales": {
+      "columns": {
+        "orderNumber": "Nº de Pedido",
+        "table": "Mesa",
+        "date": "Fecha",
+        "value": "Valor",
+        "status": "Estado"
+      },
+      "tablePrefix": "Mesa"
+    },
+    "period": {
+      "columns": {
+        "date": "Fecha",
+        "totalOrders": "Total de Pedidos",
+        "totalValue": "Valor Total"
+      }
+    },
+    "product": {
+      "columns": {
+        "product": "Producto",
+        "quantitySold": "Cantidad Vendida",
+        "totalValue": "Valor Total"
+      }
+    },
+    "waiter": {
+      "columns": {
+        "waiter": "Camarero",
+        "ordersAttended": "Pedidos Atendidos",
+        "totalValueGenerated": "Valor Total Generado"
+      }
+    }
+  },
+  "status": {
+    "finished": "Finalizado",
+    "pending": "Pendiente"
+  },
+  "pdf": {
+    "generatedAt": "Generado el",
+    "generatedBy": "Generado por MesaFácil - Sistema de Gestión de Restaurantes",
+    "page": "Página",
+    "of": "de",
+    "summary": {
+      "totalOrders": "Total de Pedidos",
+      "totalValue": "Valor Total",
+      "totalOrdersPeriod": "Total de Pedidos en el Período",
+      "totalValuePeriod": "Valor Total en el Período",
+      "totalProductsSold": "Total de Productos Vendidos",
+      "totalValueProducts": "Valor Total en Productos",
+      "totalOrdersAttended": "Total de Pedidos Atendidos",
+      "totalValueWaiters": "Valor Total Generado por Camareros"
+    }
+  }
+}

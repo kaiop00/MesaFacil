@@ -1,0 +1,48 @@
+{
+  "send": "Envoyer",
+  "cancel": "Annuler",
+  "save": "Enregistrer",
+  "close": "Fermer",
+  "confirm": "Confirmer",
+  "header": {
+    "settings": "Paramètres",
+    "tables": "Tables",
+    "photoColors": "Photo/Couleurs",
+    "categories": "Catégories",
+    "language": "Langue",
+    "logout": "Déconnexion",
+    "serviceFee": "Frais de service"
+  },
+  "languages": {
+    "pt-BR": "Português",
+    "en": "English",
+    "es": "Español",
+    "it": "Italiano",
+    "fr": "Français"
+  },
+  "sidebar": {
+    "dashboard": "Tableau de bord",
+    "orders": "Commandes",
+    "kitchen": "Cuisine",
+    "menu": "Menu",
+    "reports": "Rapports",
+    "promotions": "Promotions",
+    "items": "Articles",
+    "movements": "Mouvements",
+    "users": "Utilisateurs"
+  },
+  "stock": {
+    "impact": "Impact sur le stock",
+    "hide": "Masquer",
+    "details": "Détails",
+    "calculating": "Calcul de l'impact sur le stock...",
+    "noItems": "Aucun article de cette commande n'a d'ingrédients configurés.",
+    "willConsume": "Cette commande consommera",
+    "ingredient": "ingrédient",
+    "ingredients": "ingrédients",
+    "fromStock": "du stock :",
+    "andMore": "... et plus",
+    "detailsByDish": "Détails par plat :",
+    "total": "Total"
+  }
+}

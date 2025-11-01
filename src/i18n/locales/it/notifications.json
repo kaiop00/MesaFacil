@@ -1,0 +1,17 @@
+{
+  "title": "Notifiche",
+  "subtitle": "Solo le notifiche di oggi",
+  "noNotifications": "Nessuna notifica oggi.",
+  "read": "Letto",
+  "actions": "Azioni",
+  "details": "Dettagli",
+  "markAsRead": "Segna come Letto",
+  "marking": "Marcatura…",
+  "markAllAsRead": "Segna Tutte come Lette",
+  "table": "Tavolo",
+  "requestedService": "ha richiesto servizio",
+  "newOrder": "Nuovo ordine arrivato - Ordine dal tavolo",
+  "reason": "Motivo",
+  "waiterCall": "Chiamata cameriere",
+  "alreadyRead": "Già letto"
+}

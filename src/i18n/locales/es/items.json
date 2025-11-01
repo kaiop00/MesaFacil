@@ -1,0 +1,124 @@
+{
+  "page": {
+    "title": "Artículos",
+    "subtitle": "Administra los artículos de tu restaurante",
+    "newButton": "Nuevo Artículo",
+    "loading": "Cargando...",
+    "errorLoading": "Error al cargar artículos. Por favor, inténtalo de nuevo.",
+    "searchPlaceholder": "Buscar por nombre o marca",
+    "searchLabel": "Busca el artículo que deseas encontrar",
+    "deleteConfirm": "¿Estás seguro de que deseas eliminar el artículo \"{itemName}\"?",
+    "noItemsFound": "No se encontraron artículos",
+    "noPermission": "No tienes permiso para realizar esta acción.",
+    "noPermissionMessage": "No tienes permiso para acceder al inventario. Por favor, contacta al administrador."
+  },
+  "table": {
+    "columns": {
+      "name": "Nombre",
+      "brand": "Marca",
+      "stock": "Stock"
+    },
+    "actions": {
+      "view": "Ver",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "pagination": {
+      "page": "Página",
+      "of": "de",
+      "show": "Mostrar",
+      "lines": "Líneas",
+      "records": "Registros"
+    },
+    "stockStatus": {
+      "low": "Stock bajo",
+      "medium": "Stock medio",
+      "high": "Stock alto"
+    },
+    "noBrand": "-"
+  },
+  "form": {
+    "titleCreate": "Nuevo Artículo",
+    "titleEdit": "Editar Artículo",
+    "subtitleCreate": "Completa la información para agregar",
+    "subtitleEdit": "Completa la información para editar",
+    "fields": {
+      "name": "Nombre",
+      "namePlaceholder": "Nombre del artículo",
+      "nameRequired": "El nombre del artículo es obligatorio",
+      "brand": "Marca",
+      "brandPlaceholder": "Marca del artículo",
+      "storageUnit": "Unidad de Almacenamiento",
+      "purchaseUnit": "Unidad de Compra",
+      "currentStock": "Stock Actual",
+      "currentStockPlaceholder": "Cantidad en stock",
+      "currentStockRequired": "El stock actual es obligatorio",
+      "currentStockInvalid": "Stock inválido",
+      "lowStock": "Stock Bajo",
+      "mediumStock": "Stock Medio",
+      "highStock": "Stock Alto"
+    },
+    "units": {
+      "storage": {
+        "unidade": "Unidad",
+        "quilograma": "Kilogramo",
+        "grama": "Gramo",
+        "litro": "Litro",
+        "mililitro": "Mililitro"
+      },
+      "purchase": {
+        "unidade": "Unidad",
+        "caixa": "Caja",
+        "pacote": "Paquete",
+        "fardo": "Bulto"
+      }
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    },
+    "required": "*"
+  },
+  "details": {
+    "title": "Detalles del Artículo",
+    "subtitle": "Lista de datos del artículo registrado",
+    "sections": {
+      "basicInfo": "Información Básica",
+      "units": "Unidades",
+      "stock": "Stock",
+      "consumption": "Consumo de Pedidos",
+      "recentMovements": "Movimientos Recientes"
+    },
+    "fields": {
+      "name": "Nombre",
+      "brand": "Marca",
+      "storageUnit": "Unidad de Almacenamiento",
+      "purchaseUnit": "Unidad de Compra",
+      "currentStock": "Stock Actual",
+      "lowStock": "Stock Bajo",
+      "mediumStock": "Stock Medio",
+      "highStock": "Stock Alto"
+    },
+    "stockStatus": {
+      "low": "Bajo",
+      "medium": "Medio",
+      "high": "Alto",
+      "veryHigh": "Muy Alto"
+    },
+    "consumption": {
+      "totalConsumed": "Total Consumido",
+      "movements": "Movimientos"
+    },
+    "movements": {
+      "loading": "Cargando...",
+      "noMovements": "No se encontraron movimientos",
+      "balance": "Saldo",
+      "order": "Pedido",
+      "noDate": "Fecha no informada"
+    },
+    "actions": {
+      "close": "Cerrar"
+    },
+    "defaultValue": "-"
+  }
+}

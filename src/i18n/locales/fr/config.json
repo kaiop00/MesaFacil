@@ -1,0 +1,171 @@
+{
+  "modals": {
+    "categories": {
+      "title": "Catégories",
+      "subtitle": "Gérer les catégories de menu",
+      "success": {
+        "created": "Catégorie créée avec succès",
+        "deleted": "Catégorie supprimée avec succès"
+      },
+      "error": {
+        "create": "Erreur lors de la création de la catégorie",
+        "delete": "Erreur lors de la suppression de la catégorie"
+      }
+    },
+    "colors": {
+      "title": "Couleurs",
+      "subtitle": "Gérer les paramètres de couleur",
+      "intro": {
+        "title": "Personnalisez votre marque",
+        "description": "Choisissez la couleur principale et ajoutez le logo de votre restaurant"
+      },
+      "fields": {
+        "restaurantImage": "Image du restaurant",
+        "baseColor": "Couleur de base",
+        "uploadImage": "Télécharger l'image",
+        "changeImage": "Changer l'image"
+      },
+      "buttons": {
+        "continue": "Continuer"
+      },
+      "success": "Enregistré avec succès",
+      "error": "Erreur lors de l'enregistrement"
+    },
+    "tables": {
+      "title": "Paramètres",
+      "subtitle": "Gérer les paramètres du système",
+      "form": {
+        "tableType": "Type de table",
+        "quantity": "Quantité",
+        "addButton": "Ajouter"
+      },
+      "actions": {
+        "generateQR": "Générer les QR Codes",
+        "printQR": "Imprimer les QR Codes"
+      },
+      "table": {
+        "number": "Numéro",
+        "type": "Type",
+        "actions": "Actions",
+        "delete": "Supprimer",
+        "viewQR": "Voir le QR Code",
+        "noTables": "Aucune table enregistrée"
+      },
+      "buttons": {
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement..."
+      }
+    },
+    "qrCode": {
+      "title": "QR Code",
+      "subtitle": "QR Code pour la table {{number}}",
+      "tableLabel": "Table {{number}}",
+      "scanTitle": "Scannez et commandez maintenant",
+      "instructions": "Scannez ce QR code pour ouvrir le menu et passer votre commande."
+    },
+    "serviceFee": {
+      "title": "Frais de service",
+      "subtitle": "Définir le pourcentage appliqué à la facture finale",
+      "info": {
+        "description": "Ce paramètre définit le montant qui sera ajouté comme frais de service à la facture finale du client. Si vous ne souhaitez pas facturer de frais, utilisez 0%.",
+        "currentValue": "Valeur actuelle :"
+      },
+      "fields": {
+        "percentage": "Pourcentage de service (%)",
+        "hint": "Accepte les valeurs décimales (par ex., 10.5). Maximum autorisé : 100%."
+      },
+      "buttons": {
+        "restoreDefault": "Restaurer par défaut (10%)",
+        "removeFee": "Supprimer les frais",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement..."
+      },
+      "success": {
+        "updated": "Frais de service mis à jour avec succès.",
+        "reset": "Frais de service réinitialisés à 10%.",
+        "removed": "Frais de service supprimés."
+      },
+      "error": {
+        "noRestaurant": "Restaurant non identifié.",
+        "invalidValue": "Entrez un pourcentage valide ou utilisez 0 pour supprimer.",
+        "save": "Erreur lors de l'enregistrement des frais de service. Veuillez réessayer.",
+        "load": "Impossible de charger les frais de service. Utilisation de la valeur par défaut de 10%.",
+        "reset": "Impossible de réinitialiser les frais de service.",
+        "remove": "Impossible de supprimer les frais de service."
+      }
+    }
+  },
+  "components": {
+    "categoriaForm": {
+      "placeholder": "Nom de la catégorie (par ex., Pâtes)",
+      "addButton": "Ajouter"
+    },
+    "categoriasTable": {
+      "headers": {
+        "category": "Catégorie",
+        "actions": "Actions"
+      },
+      "loading": "Chargement des catégories...",
+      "empty": "Aucune catégorie enregistrée.",
+      "deleteButton": "Supprimer",
+      "deleteTitle": "Supprimer la catégorie"
+    },
+    "corInput": {
+      "label": "Couleurs de la marque",
+      "optional": "(Optionnel)",
+      "placeholder": "Sélectionner une couleur",
+      "colors": {
+        "red": "Rouge",
+        "blue": "Bleu",
+        "green": "Vert",
+        "orange": "Orange",
+        "purple": "Violet"
+      }
+    },
+    "modalIntro": {
+      "title": "Avant de commencer,",
+      "subtitle": "nous devons juste définir quelques configurations",
+      "description": "Remplissez les informations pour continuer"
+    },
+    "restauranteImageUpload": {
+      "label": "Photo du restaurant",
+      "optional": "(Optionnel)"
+    },
+    "mesaActions": {
+      "downloadAll": "Télécharger tous les QR Codes",
+      "success": "Téléchargement commencé !",
+      "error": "Erreur lors de la génération des QR codes"
+    },
+    "mesaForm": {
+      "tableType": "Type de table",
+      "quantity": "Qté",
+      "quantityPlaceholder": "0",
+      "includeButton": "Inclure"
+    },
+    "mesaTable": {
+      "headers": {
+        "number": "Numéro",
+        "tableType": "Type de table",
+        "actions": "Actions"
+      },
+      "chairs": "Chaises",
+      "qrCode": "QR Code",
+      "empty": "Aucune table enregistrée.",
+      "loading": "Chargement des tables..."
+    },
+    "tableType": {
+      "label": "Type de table",
+      "placeholder": "Sélectionner un type",
+      "options": {
+        "2": "2 Chaises",
+        "4": "4 Chaises",
+        "6": "6 Chaises",
+        "8": "8 Chaises",
+        "10": "10 Chaises",
+        "12": "12 Chaises"
+      }
+    }
+  }
+}
