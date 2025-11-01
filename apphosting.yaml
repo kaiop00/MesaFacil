@@ -2,7 +2,7 @@ runConfig:
   region: us-east4
 
 build:
-  command: npm install && npm run build && cp scripts/serve-dist.mjs dist/server.mjs
+  command: npm install && npm run build
   outputDirectory: dist
 
 run:
