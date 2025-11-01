@@ -26,7 +26,7 @@ export default function LoginFormSection() {
         try {
             await loginWithEmail(email, senha);
             notify("Usuário logado!", "success");
-            navigate("/home");
+            navigate("/"); // Redireciona para "/" que será tratado pelo RedirectHandler
         } catch (error) {
             notify(translateFirebaseError(error), "error");
         } finally {

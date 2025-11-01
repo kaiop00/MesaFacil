@@ -12,6 +12,11 @@ import CategoriaConfigModal from "@/features/config/components/modals/Categorias
 import NotificationsModal from "@/features/notifications/components/NotificationsModal";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
+import PlanInfo from "@/components/PlanInfo";
+import PixConfigModal from "@/features/config/components/modals/PixConfigModal";
+import stripeService from "@/services/stripeService";
+import { useToast } from "@/hooks/useToast";
+import { getStripeCustomerId } from "@/services/firebase/restaurantService";
 
 const Header = () => {
   const { t, i18n } = useTranslation();
@@ -22,6 +27,7 @@ const Header = () => {
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
   const [isServiceFeeModalOpen, setIsServiceFeeModalOpen] = useState(false);
+  const [isPixConfigModalOpen, setIsPixConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -29,6 +35,7 @@ const Header = () => {
   const { idRestaurante } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
+  const { notify } = useToast();
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
 
@@ -36,6 +43,53 @@ const Header = () => {
     i18n.changeLanguage(lng);
     localStorage.setItem('language', lng);
     setIsLanguageDropdownOpen(false);
+  };
+
+  const handleBillingPortal = async () => {
+    try {
+      setIsDropdownOpen(false);
+      setIsSubMenuOpen(false);
+      
+      // Check if restaurant has Stripe customer ID
+      if (!idRestaurante) {
+        notify('ID do restaurante não encontrado.', 'error');
+        return;
+      }
+
+      // Get Stripe customer ID from restaurant document
+      const stripeCustomerId = await getStripeCustomerId(idRestaurante);
+
+      // Check if restaurant has a Stripe customer ID
+      if (!stripeCustomerId) {
+        notify('Você está no plano gratuito. Escolha um plano pago para continuar.', 'info');
+        navigate('/selecionar-plano');
+        return;
+      }
+
+      // Check if restaurant has an active subscription
+      try {
+        const subscriptionData = await stripeService.getCustomerSubscription(stripeCustomerId);
+        
+        if (!subscriptionData.subscription) {
+          // No subscription found, redirect to plan selection
+          notify('Você não possui uma assinatura ativa. Escolha um plano para continuar.', 'info');
+          navigate('/selecionar-plano');
+          return;
+        }
+
+        // Has subscription, redirect to billing portal
+        notify('Redirecionando para o portal de faturamento...', 'info');
+        await stripeService.redirectToBillingPortal(stripeCustomerId);
+      } catch (error) {
+        console.error('Erro ao verificar assinatura:', error);
+        // On error checking subscription, redirect to plan selection as fallback
+        notify('Redirecionando para seleção de planos...', 'info');
+        navigate('/selecionar-plano');
+      }
+    } catch (error) {
+      console.error('Erro ao acessar portal de faturamento:', error);
+      notify('Erro ao acessar o portal de faturamento. Tente novamente.', 'error');
+    }
   };
 
   useEffect(() => {
@@ -61,6 +115,10 @@ const Header = () => {
 
       {/* Ações à direita */}
       <div className="flex items-center space-x-4 sm:space-x-6">
+        {/* Informações do plano (oculto em mobile) */}
+        <div className="hidden lg:block">
+          <PlanInfo />
+        </div>
         {/* Language Selector */}
         <div className="relative" ref={languageDropdownRef}>
           <button
@@ -183,6 +241,16 @@ const Header = () => {
                     </button>
                     <button
                       onClick={() => {
+                        setIsPixConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      {t("common:header.pix")}
+                    </button>
+                    <button
+                      onClick={() => {
                         setIsColorsConfigModalOpen(true);
                         setIsDropdownOpen(false);
                         setIsSubMenuOpen(false);
@@ -210,6 +278,12 @@ const Header = () => {
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       {t("common:header.serviceFee", "Taxa de serviço")}
+                    </button>
+                    <button
+                      onClick={handleBillingPortal}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Gerenciar Assinatura
                     </button>
                   </div>
                 )}
@@ -249,6 +323,10 @@ const Header = () => {
           <ServiceFeeConfigModal
             isOpen={isServiceFeeModalOpen}
             onClose={() => setIsServiceFeeModalOpen(false)}
+          />
+          <PixConfigModal
+            isOpen={isPixConfigModalOpen}
+            onClose={() => setIsPixConfigModalOpen(false)}
           />
         </div>
       </div>

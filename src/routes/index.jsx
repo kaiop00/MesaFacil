@@ -2,12 +2,14 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 import PrivateRoute from "@/components/PrivateRoute";
+import RequireFeature from "@/components/RequireFeature";
 import RedirectHandler from "@/components/RedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 //Importação das páginas de erro
 import ErrorPage from "@/pages/ErrorPage";
 import NotFoundPage from "@/pages/NotFoundPage";
+import { FEATURE_FLAGS } from "@/constants/planFeatures";
 
 //Importação das páginas estáticas
 import PrivacyPage from "@/static/privacy/PrivacyPage";
@@ -18,6 +20,8 @@ import LoginPage from "@/features/auth/pages/login/LoginPage";
 import RegisterPage from "@/features/auth/pages/register/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
 import MainPage from "@/features/auth/pages/MainPage";
+import PlanSelectionPage from "@/features/auth/pages/planSelection/PlanSelectionPage";
+import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 
 
 // Importação das páginas privadas
@@ -69,6 +73,14 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
+    path: "/selecionar-plano",
+    element: <PlanSelectionPage />,
+  },
+  {
+    path: "/payment-success",
+    element: <PaymentSuccessPage />,
+  },
+  {
     path: "/politica-privacidade",
     element: <PrivacyPage />,
     errorElement: <ErrorPage />,
@@ -108,10 +120,71 @@ const router = createBrowserRouter([
           { path: "cozinha", element: <KitchenPage /> },
           { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
           { path: "relatorios", element: <ReportPage /> },
-          { path: "promocoes", element: <PromotionPage /> },
-          { path: "usuarios", element: <UsersPage /> },
-          { path: "itens", element: <ItemsPage /> },
-          { path: "movimentacao", element: <MovementsPage /> },
+          { 
+            path: "promocoes", 
+            element: <PromotionPage />  // Promoções disponíveis para todos os planos
+          },
+        { 
+          path: "usuarios", 
+          element: (
+            <RequireFeature
+              feature={FEATURE_FLAGS.EMPLOYEE_MANAGEMENT}
+              featureName="Gerenciamento de Funcionários"
+              requiredPlan="monthly"
+              description="Gerencie sua equipe com controle completo de permissões e acessos. Adicione funcionários, defina papéis e acompanhe atividades."
+              benefits={[
+                "Criação ilimitada de usuários",
+                "Controle granular de permissões",
+                "Diferentes papéis (admin, garçom, cozinha)",
+                "Histórico de atividades por usuário",
+                "Ativação e desativação de contas",
+                "Gerenciamento de senhas e acessos"
+              ]}
+            >
+              <UsersPage />
+            </RequireFeature>
+          )
+        },
+        { 
+          path: "itens", 
+          element: (
+              <RequireFeature
+                feature={FEATURE_FLAGS.INVENTORY_CONTROL}
+                featureName="Controle de Estoque"
+                requiredPlan="monthly"
+                description="Gerencie seu estoque de ingredientes e itens com precisão. Controle entradas, saídas e acompanhe o saldo em tempo real."
+                benefits={[
+                  "Cadastro ilimitado de itens e ingredientes",
+                  "Controle de estoque em tempo real",
+                  "Histórico completo de movimentações",
+                  "Alertas de estoque baixo",
+                  "Relatórios de consumo e desperdício"
+                ]}
+              >
+                <ItemsPage />
+              </RequireFeature>
+            )
+          },
+          { 
+            path: "movimentacao", 
+            element: (
+              <RequireFeature
+                feature={FEATURE_FLAGS.INVENTORY_CONTROL}
+                featureName="Movimentações de Estoque"
+                requiredPlan="monthly"
+                description="Registre e acompanhe todas as movimentações do seu estoque. Controle entradas, saídas e ajustes com histórico detalhado."
+                benefits={[
+                  "Registro de todas as entradas e saídas",
+                  "Histórico completo de movimentações",
+                  "Rastreabilidade de produtos",
+                  "Análise de consumo por período",
+                  "Identificação de perdas e desperdícios"
+                ]}
+              >
+                <MovementsPage />
+              </RequireFeature>
+            )
+          },
         ],
       }
     ]

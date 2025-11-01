@@ -2,15 +2,19 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebaseConfig";
+import stripeService from "@/services/stripeService";
+import { getStripeCustomerId } from "@/services/firebase/restaurantService";
 
 // ✅ Cria o contexto
 const AuthContext = createContext();
 
-// ✅ Provider que centraliza user, role, idRestaurante e loading
+// ✅ Provider que centraliza user, role, idRestaurante, plan e loading
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [idRestaurante, setIdRestaurante] = useState(null);
+  const [plan, setPlan] = useState(null);
+  const [stripeCustomerId, setStripeCustomerId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,15 +22,51 @@ export const AuthProvider = ({ children }) => {
       if (firebaseUser) {
         setUser(firebaseUser);
 
-        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        const data = userDoc.exists() ? userDoc.data() : {};
+        try {
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          const data = userDoc.exists() ? userDoc.data() : {};
 
-        setRole(data.role || "user");
-        setIdRestaurante(data.idRestaurante || null);
+          setRole(data.role || "user");
+          const restaurantId = data.idRestaurante || null;
+          setIdRestaurante(restaurantId);
+          
+          // Get Stripe Customer ID from restaurant document instead of user document
+          let customerId = null;
+          if (restaurantId) {
+            try {
+              customerId = await getStripeCustomerId(restaurantId);
+              setStripeCustomerId(customerId);
+            } catch (error) {
+              console.error("Error getting Stripe customer ID from restaurant:", error);
+            }
+          }
+
+          // Fetch plan from Stripe API instead of Firestore
+          if (customerId) {
+            try {
+              const planData = await stripeService.getCurrentPlan(customerId);
+              setPlan(planData);
+            } catch (error) {
+              console.error("Error fetching plan from Stripe:", error);
+              // Set free plan as fallback
+              setPlan({ planId: 'free', status: 'active', expiresAt: null });
+            }
+          } else {
+            // No Stripe customer, set free plan
+            setPlan({ planId: 'free', status: 'active', expiresAt: null });
+          }
+        } catch (error) {
+          console.error("Error loading user data:", error);
+          setRole("user");
+          setIdRestaurante(null);
+          setPlan({ planId: 'free', status: 'active', expiresAt: null });
+        }
       } else {
         setUser(null);
         setRole(null);
         setIdRestaurante(null);
+        setPlan(null);
+        setStripeCustomerId(null);
       }
       setLoading(false);
     });
@@ -35,7 +75,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, role, idRestaurante, loading }}>
+    <AuthContext.Provider value={{ user, role, idRestaurante, plan, stripeCustomerId, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );
