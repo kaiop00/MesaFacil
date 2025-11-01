@@ -6,7 +6,7 @@ build:
   outputDirectory: dist
 
 run:
-  command: node server.mjs
+  command: npm run start
 env:
   - variable: VITE_FIREBASE_API_KEY
     secret: VITE_FIREBASE_API_KEY
