@@ -1,6 +1,10 @@
-import { Printer } from "react-coolicons";
+import { Printer, Lock } from "react-coolicons";
 import { useTranslation } from "react-i18next";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { usePlan } from "@/contexts/PlanContext";
+import { PLAN_NAMES } from "@/constants/planFeatures";
+import { useState } from "react";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 const ReportFilter = ({
   reportType,
@@ -14,6 +18,30 @@ const ReportFilter = ({
   disabled = false
 }) => {
   const { t } = useTranslation('reports');
+  const { canGenerateReport } = usePlan();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [selectedLockedFeature, setSelectedLockedFeature] = useState(null);
+
+  // Define report types with their required features
+  const reportTypes = [
+    { value: 'vendas', label: t('filter.types.sales'), feature: 'daily_reports', plan: 'free' },
+    { value: 'periodo', label: t('filter.types.period'), feature: 'monthly_reports', plan: 'monthly' },
+    { value: 'produto', label: t('filter.types.product'), feature: 'monthly_reports', plan: 'monthly' },
+  ];
+
+  const handleReportTypeChange = (e) => {
+    const value = e.target.value;
+    const selectedReport = reportTypes.find(r => r.value === value);
+    
+    if (selectedReport && !canGenerateReport(selectedReport.feature)) {
+      setSelectedLockedFeature(selectedReport.feature);
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    setReportType(value);
+  };
+
   return (
     <div className="bg-white rounded-lg p-6 shadow-md w-full">
       <div className="space-y-6">
@@ -29,16 +57,25 @@ const ReportFilter = ({
             <select
               id="reportType"
               value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
+              onChange={handleReportTypeChange}
               disabled={disabled}
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="" disabled>
                 {t('filter.selectReport')}
               </option>
-              <option value="vendas">{t('filter.types.sales')}</option>
-              <option value="periodo">{t('filter.types.period')}</option>
-              <option value="produto">{t('filter.types.product')}</option>
+              {reportTypes.map((report) => {
+                const canAccess = canGenerateReport(report.feature);
+                return (
+                  <option 
+                    key={report.value}
+                    value={report.value}
+                    disabled={!canAccess}
+                  >
+                    {report.label} {!canAccess ? `🔒 (${PLAN_NAMES[report.plan]})` : ''}
+                  </option>
+                );
+              })}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -124,6 +161,15 @@ const ReportFilter = ({
           </button>
         </div>
       </div>
+
+      {/* Upgrade Prompt Modal */}
+      {showUpgradeModal && (
+        <UpgradePrompt
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          requiredFeature={selectedLockedFeature}
+        />
+      )}
     </div>
   );
 };

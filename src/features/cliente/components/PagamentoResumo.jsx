@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCliente } from "../context/ClienteContext";
 import { DEFAULT_SERVICE_FEE_PERCENT } from "../utils/pedidos";
 import PaymentSummary from "./PaymentSummary";
 import PaymentOptionSelector from "./PaymentOptionSelector";
+import PixPaymentCard from "./PixPaymentCard";
 import PaymentActions from "./PaymentActions";
+import { usePixPayment } from "../hooks/usePixPayment";
 import { useTranslation } from "react-i18next";
 
 export default function PagamentoResumo({
@@ -18,10 +20,20 @@ export default function PagamentoResumo({
     chamarGarcomLoading = false,
     garcomSolicitado = false,
     mesaNumero,
+    onConfirmarPix,
 }) {
     const { t } = useTranslation("cliente");
-    const { numero } = useCliente();
+    const { numero, idRestaurante } = useCliente();
     const mesaNumeroExibicao = mesaNumero || numero;
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [selectionError, setSelectionError] = useState(false);
+
+    const pix = usePixPayment({
+        enabled: selectedOption === "pix",
+        total: totalPedidos,
+        mesaNumero: mesaNumeroExibicao,
+        idRestaurante,
+    });
 
     const itensResumo = useMemo(() => {
         return pedidos.flatMap((pedido) => {
@@ -38,13 +50,37 @@ export default function PagamentoResumo({
         });
     }, [pedidos]);
 
-    const garcomDisabled = chamarGarcomLoading || garcomSolicitado;
-    const handleChamarGarcom = async () => {
-        if (garcomDisabled) return;
-        if (typeof onChamarGarcom === "function") {
-            await onChamarGarcom();
+    useEffect(() => {
+        if (garcomSolicitado) {
+            setSelectedOption("garcom");
+        }
+    }, [garcomSolicitado]);
+
+    const handleSelectOption = (id) => {
+        if (id === "garcom" && (garcomSolicitado || chamarGarcomLoading)) return;
+        setSelectedOption(id);
+        setSelectionError(false);
+    };
+
+    const handleContinuar = async () => {
+        if (!selectedOption) {
+            setSelectionError(true);
+            return;
+        }
+
+        if (selectedOption === "garcom") {
+            if (typeof onChamarGarcom === "function") {
+                await onChamarGarcom();
+            }
+            return;
+        }
+
+        if (selectedOption === "pix" && typeof onConfirmarPix === "function") {
+            onConfirmarPix();
         }
     };
+
+    const garcomDisabled = chamarGarcomLoading || garcomSolicitado;
 
     return (
         <div className="flex flex-col items-center mt-6 px-4 pb-6">
@@ -66,12 +102,26 @@ export default function PagamentoResumo({
                     />
 
                     <PaymentOptionSelector
+                        selectedOption={selectedOption}
+                        onSelect={handleSelectOption}
                         garcomDisabled={garcomDisabled}
                         garcomSolicitado={garcomSolicitado}
+                        showSelectionError={selectionError}
+                    />
+
+                    <PixPaymentCard
+                        visible={selectedOption === "pix"}
+                        loading={pix.loading}
+                        error={pix.error}
+                        qrCode={pix.qrCode}
+                        payload={pix.payload}
+                        copying={pix.copying}
+                        onCopy={pix.handleCopy}
                     />
 
                     <PaymentActions
-                        onContinuar={handleChamarGarcom}
+                        selectedOption={selectedOption}
+                        onContinuar={handleContinuar}
                         onVoltar={onVoltar}
                         garcomSolicitado={garcomSolicitado}
                         chamarGarcomLoading={chamarGarcomLoading}

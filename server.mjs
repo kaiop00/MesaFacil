@@ -29,6 +29,9 @@ const MIME_TYPES = {
   ".otf": "font/otf",
 };
 
+console.log("[serve-dist] Booting static server...");
+console.log(`[serve-dist] Root directory: ${ROOT_DIR}`);
+
 const envPort = process.env.PORT;
 const argPort = process.argv[2];
 const portRaw = typeof envPort === "string" && envPort ? envPort : argPort;
@@ -90,6 +93,30 @@ const server = createServer(async (req, res) => {
   res.end("Not found");
 });
 
-server.listen(port, "0.0.0.0", () => {
-  console.log(`[serve-dist] Listening on port ${port}`);
+const startServer = () => {
+  try {
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`[serve-dist] Listening on port ${port}`);
+    });
+  } catch (error) {
+    console.error("[serve-dist] Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+server.on("error", (error) => {
+  console.error("[serve-dist] Server emitted error:", error);
+  process.exit(1);
 });
+
+process.on("uncaughtException", (error) => {
+  console.error("[serve-dist] Uncaught exception:", error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[serve-dist] Unhandled rejection:", reason);
+  process.exit(1);
+});
+
+startServer();

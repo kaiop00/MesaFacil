@@ -50,6 +50,8 @@ async function criarOuAssociarRestaurante(nomeRestaurante) {
     cor_base: "#D9A23B",   
     imagem_restaurante: null, 
     taxa_servico: 10,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
     createdAt: serverTimestamp(),
   });
 

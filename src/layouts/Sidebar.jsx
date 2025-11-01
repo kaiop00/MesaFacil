@@ -12,10 +12,14 @@ import {
   Notebook,
   Slider01,
   Building03,
+  Lock,
 } from "react-coolicons";
+import { usePlan } from "@/contexts/PlanContext";
+import { FEATURE_FLAGS } from "@/constants/planFeatures";
 
 const Sidebar = () => {
   const { t } = useTranslation();
+  const { hasFeatureAccess } = usePlan();
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -28,19 +32,40 @@ const Sidebar = () => {
 
   const toggleSidebar = () => setIsOpen((open) => !open);
   const navLinks = [
-    { name: t("common:sidebar.dashboard"), icon: <House03 size={20} />, path: "/home" },
-    { name: t("common:sidebar.orders"), icon: <ListUnordered size={20} />, path: "/home/pedidos" },
-    { name: t("common:sidebar.kitchen"), icon: <Building03 size={20} />, path: "/home/cozinha" },
-    { name: t("common:sidebar.menu"), icon: <Coffee size={20} />, path: "/home/cardapio" },
+    { name: t("common:sidebar.dashboard"), icon: <House03 size={20} />, path: "/home", feature: null },
+    { name: t("common:sidebar.orders"), icon: <ListUnordered size={20} />, path: "/home/pedidos", feature: null },
+    { name: t("common:sidebar.kitchen"), icon: <Building03 size={20} />, path: "/home/cozinha", feature: null },
+    { name: t("common:sidebar.menu"), icon: <Coffee size={20} />, path: "/home/cardapio", feature: null },
     {
       name: t("common:sidebar.reports"),
       icon: <FileDocument size={20} />,
       path: "/home/relatorios",
+      feature: null
     },
-    { name: t("common:sidebar.promotions"), icon: <ArrowDownUp size={20} />, path: "/home/promocoes" },
-    { name: t("common:sidebar.items"), icon: <Notebook size={20} />, path: "/home/itens" },
-    { name: t("common:sidebar.movements"), icon: <Slider01 size={20} />, path: "/home/movimentacao" },
-    { name: t("common:sidebar.users"), icon: <Users size={20} />, path: "/home/usuarios" },
+    { 
+      name: t("common:sidebar.promotions"), 
+      icon: <ArrowDownUp size={20} />, 
+      path: "/home/promocoes",
+      feature: null  // Promoções disponíveis para todos os planos
+    },
+    { 
+      name: t("common:sidebar.items"), 
+      icon: <Notebook size={20} />, 
+      path: "/home/itens",
+      feature: FEATURE_FLAGS.INVENTORY_CONTROL
+    },
+    { 
+      name: t("common:sidebar.movements"), 
+      icon: <Slider01 size={20} />, 
+      path: "/home/movimentacao",
+      feature: FEATURE_FLAGS.INVENTORY_CONTROL
+    },
+    { 
+      name: t("common:sidebar.users"), 
+      icon: <Users size={20} />, 
+      path: "/home/usuarios",
+      feature: FEATURE_FLAGS.EMPLOYEE_MANAGEMENT
+    },
   ];
 
   return (
@@ -80,26 +105,34 @@ const Sidebar = () => {
         {/* Navigation links */}
         <nav className="mt-6">
           <ul className="space-y-2">
-            {navLinks.map((link) => (
-              <li key={link.path}>
-                <NavLink
-                  to={link.path}
-                  end={link.path === "/home"}
-                  className={({ isActive }) =>
-                    `flex items-center px-6 py-3 mx-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-all
-    ${isActive ? "bg-primary-dynamic-opacity text-amber-600 font-medium" : ""}`
-                  }
-                  onClick={() => {
-                    if (isMobile) setIsOpen(false);
-                  }}
-                >
-                  {link.icon}
-                  <span className="ml-3 truncate md:inline-block">
-                    {link.name}
-                  </span>
-                </NavLink>
-              </li>
-            ))}
+            {navLinks.map((link) => {
+              const isLocked = link.feature && !hasFeatureAccess(link.feature);
+              
+              return (
+                <li key={link.path}>
+                  <NavLink
+                    to={link.path}
+                    end={link.path === "/home"}
+                    className={({ isActive }) =>
+                      `flex items-center px-6 py-3 mx-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-all
+                      ${isActive ? "bg-primary-dynamic-opacity text-amber-600 font-medium" : ""}
+                      ${isLocked ? "opacity-60" : ""}`
+                    }
+                    onClick={() => {
+                      if (isMobile) setIsOpen(false);
+                    }}
+                  >
+                    {link.icon}
+                    <span className="ml-3 truncate md:inline-block flex-1">
+                      {link.name}
+                    </span>
+                    {isLocked && (
+                      <Lock size={16} className="ml-2 text-gray-400" />
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </nav>
       </aside>

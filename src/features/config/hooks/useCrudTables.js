@@ -3,13 +3,15 @@ import { useState, useEffect } from "react";
 import { getAll, create } from "@/services/firebase/firestoreService";
 import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { usePlan } from "@/contexts/PlanContext";
+import { serverTimestamp, updateDoc } from "firebase/firestore";
 import { remove } from "@/services/firebase/firestoreService";
 
 
 export const useCrudTables = ({ isOpen, onClose }) => {
     const { notify } = useToast();
     const { idRestaurante } = useAuth();
+    const { canAddTable } = usePlan();
     const [mesas, setMesas] = useState([]);
     const [loading, setLoading] = useState(false);
     const [tableType, setTableType] = useState(null);
@@ -49,11 +51,25 @@ export const useCrudTables = ({ isOpen, onClose }) => {
 
     useEffect(() => {
         if (isOpen) carregarMesas();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, idRestaurante]);
 
     const handleAdd = () => {
         if (!validateForm()) return;
+        
         const quantidade = Number(qtd);
+        const currentTableCount = mesas.length;
+        const futureCount = currentTableCount + quantidade;
+        
+        // Check if adding these tables would exceed the limit
+        if (!canAddTable(futureCount - 1)) {
+            notify(
+                "Você atingiu o limite de mesas do seu plano. Faça upgrade para adicionar mais mesas.",
+                "warning"
+            );
+            return;
+        }
+        
         const maiorNumero = mesas.length ? Math.max(...mesas.map((m) => m.numero)) : 0;
         const novasMesas = Array.from({ length: quantidade }, (_, i) => ({
             id: `nova-${Date.now()}-${i}`,

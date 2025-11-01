@@ -27,7 +27,7 @@ export default function CadastroFormSection() {
 
         setLoading(true);
         try {
-            const { user, idRestaurante } = await registerWithEmail(email, senha, nome);
+            const { idRestaurante } = await registerWithEmail(email, senha, nome);
 
             if (!idRestaurante) {
                 throw new Error("Falha ao associar restaurante.");
@@ -57,12 +57,11 @@ export default function CadastroFormSection() {
                     </p>
                     <button
                       onClick={() => {
-                        navigate('/home', {state : { idRestaurante } });
-                        window.location.reload();
+                        navigate('/selecionar-plano', {state : { idRestaurante } });
                       }}
                         className="w-full h-[44px] bg-[#F8912E] text-white rounded font-semibold font-inter transition hover:bg-orange-600"
                     >
-                        Ir para o painel
+                        Escolher Plano
                     </button>
                 </div>
 
