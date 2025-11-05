@@ -55,15 +55,30 @@ export const usePlanManagement = () => {
   // Save Stripe customer ID to restaurant document (only reference data)
   const setUserPlan = async (restaurantId, customerId, subscriptionId = null) => {
     try {
-      // Update restaurant document with Stripe references
-      await updateStripeData(restaurantId, customerId, subscriptionId);
-
-      // Fetch updated plan from Stripe
-      const plan = await stripeService.getCurrentPlan(customerId);
-      setCurrentPlan(plan);
-      setHasActivePlan(plan.status === 'active' || plan.status === 'trialing');
-      
-      return plan;
+      // If customerId is provided, update Stripe references
+      if (customerId) {
+        await updateStripeData(restaurantId, customerId, subscriptionId);
+        
+        // Fetch updated plan from Stripe
+        const plan = await stripeService.getCurrentPlan(customerId);
+        setCurrentPlan(plan);
+        setHasActivePlan(plan.status === 'active' || plan.status === 'trialing');
+        
+        return plan;
+      } else {
+        // For free plan (no customerId), set free plan directly
+        const freePlan = { 
+          planId: 'free', 
+          status: 'active', 
+          expiresAt: null,
+          stripeSubscriptionId: null,
+          stripePriceId: null
+        };
+        setCurrentPlan(freePlan);
+        setHasActivePlan(true);
+        
+        return freePlan;
+      }
     } catch (error) {
       console.error('Erro ao salvar referência do Stripe no restaurante:', error);
       throw error;
