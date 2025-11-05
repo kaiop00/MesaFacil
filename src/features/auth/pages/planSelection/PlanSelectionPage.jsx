@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import PlanCard from '../../components/PlanCard';
@@ -14,9 +14,11 @@ export default function PlanSelectionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const navigate = useNavigate();
-  const { user, idRestaurante, stripeCustomerId } = useAuth();
+  const location = useLocation();
+  const { user, idRestaurante, stripeCustomerId, loading } = useAuth();
   const { setUserPlan } = usePlanManagement();
   const { notify } = useToast();
+  const resolvedRestaurantId = idRestaurante || location.state?.idRestaurante;
 
   // Check if user has an existing subscription in Stripe
   useEffect(() => {
@@ -60,14 +62,16 @@ export default function PlanSelectionPage() {
   };
 
   const handleContinue = async () => {
-    if (!selectedPlan || !user || !idRestaurante) return;
+    if (!selectedPlan || !user || !resolvedRestaurantId) {
+      notify('Erro: dados de autenticação incompletos. Por favor, faça login novamente.', 'error');
+      return;
+    }
 
     setIsProcessing(true);
     
     try {
       if (selectedPlan.id === 'free') {
-        // Para plano gratuito, salva no Firestore e vai direto para o dashboard
-        await setUserPlan(idRestaurante, 'free');
+        await setUserPlan(resolvedRestaurantId, null, null);
         notify('Plano gratuito ativado com sucesso!', 'success');
         navigate('/home', { replace: true });
       } else {
@@ -77,7 +81,7 @@ export default function PlanSelectionPage() {
             selectedPlan.stripePriceId,
             user.email,
             {
-              idRestaurante: idRestaurante,
+              idRestaurante: resolvedRestaurantId,
               planId: selectedPlan.id,
               planName: selectedPlan.name,
               source: 'plan_selection'
@@ -97,12 +101,14 @@ export default function PlanSelectionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
-      {/* Show loading while checking for existing subscription */}
-      {isCheckingSubscription ? (
+      {/* Show loading while auth context is loading or checking subscription */}
+      {(loading || isCheckingSubscription) ? (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <LoadingSpinner size="lg" />
-            <p className="mt-4 text-gray-600">Verificando sua assinatura...</p>
+            <p className="mt-4 text-gray-600">
+              {loading ? 'Carregando dados do usuário...' : 'Verificando sua assinatura...'}
+            </p>
           </div>
         </div>
       ) : (
@@ -120,6 +126,17 @@ export default function PlanSelectionPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Título da seção */}
         <div className="text-center mb-12">
+          {/* Alert if no restaurant ID */}
+          {!resolvedRestaurantId && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto mb-8">
+              <p className="text-red-800">
+                <span className="font-semibold">⚠️ Erro ao carregar dados do restaurante</span>
+                <br />
+                Por favor, faça login novamente ou entre em contato com o suporte.
+              </p>
+            </div>
+          )}
+          
           {user && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto mb-8">
               <p className="text-blue-800">
