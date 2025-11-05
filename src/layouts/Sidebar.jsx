@@ -16,6 +16,7 @@ import {
 } from "react-coolicons";
 import { usePlan } from "@/contexts/PlanContext";
 import { FEATURE_FLAGS } from "@/constants/planFeatures";
+import mesafacil from "@/assets/mesafacil.png";
 
 const Sidebar = () => {
   const { t } = useTranslation();
@@ -99,7 +100,7 @@ const Sidebar = () => {
       >
         {/* Logo */}
         <Link href="/home">
-          <img src="/src/assets/mesafacil.png" alt="Logo" className="w-40 py-4 px-4 ml-4" />
+          <img src={mesafacil} alt="Logo" className="w-40 py-4 px-4 ml-4" />
         </Link>
 
         {/* Navigation links */}
