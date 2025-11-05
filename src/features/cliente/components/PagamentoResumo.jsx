@@ -64,8 +64,9 @@ export default function PagamentoResumo({
 
     const handleContinuar = async () => {
         if (!selectedOption) {
-            setSelectionError(true);
-            return;
+            // setSelectionError(true);
+            // return;
+            setSelectedOption("garcom");
         }
 
         if (selectedOption === "garcom") {
