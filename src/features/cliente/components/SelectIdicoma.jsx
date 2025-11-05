@@ -34,8 +34,8 @@ export default function SelectIdioma() {
         if (isEnglish) return "🇺🇸";
         if (isSpanish) return "🇪🇸";
         if (isItalian) return "🇮🇹";
-        if (isFrench) return "�🇷";
-        return "�🇧🇷";
+        if (isFrench) return "🇫🇷";
+        return "🇧🇷";
     };
 
     const getLanguageLabel = () => {
