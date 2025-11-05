@@ -63,13 +63,12 @@ export default function PagamentoResumo({
     };
 
     const handleContinuar = async () => {
-        if (!selectedOption) {
-            // setSelectionError(true);
-            // return;
-            setSelectedOption("garcom");
-        }
+        // if (!selectedOption) {
+        //     // setSelectionError(true);
+        //     // return;
+        // }
 
-        if (selectedOption === "garcom") {
+        if (!selectedOption || selectedOption === "garcom") {
             if (typeof onChamarGarcom === "function") {
                 await onChamarGarcom();
             }
