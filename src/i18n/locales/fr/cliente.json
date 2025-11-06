@@ -64,23 +64,12 @@
   },
   "payment": {
     "title": "Effectuer le paiement",
-    "subtitle": "Choisissez une option pour continuer",
+    "subtitle": "Demandez au serveur de finaliser votre paiement.",
     "selectOption": "Sélectionnez un mode de paiement avant de continuer.",
     "options": {
-      "pix": "PIX",
-      "pixDescription": "Paiement instantané via QR Code",
       "waiter": "Appeler le serveur",
       "waiterDescription": "Le serveur viendra à votre table",
       "waiterCalled": "Serveur déjà demandé"
-    },
-    "pix": {
-      "title": "Paiement PIX",
-      "instructions": "Scannez le QR Code ou copiez le code ci-dessous",
-      "qrCode": "QR Code PIX",
-      "copyCode": "Copier le code PIX",
-      "copied": "Copié !",
-      "loading": "Génération du code PIX...",
-      "error": "Erreur lors de la génération du code PIX"
     },
     "actions": {
       "continue": "Continuer",

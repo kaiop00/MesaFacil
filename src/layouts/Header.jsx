@@ -13,7 +13,6 @@ import NotificationsModal from "@/features/notifications/components/Notification
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import PlanInfo from "@/components/PlanInfo";
-import PixConfigModal from "@/features/config/components/modals/PixConfigModal";
 import stripeService from "@/services/stripeService";
 import { useToast } from "@/hooks/useToast";
 import { getStripeCustomerId } from "@/services/firebase/restaurantService";
@@ -27,7 +26,6 @@ const Header = () => {
   const [isColorsConfigModalOpen, setIsColorsConfigModalOpen] = useState(false);
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
   const [isServiceFeeModalOpen, setIsServiceFeeModalOpen] = useState(false);
-  const [isPixConfigModalOpen, setIsPixConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -241,16 +239,6 @@ const Header = () => {
                     </button>
                     <button
                       onClick={() => {
-                        setIsPixConfigModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {t("common:header.pix")}
-                    </button>
-                    <button
-                      onClick={() => {
                         setIsColorsConfigModalOpen(true);
                         setIsDropdownOpen(false);
                         setIsSubMenuOpen(false);
@@ -323,10 +311,6 @@ const Header = () => {
           <ServiceFeeConfigModal
             isOpen={isServiceFeeModalOpen}
             onClose={() => setIsServiceFeeModalOpen(false)}
-          />
-          <PixConfigModal
-            isOpen={isPixConfigModalOpen}
-            onClose={() => setIsPixConfigModalOpen(false)}
           />
         </div>
       </div>

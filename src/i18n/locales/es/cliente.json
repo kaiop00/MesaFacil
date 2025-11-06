@@ -64,23 +64,12 @@
   },
   "payment": {
     "title": "Realizar el Pago",
-    "subtitle": "Elija una opción para continuar",
+    "subtitle": "Solicite al camarero para finalizar el pago.",
     "selectOption": "Seleccione un método de pago antes de continuar.",
     "options": {
-      "pix": "PIX",
-      "pixDescription": "Pago instantáneo vía Código QR",
       "waiter": "Llamar Camarero",
       "waiterDescription": "El camarero vendrá a su mesa",
       "waiterCalled": "Camarero ya solicitado"
-    },
-    "pix": {
-      "title": "Pago vía PIX",
-      "instructions": "Escanee el Código QR o copie el código a continuación",
-      "qrCode": "Código QR PIX",
-      "copyCode": "Copiar código PIX",
-      "copied": "¡Copiado!",
-      "loading": "Generando código PIX...",
-      "error": "Error al generar código PIX"
     },
     "actions": {
       "continue": "Continuar",
