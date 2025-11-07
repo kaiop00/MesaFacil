@@ -4,6 +4,7 @@ import {
     formatCurrency,
     computeServiceFeeAmount,
     computeTotalWithService,
+    computeCoverChargeAmount,
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
 } from "../utils/pedidos";
@@ -14,6 +15,9 @@ export default function AguardandoGarcom({
     totalPedidos = 0,
     serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
     serviceFeeLoading = false,
+    coverChargeEnabled = false,
+    coverChargeAmount = 0,
+    coverChargeLoading = false,
     mesaNumero,
 }) {
     const { t } = useTranslation("cliente");
@@ -21,7 +25,13 @@ export default function AguardandoGarcom({
     const mesaNumeroExibicao = mesaNumero || numero;
     const percentNormalized = normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT);
     const valorServico = computeServiceFeeAmount(totalPedidos, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
-    const totalComServico = computeTotalWithService(totalPedidos, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
+    const valorCouvert = computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount);
+    const totalComServico = computeTotalWithService(
+        totalPedidos,
+        percentNormalized,
+        DEFAULT_SERVICE_FEE_PERCENT,
+        valorCouvert
+    );
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
@@ -34,6 +44,11 @@ export default function AguardandoGarcom({
         : percentNormalized > 0
             ? formatCurrency(valorServico)
             : t("totalPedidos.serviceFeeExempt");
+    const coverValueLabel = coverChargeLoading
+        ? t("common.loading")
+        : valorCouvert > 0
+            ? formatCurrency(valorCouvert)
+            : t("payment.summary.coverChargeNotApplied");
     const totalComServicoLabel = serviceFeeLoading
         ? t("common.loading")
         : formatCurrency(totalComServico);
@@ -117,6 +132,10 @@ export default function AguardandoGarcom({
                                 <div className="flex justify-between text-sm font-medium">
                                     <span>{serviceLabel}</span>
                                     <span>{serviceValueLabel}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-medium">
+                                    <span>{t("payment.summary.coverCharge")}</span>
+                                    <span>{coverValueLabel}</span>
                                 </div>
                                 <div className="flex justify-between font-semibold">
                                     <span>{t("payment.summary.totalWithFee")}</span>

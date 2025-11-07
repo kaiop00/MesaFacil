@@ -95,6 +95,38 @@
         "reset": "Impossibile ripristinare il costo del servizio.",
         "remove": "Impossibile rimuovere il costo del servizio."
       }
+    },
+    "coverCharge": {
+      "title": "Coperto artistico",
+      "subtitle": "Configura il costo opzionale per l'intrattenimento",
+      "info": {
+        "description": "Attiva il coperto artistico quando desideri aggiungere un importo fisso per l'intrattenimento al conto del cliente.",
+        "currentValue": "Stato attuale:",
+        "disabled": "Disattivato"
+      },
+      "fields": {
+        "toggleLabel": "Attiva coperto artistico",
+        "toggleHint": "Quando attivo, l'importo indicato sarà aggiunto al conto del cliente.",
+        "amount": "Importo del coperto (R$)",
+        "hint": "Inserisci un valore positivo. Il coperto rimane disattivato finché non lo abiliti."
+      },
+      "buttons": {
+        "disable": "Disattiva coperto",
+        "cancel": "Annulla",
+        "save": "Salva",
+        "saving": "Salvataggio..."
+      },
+      "success": {
+        "updated": "Coperto artistico aggiornato con successo.",
+        "disabled": "Coperto artistico disattivato."
+      },
+      "error": {
+        "load": "Impossibile caricare il coperto artistico. Verrà mantenuto disattivato.",
+        "noRestaurant": "Ristorante non identificato.",
+        "invalidValue": "Inserisci un valore valido maggiore di zero per abilitare il coperto.",
+        "save": "Errore nel salvataggio del coperto artistico. Riprova.",
+        "disable": "Errore nella disattivazione del coperto artistico."
+      }
     }
   },
   "components": {

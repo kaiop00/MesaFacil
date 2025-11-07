@@ -95,6 +95,38 @@
         "reset": "No se pudo restablecer el cargo por servicio.",
         "remove": "No se pudo eliminar el cargo por servicio."
       }
+    },
+    "coverCharge": {
+      "title": "Cubierto Artístico",
+      "subtitle": "Configura el cargo opcional por entretenimiento",
+      "info": {
+        "description": "Activa el cubierto artístico cuando desees agregar un valor fijo por entretenimiento a la cuenta del cliente.",
+        "currentValue": "Estado actual:",
+        "disabled": "Desactivado"
+      },
+      "fields": {
+        "toggleLabel": "Activar cubierto artístico",
+        "toggleHint": "Al activarlo, el valor indicado se sumará a la cuenta del cliente.",
+        "amount": "Valor del cubierto (R$)",
+        "hint": "Ingresa un valor positivo. El cubierto permanece desactivado até que lo habilites."
+      },
+      "buttons": {
+        "disable": "Desactivar cubierto",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "saving": "Guardando..."
+      },
+      "success": {
+        "updated": "Cubierto artístico actualizado con éxito.",
+        "disabled": "Cubierto artístico desactivado."
+      },
+      "error": {
+        "load": "No se pudo cargar el cubierto artístico. Manteniendo desactivado.",
+        "noRestaurant": "Restaurante no identificado.",
+        "invalidValue": "Ingresa un valor válido mayor que cero para habilitar el cubierto.",
+        "save": "Error al guardar el cubierto artístico. Por favor, inténtalo nuevamente.",
+        "disable": "Error al desactivar el cubierto artístico."
+      }
     }
   },
   "components": {

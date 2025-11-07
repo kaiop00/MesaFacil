@@ -13,7 +13,13 @@ import { usePedidosCliente } from "../hooks/usePedidosCliente";
 import { solicitarGarcom } from "../services/garcomService";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "../hooks/useServiceFee";
-import { computeServiceFeeAmount, computeTotalWithService } from "../utils/pedidos";
+import { useCoverCharge } from "../hooks/useCoverCharge";
+import {
+    computeServiceFeeAmount,
+    computeTotalWithService,
+    computeCoverChargeAmount,
+    DEFAULT_SERVICE_FEE_PERCENT,
+} from "../utils/pedidos";
 import { useTranslation } from "react-i18next";
 
 export default function PedidoClientePage() {
@@ -27,9 +33,20 @@ export default function PedidoClientePage() {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
     } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
+    const {
+        enabled: coverChargeEnabled,
+        value: coverChargeValue,
+        loading: coverChargeLoading,
+    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante) });
 
     const valorServico = computeServiceFeeAmount(totalPedidos, serviceFeePercent);
-    const totalComServico = computeTotalWithService(totalPedidos, serviceFeePercent);
+    const valorCouvert = computeCoverChargeAmount(coverChargeEnabled, coverChargeValue);
+    const totalComServico = computeTotalWithService(
+        totalPedidos,
+        serviceFeePercent,
+        DEFAULT_SERVICE_FEE_PERCENT,
+        valorCouvert
+    );
 
     const pedidoAtual = useMemo(() => {
         if (!pedidos || pedidos.length === 0) return null;
@@ -127,6 +144,8 @@ export default function PedidoClientePage() {
                 total: totalPedidos,
                 taxaServicoPercentual: serviceFeePercent,
                 valorServico,
+                couvertAtivo: coverChargeEnabled,
+                valorCouvert,
                 totalComServico,
             });
 
@@ -168,6 +187,9 @@ export default function PedidoClientePage() {
                             totalPedidos={totalPedidos}
                             serviceFeePercent={serviceFeePercent}
                             serviceFeeLoading={serviceFeeLoading}
+                            coverChargeEnabled={coverChargeEnabled}
+                            coverChargeAmount={valorCouvert}
+                            coverChargeLoading={coverChargeLoading}
                             mesaId={mesaId}
                             idRestaurante={idRestaurante}
                             onRealizarPagamento={() => {
@@ -187,6 +209,9 @@ export default function PedidoClientePage() {
                     totalPedidos={totalPedidos}
                     serviceFeePercent={serviceFeePercent}
                     serviceFeeLoading={serviceFeeLoading}
+                    coverChargeEnabled={coverChargeEnabled}
+                    coverChargeAmount={valorCouvert}
+                    coverChargeLoading={coverChargeLoading}
                     onVoltar={handleVoltarParaPedidos}
                     onChamarGarcom={handleChamarGarcom}
                     chamarGarcomLoading={garcomState.loading}
@@ -201,6 +226,9 @@ export default function PedidoClientePage() {
                     totalPedidos={totalPedidos}
                     serviceFeePercent={serviceFeePercent}
                     serviceFeeLoading={serviceFeeLoading}
+                    coverChargeEnabled={coverChargeEnabled}
+                    coverChargeAmount={valorCouvert}
+                    coverChargeLoading={coverChargeLoading}
                     mesaNumero={mesaNumeroExibicao}
                 />
             )}

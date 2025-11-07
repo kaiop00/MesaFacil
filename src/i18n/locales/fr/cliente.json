@@ -58,6 +58,8 @@
     "serviceFee": "Frais de service",
     "serviceFeeWith": "Frais de service",
     "serviceFeeExempt": "Exempté",
+    "coverCharge": "Couvert artistique",
+    "coverChargeNotApplied": "Non appliqué",
     "totalWithFee": "Total avec frais",
     "orderMore": "Commander plus",
     "makePayment": "Effectuer le paiement"
@@ -84,6 +86,8 @@
       "noItems": "Aucun article disponible pour le paiement pour le moment.",
       "subtotal": "Valeur sans frais",
       "serviceFee": "Frais de service",
+      "coverCharge": "Couvert artistique",
+      "coverChargeNotApplied": "Non appliqué",
       "totalWithFee": "Total avec frais"
     },
     "orderDetails": {

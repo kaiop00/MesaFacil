@@ -11,7 +11,8 @@
     "categories": "Catégories",
     "language": "Langue",
     "logout": "Déconnexion",
-    "serviceFee": "Frais de service"
+    "serviceFee": "Frais de service",
+    "coverCharge": "Couvert artistique"
   },
   "languages": {
     "pt-BR": "Português",

@@ -6,10 +6,12 @@ import { getPedidosDaMesa, finalizarPedidoEspecifico } from "@/features/order/se
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
+import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
 import {
     computeTotalPedidos,
     computeServiceFeeAmount,
     computeTotalWithService,
+    computeCoverChargeAmount,
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
     formatCurrency,
@@ -25,6 +27,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
     } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
+    const {
+        enabled: coverChargeEnabled,
+        value: coverChargeValue,
+        loading: coverChargeLoading,
+    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante) });
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -73,9 +80,18 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         () => computeServiceFeeAmount(totalSemTaxa, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
         [totalSemTaxa, percentNormalized]
     );
+    const valorCouvert = useMemo(
+        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeValue),
+        [coverChargeEnabled, coverChargeValue]
+    );
     const totalComServico = useMemo(
-        () => computeTotalWithService(totalSemTaxa, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
-        [totalSemTaxa, percentNormalized]
+        () => computeTotalWithService(
+            totalSemTaxa,
+            percentNormalized,
+            DEFAULT_SERVICE_FEE_PERCENT,
+            valorCouvert
+        ),
+        [totalSemTaxa, percentNormalized, valorCouvert]
     );
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
@@ -89,6 +105,12 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         : percentNormalized > 0
             ? formatCurrency(valorServico)
             : "Isento";
+    const coverLabel = t("cliente:payment.summary.coverCharge");
+    const coverValueLabel = coverChargeLoading
+        ? t("page.loading")
+        : valorCouvert > 0
+            ? formatCurrency(valorCouvert)
+            : t("cliente:payment.summary.coverChargeNotApplied");
     const totalComServicoLabel = serviceFeeLoading
         ? t("page.loading")
         : formatCurrency(totalComServico);
@@ -185,6 +207,10 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                     <div className="flex justify-between text-sm font-medium">
                         <span>{serviceLabel}</span>
                         <span>{serviceValueLabel}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-medium">
+                        <span>{coverLabel}</span>
+                        <span>{coverValueLabel}</span>
                     </div>
                     <div className="flex justify-between font-semibold">
                         <span>Total com taxa</span>

@@ -58,7 +58,9 @@
     "serviceFee": "Taxa de serviço",
     "serviceFeeWith": "Taxa de serviço",
     "serviceFeeExempt": "Isento",
-    "totalWithFee": "Total com taxa",
+    "coverCharge": "Couvert artístico",
+    "coverChargeNotApplied": "Não aplicado",
+    "totalWithFee": "Total com taxas",
     "orderMore": "Pedir mais",
     "makePayment": "Realizar pagamento"
   },
@@ -84,7 +86,9 @@
       "noItems": "Nenhum item disponível para pagamento no momento.",
       "subtotal": "Valor sem taxa",
       "serviceFee": "Taxa de serviço",
-      "totalWithFee": "Total com taxa"
+      "coverCharge": "Couvert artístico",
+      "coverChargeNotApplied": "Não aplicado",
+      "totalWithFee": "Total com taxas"
     },
     "orderDetails": {
       "title": "Detalhes do Pedido",

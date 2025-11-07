@@ -58,7 +58,9 @@
     "serviceFee": "Service fee",
     "serviceFeeWith": "Service fee",
     "serviceFeeExempt": "Exempt",
-    "totalWithFee": "Total with fee",
+    "coverCharge": "Cover charge",
+    "coverChargeNotApplied": "Not applied",
+    "totalWithFee": "Total with fees",
     "orderMore": "Order more",
     "makePayment": "Make payment"
   },
@@ -84,7 +86,9 @@
       "noItems": "No items available for payment at the moment.",
       "subtotal": "Value without fee",
       "serviceFee": "Service fee",
-      "totalWithFee": "Total with fee"
+      "coverCharge": "Cover charge",
+      "coverChargeNotApplied": "Not applied",
+      "totalWithFee": "Total with fees"
     },
     "orderDetails": {
       "title": "Order Details",

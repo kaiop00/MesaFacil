@@ -7,6 +7,7 @@ import {
     formatTimestamp,
     computeServiceFeeAmount,
     computeTotalWithService,
+    computeCoverChargeAmount,
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
 } from "../utils/pedidos";
@@ -19,6 +20,9 @@ export default function TotalPedidos({
     totalPedidos = 0,
     serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
     serviceFeeLoading = false,
+    coverChargeEnabled = false,
+    coverChargeAmount = 0,
+    coverChargeLoading = false,
     mesaId,
     idRestaurante,
     onRealizarPagamento,
@@ -47,9 +51,18 @@ export default function TotalPedidos({
         () => computeServiceFeeAmount(totalResumo, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
         [totalResumo, percentNormalized]
     );
+    const valorCouvert = useMemo(
+        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount),
+        [coverChargeEnabled, coverChargeAmount]
+    );
     const totalComServico = useMemo(
-        () => computeTotalWithService(totalResumo, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
-        [totalResumo, percentNormalized]
+        () => computeTotalWithService(
+            totalResumo,
+            percentNormalized,
+            DEFAULT_SERVICE_FEE_PERCENT,
+            valorCouvert
+        ),
+        [totalResumo, percentNormalized, valorCouvert]
     );
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
@@ -63,6 +76,11 @@ export default function TotalPedidos({
         : percentNormalized > 0
             ? formatCurrency(valorServico)
             : t("totalPedidos.serviceFeeExempt");
+    const couvertValueLabel = coverChargeLoading
+        ? t("common.loading")
+        : valorCouvert > 0
+            ? formatCurrency(valorCouvert)
+            : t("totalPedidos.coverChargeNotApplied");
     const totalComServicoLabel = serviceFeeLoading
         ? t("common.loading")
         : formatCurrency(totalComServico);
@@ -170,6 +188,10 @@ export default function TotalPedidos({
                         <div className="flex justify-between text-sm font-medium">
                             <span>{serviceLabel}</span>
                             <span>{serviceValueLabel}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-medium">
+                            <span>{t("totalPedidos.coverCharge")}</span>
+                            <span>{couvertValueLabel}</span>
                         </div>
                         <div className="flex justify-between font-semibold">
                             <span>{t("totalPedidos.totalWithFee")}</span>

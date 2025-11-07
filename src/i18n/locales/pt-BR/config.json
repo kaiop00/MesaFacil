@@ -95,6 +95,38 @@
         "reset": "Não foi possível redefinir a taxa de serviço.",
         "remove": "Não foi possível remover a taxa de serviço."
       }
+    },
+    "coverCharge": {
+      "title": "Couvert Artístico",
+      "subtitle": "Configure o valor adicional opcional para seus clientes",
+      "info": {
+        "description": "O couvert artístico pode ser ativado quando houver apresentação ao vivo. Defina aqui o valor fixo que será somado à conta quando ativado.",
+        "currentValue": "Estado atual:",
+        "disabled": "Desativado"
+      },
+      "fields": {
+        "toggleLabel": "Ativar couvert artístico",
+        "toggleHint": "Quando ativado, o valor abaixo será aplicado nas contas dos clientes.",
+        "amount": "Valor do couvert (R$)",
+        "hint": "Informe um valor positivo. O couvert começa desativado e só será cobrado quando você habilitar."
+      },
+      "buttons": {
+        "disable": "Desativar couvert",
+        "cancel": "Cancelar",
+        "save": "Salvar",
+        "saving": "Salvando..."
+      },
+      "success": {
+        "updated": "Couvert artístico atualizado com sucesso.",
+        "disabled": "Couvert artístico desativado."
+      },
+      "error": {
+        "load": "Não foi possível carregar o couvert artístico. Mantendo desativado.",
+        "noRestaurant": "Restaurante não identificado.",
+        "invalidValue": "Informe um valor válido maior que zero para ativar o couvert.",
+        "save": "Erro ao salvar o couvert artístico. Tente novamente.",
+        "disable": "Erro ao desativar o couvert artístico."
+      }
     }
   },
   "components": {

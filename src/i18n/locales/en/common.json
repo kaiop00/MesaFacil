@@ -11,7 +11,8 @@
     "categories": "Categories",
     "language": "Language",
     "logout": "Logout",
-    "serviceFee": "Service Fee"
+    "serviceFee": "Service Fee",
+    "coverCharge": "Cover Charge"
   },
   "languages": {
     "pt-BR": "Português",

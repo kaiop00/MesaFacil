@@ -1,4 +1,11 @@
-import { formatCurrency, computeServiceFeeAmount, computeTotalWithService, normalizeServicePercentage, DEFAULT_SERVICE_FEE_PERCENT } from "../utils/pedidos";
+import {
+    formatCurrency,
+    computeServiceFeeAmount,
+    computeTotalWithService,
+    computeCoverChargeAmount,
+    normalizeServicePercentage,
+    DEFAULT_SERVICE_FEE_PERCENT,
+} from "../utils/pedidos";
 import { useTranslation } from "react-i18next";
 
 const PaymentSummary = ({
@@ -8,12 +15,21 @@ const PaymentSummary = ({
     subtotal,
     serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
     serviceFeeLoading = false,
+    coverChargeEnabled = false,
+    coverChargeAmount = 0,
+    coverChargeLoading = false,
 }) => {
     const { t } = useTranslation("cliente");
     const subtotalValue = typeof subtotal === "number" && Number.isFinite(subtotal) ? subtotal : 0;
     const percentNormalized = normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT);
     const serviceAmount = computeServiceFeeAmount(subtotalValue, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
-    const totalWithService = computeTotalWithService(subtotalValue, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
+    const coverAmount = computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount);
+    const totalWithService = computeTotalWithService(
+        subtotalValue,
+        percentNormalized,
+        DEFAULT_SERVICE_FEE_PERCENT,
+        coverAmount
+    );
 
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
@@ -27,6 +43,11 @@ const PaymentSummary = ({
         : percentNormalized > 0
             ? formatCurrency(serviceAmount)
             : t("totalPedidos.serviceFeeExempt");
+    const coverValueLabel = coverChargeLoading
+        ? t("common.loading")
+        : coverAmount > 0
+            ? formatCurrency(coverAmount)
+            : t("payment.summary.coverChargeNotApplied");
     const totalWithServiceLabel = serviceFeeLoading
         ? t("common.loading")
         : formatCurrency(totalWithService);
@@ -74,6 +95,13 @@ const PaymentSummary = ({
                     <div className="flex justify-between items-center text-sm font-medium text-gray-900">
                         <span>{serviceLabel}</span>
                         <span>{serviceValueLabel}</span>
+                    </div>
+                )}
+
+                {!loading && !error && (
+                    <div className="flex justify-between items-center text-sm font-medium text-gray-900">
+                        <span>{t("payment.summary.coverCharge")}</span>
+                        <span>{coverValueLabel}</span>
                     </div>
                 )}
 

@@ -95,6 +95,38 @@
         "reset": "Impossible de réinitialiser les frais de service.",
         "remove": "Impossible de supprimer les frais de service."
       }
+    },
+    "coverCharge": {
+      "title": "Couvert artistique",
+      "subtitle": "Configurez le montant optionnel pour les animations",
+      "info": {
+        "description": "Activez le couvert artistique lorsque vous souhaitez ajouter un montant fixe pour l'animation à la facture du client.",
+        "currentValue": "Statut actuel :",
+        "disabled": "Désactivé"
+      },
+      "fields": {
+        "toggleLabel": "Activer le couvert artistique",
+        "toggleHint": "Une fois activé, le montant ci-dessous sera ajouté à la facture du client.",
+        "amount": "Montant du couvert (R$)",
+        "hint": "Indiquez un montant positif. Le couvert reste désactivé tant que vous ne l'activez pas."
+      },
+      "buttons": {
+        "disable": "Désactiver le couvert",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement..."
+      },
+      "success": {
+        "updated": "Couvert artistique mis à jour avec succès.",
+        "disabled": "Couvert artistique désactivé."
+      },
+      "error": {
+        "load": "Impossible de charger le couvert artistique. Il restera désactivé.",
+        "noRestaurant": "Restaurant non identifié.",
+        "invalidValue": "Indiquez une valeur valide supérieure à zéro pour activer le couvert.",
+        "save": "Erreur lors de l'enregistrement du couvert artistique. Veuillez réessayer.",
+        "disable": "Erreur lors de la désactivation du couvert artistique."
+      }
     }
   },
   "components": {
