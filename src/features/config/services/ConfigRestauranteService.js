@@ -38,6 +38,8 @@ export const getRestauranteInfo = async (idRestaurante) => {
 
     const data = snapshot.data() || {};
 
+    const coverData = data?.couvert_artistico || {};
+
     return {
         id: snapshot.id,
         ...data,
@@ -45,5 +47,12 @@ export const getRestauranteInfo = async (idRestaurante) => {
             typeof data.taxa_servico === "number" && Number.isFinite(data.taxa_servico)
                 ? data.taxa_servico
                 : 10,
+        couvert_artistico: {
+            ativo: Boolean(coverData?.ativo),
+            valor:
+                typeof coverData?.valor === "number" && Number.isFinite(coverData.valor)
+                    ? Math.max(0, Number(coverData.valor))
+                    : 0,
+        },
     };
 };

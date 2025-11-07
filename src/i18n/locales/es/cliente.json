@@ -58,7 +58,9 @@
     "serviceFee": "Cargo por servicio",
     "serviceFeeWith": "Cargo por servicio",
     "serviceFeeExempt": "Exento",
-    "totalWithFee": "Total con cargo",
+    "coverCharge": "Cubierto artístico",
+    "coverChargeNotApplied": "No aplicado",
+    "totalWithFee": "Total con cargos",
     "orderMore": "Pedir más",
     "makePayment": "Realizar pago"
   },
@@ -84,7 +86,9 @@
       "noItems": "No hay artículos disponibles para pago en este momento.",
       "subtotal": "Valor sin cargo",
       "serviceFee": "Cargo por servicio",
-      "totalWithFee": "Total con cargo"
+      "coverCharge": "Cubierto artístico",
+      "coverChargeNotApplied": "No aplicado",
+      "totalWithFee": "Total con cargos"
     },
     "orderDetails": {
       "title": "Detalles del Pedido",

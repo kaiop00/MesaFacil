@@ -95,6 +95,38 @@
         "reset": "Could not reset service fee.",
         "remove": "Could not remove service fee."
       }
+    },
+    "coverCharge": {
+      "title": "Cover Charge",
+      "subtitle": "Configure the optional entertainment fee",
+      "info": {
+        "description": "Enable the cover charge when you want to add a fixed entertainment fee to the customer's bill.",
+        "currentValue": "Current status:",
+        "disabled": "Disabled"
+      },
+      "fields": {
+        "toggleLabel": "Enable cover charge",
+        "toggleHint": "When enabled, the amount below will be added to the customer's bill.",
+        "amount": "Cover charge amount (R$)",
+        "hint": "Provide a positive value. The cover charge starts disabled and will only be charged when you enable it."
+      },
+      "buttons": {
+        "disable": "Disable cover",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving..."
+      },
+      "success": {
+        "updated": "Cover charge updated successfully.",
+        "disabled": "Cover charge disabled."
+      },
+      "error": {
+        "load": "Could not load the cover charge. Keeping it disabled.",
+        "noRestaurant": "Restaurant not identified.",
+        "invalidValue": "Enter a valid value greater than zero to enable the cover charge.",
+        "save": "Error saving the cover charge. Please try again.",
+        "disable": "Error disabling the cover charge."
+      }
     }
   },
   "components": {

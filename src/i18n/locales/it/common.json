@@ -11,7 +11,8 @@
     "categories": "Categorie",
     "language": "Lingua",
     "logout": "Esci",
-    "serviceFee": "Costo del Servizio"
+    "serviceFee": "Costo del Servizio",
+    "coverCharge": "Coperto artistico"
   },
   "languages": {
     "pt-BR": "Português",

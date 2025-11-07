@@ -13,6 +13,9 @@ export default function PagamentoResumo({
     totalPedidos = 0,
     serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
     serviceFeeLoading = false,
+    coverChargeEnabled = false,
+    coverChargeAmount = 0,
+    coverChargeLoading = false,
     onVoltar,
     onChamarGarcom,
     chamarGarcomLoading = false,
@@ -64,6 +67,9 @@ export default function PagamentoResumo({
                         subtotal={totalPedidos}
                         serviceFeePercent={serviceFeePercent}
                         serviceFeeLoading={serviceFeeLoading}
+                        coverChargeEnabled={coverChargeEnabled}
+                        coverChargeAmount={coverChargeAmount}
+                        coverChargeLoading={coverChargeLoading}
                     />
 
                     <PaymentOptionSelector

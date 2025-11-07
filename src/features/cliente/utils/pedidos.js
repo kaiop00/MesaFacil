@@ -46,6 +46,7 @@ export function computeTotalPedidos(pedidos = []) {
 }
 
 export const DEFAULT_SERVICE_FEE_PERCENT = 10;
+export const DEFAULT_COVER_CHARGE_VALUE = 0;
 
 export function normalizeServicePercentage(value, fallback = DEFAULT_SERVICE_FEE_PERCENT) {
     if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
@@ -70,8 +71,34 @@ export function computeServiceFeeAmount(total = 0, percentage, fallback = DEFAUL
     return Number(amount.toFixed(2));
 }
 
-export function computeTotalWithService(total = 0, percentage, fallback = DEFAULT_SERVICE_FEE_PERCENT) {
+export function normalizeCoverValue(value) {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        return Number(value.toFixed(2));
+    }
+
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+        return Number(parsed.toFixed(2));
+    }
+
+    return DEFAULT_COVER_CHARGE_VALUE;
+}
+
+export function computeCoverChargeAmount(isEnabled, value) {
+    if (!isEnabled) {
+        return 0;
+    }
+    return normalizeCoverValue(value);
+}
+
+export function computeTotalWithService(
+    total = 0,
+    percentage,
+    fallback = DEFAULT_SERVICE_FEE_PERCENT,
+    coverAmount = 0
+) {
     const subtotal = typeof total === "number" && Number.isFinite(total) ? total : 0;
     const serviceAmount = computeServiceFeeAmount(subtotal, percentage, fallback);
-    return Number((subtotal + serviceAmount).toFixed(2));
+    const extras = Number.isFinite(coverAmount) ? coverAmount : 0;
+    return Number((subtotal + serviceAmount + extras).toFixed(2));
 }

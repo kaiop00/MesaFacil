@@ -11,7 +11,8 @@
     "categories": "Categorias",
     "language": "Idioma",
     "logout": "Sair",
-    "serviceFee": "Taxa de Serviço"
+    "serviceFee": "Taxa de Serviço",
+    "coverCharge": "Couvert Artístico"
   },
   "languages": {
     "pt-BR": "Português",
