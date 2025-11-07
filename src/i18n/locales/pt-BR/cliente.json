@@ -64,23 +64,12 @@
   },
   "payment": {
     "title": "Realizar o Pagamento",
-    "subtitle": "Escolha uma opção para prosseguir",
+    "subtitle": "Solicite o garçom para concluir o pagamento.",
     "selectOption": "Selecione uma forma de pagamento antes de continuar.",
     "options": {
-      "pix": "PIX",
-      "pixDescription": "Pagamento instantâneo via QR Code",
       "waiter": "Chamar Garçom",
       "waiterDescription": "O garçom virá até sua mesa",
       "waiterCalled": "Garçom já solicitado"
-    },
-    "pix": {
-      "title": "Pagamento via PIX",
-      "instructions": "Escaneie o QR Code ou copie o código abaixo",
-      "qrCode": "QR Code PIX",
-      "copyCode": "Copiar código PIX",
-      "copied": "Copiado!",
-      "loading": "Gerando código PIX...",
-      "error": "Erro ao gerar código PIX"
     },
     "actions": {
       "continue": "Continuar",

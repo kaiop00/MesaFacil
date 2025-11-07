@@ -64,23 +64,12 @@
   },
   "payment": {
     "title": "Make Payment",
-    "subtitle": "Choose an option to proceed",
+    "subtitle": "Ask the waiter to finalize your payment.",
     "selectOption": "Select a payment method before continuing.",
     "options": {
-      "pix": "PIX",
-      "pixDescription": "Instant payment via QR Code",
       "waiter": "Call Waiter",
       "waiterDescription": "The waiter will come to your table",
       "waiterCalled": "Waiter already requested"
-    },
-    "pix": {
-      "title": "PIX Payment",
-      "instructions": "Scan the QR Code or copy the code below",
-      "qrCode": "PIX QR Code",
-      "copyCode": "Copy PIX code",
-      "copied": "Copied!",
-      "loading": "Generating PIX code...",
-      "error": "Error generating PIX code"
     },
     "actions": {
       "continue": "Continue",
