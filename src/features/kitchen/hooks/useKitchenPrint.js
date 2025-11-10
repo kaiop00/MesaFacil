@@ -118,8 +118,8 @@ export const useKitchenPrint = () => {
               }
               body {
                 font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-                font-size: 3.6mm;
-                line-height: 1.35;
+                font-size: 4mm;
+                line-height: 1.45;
                 color: #1f2937;
                 display: flex;
                 flex-direction: column;
@@ -127,9 +127,9 @@ export const useKitchenPrint = () => {
                 justify-content: flex-start;
               }
               .ticket {
-                width: 72mm;
-                max-width: 72mm;
-                margin: 0;
+                width: 74mm;
+                max-width: 74mm;
+                margin: 0 auto;
                 padding: 4mm 2mm;
               }
               .row {
@@ -152,11 +152,12 @@ export const useKitchenPrint = () => {
                 margin: 3mm 0;
               }
               .title {
-                font-weight: 600;
+                font-weight: 700;
                 text-transform: uppercase;
                 letter-spacing: 0.2mm;
-                font-size: 3.8mm;
-                margin-bottom: 1.2mm;
+                font-size: 4.4mm;
+                margin-bottom: 1.6mm;
+                text-align: center;
               }
               .item {
                 margin-bottom: 2.4mm;
@@ -165,18 +166,18 @@ export const useKitchenPrint = () => {
               }
               .item-header {
                 font-weight: 600;
-                font-size: 3.8mm;
+                font-size: 4.2mm;
               }
               .item-sub,
               .item-extra {
-                font-size: 3.3mm;
+                font-size: 3.6mm;
               }
               .item-extra {
                 margin-left: 4mm;
               }
               .footer {
                 margin-top: 3.5mm;
-                font-size: 3.3mm;
+                font-size: 3.6mm;
                 text-align: center;
               }
               @media print {
@@ -187,16 +188,16 @@ export const useKitchenPrint = () => {
                   margin: 0;
                 }
                 body {
-                  font-size: 3.6mm;
-                  line-height: 1.35;
+                  font-size: 4mm;
+                  line-height: 1.45;
                   display: flex;
                   flex-direction: column;
                   align-items: center;
                   justify-content: flex-start;
                 }
                 .ticket {
-                  width: 72mm;
-                  max-width: 72mm;
+                  width: 74mm;
+                  max-width: 74mm;
                   padding: 4mm 2mm;
                 }
                 .row {
