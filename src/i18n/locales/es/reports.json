@@ -44,8 +44,7 @@
         "orderNumber": "Nº de Pedido",
         "table": "Mesa",
         "date": "Fecha",
-        "value": "Valor",
-        "status": "Estado"
+        "value": "Valor"
       },
       "tablePrefix": "Mesa"
     },
@@ -70,10 +69,6 @@
         "totalValueGenerated": "Valor Total Generado"
       }
     }
-  },
-  "status": {
-    "finished": "Finalizado",
-    "pending": "Pendiente"
   },
   "pdf": {
     "generatedAt": "Generado el",

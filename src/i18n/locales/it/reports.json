@@ -44,8 +44,7 @@
         "orderNumber": "N° Ordine",
         "table": "Tavolo",
         "date": "Data",
-        "value": "Valore",
-        "status": "Stato"
+        "value": "Valore"
       },
       "tablePrefix": "Tavolo"
     },
@@ -70,10 +69,6 @@
         "totalValueGenerated": "Valore Totale Generato"
       }
     }
-  },
-  "status": {
-    "finished": "Completato",
-    "pending": "In Sospeso"
   },
   "pdf": {
     "generatedAt": "Generato il",

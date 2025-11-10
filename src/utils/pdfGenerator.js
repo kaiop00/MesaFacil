@@ -131,22 +131,16 @@ const generateSalesTable = (doc, orders, startY, t = null) => {
     t('tables.sales.columns.orderNumber'),
     t('tables.sales.columns.table'),
     t('tables.sales.columns.date'),
-    t('tables.sales.columns.value'),
-    t('tables.sales.columns.status')
-  ] : ['Nº Pedido', 'Mesa', 'Data', 'Valor', 'Status'];
+    t('tables.sales.columns.value')
+  ] : ['Nº Pedido', 'Mesa', 'Data', 'Valor'];
 
   const tablePrefix = t ? t('tables.sales.tablePrefix') : 'Mesa';
-  const getStatusText = (status) => {
-    if (!t) return status;
-    return status === 'Finalizado' ? t('status.finished') : t('status.pending');
-  };
 
   const tableRows = orders.map(order => [
     order.numero.slice(-8),
     `${tablePrefix} ${order.mesa}`,
     order.data,
-    formatCurrency(order.valor),
-    getStatusText(order.status)
+    formatCurrency(order.valor)
   ]);
 
   autoTable(doc, {
