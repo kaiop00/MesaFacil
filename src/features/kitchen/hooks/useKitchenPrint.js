@@ -108,23 +108,25 @@ export const useKitchenPrint = () => {
               }
               html,
               body {
-                width: 80mm;
-                max-width: 80mm;
+                width: 100%;
+                max-width: 100%;
+                min-height: 100%;
                 margin: 0;
                 padding: 0;
                 background: #ffffff;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
               }
               body {
                 font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
                 font-size: 4mm;
                 line-height: 1.45;
                 color: #1f2937;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
+                padding: 6mm 0;
               }
               .ticket {
                 width: 74mm;
@@ -183,17 +185,18 @@ export const useKitchenPrint = () => {
               @media print {
                 html,
                 body {
-                  width: 80mm;
-                  max-width: 80mm;
+                  width: 100%;
+                  max-width: 100%;
                   margin: 0;
-                }
-                body {
-                  font-size: 4mm;
-                  line-height: 1.45;
+                  padding: 0;
                   display: flex;
                   flex-direction: column;
                   align-items: center;
                   justify-content: flex-start;
+                }
+                body {
+                  font-size: 4mm;
+                  line-height: 1.45;
                 }
                 .ticket {
                   width: 74mm;
