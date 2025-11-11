@@ -358,3 +358,20 @@ exports.cancelSubscription = onRequest(
     }
   }
 );
+
+/**
+ * iFood Integration Functions
+ * Import and export iFood polling and distributed OAuth handlers
+ */
+const {ifoodPolling, ifoodPollManual} = require("./ifood-polling");
+const {
+  ifoodRequestUserCode,
+  ifoodExchangeCode,
+  ifoodRevokeAuth,
+} = require("./ifood-auth-distributed");
+
+exports.ifoodPolling = ifoodPolling;
+exports.ifoodPollManual = ifoodPollManual;
+exports.ifoodRequestUserCode = ifoodRequestUserCode;
+exports.ifoodExchangeCode = ifoodExchangeCode;
+exports.ifoodRevokeAuth = ifoodRevokeAuth;
