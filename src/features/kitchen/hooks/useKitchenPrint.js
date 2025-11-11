@@ -33,8 +33,8 @@ export const useKitchenPrint = () => {
       return order.items
         .map((item, index) => {
           const lineIndex = String(index + 1).padStart(2, "0");
-          const quantityLabel = `${item?.quantity || 0}`.padStart(3, " ");
-          const itemHeader = `${quantityLabel}  ${sanitize(item?.nome)}`;
+          const quantityLabel = `${item?.quantity || 0}`.padStart(2, " ");
+          const itemName = sanitize(item?.nome);
           const price = currencyFormatter.format(Number(item?.price || 0));
 
           const extras = [];
@@ -50,11 +50,10 @@ export const useKitchenPrint = () => {
 
           return `
             <div class="item">
-              <div class="row item-header">
-                <span class="index">${lineIndex}.</span>
-                <span class="name">${itemHeader}</span>
-              </div>
-              <div class="row item-sub">
+              <div class="item-line">
+                <span class="index">${lineIndex}</span>
+                <span class="qty">${quantityLabel}x</span>
+                <span class="name">${itemName}</span>
                 <span class="price">${price}</span>
               </div>
               ${
@@ -62,7 +61,7 @@ export const useKitchenPrint = () => {
                   ? extras
                       .map(
                         (extra) => `
-                          <div class="row item-extra">+ ${extra}</div>
+                          <div class="item-extra">+ ${extra}</div>
                         `
                       )
                       .join("")
@@ -122,71 +121,85 @@ export const useKitchenPrint = () => {
                 justify-content: flex-start;
               }
               body {
-                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-                font-size: 9.2mm;
-                line-height: 1.18;
+                width: 80mm;
+                margin: 0 auto;
+                font-family: "Roboto Mono", "Courier New", Courier, monospace;
+                font-size: 12px;
+                line-height: 1.35;
                 color: #111827;
-                padding: 1.5mm 0;
+                padding: 4mm 0;
+                background: #ffffff;
               }
               .ticket {
-                width: 79.5mm;
-                max-width: 79.5mm;
+                width: 72mm;
+                max-width: 72mm;
                 margin: 0 auto;
                 padding: 4mm 0;
               }
               .row {
                 display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.8mm;
-                margin-bottom: 3.2mm;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2.5mm;
                 white-space: pre-wrap;
                 word-break: break-word;
-                padding: 0 1mm;
+                padding: 0;
                 width: 100%;
                 break-inside: avoid;
                 page-break-inside: avoid;
+              }
+              .row span {
+                flex: 1;
+              }
+              .row span:first-child {
+                text-align: left;
+              }
+              .row span:last-child {
+                text-align: right;
               }
               .center {
                 justify-content: center;
                 text-align: center;
               }
               .divider {
-                border-top: 0.6mm solid #9ca3af;
-                margin: 3.5mm 0;
+                border-top: 1px dashed #9ca3af;
+                margin: 4mm 0;
               }
               .title {
-                font-weight: 800;
+                font-weight: 700;
                 text-transform: uppercase;
-                letter-spacing: 0.45mm;
-                font-size: 11mm;
-                margin-bottom: 3.5mm;
+                letter-spacing: 0.6px;
+                font-size: 14px;
+                margin-bottom: 1.5mm;
                 text-align: center;
                 width: 100%;
               }
               .item {
-                margin-bottom: 4.2mm;
-                padding: 0 1mm;
+                margin-bottom: 3.5mm;
                 width: 100%;
                 break-inside: avoid;
                 page-break-inside: avoid;
               }
-              .item-header {
-                font-weight: 800;
-                font-size: 10mm;
-                width: 100%;
+              .item-line {
+                display: grid;
+                grid-template-columns: 12mm 12mm auto 20mm;
+                align-items: center;
+                gap: 2mm;
+                font-size: 12px;
+                font-weight: 600;
               }
-              .item-sub,
-              .item-extra {
-                font-size: 8mm;
-                width: 100%;
+              .item-line .name {
+                text-transform: uppercase;
               }
               .item-extra {
-                margin-left: 2mm;
+                font-size: 11px;
+                margin-top: 1mm;
+                padding-left: 4mm;
+                border-left: 2px solid #d1d5db;
               }
               .footer {
                 margin-top: 5mm;
-                font-size: 8mm;
+                font-size: 11px;
                 text-align: center;
               }
               @media print {
@@ -202,16 +215,16 @@ export const useKitchenPrint = () => {
                   justify-content: flex-start;
                 }
                 body {
-                  font-size: 9.2mm;
-                  line-height: 1.18;
+                  font-size: 12px;
+                  line-height: 1.35;
                 }
                 .ticket {
-                  width: 79.5mm;
-                  max-width: 79.5mm;
+                  width: 72mm;
+                  max-width: 72mm;
                   padding: 4mm 0;
                 }
                 .row {
-                  margin-bottom: 3.2mm;
+                  margin-bottom: 2.5mm;
                 }
               }
             </style>
