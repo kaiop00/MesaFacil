@@ -1,7 +1,12 @@
-import { useState } from "react";
 import { Camera, TrashEmpty } from "react-coolicons";
 
-export default function UploadImageFirebase({ previewUrl, setPreviewUrl, setFile }) {
+export default function UploadImageFirebase({
+  previewUrl,
+  setPreviewUrl,
+  setFile,
+  onRemove,
+  label = "Clique para adicionar a foto",
+}) {
   const onPick = (e) => {
     const f = e.target.files?.[0] || null;
     setFile(f);
@@ -11,13 +16,18 @@ export default function UploadImageFirebase({ previewUrl, setPreviewUrl, setFile
   const remove = () => {
     setFile(null);
     setPreviewUrl(null);
+    if (typeof onRemove === "function") {
+      onRemove();
+    }
   };
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Clique para adicionar a foto
-      </label>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {label}
+        </label>
+      )}
 
       <div className="flex gap-3">
         {previewUrl ? (
