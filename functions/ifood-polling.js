@@ -20,6 +20,11 @@ const ifoodClientSecret = defineSecret("IFOOD_CLIENT_SECRET");
  */
 async function refreshIfoodAccessToken(credentials) {
   try {
+    logger.info("Attempting to refresh access token", {
+      restaurantId: credentials.restaurantId,
+      hasRefreshToken: !!credentials.refreshToken,
+    });
+
     const response = await fetch(`${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/token`, {
       method: "POST",
       headers: {
@@ -39,12 +44,30 @@ async function refreshIfoodAccessToken(credentials) {
       logger.error("Failed to refresh access token", {
         restaurantId: credentials.restaurantId,
         status: response.status,
+        statusText: response.statusText,
         error: errorText,
       });
-      throw new Error(`Failed to refresh token: ${response.statusText}`);
+      
+      // Mark integration as needing reauthorization immediately
+      const docRef = admin.firestore().doc(`restaurantes/${credentials.restaurantId}/integrations/ifood`);
+      await docRef.update({
+        enabled: false,
+        needsReauthorization: true,
+        lastError: `Failed to refresh token (${response.status}): ${response.statusText}`,
+        lastErrorAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      
+      throw new Error(`Failed to refresh token (${response.status}): ${response.statusText}. Por favor, reconecte com o iFood.`);
     }
 
     const data = await response.json();
+    
+    logger.info("Token refresh response received", {
+      restaurantId: credentials.restaurantId,
+      hasAccessToken: !!data.accessToken,
+      hasRefreshToken: !!data.refreshToken,
+      expiresIn: data.expiresIn,
+    });
     
     // Save new tokens to Firestore
     const docRef = admin.firestore().doc(`restaurantes/${credentials.restaurantId}/integrations/ifood`);
@@ -53,6 +76,8 @@ async function refreshIfoodAccessToken(credentials) {
       refreshToken: data.refreshToken || credentials.refreshToken, // Some APIs don't return new refresh token
       accessTokenExpiry: admin.firestore.Timestamp.fromDate(new Date(Date.now() + (data.expiresIn * 1000))),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      needsReauthorization: false, // Clear flag on successful refresh
+      lastError: null,
     });
 
     logger.info("Access token refreshed successfully", {
@@ -91,10 +116,34 @@ async function getValidAccessToken(credentials) {
       credentials.accessTokenExpiry.toDate() : 
       new Date(credentials.accessTokenExpiry);
     
+    const now = new Date();
+    const timeUntilExpiry = expiryDate - now;
+    
+    logger.info("Checking token expiry", {
+      restaurantId: credentials.restaurantId,
+      expiryDate: expiryDate.toISOString(),
+      now: now.toISOString(),
+      timeUntilExpiryMinutes: Math.floor(timeUntilExpiry / 60000),
+      isExpired: expiryDate <= now,
+    });
+    
     // Add 5 minute buffer before expiry
     if (expiryDate > new Date(Date.now() + 5 * 60 * 1000)) {
+      logger.info("Using existing access token", {
+        restaurantId: credentials.restaurantId,
+      });
       return credentials.accessToken;
     }
+    
+    logger.info("Token expired or expiring soon, refreshing", {
+      restaurantId: credentials.restaurantId,
+    });
+  } else {
+    logger.warn("Access token or expiry missing", {
+      restaurantId: credentials.restaurantId,
+      hasToken: !!credentials.accessToken,
+      hasExpiry: !!credentials.accessTokenExpiry,
+    });
   }
 
   // Token expired or missing, refresh it
@@ -131,9 +180,22 @@ async function pollIfoodEvents(merchantIds, accessToken) {
         status: response.status,
         error,
       });
+      
+      // For 403 errors, throw to inform the caller
+      if (response.status === 403) {
+        throw new Error(`iFood API retornou erro 403 (Forbidden). O token pode estar expirado ou o merchant não tem permissão. Detalhes: ${JSON.stringify(error)}`);
+      }
+      
       return [];
     }
 
+    // Handle 204 No Content - no events available
+    if (response.status === 204) {
+      logger.info("No events available (204 No Content)", {merchantIds});
+      return [];
+    }
+
+    // Parse JSON response
     const data = await response.json();
     return data || [];
   } catch (error) {
@@ -179,12 +241,23 @@ async function fetchIfoodOrder(orderId, accessToken) {
 
 /**
  * Acknowledge event to prevent it from appearing in future polls
- * @param {Array<string>} eventIds - Array of event IDs to acknowledge
+ * @param {Array<object>} events - Array of event objects to acknowledge
  * @param {string} accessToken - Access token
  * @return {Promise<boolean>} - Success status
  */
-async function acknowledgeIfoodEvents(eventIds, accessToken) {
+async function acknowledgeIfoodEvents(events, accessToken) {
   try {
+    // API expects array of event objects with at least { id: "..." }
+    // We can send the full event payload or just the IDs wrapped in objects
+    const eventPayload = events.map(event => {
+      // If event is already an object with id, use it
+      if (typeof event === 'object' && event.id) {
+        return event;
+      }
+      // If event is just an ID string, wrap it
+      return { id: event };
+    });
+
     const response = await fetch(
       `${IFOOD_API_BASE_URL}/order/v1.0/events/acknowledgment`,
       {
@@ -194,20 +267,27 @@ async function acknowledgeIfoodEvents(eventIds, accessToken) {
           "Content-Type": "application/json",
           "accept": "application/json",
         },
-        body: JSON.stringify(eventIds),
+        body: JSON.stringify(eventPayload),
       }
     );
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      logger.error("Failed to acknowledge events", {eventIds, error});
+      logger.error("Failed to acknowledge events", {
+        eventCount: events.length,
+        error,
+        statusCode: response.status,
+      });
       return false;
     }
 
-    logger.info("Events acknowledged successfully", {count: eventIds.length});
+    logger.info("Events acknowledged successfully", {count: events.length});
     return true;
   } catch (error) {
-    logger.error("Error acknowledging events", {eventIds, error: error.message});
+    logger.error("Error acknowledging events", {
+      eventCount: events.length,
+      error: error.message,
+    });
     return false;
   }
 }
@@ -254,7 +334,119 @@ async function markEventAsProcessed(idRestaurante, event) {
 }
 
 /**
+ * Get or create virtual table for iFood orders
+ * @param {string} idRestaurante - Restaurant ID
+ * @return {Promise<string>} - Table ID
+ */
+async function getOrCreateIfoodTable(idRestaurante) {
+  const tableId = "ifood-delivery";
+  const tableRef = admin.firestore()
+    .doc(`restaurantes/${idRestaurante}/mesas/${tableId}`);
+  
+  const tableDoc = await tableRef.get();
+  
+  if (!tableDoc.exists) {
+    await tableRef.set({
+      numero: "iFood",
+      capacidade: 999,
+      status: "livre",
+      tipo: "virtual",
+      descricao: "Mesa virtual para pedidos do iFood",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      isVirtual: true,
+      source: "ifood",
+    });
+    logger.info("Created virtual table for iFood orders", {idRestaurante});
+  }
+  
+  return tableId;
+}
+
+/**
+ * Create MesaFacil order from iFood order data
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} mesaId - Table ID
+ * @param {object} orderData - iFood order data
+ * @return {Promise<string>} - MesaFacil order ID
+ */
+async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
+  try {
+    // Transform items
+    const items = (orderData.items || []).map(item => ({
+      id: item.externalCode || item.id,
+      nome: item.name,
+      price: item.unitPrice || item.price || 0,
+      quantity: item.quantity || 1,
+      categorias: [],
+      alergias: [],
+      descricao: item.observations || "",
+      imagemUrl: "",
+      ifoodData: {
+        id: item.id,
+        externalCode: item.externalCode,
+        totalPrice: item.totalPrice,
+        options: item.options || [],
+      }
+    }));
+    
+    // Calculate total
+    const total = orderData.total?.orderAmount || 0;
+    
+    // Create observations
+    const observations = [
+      `Cliente iFood: ${orderData.customer?.name || "N/A"}`,
+      orderData.customer?.phone?.number ? `Tel: ${orderData.customer.phone.number}` : "",
+      orderData.delivery?.deliveryAddress ? 
+        `Endereço: ${orderData.delivery.deliveryAddress.formattedAddress || orderData.delivery.deliveryAddress.streetName || ""}` : "",
+      orderData.delivery?.observations ? `Obs: ${orderData.delivery.observations}` : "",
+      `Pedido iFood #${orderData.displayId || orderData.id}`,
+    ].filter(Boolean).join("\n");
+    
+    // Create order in MesaFacil
+    const pedidosRef = admin.firestore()
+      .collection(`restaurantes/${idRestaurante}/mesas/${mesaId}/pedidos`);
+    
+    const newPedidoRef = pedidosRef.doc();
+    
+    await newPedidoRef.set({
+      items,
+      total,
+      observacoes: observations,
+      status: "andamento",
+      criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+      source: "ifood",
+      ifoodOrderId: orderData.id,
+      ifoodDisplayId: orderData.displayId,
+    });
+    
+    // Update table status
+    const tableRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/mesas/${mesaId}`);
+    await tableRef.update({
+      status: "andamento",
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    logger.info("Created MesaFacil order from iFood", {
+      idRestaurante,
+      mesaId,
+      mesaFacilOrderId: newPedidoRef.id,
+      ifoodOrderId: orderData.id,
+    });
+    
+    return newPedidoRef.id;
+  } catch (error) {
+    logger.error("Error creating MesaFacil order from iFood", {
+      idRestaurante,
+      error: error.message,
+    });
+    throw error;
+  }
+}
+
+/**
  * Process iFood order and save to Firestore
+ * Also sync status changes to MesaFacil order if it exists
  * @param {string} idRestaurante - Restaurant ID
  * @param {object} orderData - Order data from iFood
  * @return {Promise<boolean>} - Success status
@@ -271,6 +463,11 @@ async function processIfoodOrder(idRestaurante, orderData) {
     // Check if order already exists
     const existingOrder = await orderRef.get();
     const isNewOrder = !existingOrder.exists;
+    const existingData = existingOrder.exists ? existingOrder.data() : null;
+    
+    // Check if status changed
+    const statusChanged = existingData && 
+      existingData.ifoodStatus !== orderData.orderStatus;
 
     // Transform iFood order to MesaFacil format
     const transformedOrder = {
@@ -321,11 +518,16 @@ async function processIfoodOrder(idRestaurante, orderData) {
       // Status
       status: orderData.orderStatus || "PLACED",
       ifoodStatus: orderData.orderStatus || "PLACED",
+      previousIfoodStatus: existingData?.ifoodStatus || null,
       
       // Metadata
       source: "ifood",
       syncedAt: admin.firestore.FieldValue.serverTimestamp(),
       lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      statusChangedAt: statusChanged ? admin.firestore.FieldValue.serverTimestamp() : existingData?.statusChangedAt || null,
+      
+      // Keep existing mesaFacilOrderId if it exists
+      mesaFacilOrderId: existingData?.mesaFacilOrderId || null,
       
       // Raw data for reference
       rawData: orderData,
@@ -333,11 +535,62 @@ async function processIfoodOrder(idRestaurante, orderData) {
 
     await orderRef.set(transformedOrder, {merge: true});
 
+    // If this is a new order, create MesaFacil order automatically
+    if (isNewOrder || !existingData?.mesaFacilOrderId) {
+      try {
+        const mesaId = await getOrCreateIfoodTable(idRestaurante);
+        const mesaFacilOrderId = await createMesaFacilOrderFromIfood(
+          idRestaurante,
+          mesaId,
+          orderData
+        );
+        
+        // Update iFood order with MesaFacil reference
+        await orderRef.update({
+          mesaFacilOrderId,
+          syncedToMesaFacil: true,
+          syncedToMesaFacilAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        
+        logger.info("Created and linked MesaFacil order for new iFood order", {
+          idRestaurante,
+          ifoodOrderId: orderId,
+          mesaFacilOrderId,
+        });
+      } catch (error) {
+        logger.error("Error creating MesaFacil order for iFood order", {
+          idRestaurante,
+          ifoodOrderId: orderId,
+          error: error.message,
+        });
+      }
+    }
+    
+    // If status changed and order is synced to MesaFacil, update MesaFacil order
+    const currentMesaFacilOrderId = transformedOrder.mesaFacilOrderId || existingData?.mesaFacilOrderId;
+    if (statusChanged && currentMesaFacilOrderId) {
+      await syncStatusToMesaFacilOrder(
+        idRestaurante,
+        currentMesaFacilOrderId,
+        orderData.orderStatus,
+        existingData.ifoodStatus
+      );
+      
+      logger.info("iFood status change synced to MesaFacil", {
+        idRestaurante,
+        ifoodOrderId: orderId,
+        mesaFacilOrderId: currentMesaFacilOrderId,
+        oldStatus: existingData.ifoodStatus,
+        newStatus: orderData.orderStatus,
+      });
+    }
+
     logger.info("iFood order processed and saved", {
       idRestaurante,
       orderId,
       status: orderData.orderStatus,
       isNew: isNewOrder,
+      statusChanged,
     });
 
     return true;
@@ -347,6 +600,134 @@ async function processIfoodOrder(idRestaurante, orderData) {
       error: error.message,
     });
     return false;
+  }
+}
+
+/**
+ * Sync iFood status changes to MesaFacil order
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} mesaFacilOrderId - MesaFacil order ID
+ * @param {string} newIfoodStatus - New iFood status
+ * @param {string} oldIfoodStatus - Previous iFood status
+ */
+async function syncStatusToMesaFacilOrder(
+  idRestaurante,
+  mesaFacilOrderId,
+  newIfoodStatus,
+  oldIfoodStatus
+) {
+  try {
+    // Map iFood status to MesaFacil status
+    const statusMap = {
+      "PLACED": "andamento",           // Pedido recebido
+      "CONFIRMED": "andamento",        // Confirmado pelo restaurante
+      "READY_TO_PICKUP": "andamento",  // Pronto para retirada
+      "DISPATCHED": "andamento",       // Saiu para entrega
+      "CONCLUDED": "entregue",         // Concluído
+      "CANCELLED": "cancelado",        // Cancelado
+    };
+    
+    const mesaFacilStatus = statusMap[newIfoodStatus] || "andamento";
+    const previousMesaFacilStatus = statusMap[oldIfoodStatus] || "andamento";
+    
+    // Only update if MesaFacil status actually changes
+    if (mesaFacilStatus === previousMesaFacilStatus) {
+      logger.info("MesaFacil status unchanged, skipping update", {
+        newIfoodStatus,
+        oldIfoodStatus,
+        mesaFacilStatus,
+      });
+      return;
+    }
+    
+    const orderRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/mesas/ifood-delivery/pedidos/${mesaFacilOrderId}`);
+    
+    const updateData = {
+      status: mesaFacilStatus,
+      lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
+      ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
+        status: newIfoodStatus,
+        changedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }),
+    };
+    
+    // If order is concluded, add finalization timestamp
+    if (mesaFacilStatus === "entregue") {
+      updateData.finalizadoEm = admin.firestore.FieldValue.serverTimestamp();
+    }
+    
+    // If order is cancelled, add cancellation timestamp
+    if (mesaFacilStatus === "cancelado") {
+      updateData.canceladoEm = admin.firestore.FieldValue.serverTimestamp();
+    }
+    
+    await orderRef.update(updateData);
+    
+    // Update table status if needed
+    await updateVirtualTableStatus(idRestaurante);
+    
+    logger.info("MesaFacil order status updated from iFood", {
+      idRestaurante,
+      mesaFacilOrderId,
+      newStatus: mesaFacilStatus,
+      ifoodStatus: newIfoodStatus,
+    });
+  } catch (error) {
+    logger.error("Error syncing status to MesaFacil order", {
+      idRestaurante,
+      mesaFacilOrderId,
+      newIfoodStatus,
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Update virtual table status based on active orders
+ * @param {string} idRestaurante - Restaurant ID
+ */
+async function updateVirtualTableStatus(idRestaurante) {
+  try {
+    const pedidosRef = admin.firestore()
+      .collection(`restaurantes/${idRestaurante}/mesas/ifood-delivery/pedidos`);
+    
+    const snapshot = await pedidosRef.get();
+    
+    const hasActiveOrders = snapshot.docs.some(doc => {
+      const status = doc.data().status;
+      return status === "andamento";
+    });
+    
+    const hasDeliveredOrders = snapshot.docs.some(doc => {
+      const status = doc.data().status;
+      return status === "entregue";
+    });
+    
+    const tableRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/mesas/ifood-delivery`);
+    
+    let tableStatus = "livre";
+    if (hasActiveOrders) {
+      tableStatus = "andamento";
+    } else if (hasDeliveredOrders) {
+      tableStatus = "entregue";
+    }
+    
+    await tableRef.update({
+      status: tableStatus,
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    logger.info("Virtual table status updated", {
+      idRestaurante,
+      tableStatus,
+    });
+  } catch (error) {
+    logger.error("Error updating virtual table status", {
+      idRestaurante,
+      error: error.message,
+    });
   }
 }
 
@@ -440,7 +821,7 @@ async function getEnabledIfoodIntegrations() {
  * @param {string} accessToken - Access token
  */
 async function processEventsForRestaurant(idRestaurante, events, accessToken) {
-  const processedEventIds = [];
+  const processedEvents = [];
   
   for (const event of events) {
     try {
@@ -451,7 +832,8 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
           idRestaurante,
           eventId: event.id,
         });
-        processedEventIds.push(event.id);
+        // Even if already processed, we need to ACK it
+        processedEvents.push(event);
         continue;
       }
 
@@ -465,7 +847,7 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
 
       // Mark event as processed
       await markEventAsProcessed(idRestaurante, event);
-      processedEventIds.push(event.id);
+      processedEvents.push(event);
 
       logger.info("Event processed successfully", {
         idRestaurante,
@@ -482,9 +864,9 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
     }
   }
 
-  // Acknowledge all processed events
-  if (processedEventIds.length > 0) {
-    await acknowledgeIfoodEvents(processedEventIds, accessToken);
+  // Acknowledge all processed events (send full event objects, not just IDs)
+  if (processedEvents.length > 0) {
+    await acknowledgeIfoodEvents(processedEvents, accessToken);
   }
 }
 
