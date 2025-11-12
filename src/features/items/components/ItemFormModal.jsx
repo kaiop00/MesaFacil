@@ -15,12 +15,29 @@ const ItemFormModal = ({
     marca: "",
     unidadeArmazenamento: "",
     unidadeCompra: "",
+    fatorTransformacaoPadrao: "",
     estoqueAtual: "",
     estoqueBaixo: "",
     estoqueMedio: "",
     estoqueAlto: ""
   });
   const [formErrors, setFormErrors] = useState({});
+
+  // Helper function to get unit translation with plural support
+  const getUnitTranslation = (unitValue, type, count = 1) => {
+    if (!unitValue) return "";
+    const unitKey = unitValue.toLowerCase();
+    const baseKey = `form.units.${type}.${unitKey}`;
+    
+    // Use plural if count is different from 1
+    if (count !== 1) {
+      const pluralKey = `${baseKey}_plural`;
+      const pluralTranslation = t(pluralKey, { defaultValue: null });
+      if (pluralTranslation) return pluralTranslation;
+    }
+    
+    return t(baseKey);
+  };
 
   useEffect(() => {
     if (item) {
@@ -29,6 +46,7 @@ const ItemFormModal = ({
         marca: item.marca || "",
         unidadeArmazenamento: item.unidadeArmazenamento || "Unidade",
         unidadeCompra: item.unidadeCompra || "Unidade",
+        fatorTransformacaoPadrao: item.fatorTransformacaoPadrao || "",
         estoqueAtual: item.estoqueAtual || "",
         estoqueBaixo: item.estoqueBaixo || "",
         estoqueMedio: item.estoqueMedio || "",
@@ -40,6 +58,7 @@ const ItemFormModal = ({
         marca: "",
         unidadeArmazenamento: "Unidade",
         unidadeCompra: "Unidade",
+        fatorTransformacaoPadrao: "",
         estoqueAtual: "",
         estoqueBaixo: "",
         estoqueMedio: "",
@@ -89,7 +108,10 @@ const ItemFormModal = ({
         estoqueAtual: parseInt(formData.estoqueAtual, 10),
         estoqueBaixo: parseInt(formData.estoqueBaixo || 0, 10),
         estoqueMedio: parseInt(formData.estoqueMedio || 0, 10),
-        estoqueAlto: parseInt(formData.estoqueAlto || 0, 10)
+        estoqueAlto: parseInt(formData.estoqueAlto || 0, 10),
+        fatorTransformacaoPadrao: formData.fatorTransformacaoPadrao 
+          ? parseFloat(formData.fatorTransformacaoPadrao)
+          : null
       });
     }
   };
@@ -139,6 +161,26 @@ const ItemFormModal = ({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t("form.fields.purchaseUnit")}
+            </label>
+            <select
+              name="unidadeCompra"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              value={formData.unidadeCompra}
+              onChange={handleInputChange}
+            >
+              <option value="Unidade">{t("form.units.purchase.unidade")}</option>
+              <option value="Caixa">{t("form.units.purchase.caixa")}</option>
+              <option value="Pacote">{t("form.units.purchase.pacote")}</option>
+              <option value="Fardo">{t("form.units.purchase.fardo")}</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              {t("form.help.purchaseUnit")}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               {t("form.fields.storageUnit")}
             </label>
             <select
@@ -153,25 +195,33 @@ const ItemFormModal = ({
               <option value="Litro">{t("form.units.storage.litro")}</option>
               <option value="Mililitro">{t("form.units.storage.mililitro")}</option>
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("form.fields.purchaseUnit")}
-            </label>
-            <select
-              name="unidadeCompra"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-              value={formData.unidadeCompra}
-              onChange={handleInputChange}
-            >
-              <option value="Unidade">{t("form.units.purchase.unidade")}</option>
-              <option value="Caixa">{t("form.units.purchase.caixa")}</option>
-              <option value="Pacote">{t("form.units.purchase.pacote")}</option>
-              <option value="Fardo">{t("form.units.purchase.fardo")}</option>
-            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              {t("form.help.storageUnit")}
+            </p>
           </div>
         </div>
+
+        {/* Transformation Factor */}
+        {formData.unidadeArmazenamento !== formData.unidadeCompra && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t("form.fields.transformationFactor")} (opcional)
+            </label>
+            <input
+              type="number"
+              name="fatorTransformacaoPadrao"
+              step="0.01"
+              min="0.01"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              placeholder={`Ex: 1 ${getUnitTranslation(formData.unidadeCompra, 'purchase', 1)} = 10 ${getUnitTranslation(formData.unidadeArmazenamento, 'storage', 10)}`}
+              value={formData.fatorTransformacaoPadrao}
+              onChange={handleInputChange}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              {`1 ${getUnitTranslation(formData.unidadeCompra, 'purchase', 1)} = ${formData.fatorTransformacaoPadrao || "___"} ${getUnitTranslation(formData.unidadeArmazenamento, 'storage', parseFloat(formData.fatorTransformacaoPadrao) || 1)}`}
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -56,21 +56,37 @@
       "currentStockInvalid": "Stock invalide",
       "lowStock": "Stock faible",
       "mediumStock": "Stock moyen",
-      "highStock": "Stock élevé"
+      "highStock": "Stock élevé",
+      "transformationFactor": "Facteur de Transformation",
+      "transformationPlaceholder": "Ex: 1 {purchaseUnit} = 10 {storageUnit}",
+      "transformationHelp": "1 {purchaseUnit} = {factor} {storageUnit}"
+    },
+    "help": {
+      "storageUnit": "Unité de base pour le contrôle des stocks. Ex: bouteilles de soda → Unité",
+      "purchaseUnit": "Comment vous achetez au fournisseur. Ex: Boîte de 12 bouteilles, Paquet de 5kg"
     },
     "units": {
       "storage": {
         "unidade": "Unité",
+        "unidade_plural": "Unités",
         "quilograma": "Kilogramme",
+        "quilograma_plural": "Kilogrammes",
         "grama": "Gramme",
+        "grama_plural": "Grammes",
         "litro": "Litre",
-        "mililitro": "Millilitre"
+        "litro_plural": "Litres",
+        "mililitro": "Millilitre",
+        "mililitro_plural": "Millilitres"
       },
       "purchase": {
         "unidade": "Unité",
+        "unidade_plural": "Unités",
         "caixa": "Boîte",
+        "caixa_plural": "Boîtes",
         "pacote": "Paquet",
-        "fardo": "Ballot"
+        "pacote_plural": "Paquets",
+        "fardo": "Ballot",
+        "fardo_plural": "Ballots"
       }
     },
     "actions": {

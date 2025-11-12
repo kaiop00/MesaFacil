@@ -166,7 +166,8 @@ const MovementsPage = () => {
         unidadeArmazenamento: formData.unidadeArmazenamento || "",
         unidadeCompra: formData.unidadeCompra || "",
         
-        // Transformation factor (if applicable)
+        // Transformation factor and unit used
+        usarUnidadeCompra: formData.usarUnidadeCompra || false,
         fatorTransformacao: formData.fatorTransformacao 
           ? parseFloat(formData.fatorTransformacao) 
           : null,

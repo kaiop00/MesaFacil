@@ -121,5 +121,28 @@
     "emailExists": "Email already registered",
     "error": "Restaurant ID not found",
     "userIdNotFound": "User ID not found"
+  },
+  "errors": {
+    "EMAIL_EXISTS": "This email is already in use.",
+    "INVALID_EMAIL": "Invalid email.",
+    "EMAIL_NOT_FOUND": "User not found.",
+    "WEAK_PASSWORD": "Password should be at least 6 characters.",
+    "INVALID_PASSWORD": "Incorrect password.",
+    "MISSING_PASSWORD": "Password is required.",
+    "TOO_MANY_ATTEMPTS_TRY_LATER": "Too many attempts. Please try again later.",
+    "OPERATION_NOT_ALLOWED": "Operation not allowed. Please contact support.",
+    "NETWORK_REQUEST_FAILED": "Connection error. Check your internet.",
+    "INTERNAL_ERROR": "Internal server error. Please try again.",
+    "INVALID_ID_TOKEN": "Invalid credentials.",
+    "CREDENTIAL_TOO_OLD_LOGIN_AGAIN": "Session expired. Please log in again.",
+    "USER_DISABLED": "This account has been disabled.",
+    "ADMIN_ONLY_OPERATION": "Operation allowed for administrators only.",
+    "unknown": "An unexpected error occurred.",
+    "createUser": "An unexpected error occurred while creating the user.",
+    "invalidData": "Invalid data. Please check the information and try again.",
+    "unauthorized": "Unauthorized. Please check your credentials.",
+    "forbidden": "Access denied.",
+    "serverError": "Server error. Please try again later.",
+    "requestError": "Error processing request."
   }
 }

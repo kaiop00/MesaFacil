@@ -121,5 +121,28 @@
     "emailExists": "Correo electrónico ya registrado",
     "error": "ID de restaurante no encontrado",
     "userIdNotFound": "ID de usuario no encontrado"
+  },
+  "errors": {
+    "EMAIL_EXISTS": "Este correo electrónico ya está en uso.",
+    "INVALID_EMAIL": "Correo electrónico inválido.",
+    "EMAIL_NOT_FOUND": "Usuario no encontrado.",
+    "WEAK_PASSWORD": "La contraseña debe tener al menos 6 caracteres.",
+    "INVALID_PASSWORD": "Contraseña incorrecta.",
+    "MISSING_PASSWORD": "La contraseña es obligatoria.",
+    "TOO_MANY_ATTEMPTS_TRY_LATER": "Demasiados intentos. Por favor, inténtalo de nuevo más tarde.",
+    "OPERATION_NOT_ALLOWED": "Operación no permitida. Por favor, contacta con soporte.",
+    "NETWORK_REQUEST_FAILED": "Error de conexión. Verifica tu internet.",
+    "INTERNAL_ERROR": "Error interno del servidor. Por favor, inténtalo de nuevo.",
+    "INVALID_ID_TOKEN": "Credenciales inválidas.",
+    "CREDENTIAL_TOO_OLD_LOGIN_AGAIN": "Sesión expirada. Por favor, inicia sesión de nuevo.",
+    "USER_DISABLED": "Esta cuenta ha sido deshabilitada.",
+    "ADMIN_ONLY_OPERATION": "Operación permitida solo para administradores.",
+    "unknown": "Ocurrió un error inesperado.",
+    "createUser": "Ocurrió un error inesperado al crear el usuario.",
+    "invalidData": "Datos inválidos. Por favor, verifica la información e inténtalo de nuevo.",
+    "unauthorized": "No autorizado. Por favor, verifica tus credenciales.",
+    "forbidden": "Acceso denegado.",
+    "serverError": "Error del servidor. Por favor, inténtalo de nuevo más tarde.",
+    "requestError": "Error al procesar la solicitud."
   }
 }
