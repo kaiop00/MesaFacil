@@ -56,21 +56,37 @@
       "currentStockInvalid": "Stock inválido",
       "lowStock": "Stock Bajo",
       "mediumStock": "Stock Medio",
-      "highStock": "Stock Alto"
+      "highStock": "Stock Alto",
+      "transformationFactor": "Factor de Transformación",
+      "transformationPlaceholder": "Ej: 1 {purchaseUnit} = 10 {storageUnit}",
+      "transformationHelp": "1 {purchaseUnit} = {factor} {storageUnit}"
+    },
+    "help": {
+      "storageUnit": "Unidad base para control de inventario. Ej: botellas de refresco → Unidad",
+      "purchaseUnit": "Cómo compras del proveedor. Ej: Caja con 12 botellas, Paquete con 5kg"
     },
     "units": {
       "storage": {
         "unidade": "Unidad",
+        "unidade_plural": "Unidades",
         "quilograma": "Kilogramo",
+        "quilograma_plural": "Kilogramos",
         "grama": "Gramo",
+        "grama_plural": "Gramos",
         "litro": "Litro",
-        "mililitro": "Mililitro"
+        "litro_plural": "Litros",
+        "mililitro": "Mililitro",
+        "mililitro_plural": "Mililitros"
       },
       "purchase": {
         "unidade": "Unidad",
+        "unidade_plural": "Unidades",
         "caixa": "Caja",
+        "caixa_plural": "Cajas",
         "pacote": "Paquete",
-        "fardo": "Bulto"
+        "pacote_plural": "Paquetes",
+        "fardo": "Bulto",
+        "fardo_plural": "Bultos"
       }
     },
     "actions": {

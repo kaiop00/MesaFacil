@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import UserModal from "./UserModal";
 import registerUserOnFirebase from "./handlers/registerUserOnFirebase";
 import addUserToFirestore from "../../services/addUserToFirestore";
+import { handleFirebaseAuthResponse } from "../../utils/firebaseAuthErrorTranslator";
 
 const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
   const { t } = useTranslation();
@@ -29,10 +30,9 @@ const NewUserModal = ({ isOpen, onClose, onUserAdded }) => {
         onClose();
         if (onUserAdded) onUserAdded();
       } else {
-        if (response.status === 400 && data.error.message === 'EMAIL_EXISTS') {
-          throw new Error(t("users:messages.emailExists"));
-        }
-        throw new Error(JSON.stringify(`${response.status} ${response.statusText}`));
+        // Use the new error translator to handle all Firebase Auth errors
+        const errorMessage = handleFirebaseAuthResponse(response, data, t);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       notify(error.message, 'error');

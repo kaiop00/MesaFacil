@@ -33,6 +33,7 @@ const MovementsFormModal = ({
     qtd: "",
     novoSaldo: "",
     fatorTransformacao: "",
+    usarUnidadeCompra: false, // Se false, quantidade está na unidade de armazenamento
   });
 
   const [errors, setErrors] = useState({});
@@ -66,6 +67,7 @@ const MovementsFormModal = ({
           qtd: movement.quantidade || "",
           novoSaldo: movement.novoSaldo || "",
           fatorTransformacao: movement.fatorTransformacao?.toString() || "",
+          usarUnidadeCompra: movement.usarUnidadeCompra || false,
         });
       } else {
         // Creating mode - reset form
@@ -78,6 +80,7 @@ const MovementsFormModal = ({
           qtd: "",
           novoSaldo: "",
           fatorTransformacao: "",
+          usarUnidadeCompra: false,
         });
       }
       setErrors({});
@@ -102,13 +105,15 @@ const MovementsFormModal = ({
       }
 
       // Calculate new balance when quantity or transformation factor changes
-      if ((field === "qtd" || field === "fatorTransformacao") && updatedFormData.qtdAtual) {
+      if ((field === "qtd" || field === "fatorTransformacao" || field === "usarUnidadeCompra") && updatedFormData.qtdAtual) {
         const currentQty = parseFloat(updatedFormData.qtdAtual) || 0;
         const newQty = field === "qtd" ? parseFloat(value) || 0 : parseFloat(updatedFormData.qtd) || 0;
         const factor = field === "fatorTransformacao" ? parseFloat(value) || 1 : parseFloat(updatedFormData.fatorTransformacao) || 1;
+        const usarUnidadeCompra = field === "usarUnidadeCompra" ? value : updatedFormData.usarUnidadeCompra;
         
-        // Apply transformation factor if units are different and factor is provided
-        const effectiveQty = updatedFormData.unidadeArmazenamento !== updatedFormData.unidadeCompra && factor
+        // Se o usuário está usando unidade de compra E as unidades são diferentes, aplicar o fator
+        // Se o usuário está usando unidade de armazenamento, usar a quantidade diretamente
+        const effectiveQty = usarUnidadeCompra && updatedFormData.unidadeArmazenamento !== updatedFormData.unidadeCompra && factor
           ? newQty * factor
           : newQty;
           
@@ -153,6 +158,7 @@ const MovementsFormModal = ({
       unidadeArmazenamento: item.unidadeArmazenamento || "",
       unidadeCompra: item.unidadeCompra || "",
       qtdAtual: item.estoqueAtual?.toString() || "",
+      fatorTransformacao: item.fatorTransformacaoPadrao?.toString() || "",
     }));
     setIsDropdownOpen((prev) => ({ ...prev, item: false }));
   };
@@ -281,10 +287,11 @@ const MovementsFormModal = ({
             </div>
           </div>
 
-          {/* Transformation Factor (when units are different) */}
+          {/* Transformation Factor (when units are different AND using purchase unit) */}
           {formData.unidadeArmazenamento && 
            formData.unidadeCompra && 
-           formData.unidadeArmazenamento !== formData.unidadeCompra && (
+           formData.unidadeArmazenamento !== formData.unidadeCompra &&
+           formData.usarUnidadeCompra && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t("form.fields.transformationFactor")} ({translateUnit(formData.unidadeCompra)} → {translateUnit(formData.unidadeArmazenamento)})
@@ -298,11 +305,14 @@ const MovementsFormModal = ({
                   handleInputChange("fatorTransformacao", e.target.value)
                 }
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                placeholder={`Ex: 1 ${translateUnit(formData.unidadeCompra)} = 0.05 ${translateUnit(formData.unidadeArmazenamento)}`}
+                placeholder={`Ex: 1 ${translateUnit(formData.unidadeCompra)} = 10 ${translateUnit(formData.unidadeArmazenamento)}`}
                 required
               />
               <p className="mt-1 text-sm text-gray-500">
                 {`1 ${translateUnit(formData.unidadeCompra)} = ${formData.fatorTransformacao || '1.00'} ${translateUnit(formData.unidadeArmazenamento)}`}
+              </p>
+              <p className="mt-1 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                ℹ️ Informe quantas {translateUnit(formData.unidadeArmazenamento)} existem em 1 {translateUnit(formData.unidadeCompra)}
               </p>
             </div>
           )}
@@ -371,6 +381,9 @@ const MovementsFormModal = ({
                 readOnly
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                em {translateUnit(formData.unidadeArmazenamento)}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -378,7 +391,8 @@ const MovementsFormModal = ({
               </label>
               <input
                 type="number"
-                step="1"
+                step="0.01"
+                min="0"
                 value={formData.qtd}
                 onChange={(e) => handleInputChange("qtd", e.target.value)}
                 className={`w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
@@ -386,6 +400,33 @@ const MovementsFormModal = ({
                 }`}
                 placeholder={t("form.fields.quantityPlaceholder")}
               />
+              {/* Toggle para escolher unidade */}
+              {formData.unidadeArmazenamento !== formData.unidadeCompra && (
+                <div className="mt-2 flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("usarUnidadeCompra", false)}
+                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                      !formData.usarUnidadeCompra
+                        ? "bg-yellow-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {translateUnit(formData.unidadeArmazenamento)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("usarUnidadeCompra", true)}
+                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                      formData.usarUnidadeCompra
+                        ? "bg-yellow-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {translateUnit(formData.unidadeCompra)}
+                  </button>
+                </div>
+              )}
               {errors.qtd && (
                 <p className="mt-1 text-sm text-red-600">{errors.qtd}</p>
               )}
@@ -400,6 +441,9 @@ const MovementsFormModal = ({
                 readOnly
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                em {translateUnit(formData.unidadeArmazenamento)}
+              </p>
             </div>
           </div>
 

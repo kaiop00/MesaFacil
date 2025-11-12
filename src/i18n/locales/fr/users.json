@@ -121,5 +121,28 @@
     "emailExists": "E-mail déjà enregistré",
     "error": "ID du restaurant introuvable",
     "userIdNotFound": "ID de l'utilisateur introuvable"
+  },
+  "errors": {
+    "EMAIL_EXISTS": "Cet e-mail est déjà utilisé.",
+    "INVALID_EMAIL": "E-mail invalide.",
+    "EMAIL_NOT_FOUND": "Utilisateur introuvable.",
+    "WEAK_PASSWORD": "Le mot de passe doit contenir au moins 6 caractères.",
+    "INVALID_PASSWORD": "Mot de passe incorrect.",
+    "MISSING_PASSWORD": "Le mot de passe est obligatoire.",
+    "TOO_MANY_ATTEMPTS_TRY_LATER": "Trop de tentatives. Veuillez réessayer plus tard.",
+    "OPERATION_NOT_ALLOWED": "Opération non autorisée. Veuillez contacter le support.",
+    "NETWORK_REQUEST_FAILED": "Erreur de connexion. Vérifiez votre internet.",
+    "INTERNAL_ERROR": "Erreur interne du serveur. Veuillez réessayer.",
+    "INVALID_ID_TOKEN": "Identifiants invalides.",
+    "CREDENTIAL_TOO_OLD_LOGIN_AGAIN": "Session expirée. Veuillez vous reconnecter.",
+    "USER_DISABLED": "Ce compte a été désactivé.",
+    "ADMIN_ONLY_OPERATION": "Opération autorisée uniquement pour les administrateurs.",
+    "unknown": "Une erreur inattendue s'est produite.",
+    "createUser": "Une erreur inattendue s'est produite lors de la création de l'utilisateur.",
+    "invalidData": "Données invalides. Veuillez vérifier les informations et réessayer.",
+    "unauthorized": "Non autorisé. Veuillez vérifier vos identifiants.",
+    "forbidden": "Accès refusé.",
+    "serverError": "Erreur du serveur. Veuillez réessayer plus tard.",
+    "requestError": "Erreur lors du traitement de la requête."
   }
 }

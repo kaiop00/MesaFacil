@@ -6,7 +6,8 @@
     "waitingTables": "Aguarde o carregamento das mesas...",
     "noTables": "Nenhuma mesa disponível para gerar relatórios.",
     "errorGenerate": "Erro ao gerar relatório. Tente novamente.",
-    "noPermission": "Você não tem permissão para gerar relatórios. Entre em contato com o administrador."
+    "noPermission": "Sem Permissão",
+    "noPermissionMessage": "Você não tem permissão para acessar relatórios. Entre em contato com o administrador do sistema."
   },
   "filter": {
     "reportType": "Tipo de Relatório",

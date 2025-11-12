@@ -121,5 +121,28 @@
     "emailExists": "Email già registrata",
     "error": "ID ristorante non trovato",
     "userIdNotFound": "ID utente non trovato"
+  },
+  "errors": {
+    "EMAIL_EXISTS": "Questa email è già in uso.",
+    "INVALID_EMAIL": "Email non valida.",
+    "EMAIL_NOT_FOUND": "Utente non trovato.",
+    "WEAK_PASSWORD": "La password deve contenere almeno 6 caratteri.",
+    "INVALID_PASSWORD": "Password errata.",
+    "MISSING_PASSWORD": "La password è obbligatoria.",
+    "TOO_MANY_ATTEMPTS_TRY_LATER": "Troppi tentativi. Riprova più tardi.",
+    "OPERATION_NOT_ALLOWED": "Operazione non consentita. Contatta il supporto.",
+    "NETWORK_REQUEST_FAILED": "Errore di connessione. Verifica la tua connessione internet.",
+    "INTERNAL_ERROR": "Errore interno del server. Riprova.",
+    "INVALID_ID_TOKEN": "Credenziali non valide.",
+    "CREDENTIAL_TOO_OLD_LOGIN_AGAIN": "Sessione scaduta. Effettua nuovamente l'accesso.",
+    "USER_DISABLED": "Questo account è stato disabilitato.",
+    "ADMIN_ONLY_OPERATION": "Operazione consentita solo agli amministratori.",
+    "unknown": "Si è verificato un errore imprevisto.",
+    "createUser": "Si è verificato un errore imprevisto durante la creazione dell'utente.",
+    "invalidData": "Dati non validi. Verifica le informazioni e riprova.",
+    "unauthorized": "Non autorizzato. Verifica le tue credenziali.",
+    "forbidden": "Accesso negato.",
+    "serverError": "Errore del server. Riprova più tardi.",
+    "requestError": "Errore nell'elaborazione della richiesta."
   }
 }

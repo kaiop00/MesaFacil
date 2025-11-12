@@ -50,6 +50,9 @@
       "brandPlaceholder": "Item brand",
       "storageUnit": "Storage Unit",
       "purchaseUnit": "Purchase Unit",
+      "transformationFactor": "Transformation Factor",
+      "transformationPlaceholder": "Ex: 1 {purchaseUnit} = 10 {storageUnit}",
+      "transformationHelp": "1 {purchaseUnit} = {factor} {storageUnit}",
       "currentStock": "Current Stock",
       "currentStockPlaceholder": "Quantity in stock",
       "currentStockRequired": "Current stock is required",
@@ -58,19 +61,32 @@
       "mediumStock": "Medium Stock",
       "highStock": "High Stock"
     },
+    "help": {
+      "storageUnit": "Base unit for inventory control. Ex: soda bottles → Unit",
+      "purchaseUnit": "How you buy from supplier. Ex: Box with 12 bottles, Package with 5kg"
+    },
     "units": {
       "storage": {
         "unidade": "Unit",
+        "unidade_plural": "Units",
         "quilograma": "Kilogram",
+        "quilograma_plural": "Kilograms",
         "grama": "Gram",
+        "grama_plural": "Grams",
         "litro": "Liter",
-        "mililitro": "Milliliter"
+        "litro_plural": "Liters",
+        "mililitro": "Milliliter",
+        "mililitro_plural": "Milliliters"
       },
       "purchase": {
         "unidade": "Unit",
+        "unidade_plural": "Units",
         "caixa": "Box",
+        "caixa_plural": "Boxes",
         "pacote": "Package",
-        "fardo": "Bundle"
+        "pacote_plural": "Packages",
+        "fardo": "Bundle",
+        "fardo_plural": "Bundles"
       }
     },
     "actions": {

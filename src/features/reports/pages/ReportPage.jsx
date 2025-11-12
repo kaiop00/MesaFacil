@@ -22,12 +22,23 @@ const ReportPage = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const handleSubmit = async () => {
-    if (!hasPermission('view_reports')) {
-      alert(t('page.noPermission'));
-      return;
-    }
+  // Verifica permissão de visualizar relatórios
+  if (!hasPermission('view_reports')) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {t('page.noPermission') || 'Sem Permissão'}
+          </h2>
+          <p className="text-gray-600">
+            {t('page.noPermissionMessage') || 'Você não tem permissão para acessar relatórios. Entre em contato com o administrador do sistema.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
+  const handleSubmit = async () => {
     if (tablesLoading) {
       alert(t('page.waitingTables'));
       return;

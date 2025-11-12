@@ -56,21 +56,37 @@
       "currentStockInvalid": "Estoque inválido",
       "lowStock": "Estoque Baixo",
       "mediumStock": "Estoque Médio",
-      "highStock": "Estoque Alto"
+      "highStock": "Estoque Alto",
+      "transformationFactor": "Fator de Transformação",
+      "transformationPlaceholder": "Ex: 1 {purchaseUnit} = 10 {storageUnit}",
+      "transformationHelp": "1 {purchaseUnit} = {factor} {storageUnit}"
+    },
+    "help": {
+      "storageUnit": "Unidade base para controle de estoque. Ex: garrafas de refrigerante → Unidade",
+      "purchaseUnit": "Como você compra do fornecedor. Ex: Caixa com 12 garrafas, Pacote com 5kg"
     },
     "units": {
       "storage": {
         "unidade": "Unidade",
+        "unidade_plural": "Unidades",
         "quilograma": "Quilograma",
+        "quilograma_plural": "Quilogramas",
         "grama": "Grama",
+        "grama_plural": "Gramas",
         "litro": "Litro",
-        "mililitro": "Mililitro"
+        "litro_plural": "Litros",
+        "mililitro": "Mililitro",
+        "mililitro_plural": "Mililitros"
       },
       "purchase": {
         "unidade": "Unidade",
+        "unidade_plural": "Unidades",
         "caixa": "Caixa",
+        "caixa_plural": "Caixas",
         "pacote": "Pacote",
-        "fardo": "Fardo"
+        "pacote_plural": "Pacotes",
+        "fardo": "Fardo",
+        "fardo_plural": "Fardos"
       }
     },
     "actions": {

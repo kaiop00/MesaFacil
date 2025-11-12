@@ -56,21 +56,37 @@
       "currentStockInvalid": "Scorte non valide",
       "lowStock": "Scorte Basse",
       "mediumStock": "Scorte Medie",
-      "highStock": "Scorte Alte"
+      "highStock": "Scorte Alte",
+      "transformationFactor": "Fattore di Trasformazione",
+      "transformationPlaceholder": "Es: 1 {purchaseUnit} = 10 {storageUnit}",
+      "transformationHelp": "1 {purchaseUnit} = {factor} {storageUnit}"
+    },
+    "help": {
+      "storageUnit": "Unità base per il controllo dell'inventario. Es: bottiglie di bibita → Unità",
+      "purchaseUnit": "Come acquisti dal fornitore. Es: Scatola con 12 bottiglie, Pacchetto con 5kg"
     },
     "units": {
       "storage": {
         "unidade": "Unità",
+        "unidade_plural": "Unità",
         "quilograma": "Chilogrammo",
+        "quilograma_plural": "Chilogrammi",
         "grama": "Grammo",
+        "grama_plural": "Grammi",
         "litro": "Litro",
-        "mililitro": "Millilitro"
+        "litro_plural": "Litri",
+        "mililitro": "Millilitro",
+        "mililitro_plural": "Millilitri"
       },
       "purchase": {
         "unidade": "Unità",
+        "unidade_plural": "Unità",
         "caixa": "Scatola",
+        "caixa_plural": "Scatole",
         "pacote": "Pacchetto",
-        "fardo": "Balla"
+        "pacote_plural": "Pacchetti",
+        "fardo": "Balla",
+        "fardo_plural": "Balle"
       }
     },
     "actions": {

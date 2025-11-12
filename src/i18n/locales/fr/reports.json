@@ -6,7 +6,8 @@
     "waitingTables": "Veuillez attendre le chargement des tables...",
     "noTables": "Aucune table disponible pour générer des rapports.",
     "errorGenerate": "Erreur lors de la génération du rapport. Veuillez réessayer.",
-    "noPermission": "Vous n'avez pas la permission de générer des rapports. Veuillez contacter l'administrateur."
+    "noPermission": "Sans Permission",
+    "noPermissionMessage": "Vous n'avez pas la permission d'accéder aux rapports. Veuillez contacter l'administrateur du système."
   },
   "filter": {
     "reportType": "Type de rapport",

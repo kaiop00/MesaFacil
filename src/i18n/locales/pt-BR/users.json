@@ -121,5 +121,28 @@
     "emailExists": "Email já cadastrado",
     "error": "ID do restaurante não encontrado",
     "userIdNotFound": "ID do usuário não encontrado"
+  },
+  "errors": {
+    "EMAIL_EXISTS": "Este e-mail já está em uso.",
+    "INVALID_EMAIL": "E-mail inválido.",
+    "EMAIL_NOT_FOUND": "Usuário não encontrado.",
+    "WEAK_PASSWORD": "A senha deve conter no mínimo 6 caracteres.",
+    "INVALID_PASSWORD": "Senha incorreta.",
+    "MISSING_PASSWORD": "A senha é obrigatória.",
+    "TOO_MANY_ATTEMPTS_TRY_LATER": "Muitas tentativas. Tente novamente mais tarde.",
+    "OPERATION_NOT_ALLOWED": "Operação não permitida. Entre em contato com o suporte.",
+    "NETWORK_REQUEST_FAILED": "Erro de conexão. Verifique sua internet.",
+    "INTERNAL_ERROR": "Erro interno do servidor. Tente novamente.",
+    "INVALID_ID_TOKEN": "Credenciais inválidas.",
+    "CREDENTIAL_TOO_OLD_LOGIN_AGAIN": "Sessão expirada. Faça login novamente.",
+    "USER_DISABLED": "Esta conta foi desabilitada.",
+    "ADMIN_ONLY_OPERATION": "Operação permitida apenas para administradores.",
+    "unknown": "Ocorreu um erro inesperado.",
+    "createUser": "Ocorreu um erro inesperado ao criar o usuário.",
+    "invalidData": "Dados inválidos. Verifique as informações e tente novamente.",
+    "unauthorized": "Não autorizado. Verifique suas credenciais.",
+    "forbidden": "Acesso negado.",
+    "serverError": "Erro no servidor. Tente novamente mais tarde.",
+    "requestError": "Erro ao processar solicitação."
   }
 }
