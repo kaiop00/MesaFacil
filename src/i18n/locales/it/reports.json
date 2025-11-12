@@ -6,7 +6,8 @@
     "waitingTables": "Attendi il caricamento dei tavoli...",
     "noTables": "Nessun tavolo disponibile per generare rapporti.",
     "errorGenerate": "Errore nella generazione del rapporto. Riprova.",
-    "noPermission": "Non hai il permesso per generare rapporti. Contatta l'amministratore."
+    "noPermission": "Senza Permesso",
+    "noPermissionMessage": "Non hai il permesso di accedere ai rapporti. Contatta l'amministratore del sistema."
   },
   "filter": {
     "reportType": "Tipo di Rapporto",

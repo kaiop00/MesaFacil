@@ -6,7 +6,8 @@
     "waitingTables": "Por favor, espera a que se carguen las mesas...",
     "noTables": "No hay mesas disponibles para generar informes.",
     "errorGenerate": "Error al generar el informe. Por favor, inténtalo de nuevo.",
-    "noPermission": "No tienes permiso para generar informes. Por favor, contacta al administrador."
+    "noPermission": "Sin Permiso",
+    "noPermissionMessage": "No tienes permiso para acceder a los informes. Por favor, contacta al administrador del sistema."
   },
   "filter": {
     "reportType": "Tipo de Informe",
