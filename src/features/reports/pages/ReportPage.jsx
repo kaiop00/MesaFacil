@@ -25,12 +25,12 @@ const ReportPage = () => {
   // Verifica permissão de visualizar relatórios
   if (!hasPermission('view_reports')) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen px-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-md text-center">
-          <h1 className="text-2xl font-bold text-red-800 mb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             {t('page.noPermission') || 'Sem Permissão'}
-          </h1>
-          <p className="text-red-700 mb-4">
+          </h2>
+          <p className="text-gray-600">
             {t('page.noPermissionMessage') || 'Você não tem permissão para acessar relatórios. Entre em contato com o administrador do sistema.'}
           </p>
         </div>
