@@ -237,6 +237,9 @@ exports.ifoodExchangeCode = onCall(
         authorizationCodeVerifier: admin.firestore.FieldValue.delete(),
         userCode: admin.firestore.FieldValue.delete(),
         userCodeExpiresAt: admin.firestore.FieldValue.delete(),
+        // Clean up error fields since authorization succeeded
+        lastError: admin.firestore.FieldValue.delete(),
+        lastErrorAt: admin.firestore.FieldValue.delete(),
       }, {merge: true});
 
       logger.info("iFood integration configured successfully", {idRestaurante, merchantId});

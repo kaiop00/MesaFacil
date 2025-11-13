@@ -10,7 +10,8 @@ import {
     getIfoodIntegrationStatus,
     revokeIfoodAuth,
     setIfoodIntegrationEnabled,
-    triggerManualIfoodPoll
+    triggerManualIfoodPoll,
+    clearIfoodErrors
 } from "@/features/integrations/ifood/services/ifoodAuthService";
 import { 
     autoSyncPendingIfoodOrders,
@@ -171,6 +172,13 @@ const IfoodIntegrationPage = () => {
             setPolling(true);
             const result = await triggerManualIfoodPoll(idRestaurante);
             notify(`Busca manual concluída! ${result.eventCount} eventos processados.`, "success");
+            
+            // Clear any previous errors since polling worked successfully
+            if (integrationStatus.lastError) {
+                await clearIfoodErrors(idRestaurante);
+                await loadIntegrationStatus();
+            }
+            
             await loadStats();
         } catch (error) {
             console.error("Error triggering manual poll:", error);
@@ -192,6 +200,12 @@ const IfoodIntegrationPage = () => {
                 );
             } else {
                 notify(`${results.synced} pedidos sincronizados com sucesso!`, "success");
+                
+                // Clear any previous errors since sync worked successfully
+                if (integrationStatus.lastError) {
+                    await clearIfoodErrors(idRestaurante);
+                    await loadIntegrationStatus();
+                }
             }
             
             await loadStats();
@@ -247,7 +261,8 @@ const IfoodIntegrationPage = () => {
                     </div>
                 )}
 
-                {integrationStatus.lastError && (
+                {/* Only show error if not currently authorized or needs reauthorization */}
+                {integrationStatus.lastError && (!integrationStatus.isAuthorized || integrationStatus.needsReauthorization) && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                         <p className="text-sm text-red-800">
                             <strong>Último Erro:</strong> {integrationStatus.lastError}
@@ -296,7 +311,7 @@ const IfoodIntegrationPage = () => {
                                             </div>
                                         </div>
                                         <a 
-                                            href="https://portal.ifood.com.br" 
+                                            href="https://portal.ifood.com.br/apps" 
                                             target="_blank" 
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center text-sm text-green-700 hover:text-green-900 underline"

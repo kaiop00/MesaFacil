@@ -98,6 +98,21 @@ export const setIfoodIntegrationEnabled = async (idRestaurante, enabled) => {
 };
 
 /**
+ * Clear error messages from iFood integration
+ * Useful when errors are resolved or integration is working again
+ */
+export const clearIfoodErrors = async (idRestaurante) => {
+    const docRef = doc(db, "restaurantes", idRestaurante, "integrations", "ifood");
+    
+    await setDoc(docRef, {
+        lastError: null,
+        lastErrorAt: null,
+        needsReauthorization: false,
+        updatedAt: serverTimestamp(),
+    }, { merge: true });
+};
+
+/**
  * Trigger manual polling for iFood orders
  * Calls the Cloud Function to immediately poll for new orders
  */
