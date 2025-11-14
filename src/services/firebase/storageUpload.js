@@ -19,9 +19,17 @@ const deleteAnyImage = async (storagePath) => {
         const storageRef = ref(storage, storagePath);
         await deleteObject(storageRef);
     } catch (error) {
-        if (error?.code === "storage/object-not-found") {
+        const ignorableErrors = [
+            "storage/object-not-found",
+            "storage/unauthorized",
+            "storage/permission-denied"
+        ];
+
+        if (ignorableErrors.includes(error?.code)) {
+            console.warn("[storageUpload] Ignoring delete error:", error?.code, storagePath);
             return;
         }
+
         throw error;
     }
 };
