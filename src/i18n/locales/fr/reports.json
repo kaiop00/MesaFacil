@@ -45,8 +45,7 @@
         "orderNumber": "N° de commande",
         "table": "Table",
         "date": "Date",
-        "value": "Valeur",
-        "status": "Statut"
+        "value": "Valeur"
       },
       "tablePrefix": "Table"
     },
@@ -71,10 +70,6 @@
         "totalValueGenerated": "Valeur totale générée"
       }
     }
-  },
-  "status": {
-    "finished": "Terminé",
-    "pending": "En attente"
   },
   "pdf": {
     "generatedAt": "Généré le",

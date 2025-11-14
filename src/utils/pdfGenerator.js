@@ -4,6 +4,10 @@ import logo from '../assets/mesafacil.png';
 
 export const generatePDF = async (reportData, startDate, endDate, t = null) => {
   const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth
+    ? doc.internal.pageSize.getWidth()
+    : doc.internal.pageSize.width;
+  const centerX = pageWidth / 2;
 
   // Colors
   const primaryColor = [239, 158, 67]; // Orange color from logo
@@ -20,7 +24,7 @@ export const generatePDF = async (reportData, startDate, endDate, t = null) => {
   // Title
   doc.setFontSize(20);
   doc.setTextColor(...secondaryColor);
-  doc.text(getReportTitle(reportData.type, t), 70, 20);
+  doc.text(getReportTitle(reportData.type, t), centerX, 20, { align: 'center' });
 
   // Subtitle with period
   doc.setFontSize(12);
@@ -28,14 +32,14 @@ export const generatePDF = async (reportData, startDate, endDate, t = null) => {
   const periodText = t 
     ? `${t('table.period')}: ${formatDateBR(startDate)} ${t('table.from')} ${formatDateBR(endDate)}`
     : `Período: ${formatDateBR(startDate)} até ${formatDateBR(endDate)}`;
-  doc.text(periodText, 70, 28);
+  doc.text(periodText, centerX, 28, { align: 'center' });
 
   // Add generation date
   doc.setFontSize(10);
   const generatedText = t 
     ? `${t('pdf.generatedAt')}: ${new Date().toLocaleString('pt-BR')}`
     : `Gerado em: ${new Date().toLocaleString('pt-BR')}`;
-  doc.text(generatedText, 15, 40);
+  doc.text(generatedText, centerX, 40, { align: 'center' });
 
   // Add separator line
   doc.setDrawColor(...primaryColor);
@@ -131,22 +135,16 @@ const generateSalesTable = (doc, orders, startY, t = null) => {
     t('tables.sales.columns.orderNumber'),
     t('tables.sales.columns.table'),
     t('tables.sales.columns.date'),
-    t('tables.sales.columns.value'),
-    t('tables.sales.columns.status')
-  ] : ['Nº Pedido', 'Mesa', 'Data', 'Valor', 'Status'];
+    t('tables.sales.columns.value')
+  ] : ['Nº Pedido', 'Mesa', 'Data', 'Valor'];
 
   const tablePrefix = t ? t('tables.sales.tablePrefix') : 'Mesa';
-  const getStatusText = (status) => {
-    if (!t) return status;
-    return status === 'Finalizado' ? t('status.finished') : t('status.pending');
-  };
 
   const tableRows = orders.map(order => [
     order.numero.slice(-8),
     `${tablePrefix} ${order.mesa}`,
     order.data,
-    formatCurrency(order.valor),
-    getStatusText(order.status)
+    formatCurrency(order.valor)
   ]);
 
   autoTable(doc, {

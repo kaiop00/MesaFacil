@@ -6,16 +6,27 @@ import { v4 as uuid } from "uuid";
  * Sobe a imagem e retorna { downloadURL, storagePath }.
  * Caminho: images/{uid}/{restId}/{uuid.ext}
  */
-export async function uploadMenuImage(file, restId) {
-    const uid = auth.currentUser && auth.currentUser.uid;
-    if (!uid) throw new Error("Usuário não autenticado.");
+const ensureFileIsImage = (file) => {
     if (!file || !file.type || !file.type.startsWith("image/")) {
         throw new Error("Arquivo inválido (precisa ser imagem).");
     }
+};
 
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const imageId = `${uuid()}.${ext}`;
-    const storagePath = `images/${uid}/${restId}/${imageId}`;
+const deleteAnyImage = async (storagePath) => {
+    if (!storagePath) return;
+
+    try {
+        const storageRef = ref(storage, storagePath);
+        await deleteObject(storageRef);
+    } catch (error) {
+        if (error?.code === "storage/object-not-found") {
+            return;
+        }
+        throw error;
+    }
+};
+
+const buildStorageTask = async (file, storagePath) => {
     const storageRef = ref(storage, storagePath);
 
     const task = uploadBytesResumable(storageRef, file, {
@@ -29,18 +40,36 @@ export async function uploadMenuImage(file, restId) {
 
     const downloadURL = await getDownloadURL(task.snapshot.ref);
     return { downloadURL, storagePath };
+};
+
+export async function uploadMenuImage(file, restId) {
+    const uid = auth.currentUser && auth.currentUser.uid;
+    if (!uid) throw new Error("Usuário não autenticado.");
+    ensureFileIsImage(file);
+
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const imageId = `${uuid()}.${ext}`;
+    const storagePath = `images/${uid}/${restId}/${imageId}`;
+    return await buildStorageTask(file, storagePath);
+}
+
+export async function uploadRestaurantImage(file, restId) {
+    const uid = auth.currentUser && auth.currentUser.uid;
+    if (!uid) throw new Error("Usuário não autenticado.");
+    ensureFileIsImage(file);
+
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    // Prefixo no próprio nome do arquivo para diferenciar das imagens do cardápio,
+    // mantendo o mesmo caminho que já possui permissão nas regras.
+    const imageId = `restaurant-${uuid()}.${ext}`;
+    const storagePath = `images/${uid}/${restId}/${imageId}`;
+    return await buildStorageTask(file, storagePath);
 }
 
 export async function deleteMenuImage(storagePath) {
-    if (!storagePath) return;
+    await deleteAnyImage(storagePath);
+}
 
-    try {
-        const storageRef = ref(storage, storagePath);
-        await deleteObject(storageRef);
-    } catch (error) {
-        if (error?.code === "storage/object-not-found") {
-            return;
-        }
-        throw error;
-    }
+export async function deleteRestaurantImage(storagePath) {
+    await deleteAnyImage(storagePath);
 }

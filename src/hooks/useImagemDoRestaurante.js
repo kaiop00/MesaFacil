@@ -1,27 +1,35 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function useImagemDoRestaurante() {
     const { idRestaurante } = useAuth();
-    const [ imagemRestaurante, setImagemRestaurante ] = useState(null);
+    const [imagemRestaurante, setImagemRestaurante] = useState(null);
 
     useEffect(() => {
-        async function fetchImagem() {
-            if (!idRestaurante) return;
+        if (!idRestaurante) {
+            setImagemRestaurante(null);
+            return;
+        }
 
-            try {
-                const restDoc = await getDoc(doc(db, "restaurantes", idRestaurante));
-                if (restDoc.exists()) {
-                    const data = restDoc.data();
-                    setImagemRestaurante(data.imagem_restaurante || null);
+        const unsubscribe = onSnapshot(
+            doc(db, "restaurantes", idRestaurante),
+            (snapshot) => {
+                if (!snapshot.exists()) {
+                    setImagemRestaurante(null);
+                    return;
                 }
-            } catch (error) {
+                const data = snapshot.data();
+                setImagemRestaurante(data.imagem_restaurante || null);
+            },
+            (error) => {
                 console.error("erro ao buscar imagem do restaurante", error);
             }
-        }
-        fetchImagem();
+        );
+
+        return () => unsubscribe();
     }, [idRestaurante]);
+
     return imagemRestaurante;
 }

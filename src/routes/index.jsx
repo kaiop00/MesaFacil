@@ -34,6 +34,7 @@ import UsersPage from "@/features/users/pages/UsersPage";
 import ItemsPage from "@/features/items/pages/ItemsPage";
 import MovementsPage from "@/features/movements/pages/MovementsPage";
 import KitchenPage from "@/features/kitchen/pages/KitchenPage";
+import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -184,6 +185,10 @@ const router = createBrowserRouter([
                 <MovementsPage />
               </RequireFeature>
             )
+          },
+          { 
+            path: "integracoes/ifood", 
+            element: <IfoodIntegrationPage />
           },
         ],
       }
