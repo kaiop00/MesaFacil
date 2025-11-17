@@ -18,7 +18,8 @@ import {
     getIfoodOrderStats 
 } from "@/features/integrations/ifood/services/ifoodOrderSyncService";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
-import { CheckboxCheck, TriangleWarning, ArrowReload02, Link } from "react-coolicons";
+import { CheckboxCheck, TriangleWarning, ArrowReload02, Link, Settings } from "react-coolicons";
+import IfoodItemMappingModal from "@/features/integrations/ifood/components/IfoodItemMappingModal";
 
 const IfoodIntegrationPage = () => {
     const { idRestaurante } = useAuth();
@@ -29,6 +30,7 @@ const IfoodIntegrationPage = () => {
     const [polling, setPolling] = useState(false);
     const [stats, setStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(false);
+    const [showMappingModal, setShowMappingModal] = useState(false);
     
     // UserCode flow states
     const [userCode, setUserCode] = useState("");
@@ -77,6 +79,7 @@ const IfoodIntegrationPage = () => {
     const loadIntegrationStatus = async () => {
         try {
             const status = await getIfoodIntegrationStatus(idRestaurante);
+            console.log('[getIfoodIntegrationStatus] ', status);
             setIntegrationStatus(status);
         } catch (error) {
             console.error("Error loading integration status:", error);
@@ -375,6 +378,13 @@ const IfoodIntegrationPage = () => {
                                 >
                                     {credentials.enabled ? "Desativar Integração" : "Ativar Integração"}
                                 </button>
+                                <button
+                                    onClick={() => setShowMappingModal(true)}
+                                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                    <Settings className="w-5 h-5 mr-2" />
+                                    Mapear Itens do Cardápio
+                                </button>
                             </>
                         )}
                     </div>
@@ -506,6 +516,12 @@ const IfoodIntegrationPage = () => {
                     </a>.
                 </p>
             </div>
+
+            {/* Item Mapping Modal */}
+            <IfoodItemMappingModal 
+                isOpen={showMappingModal} 
+                onClose={() => setShowMappingModal(false)} 
+            />
         </div>
     );
 };

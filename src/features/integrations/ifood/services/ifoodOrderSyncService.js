@@ -1,5 +1,7 @@
 import { createPedido } from "@/features/order/services/orderService";
 import { getIfoodOrderFromFirestore, updateIfoodOrderStatus } from "./ifoodService";
+import { getIfoodItemMappings } from "./ifoodItemMappingService";
+import { getAll } from "@/services/firebase/firestoreService";
 
 /**
  * Create a virtual table for iFood orders
@@ -36,25 +38,70 @@ export const getOrCreateIfoodTable = async (idRestaurante) => {
 
 /**
  * Transform iFood order items to MesaFacil format
+ * Now supports item mapping to match MesaFacil cardapio items
  */
-const transformIfoodItems = (ifoodItems) => {
-    return ifoodItems.map(item => ({
-        id: item.externalCode || item.id,
-        nome: item.name,
-        price: item.unitPrice || item.price || 0,
-        quantity: item.quantity || 1,
-        categorias: [],
-        alergias: [],
-        descricao: item.observations || "",
-        imagemUrl: "",
-        // Store iFood-specific data
-        ifoodData: {
-            id: item.id,
-            externalCode: item.externalCode,
-            totalPrice: item.totalPrice,
-            options: item.options || [],
+const transformIfoodItems = async (ifoodItems, idRestaurante) => {
+    // Get item mappings
+    const mappings = await getIfoodItemMappings(idRestaurante);
+    
+    // Get cardapio items to get full details
+    const cardapioItems = await getAll(idRestaurante, "cardapio");
+    const cardapioMap = new Map(cardapioItems.map(item => [item.id, item]));
+    
+    return ifoodItems.map(item => {
+        const ifoodItemId = item.externalCode || item.id;
+        const mappedItemId = mappings[ifoodItemId];
+        
+        // If mapped, use MesaFacil item data
+        if (mappedItemId && cardapioMap.has(mappedItemId)) {
+            const mesaFacilItem = cardapioMap.get(mappedItemId);
+            
+            return {
+                id: mesaFacilItem.id,
+                nome: mesaFacilItem.nome,
+                price: item.totalPrice || (item.unitPrice * item.quantity) || 0, // Use iFood price for billing
+                quantity: item.quantity || 1,
+                categorias: mesaFacilItem.categorias || [],
+                alergias: mesaFacilItem.alergias || [],
+                descricao: mesaFacilItem.descricao || "",
+                imagemUrl: mesaFacilItem.imagemUrl || "",
+                preco: mesaFacilItem.preco || 0, // Original MesaFacil price
+                ingredientes: mesaFacilItem.ingredientes || [], // For stock control
+                // Store mapping info
+                isMapped: true,
+                mesaFacilItemId: mappedItemId,
+                // Store iFood-specific data
+                ifoodData: {
+                    id: item.id,
+                    name: item.name, // Original iFood name
+                    externalCode: item.externalCode,
+                    totalPrice: item.totalPrice,
+                    unitPrice: item.unitPrice,
+                    options: item.options || [],
+                }
+            };
         }
-    }));
+        
+        // If not mapped, use iFood data as-is (no stock control)
+        return {
+            id: item.externalCode || item.id,
+            nome: item.name,
+            price: item.unitPrice || item.price || 0,
+            quantity: item.quantity || 1,
+            categorias: [],
+            alergias: [],
+            descricao: item.observations || "",
+            imagemUrl: "",
+            isMapped: false,
+            // Store iFood-specific data
+            ifoodData: {
+                id: item.id,
+                externalCode: item.externalCode,
+                totalPrice: item.totalPrice,
+                options: item.options || [],
+            }
+        };
+    });
 };
 
 /**
@@ -83,8 +130,8 @@ export const syncIfoodOrderToMesaFacil = async (idRestaurante, ifoodOrderId) => 
         // Get or create virtual table for iFood orders
         const mesaId = await getOrCreateIfoodTable(idRestaurante);
         
-        // Transform items
-        const items = transformIfoodItems(ifoodOrder.items || []);
+        // Transform items with mapping support
+        const items = await transformIfoodItems(ifoodOrder.items || [], idRestaurante);
         
         // Calculate total (use iFood's orderAmount)
         const total = ifoodOrder.total?.orderAmount || 0;
