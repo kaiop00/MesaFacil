@@ -369,9 +369,11 @@ const {
   ifoodExchangeCode,
   ifoodRevokeAuth,
 } = require("./ifood-auth-distributed");
+const {ifoodGetCatalog} = require("./ifood-catalog");
 
 exports.ifoodPolling = ifoodPolling;
 exports.ifoodPollManual = ifoodPollManual;
 exports.ifoodRequestUserCode = ifoodRequestUserCode;
 exports.ifoodExchangeCode = ifoodExchangeCode;
 exports.ifoodRevokeAuth = ifoodRevokeAuth;
+exports.ifoodGetCatalog = ifoodGetCatalog;

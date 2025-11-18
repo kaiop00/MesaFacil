@@ -25,18 +25,21 @@ async function refreshIfoodAccessToken(credentials) {
       hasRefreshToken: !!credentials.refreshToken,
     });
 
+    const params = new URLSearchParams();
+    params.append("grantType", "refresh_token");
+    params.append("clientId", ifoodClientId.value());
+    params.append("clientSecret", ifoodClientSecret.value());
+    params.append("authorizationCode", "");
+    params.append("authorizationCodeVerifier", "");
+    params.append("refreshToken", credentials.refreshToken);
+
     const response = await fetch(`${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/token`, {
       method: "POST",
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        grantType: "refresh_token",
-        clientId: ifoodClientId.value(),
-        clientSecret: ifoodClientSecret.value(),
-        refreshToken: credentials.refreshToken,
-      }),
+      body: params.toString(),
     });
 
     if (!response.ok) {
@@ -162,23 +165,23 @@ async function pollIfoodEvents(merchantIds, accessToken) {
     const merchantIdsParam = merchantIds.join(",");
     
     const response = await fetch(
-      `${IFOOD_API_BASE_URL}/order/v1.0/events:polling`,
+      `${IFOOD_API_BASE_URL}/events/v1.0/events:polling`,
       {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "x-polling-merchants": merchantIdsParam,
           "accept": "application/json",
+          "x-polling-merchants": merchantIdsParam,
+          "Authorization": `Bearer ${accessToken}`,
         },
       }
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = await response.text();
       logger.error("Failed to poll iFood events", {
         merchantIds,
         status: response.status,
-        error,
+        error: error,
       });
       
       // For 403 errors, throw to inform the caller
@@ -259,13 +262,13 @@ async function acknowledgeIfoodEvents(events, accessToken) {
     });
 
     const response = await fetch(
-      `${IFOOD_API_BASE_URL}/order/v1.0/events/acknowledgment`,
+      `${IFOOD_API_BASE_URL}/events/v1.0/events/acknowledgment`,
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
           "accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
         },
         body: JSON.stringify(eventPayload),
       }
@@ -372,33 +375,47 @@ async function getOrCreateIfoodTable(idRestaurante) {
 async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
   try {
     // Transform items
-    const items = (orderData.items || []).map(item => ({
-      id: item.externalCode || item.id,
-      nome: item.name,
-      price: item.unitPrice || item.price || 0,
-      quantity: item.quantity || 1,
-      categorias: [],
-      alergias: [],
-      descricao: item.observations || "",
-      imagemUrl: "",
-      ifoodData: {
-        id: item.id,
-        externalCode: item.externalCode,
-        totalPrice: item.totalPrice,
-        options: item.options || [],
+    const items = (orderData.items || []).map(item => {
+      const itemData = {
+        id: item.externalCode || item.id || "",
+        nome: item.name || "Item sem nome",
+        price: item.unitPrice || item.price || 0,
+        quantity: item.quantity || 1,
+        categorias: [],
+        alergias: [],
+        descricao: item.observations || "",
+        imagemUrl: "",
+      };
+
+      // Only add ifoodData if we have valid data
+      const ifoodData = {};
+      if (item.id) ifoodData.id = item.id;
+      if (item.externalCode) ifoodData.externalCode = item.externalCode;
+      if (item.totalPrice !== undefined && item.totalPrice !== null) {
+        ifoodData.totalPrice = item.totalPrice;
       }
-    }));
+      if (item.options && item.options.length > 0) {
+        ifoodData.options = item.options;
+      }
+
+      // Only add ifoodData if it has properties
+      if (Object.keys(ifoodData).length > 0) {
+        itemData.ifoodData = ifoodData;
+      }
+
+      return itemData;
+    });
     
     // Calculate total
     const total = orderData.total?.orderAmount || 0;
     
-    // Create observations
+    // Create observations - filter out empty values
     const observations = [
-      `Cliente iFood: ${orderData.customer?.name || "N/A"}`,
-      orderData.customer?.phone?.number ? `Tel: ${orderData.customer.phone.number}` : "",
+      orderData.customer?.name ? `Cliente iFood: ${orderData.customer.name}` : "Cliente iFood",
+      orderData.customer?.phone?.number ? `Tel: ${orderData.customer.phone.number}` : null,
       orderData.delivery?.deliveryAddress ? 
-        `Endereço: ${orderData.delivery.deliveryAddress.formattedAddress || orderData.delivery.deliveryAddress.streetName || ""}` : "",
-      orderData.delivery?.observations ? `Obs: ${orderData.delivery.observations}` : "",
+        `Endereço: ${orderData.delivery.deliveryAddress.formattedAddress || orderData.delivery.deliveryAddress.streetName || ""}` : null,
+      orderData.delivery?.observations ? `Obs: ${orderData.delivery.observations}` : null,
       `Pedido iFood #${orderData.displayId || orderData.id}`,
     ].filter(Boolean).join("\n");
     
@@ -408,16 +425,20 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
     
     const newPedidoRef = pedidosRef.doc();
     
-    await newPedidoRef.set({
+    const orderPayload = {
       items,
       total,
       observacoes: observations,
       status: "andamento",
       criadoEm: admin.firestore.FieldValue.serverTimestamp(),
       source: "ifood",
-      ifoodOrderId: orderData.id,
-      ifoodDisplayId: orderData.displayId,
-    });
+    };
+
+    // Only add optional fields if they exist
+    if (orderData.id) orderPayload.ifoodOrderId = orderData.id;
+    if (orderData.displayId) orderPayload.ifoodDisplayId = orderData.displayId;
+    
+    await newPedidoRef.set(orderPayload);
     
     // Update table status
     const tableRef = admin.firestore()

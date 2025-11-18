@@ -15,7 +15,7 @@ export default function ClienteLayout() {
                 <CarrinhoProvider>
                     <main className="min-h-screen pb-24">
                         <ClienteHeader />
-                        <ClienteBanner />
+                        {/* <ClienteBanner /> */}
                         <Outlet />
                         <NavFooter />
                     </main>
