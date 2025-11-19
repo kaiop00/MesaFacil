@@ -364,6 +364,148 @@ async function getOrCreateIfoodTable(idRestaurante) {
 }
 
 /**
+ * Apply ingredients for mapped items in an iFood order
+ * This deducts ingredient quantities from stock
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} pedidoId - Order ID
+ * @param {Array} mappedItems - Array of mapped items with mesaFacilItemId
+ */
+async function applyIngredientsForIfoodOrder(idRestaurante, pedidoId, mappedItems) {
+  const batch = admin.firestore().batch();
+  const appliedIngredients = [];
+  
+  for (const item of mappedItems) {
+    try {
+      // Get item details including ingredients
+      const itemDoc = await admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/cardapio/${item.mesaFacilItemId}`)
+        .get();
+      
+      if (!itemDoc.exists) {
+        logger.warn("Item not found for ingredient application", {
+          itemId: item.mesaFacilItemId,
+        });
+        continue;
+      }
+      
+      const itemData = itemDoc.data();
+      const ingredientes = itemData.ingredientes || [];
+      
+      if (ingredientes.length === 0) {
+        logger.info("No ingredients defined for item", {
+          itemId: item.mesaFacilItemId,
+          itemName: itemData.nome,
+        });
+        continue;
+      }
+      
+      // Apply each ingredient
+      for (const ingrediente of ingredientes) {
+        const quantityToDeduct = (ingrediente.quantidade || 0) * item.quantity;
+        
+        if (quantityToDeduct === 0) {
+          continue;
+        }
+        
+        const ingredienteRef = admin.firestore()
+          .doc(`restaurantes/${idRestaurante}/ingredientes/${ingrediente.id}`);
+        
+        // Deduct from stock using increment (negative value)
+        batch.update(ingredienteRef, {
+          quantidadeAtual: admin.firestore.FieldValue.increment(-quantityToDeduct),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        
+        appliedIngredients.push({
+          ingredienteId: ingrediente.id,
+          nome: ingrediente.nome,
+          quantidadeUsada: quantityToDeduct,
+          itemId: item.mesaFacilItemId,
+          itemNome: item.nome,
+        });
+        
+        logger.info("Ingredient applied", {
+          ingredienteId: ingrediente.id,
+          nome: ingrediente.nome,
+          quantityDeducted: quantityToDeduct,
+          itemNome: item.nome,
+        });
+      }
+    } catch (error) {
+      logger.error("Error applying ingredients for item", {
+        itemId: item.mesaFacilItemId,
+        error: error.message,
+      });
+      // Continue with other items
+    }
+  }
+  
+  // Commit all ingredient updates
+  if (appliedIngredients.length > 0) {
+    await batch.commit();
+    
+    logger.info("Ingredients applied successfully", {
+      idRestaurante,
+      pedidoId,
+      appliedCount: appliedIngredients.length,
+      details: appliedIngredients,
+    });
+  }
+}
+
+/**
+ * Get item mappings for iFood integration
+ * @param {string} idRestaurante - Restaurant ID
+ * @return {Promise<object>} - Mappings object
+ */
+async function getIfoodItemMappings(idRestaurante) {
+  try {
+    const mappingsDoc = await admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/integrations/ifood-item-mappings`)
+      .get();
+    
+    if (!mappingsDoc.exists) {
+      return {};
+    }
+    
+    return mappingsDoc.data().mappings || {};
+  } catch (error) {
+    logger.error("Error getting item mappings", {
+      idRestaurante,
+      error: error.message,
+    });
+    return {};
+  }
+}
+
+/**
+ * Get MesaFacil item details by ID
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} itemId - Item ID
+ * @return {Promise<object|null>} - Item data or null
+ */
+async function getMesaFacilItemById(idRestaurante, itemId) {
+  try {
+    const itemDoc = await admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/cardapio/${itemId}`)
+      .get();
+    
+    if (!itemDoc.exists) {
+      return null;
+    }
+    
+    return {id: itemDoc.id, ...itemDoc.data()};
+  } catch (error) {
+    logger.error("Error getting MesaFacil item", {
+      idRestaurante,
+      itemId,
+      error: error.message,
+    });
+    return null;
+  }
+}
+
+/**
  * Create MesaFacil order from iFood order data
  * @param {string} idRestaurante - Restaurant ID
  * @param {string} mesaId - Table ID
@@ -372,18 +514,80 @@ async function getOrCreateIfoodTable(idRestaurante) {
  */
 async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
   try {
-    // Transform items
-    const items = (orderData.items || []).map(item => {
-      const itemData = {
-        id: item.externalCode || item.id || "",
-        nome: item.name || "Item sem nome",
-        price: item.unitPrice || item.price || 0,
-        quantity: item.quantity || 1,
-        categorias: [],
-        alergias: [],
-        descricao: item.observations || "",
-        imagemUrl: "",
-      };
+    // Get item mappings
+    const mappings = await getIfoodItemMappings(idRestaurante);
+    
+    // Transform items with mapping support
+    const items = [];
+    
+    for (const item of orderData.items || []) {
+      // Try to find mapping using externalCode or id
+      const ifoodItemKey = item.externalCode || item.id;
+      const mappedItemId = mappings[ifoodItemKey];
+      
+      let itemData;
+      
+      if (mappedItemId) {
+        // Item is mapped - get MesaFacil item details
+        const mesaFacilItem = await getMesaFacilItemById(idRestaurante, mappedItemId);
+        
+        if (mesaFacilItem) {
+          logger.info("Using mapped item", {
+            ifoodItemKey,
+            mappedItemId,
+            mesaFacilItemName: mesaFacilItem.nome,
+          });
+          
+          itemData = {
+            id: mesaFacilItem.id,
+            nome: mesaFacilItem.nome || item.name,
+            price: item.unitPrice || item.price || 0, // Use iFood price
+            quantity: item.quantity || 1,
+            categorias: mesaFacilItem.categorias || [],
+            alergias: mesaFacilItem.alergias || [],
+            descricao: item.observations || mesaFacilItem.descricao || "",
+            imagemUrl: mesaFacilItem.imagemUrl || "",
+            // Keep reference to mapped item
+            mesaFacilItemId: mesaFacilItem.id,
+            isMapped: true,
+          };
+        } else {
+          logger.warn("Mapped item not found in cardapio", {
+            ifoodItemKey,
+            mappedItemId,
+          });
+          // Fallback to unmapped item
+          itemData = {
+            id: item.externalCode || item.id || "",
+            nome: item.name || "Item sem nome",
+            price: item.unitPrice || item.price || 0,
+            quantity: item.quantity || 1,
+            categorias: [],
+            alergias: [],
+            descricao: item.observations || "",
+            imagemUrl: "",
+            isMapped: false,
+          };
+        }
+      } else {
+        // Item not mapped - use iFood data directly
+        logger.info("Using unmapped item", {
+          ifoodItemKey,
+          itemName: item.name,
+        });
+        
+        itemData = {
+          id: item.externalCode || item.id || "",
+          nome: item.name || "Item sem nome",
+          price: item.unitPrice || item.price || 0,
+          quantity: item.quantity || 1,
+          categorias: [],
+          alergias: [],
+          descricao: item.observations || "",
+          imagemUrl: "",
+          isMapped: false,
+        };
+      }
 
       // Only add ifoodData if we have valid data
       const ifoodData = {};
@@ -401,8 +605,8 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
         itemData.ifoodData = ifoodData;
       }
 
-      return itemData;
-    });
+      items.push(itemData);
+    }
     
     // Calculate total
     const total = orderData.total?.orderAmount || 0;
@@ -437,6 +641,32 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
     if (orderData.displayId) orderPayload.ifoodDisplayId = orderData.displayId;
     
     await newPedidoRef.set(orderPayload);
+    
+    // Apply ingredients for mapped items
+    const mappedItems = items.filter(item => item.isMapped && item.mesaFacilItemId);
+    if (mappedItems.length > 0) {
+      logger.info("Applying ingredients for mapped items", {
+        idRestaurante,
+        mappedItemCount: mappedItems.length,
+        totalItems: items.length,
+      });
+      
+      try {
+        await applyIngredientsForIfoodOrder(idRestaurante, newPedidoRef.id, mappedItems);
+      } catch (error) {
+        logger.error("Error applying ingredients for iFood order", {
+          idRestaurante,
+          orderId: newPedidoRef.id,
+          error: error.message,
+        });
+        // Don't throw - order was created successfully, ingredient application is secondary
+      }
+    } else {
+      logger.info("No mapped items - skipping ingredient application", {
+        idRestaurante,
+        totalItems: items.length,
+      });
+    }
     
     // Update table status
     const tableRef = admin.firestore()
@@ -623,6 +853,121 @@ async function processIfoodOrder(idRestaurante, orderData) {
 }
 
 /**
+ * Finaliza um pedido do iFood seguindo a mesma lógica de finalizarPedidoEspecifico
+ * Salva no histórico e atualiza o status da mesa
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} mesaFacilOrderId - MesaFacil order ID
+ * @param {string} newIfoodStatus - New iFood status
+ */
+async function finalizarPedidoIfood(idRestaurante, mesaFacilOrderId, newIfoodStatus) {
+  try {
+    const mesaId = "ifood-delivery";
+    const pedidoDocRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/mesas/${mesaId}/pedidos/${mesaFacilOrderId}`);
+    
+    const pedidoSnapshot = await pedidoDocRef.get();
+    
+    if (!pedidoSnapshot.exists()) {
+      throw new Error("Pedido não encontrado");
+    }
+    
+    const pedidoData = pedidoSnapshot.data();
+    
+    // 1. Atualizar status do pedido para "entregue"
+    const finalizadoEm = admin.firestore.FieldValue.serverTimestamp();
+    
+    await pedidoDocRef.update({
+      status: "entregue",
+      finalizadoEm: finalizadoEm,
+      lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
+      ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
+        status: newIfoodStatus,
+        changedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }),
+    });
+    
+    // 2. Salvar no histórico
+    const historicoRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/historicoPedidos/${mesaFacilOrderId}`);
+    
+    const total = pedidoData.total || 0;
+    
+    await historicoRef.set({
+      pedidoId: mesaFacilOrderId,
+      mesaId: mesaId,
+      mesaNumero: "iFood",
+      status: "entregue",
+      total: total,
+      observacoes: pedidoData.observacoes || "",
+      items: pedidoData.items || [],
+      criadoEm: pedidoData.criadoEm || admin.firestore.FieldValue.serverTimestamp(),
+      finalizadoEm: finalizadoEm,
+      archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+      source: "ifood",
+      ifoodOrderId: pedidoData.ifoodOrderId || null,
+      displayId: pedidoData.displayId || null,
+    }, { merge: true });
+    
+    // 3. Verificar se há outros pedidos em andamento na mesa
+    const pedidosRef = admin.firestore()
+      .collection(`restaurantes/${idRestaurante}/mesas/${mesaId}/pedidos`);
+    const snapshot = await pedidosRef.get();
+    
+    const pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const temAndamento = pedidos.some(p => p.status === "andamento");
+    
+    // 4. Atualizar status da mesa
+    const mesaDocRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/mesas/${mesaId}`);
+    
+    if (!temAndamento) {
+      // Soma total dos pedidos entregues
+      const totalEntregue = pedidos
+        .filter(p => p.status === "entregue")
+        .reduce((acc, p) => acc + (p.total || 0), 0);
+      
+      await mesaDocRef.update({
+        status: "entregue",
+        entregueEm: admin.firestore.FieldValue.serverTimestamp(),
+        total: totalEntregue,
+      });
+      
+      logger.info("Mesa iFood marcada como entregue", {
+        idRestaurante,
+        mesaId,
+        totalEntregue,
+      });
+    } else {
+      // Garante que a mesa continua em andamento
+      await mesaDocRef.update({ 
+        status: "andamento",
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      
+      logger.info("Mesa iFood permanece em andamento (outros pedidos ativos)", {
+        idRestaurante,
+        mesaId,
+      });
+    }
+    
+    logger.info("Pedido iFood finalizado com sucesso", {
+      idRestaurante,
+      mesaFacilOrderId,
+      ifoodStatus: newIfoodStatus,
+      mesaStatus: temAndamento ? "andamento" : "entregue",
+    });
+  } catch (error) {
+    logger.error("Erro ao finalizar pedido iFood", {
+      idRestaurante,
+      mesaFacilOrderId,
+      newIfoodStatus,
+      error: error.message,
+    });
+    throw error;
+  }
+}
+
+/**
  * Sync iFood status changes to MesaFacil order
  * @param {string} idRestaurante - Restaurant ID
  * @param {string} mesaFacilOrderId - MesaFacil order ID
@@ -659,6 +1004,14 @@ async function syncStatusToMesaFacilOrder(
       return;
     }
     
+    // If order is concluded, use finalizarPedidoIfood logic
+    // This will handle the full finalization flow including history and table status
+    if (newIfoodStatus === "CONCLUDED") {
+      await finalizarPedidoIfood(idRestaurante, mesaFacilOrderId, newIfoodStatus);
+      return;
+    }
+    
+    // For other status changes, update normally
     const orderRef = admin.firestore()
       .doc(`restaurantes/${idRestaurante}/mesas/ifood-delivery/pedidos/${mesaFacilOrderId}`);
     
@@ -670,11 +1023,6 @@ async function syncStatusToMesaFacilOrder(
         changedAt: admin.firestore.FieldValue.serverTimestamp(),
       }),
     };
-    
-    // If order is concluded, add finalization timestamp
-    if (mesaFacilStatus === "entregue") {
-      updateData.finalizadoEm = admin.firestore.FieldValue.serverTimestamp();
-    }
     
     // If order is cancelled, add cancellation timestamp
     if (mesaFacilStatus === "cancelado") {
