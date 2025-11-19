@@ -15,6 +15,10 @@ import {
     processarBaixaEstoque, 
     verificarEstoqueDisponivel 
 } from "@/services/ingredientes/ingredientesService";
+import { 
+    isIfoodOrder, 
+    updateIfoodOrderStatusFromMesaFacil 
+} from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 
 const historicoCollection = (idRestaurante) =>
     collection(db, "restaurantes", idRestaurante, "historicoPedidos");
@@ -263,6 +267,16 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId)
         status: "entregue",
     });
 
+    // Update iFood order status if this is an iFood order
+    if (isIfoodOrder(mesaId)) {
+        try {
+            await updateIfoodOrderStatusFromMesaFacil(idRestaurante, pedidoId, 'entregue');
+        } catch (error) {
+            console.error('Error updating iFood order status:', error);
+            // Don't fail the entire operation if iFood update fails
+        }
+    }
+
     // 2) Busca todos os pedidos da mesa para decidir o status da mesa
     const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
     const snapshot = await getDocs(pedidosRef);
@@ -344,6 +358,16 @@ export const cancelarPedido = async (idRestaurante, mesaId, pedidoId) => {
                     }));
                     
                     await processarBaixaEstoque(idRestaurante, reverterIngredientes, `CANCELAMENTO-${pedidoId}`);
+                }
+            }
+            
+            // Update iFood order status if this is an iFood order
+            if (isIfoodOrder(mesaId)) {
+                try {
+                    await updateIfoodOrderStatusFromMesaFacil(idRestaurante, pedidoId, 'cancelado');
+                } catch (error) {
+                    console.error('Error updating iFood order status on cancellation:', error);
+                    // Don't fail the operation if iFood update fails
                 }
             }
             

@@ -12,6 +12,9 @@ export const useIfoodOrders = (idRestaurante, options = {}) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // Extract options to avoid dependency issues
+    const { statusFilter, syncedOnly, pendingOnly } = options;
 
     useEffect(() => {
         if (!idRestaurante) {
@@ -29,15 +32,15 @@ export const useIfoodOrders = (idRestaurante, options = {}) => {
             // Build query with optional filters
             let q = query(ordersRef, orderBy('createdAt', 'desc'));
             
-            if (options.statusFilter) {
-                q = query(ordersRef, where('status', '==', options.statusFilter), orderBy('createdAt', 'desc'));
+            if (statusFilter) {
+                q = query(ordersRef, where('status', '==', statusFilter), orderBy('createdAt', 'desc'));
             }
             
-            if (options.syncedOnly) {
-                q = query(ordersRef, where('mesaFacilOrderId', '!=', null), orderBy('createdAt', 'desc'));
+            if (syncedOnly) {
+                q = query(ordersRef, where('mesaFacilOrderId', '!=', null), orderBy('mesaFacilOrderId'), orderBy('createdAt', 'desc'));
             }
             
-            if (options.pendingOnly) {
+            if (pendingOnly) {
                 q = query(ordersRef, where('mesaFacilOrderId', '==', null), orderBy('createdAt', 'desc'));
             }
 
@@ -49,6 +52,18 @@ export const useIfoodOrders = (idRestaurante, options = {}) => {
                         id: doc.id,
                         ...doc.data(),
                     }));
+                    
+                    console.log('iFood orders updated:', {
+                        count: ifoodOrders.length,
+                        syncedOnly,
+                        pendingOnly,
+                        orders: ifoodOrders.map(o => ({
+                            id: o.id,
+                            displayId: o.displayId,
+                            status: o.ifoodStatus || o.status,
+                            mesaFacilOrderId: o.mesaFacilOrderId,
+                        })),
+                    });
                     
                     setOrders(ifoodOrders);
                     setLoading(false);
@@ -66,7 +81,7 @@ export const useIfoodOrders = (idRestaurante, options = {}) => {
             setError(err.message);
             setLoading(false);
         }
-    }, [idRestaurante, options.statusFilter, options.syncedOnly, options.pendingOnly]);
+    }, [idRestaurante, statusFilter, syncedOnly, pendingOnly]);
 
     return { orders, loading, error };
 };

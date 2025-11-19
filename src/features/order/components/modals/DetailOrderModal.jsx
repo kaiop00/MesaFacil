@@ -16,12 +16,21 @@ import {
     DEFAULT_SERVICE_FEE_PERCENT,
     formatCurrency,
 } from "@/features/cliente/utils/pedidos";
+import { 
+    getIfoodOrderForMesaFacilOrder, 
+    extractIfoodCustomerInfo,
+    formatIfoodStatus,
+    isIfoodOrder
+} from "@/features/integrations/ifood/services/ifoodStatusSyncService";
+import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
+import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) => {
     const { t } = useTranslation('order');
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [finalizando, setFinalizando] = useState({}); // { [pedidoId]: boolean }
+    const [ifoodOrdersInfo, setIfoodOrdersInfo] = useState({}); // { [pedidoId]: ifoodOrderData }
     const { notify } = useToast();
     const {
         percent: serviceFeePercent,
@@ -40,14 +49,41 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                 try {
                     const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
                     setPedidos(dados || []);
+                    
+                    // If this is an iFood table, fetch iFood order information
+                    if (isIfoodOrder(mesaSelecionada.id) && dados && dados.length > 0) {
+                        const ifoodInfoMap = {};
+                        
+                        for (const pedido of dados) {
+                            try {
+                                const ifoodOrder = await getIfoodOrderForMesaFacilOrder(idRestaurante, pedido.id);
+                                if (ifoodOrder) {
+                                    // Store both customer info and full order data for history
+                                    ifoodInfoMap[pedido.id] = {
+                                        ...extractIfoodCustomerInfo(ifoodOrder),
+                                        statusHistory: pedido.ifoodStatusHistory || [],
+                                        fullOrder: ifoodOrder
+                                    };
+                                }
+                            } catch (error) {
+                                console.error('Error fetching iFood order info:', error);
+                            }
+                        }
+                        
+                        setIfoodOrdersInfo(ifoodInfoMap);
+                    } else {
+                        setIfoodOrdersInfo({});
+                    }
                 } catch (error) {
                     console.error("❌ Erro ao buscar pedidos:", error);
                     setPedidos([]);
+                    setIfoodOrdersInfo({});
                 } finally {
                     setLoading(false);
                 }
             } else {
                 setPedidos([]);
+                setIfoodOrdersInfo({});
             }
         };
 
@@ -155,6 +191,78 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                 </p>
                             </div>
                         </div>
+
+                        {/* iFood Order Information */}
+                        {ifoodOrdersInfo[pedido.id] && (
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <ShoppingBag02 className="text-orange-600" size={20} />
+                                    <span className="font-semibold text-orange-900">Pedido iFood</span>
+                                    {ifoodOrdersInfo[pedido.id].displayId && (
+                                        <span className="text-sm text-orange-700">
+                                            #{ifoodOrdersInfo[pedido.id].displayId}
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 gap-2 text-sm">
+                                    {ifoodOrdersInfo[pedido.id].name && (
+                                        <div className="flex items-start gap-2">
+                                            <User01 className="text-orange-600 mt-0.5" size={16} />
+                                            <div>
+                                                <span className="text-gray-600">Cliente: </span>
+                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].name}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {ifoodOrdersInfo[pedido.id].phone && (
+                                        <div className="flex items-start gap-2">
+                                            <Phone className="text-orange-600 mt-0.5" size={16} />
+                                            <div>
+                                                <span className="text-gray-600">Telefone: </span>
+                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].phone}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {ifoodOrdersInfo[pedido.id].address && (
+                                        <div className="flex items-start gap-2">
+                                            <MapPin className="text-orange-600 mt-0.5" size={16} />
+                                            <div>
+                                                <span className="text-gray-600">Endereço: </span>
+                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].address}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {ifoodOrdersInfo[pedido.id].ifoodStatus && (
+                                        <div className="mt-1 pt-2 border-t border-orange-200">
+                                            <span className="text-gray-600">Status iFood: </span>
+                                            <span className="font-semibold text-orange-700">
+                                                {formatIfoodStatus(ifoodOrdersInfo[pedido.id].ifoodStatus)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    
+                                    {ifoodOrdersInfo[pedido.id].observations && (
+                                        <div className="mt-1 pt-2 border-t border-orange-200">
+                                            <span className="text-gray-600">Observações: </span>
+                                            <span className="text-gray-800 italic">{ifoodOrdersInfo[pedido.id].observations}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* iFood Status History */}
+                                {ifoodOrdersInfo[pedido.id].statusHistory && 
+                                 ifoodOrdersInfo[pedido.id].statusHistory.length > 0 && (
+                                    <IfoodStatusHistory 
+                                        statusHistory={ifoodOrdersInfo[pedido.id].statusHistory}
+                                        currentStatus={ifoodOrdersInfo[pedido.id].ifoodStatus}
+                                    />
+                                )}
+                            </div>
+                        )}
 
                         <OrderItemsList
                             items={pedido.items || []}
