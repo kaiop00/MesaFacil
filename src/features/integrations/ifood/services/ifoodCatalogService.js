@@ -48,49 +48,129 @@ export const fetchIfoodCatalog = async (idRestaurante) => {
 };
 
 /**
- * Parse iFood catalog to extract all items
- * iFood catalog structure:
- * - merchant
- *   - menus[]
- *     - catalogSections[]
- *       - items[]
+ * Parse iFood catalog to extract all items with product details
+ * New structure (correct API flow):
+ * - catalog.items[] - all items
+ * - catalog.categories[] - category metadata
+ * - catalog.products[] - product details (name, description, image, etc.)
+ * - catalog.optionGroups[] - option group definitions
+ * - catalog.options[] - option definitions with prices
  */
 export const parseIfoodCatalogItems = (catalogData) => {
     const items = [];
     
     try {
-        // Navigate through the catalog structure
-        const menus = catalogData?.catalogSections || catalogData?.menus || [];
+        // Get the parsed catalog structure
+        const catalog = catalogData?.catalog || catalogData;
         
-        menus.forEach(menu => {
-            const sections = menu.catalogSections || menu.items || [];
+        const catalogItems = catalog?.items || [];
+        const products = catalog?.products || [];
+        const optionGroups = catalog?.optionGroups || [];
+        const options = catalog?.options || [];
+        
+        // Create lookup maps for faster access
+        const productMap = new Map(products.map(p => [p.id, p]));
+        const optionGroupMap = new Map(optionGroups.map(og => [og.id, og]));
+        const optionMap = new Map(options.map(o => [o.id, o]));
+        
+        catalogItems.forEach(item => {
+            // Get product details
+            const product = productMap.get(item.productId);
             
-            sections.forEach(section => {
-                const sectionItems = section.items || [];
+            if (!product) {
+                console.warn(`Product not found for item ${item.id}`, { productId: item.productId });
+                return;
+            }
+            
+            // Build option groups with full details
+            const itemOptionGroups = (product.optionGroups || []).map(productOptGroup => {
+                const optionGroup = optionGroupMap.get(productOptGroup.id);
                 
-                sectionItems.forEach(item => {
-                    // Extract main item info
-                    const parsedItem = {
-                        id: item.id,
-                        externalCode: item.externalCode || item.code,
-                        name: item.name,
-                        description: item.description || "",
-                        price: item.price?.value || item.originalPrice || 0,
-                        serving: item.serving || "SERVES_1",
-                        logoUrl: item.logoUrl || item.imageUrl || "",
-                        ean: item.ean || null,
-                        // Category info
-                        categoryName: section.name || menu.name || "",
-                        menuName: menu.name || "",
-                        // Availability
-                        available: item.status !== "UNAVAILABLE",
-                        // Options/modifiers
-                        optionGroups: item.optionGroups || [],
-                    };
+                if (!optionGroup) {
+                    console.warn(`Option group not found: ${productOptGroup.id}`);
+                    return null;
+                }
+                
+                // Get options for this group
+                const groupOptions = (optionGroup.optionIds || []).map(optionId => {
+                    const option = optionMap.get(optionId);
+                    const optionProduct = option ? productMap.get(option.productId) : null;
                     
-                    items.push(parsedItem);
-                });
-            });
+                    if (!option || !optionProduct) {
+                        console.warn(`Option or option product not found: ${optionId}`);
+                        return null;
+                    }
+                    
+                    return {
+                        id: option.id,
+                        name: optionProduct.name,
+                        description: optionProduct.description || "",
+                        price: option.price?.value || 0,
+                        originalPrice: option.price?.originalValue || option.price?.value || 0,
+                        externalCode: option.externalCode,
+                        status: option.status,
+                        available: option.status === "AVAILABLE",
+                        imagePath: optionProduct.imagePath || "",
+                        ean: optionProduct.ean || null,
+                    };
+                }).filter(Boolean);
+                
+                return {
+                    id: optionGroup.id,
+                    name: optionGroup.name,
+                    min: productOptGroup.min || 0,
+                    max: productOptGroup.max || 999,
+                    externalCode: optionGroup.externalCode,
+                    status: optionGroup.status,
+                    available: optionGroup.status === "AVAILABLE",
+                    options: groupOptions,
+                };
+            }).filter(Boolean);
+            
+            // Get the actual price (considering context modifiers)
+            let itemPrice = item.price?.value || 0;
+            let itemOriginalPrice = item.price?.originalValue || item.price?.value || 0;
+            
+            // If price is 0, check context modifiers (iFood uses this for different delivery contexts)
+            if (itemPrice === 0 && item.contextModifiers && item.contextModifiers.length > 0) {
+                // Use the first available context modifier price (usually DEFAULT context)
+                const defaultContext = item.contextModifiers.find(cm => cm.catalogContext === 'DEFAULT');
+                const firstContext = defaultContext || item.contextModifiers[0];
+                
+                if (firstContext?.price?.value) {
+                    itemPrice = firstContext.price.value;
+                    itemOriginalPrice = firstContext.price.originalValue || firstContext.price.value;
+                }
+            }
+            
+            // Extract main item info
+            const parsedItem = {
+                id: item.id,
+                externalCode: item.externalCode || "",
+                name: product.name,
+                description: product.description || "",
+                additionalInformation: product.additionalInformation || "",
+                price: itemPrice,
+                originalPrice: itemOriginalPrice,
+                serving: product.serving || "SERVES_1",
+                imagePath: product.imagePath || "",
+                ean: product.ean || null,
+                dietaryRestrictions: product.dietaryRestrictions || [],
+                // Category info
+                categoryId: item.categoryId,
+                categoryName: item.categoryName || "",
+                // Availability
+                status: item.status,
+                available: item.status === "AVAILABLE",
+                // Options/modifiers
+                optionGroups: itemOptionGroups,
+                // Scheduling
+                shifts: item.shifts || [],
+                // Context modifiers
+                contextModifiers: item.contextModifiers || [],
+            };
+            
+            items.push(parsedItem);
         });
         
         return items;
@@ -109,7 +189,7 @@ export const suggestCatalogMappings = (ifoodItems, mesaFacilItems) => {
     
     ifoodItems.forEach(ifoodItem => {
         const ifoodName = (ifoodItem.name || "").toLowerCase().trim();
-        const ifoodPrice = ifoodItem.price;
+        const ifoodPrice = ifoodItem.price; // Already in cents from API
         
         let bestMatch = null;
         let highestScore = 0;

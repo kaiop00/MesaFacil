@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
-import { fetchIfoodCatalog, suggestCatalogMappings } from "./ifoodCatalogService";
+import { fetchIfoodCatalog, parseIfoodCatalogItems, suggestCatalogMappings } from "./ifoodCatalogService";
 
 /**
  * Get all item mappings for iFood integration
@@ -134,21 +134,23 @@ export const getIfoodCatalogItems = async (idRestaurante) => {
             throw new Error("Failed to fetch catalog from iFood");
         }
         
-        const { items } = catalogResponse.catalog;
+        // Parse the catalog to get items with full details
+        const parsedItems = parseIfoodCatalogItems(catalogResponse);
         
-        console.log(`Successfully fetched ${items.length} items from iFood catalog`);
+        console.log(`Successfully parsed ${parsedItems.length} items from iFood catalog`);
+        console.log("First item sample:", parsedItems[0]);
         
-        // Transform to match the expected format
-        return items.map(item => ({
+        // Transform to match the expected format for the UI
+        return parsedItems.map(item => ({
             id: item.externalCode || item.id,
             name: item.name,
             externalCode: item.externalCode,
             ifoodId: item.id,
-            price: item.price,
+            price: item.price || 0, // Already in cents from parseIfoodCatalogItems
             description: item.description,
             categoryName: item.categoryName,
             available: item.available,
-            logoUrl: item.logoUrl,
+            imagePath: item.imagePath,
             optionGroups: item.optionGroups,
             source: 'catalog', // Flag to identify source
             orderCount: 0, // Not from orders
