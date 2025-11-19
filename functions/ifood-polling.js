@@ -25,13 +25,12 @@ async function refreshIfoodAccessToken(credentials) {
       hasRefreshToken: !!credentials.refreshToken,
     });
 
-    const params = new URLSearchParams();
-    params.append("grantType", "refresh_token");
-    params.append("clientId", ifoodClientId.value());
-    params.append("clientSecret", ifoodClientSecret.value());
-    params.append("authorizationCode", "");
-    params.append("authorizationCodeVerifier", "");
-    params.append("refreshToken", credentials.refreshToken);
+    const params = [
+      `grantType=refresh_token`,
+      `clientId=${encodeURIComponent(ifoodClientId.value())}`,
+      `clientSecret=${encodeURIComponent(ifoodClientSecret.value())}`,
+      `refreshToken=${encodeURIComponent(credentials.refreshToken)}`,
+    ].join('&');
 
     const response = await fetch(`${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/token`, {
       method: "POST",
@@ -39,7 +38,7 @@ async function refreshIfoodAccessToken(credentials) {
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: params.toString(),
+      body: params,
     });
 
     if (!response.ok) {
@@ -54,7 +53,6 @@ async function refreshIfoodAccessToken(credentials) {
       // Mark integration as needing reauthorization immediately
       const docRef = admin.firestore().doc(`restaurantes/${credentials.restaurantId}/integrations/ifood`);
       await docRef.update({
-        enabled: false,
         needsReauthorization: true,
         lastError: `Failed to refresh token (${response.status}): ${response.statusText}`,
         lastErrorAt: admin.firestore.FieldValue.serverTimestamp(),
