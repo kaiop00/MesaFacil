@@ -306,7 +306,7 @@ const IfoodIntegrationPage = () => {
                                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                         <h4 className="font-semibold text-green-900 mb-2">Passo 1: Código de Verificação</h4>
                                         <p className="text-sm text-green-800 mb-3">
-                                            Use este código no Portal do iFood para autorizar o MesaFacil:
+                                            Use este código no Portal do iFood para autorizar o MesaFacil. Busque por "Apps" no menu do portal e aperte o botão "Ativar aplicativo por código":
                                         </p>
                                         <div className="bg-white rounded p-3 mb-3">
                                             <div className="text-3xl font-bold text-center text-green-600 tracking-wider">
@@ -462,23 +462,9 @@ const IfoodIntegrationPage = () => {
             <div className="bg-white rounded-lg shadow p-6 space-y-6">
                 <h2 className="text-xl font-semibold">Sobre a Integração</h2>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-blue-900 mb-2">Aplicativo Distribuído com UserCode</h3>
-                    <p className="text-sm text-blue-800 mb-2">
-                        Esta integração usa o modelo de <strong>Aplicativo Distribuído</strong> do iFood, 
-                        onde cada restaurante autoriza individualmente o acesso aos seus pedidos através 
-                        de um código de verificação.
-                    </p>
-                    <p className="text-sm text-blue-800">
-                        É um processo simples e seguro: você gera um código, autoriza no Portal do iFood, 
-                        e depois cola o código de autorização aqui no MesaFacil.
-                    </p>
-                </div>
-
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-purple-900 mb-2">Polling Automático</h3>
                     <p className="text-sm text-purple-800 mb-2">
-                        Os pedidos são buscados automaticamente a cada 2 minutos através do sistema de 
+                        Os pedidos são buscados automaticamente a cada 1 minuto através do sistema de 
                         polling do iFood.
                     </p>
                     <p className="text-sm text-purple-800">
@@ -490,7 +476,7 @@ const IfoodIntegrationPage = () => {
                     <h3 className="font-semibold text-gray-900">Como Funciona:</h3>
                     <ol className="list-decimal list-inside space-y-1 text-sm text-gray-700">
                         <li>Clique em "Gerar Código de Autorização" para obter um código de verificação</li>
-                        <li>Acesse o Portal do iFood e insira o código de verificação fornecido</li>
+                        <li>Acesse o Portal do iFood, depois "Apps" e insira o código de verificação fornecido</li>
                         <li>Autorize o MesaFacil a acessar seus pedidos no Portal do iFood</li>
                         <li>Copie o código de autorização que o iFood fornece</li>
                         <li>Cole o código de autorização aqui no MesaFacil e clique em "Conectar"</li>
