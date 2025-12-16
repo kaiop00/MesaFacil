@@ -39,8 +39,22 @@
         "cancel": "Annuler",
         "create": "Créer la commande"
       }
-    },
-    "addItems": {
+    },    "payment": {
+      "title": "Finaliser la Table - Mode de Paiement",
+      "subtitle": "Sélectionnez le mode de paiement",
+      "table": "Table",
+      "total": "Montant Total",
+      "selectMethod": "Sélectionnez le mode de paiement",
+      "observations": "Observations",
+      "optional": "optionnel",
+      "observationsPlaceholder": "Ex: Client a payé moitié en espèces et moitié par PIX...",
+      "warning": "⚠️ Sélectionnez un mode de paiement avant de confirmer",
+      "buttons": {
+        "cancel": "Annuler",
+        "confirm": "Confirmer le Paiement",
+        "processing": "Traitement..."
+      }
+    },    "addItems": {
       "title": "Ajouter des articles",
       "searchItems": "Rechercher des articles...",
       "noItems": "Aucun article trouvé",
@@ -121,7 +135,8 @@
       "itemUpdated": "Article mis à jour avec succès !",
       "itemRemoved": "Article supprimé de la commande !",
       "orderFinished": "Commande terminée avec succès !",
-      "tableFreed": "Table libérée avec succès !"
+      "tableFreed": "Table libérée avec succès!",
+      "paymentConfirmed": "Paiement confirmé et table finalisée!"
     },
     "error": {
       "createOrder": "Erreur lors de la création de la commande",
@@ -157,6 +172,14 @@
     "total": "Total",
     "quantity": "Quantité",
     "price": "Prix",
-    "actions": "Voir tout"
-  }
+    "actions": "Voir tout"  },
+  "payment": {
+    "methods": {
+      "cash": "Espèces",
+      "debit": "Débit",
+      "credit": "Crédit",
+      "pix": "PIX",
+      "ifood": "iFood",
+      "voucher": "Bon/Courtoisie"
+    }  }
 }

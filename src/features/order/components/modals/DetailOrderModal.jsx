@@ -24,6 +24,7 @@ import {
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
+import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) => {
     const { t } = useTranslation('order');
@@ -31,6 +32,8 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
     const [loading, setLoading] = useState(false);
     const [finalizando, setFinalizando] = useState({}); // { [pedidoId]: boolean }
     const [ifoodOrdersInfo, setIfoodOrdersInfo] = useState({}); // { [pedidoId]: ifoodOrderData }
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
     const { notify } = useToast();
     const {
         percent: serviceFeePercent,
@@ -90,20 +93,40 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         fetchPedidos();
     }, [isOpen, mesaSelecionada, idRestaurante]);
 
-    const handleFinalizarPedido = async (pedidoId) => {
-        if (!idRestaurante || !mesaSelecionada?.id || !pedidoId) return;
-        setFinalizando(prev => ({ ...prev, [pedidoId]: true }));
+    const handleOpenPaymentModal = (pedidoId) => {
+        setPedidoParaFinalizar(pedidoId);
+        setShowPaymentModal(true);
+    };
+
+    const handleClosePaymentModal = () => {
+        setShowPaymentModal(false);
+        setPedidoParaFinalizar(null);
+    };
+
+    const handleConfirmPayment = async (dadosPagamento) => {
+        if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;
+        
+        setFinalizando(prev => ({ ...prev, [pedidoParaFinalizar]: true }));
         try {
-            await finalizarPedidoEspecifico(idRestaurante, mesaSelecionada.id, pedidoId);
-            notify(t('messages.success.orderFinished'), "success");
+            await finalizarPedidoEspecifico(
+                idRestaurante, 
+                mesaSelecionada.id, 
+                pedidoParaFinalizar,
+                dadosPagamento
+            );
+            notify(t('messages.success.paymentConfirmed'), "success");
+            
             // Recarregar a lista
             const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
             setPedidos(dados || []);
+            
+            // Fechar modal de pagamento
+            handleClosePaymentModal();
         } catch (error) {
             console.error("Erro ao finalizar pedido:", error);
             notify(t('messages.error.finishOrder'), "error");
         } finally {
-            setFinalizando(prev => ({ ...prev, [pedidoId]: false }));
+            setFinalizando(prev => ({ ...prev, [pedidoParaFinalizar]: false }));
         }
     };
 
@@ -294,7 +317,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                         {pedido.status === 'andamento' && (
                             <div className="flex justify-end">
                                 <button
-                                    onClick={() => handleFinalizarPedido(pedido.id)}
+                                    onClick={() => handleOpenPaymentModal(pedido.id)}
                                     disabled={!!finalizando[pedido.id]}
                                     className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
                                 >
@@ -335,6 +358,16 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                     {t('modals.orderDetail.buttons.close')}
                 </button>
             </div>
+
+            {/* Modal de Forma de Pagamento */}
+            <PaymentMethodModal
+                isOpen={showPaymentModal}
+                onClose={handleClosePaymentModal}
+                onConfirm={handleConfirmPayment}
+                mesaNumero={mesaSelecionada?.numero}
+                totalValue={totalComServico}
+                loading={!!finalizando[pedidoParaFinalizar]}
+            />
         </BaseModalWithHeader>
     );
 };

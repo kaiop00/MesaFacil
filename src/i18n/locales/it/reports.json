@@ -45,9 +45,19 @@
         "orderNumber": "N° Ordine",
         "table": "Tavolo",
         "date": "Data",
-        "value": "Valore"
+        "value": "Valore",
+        "paymentMethod": "Metodo di pagamento"
       },
-      "tablePrefix": "Tavolo"
+      "tablePrefix": "Tavolo",
+      "noPaymentMethod": "Non indicato",
+      "paymentMethods": {
+        "cash": "Contanti",
+        "debit": "Debito",
+        "credit": "Credito",
+        "pix": "PIX",
+        "ifood": "iFood",
+        "voucher": "Buono/Omaggio"
+      }
     },
     "period": {
       "columns": {

@@ -45,9 +45,19 @@
         "orderNumber": "Nº de Pedido",
         "table": "Mesa",
         "date": "Fecha",
-        "value": "Valor"
+        "value": "Valor",
+        "paymentMethod": "Método de Pago"
       },
-      "tablePrefix": "Mesa"
+      "tablePrefix": "Mesa",
+      "noPaymentMethod": "No informado",
+      "paymentMethods": {
+        "cash": "Efectivo",
+        "debit": "Débito",
+        "credit": "Crédito",
+        "pix": "PIX",
+        "ifood": "iFood",
+        "voucher": "Voucher/Cortesía"
+      }
     },
     "period": {
       "columns": {
