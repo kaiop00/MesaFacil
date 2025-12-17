@@ -40,7 +40,9 @@ export const useCrudTables = ({ isOpen, onClose }) => {
         setLoading(true);
         try {
             const data = await getAll(idRestaurante, "mesas", { orderByField: "numero" });
-            setMesas(data);
+            // Filtra mesas virtuais (WhatsApp, iFood) da listagem do modal de configuração
+            const mesasReais = data.filter(mesa => mesa.tipo !== 'virtual');
+            setMesas(mesasReais);
         } catch (error) {
             console.error(error);
             notify("Erro ao carregar mesas", "error");
