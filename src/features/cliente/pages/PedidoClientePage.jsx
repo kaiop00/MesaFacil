@@ -14,6 +14,8 @@ import { solicitarGarcom } from "../services/garcomService";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "../hooks/useServiceFee";
 import { useCoverCharge } from "../hooks/useCoverCharge";
+import { useOrderOrigin } from "@/hooks/useOrderOrigin";
+import { finalizarPedidoEspecifico } from "@/features/order/services/orderService";
 import {
     computeServiceFeeAmount,
     computeTotalWithService,
@@ -29,6 +31,8 @@ export default function PedidoClientePage() {
     const { pedidos, loading, error, totalPedidos } = usePedidosCliente();
     const { notify } = useToast();
     const [garcomState, setGarcomState] = useState({ loading: false, solicitado: false });
+    const { isWhatsApp } = useOrderOrigin();
+    const [confirmandoRecebimento, setConfirmandoRecebimento] = useState(false);
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
@@ -109,6 +113,30 @@ export default function PedidoClientePage() {
         setStep(2);
     };
 
+    const handleConfirmarRecebimento = async () => {
+        if (!mesaId || !idRestaurante || !pedidoAtual?.id) {
+            notify(t("pedido.delivery.confirmError"), "error");
+            return;
+        }
+
+        if (confirmandoRecebimento) {
+            return;
+        }
+
+        setConfirmandoRecebimento(true);
+
+        try {
+            await finalizarPedidoEspecifico(idRestaurante, mesaId, pedidoAtual.id);
+            notify(t("pedido.delivery.confirmSuccess"), "success");
+            setStep(0);
+        } catch (err) {
+            console.error("Erro ao confirmar recebimento", err);
+            notify(t("pedido.delivery.confirmError"), "error");
+        } finally {
+            setConfirmandoRecebimento(false);
+        }
+    };
+
     const handleChamarGarcom = async () => {
         if (!mesaId || !idRestaurante) {
             notify(t("pedido.waiterError"), "error");
@@ -175,7 +203,50 @@ export default function PedidoClientePage() {
                 <PedidoAndamentoInfo pedido={pedidoAtual} numeroMesa={numero} />
             )}
 
-            {step === 2 && (
+            {step === 2 && isWhatsApp && (
+                <div className="text-sm mt-5 text-center text-gray-700 px-7">
+                    <div className="flex flex-col gap-4">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <p className="text-green-800 font-medium text-base">
+                                🚴 {t("pedido.delivery.outForDelivery")}
+                            </p>
+                            <p className="text-green-600 text-sm mt-2">
+                                {t("pedido.delivery.outForDeliveryMessage")}
+                            </p>
+                        </div>
+                        
+                        {pedidoAtual && (
+                            <div className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-gray-600 text-xs mb-2">
+                                    {t("pedido.delivery.orderSummary")}
+                                </p>
+                                <p className="font-semibold text-gray-800">
+                                    {t("common.total")}: R$ {totalPedidos.toFixed(2)}
+                                </p>
+                            </div>
+                        )}
+                        
+                        <button
+                            onClick={handleConfirmarRecebimento}
+                            disabled={confirmandoRecebimento}
+                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                            {confirmandoRecebimento ? (
+                                <>
+                                    <span className="animate-spin">⏳</span>
+                                    {t("pedido.delivery.confirming")}
+                                </>
+                            ) : (
+                                <>
+                                    {t("pedido.delivery.confirmReceipt")}
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {step === 2 && !isWhatsApp && (
                 <div className="text-sm mt-5 text-center text-gray-700 px-7">
                     <p>{t("pedido.deliveredMessage")}</p>
                     <div className="flex flex-col gap-3">

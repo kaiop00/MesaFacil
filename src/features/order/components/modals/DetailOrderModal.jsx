@@ -25,6 +25,7 @@ import {
 import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
+import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) => {
     const { t } = useTranslation('order');
@@ -199,10 +200,15 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                         className="border border-gray-200 rounded-lg p-4 space-y-4"
                     >
                         <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-bold text-sm text-gray-800">
-                                    {t('modals.orderDetail.title')} Nº {pedido.id}
-                                </p>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <p className="font-bold text-sm text-gray-800">
+                                        {t('modals.orderDetail.title')} Nº {pedido.id}
+                                    </p>
+                                    {pedido.orderOrigin && (
+                                        <OrderOriginBadge origin={pedido.orderOrigin} size="small" />
+                                    )}
+                                </div>
                                 <p className="text-sm text-gray-600">
                                     Criado em:{" "}
                                     {pedido.criadoEm?.toDate
@@ -214,6 +220,57 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                 </p>
                             </div>
                         </div>
+
+                        {/* WhatsApp Order Client Information */}
+                        {pedido.orderOrigin === 'whatsapp' && pedido.cliente && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-xl">💬</span>
+                                    <span className="font-semibold text-green-900">Pedido WhatsApp - Entrega</span>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 gap-2 text-sm">
+                                    {pedido.cliente.nome && (
+                                        <div className="flex items-start gap-2">
+                                            <User01 className="text-green-600 mt-0.5" size={16} />
+                                            <div>
+                                                <span className="text-gray-600">Cliente: </span>
+                                                <span className="font-medium">{pedido.cliente.nome}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {pedido.cliente.telefone && (
+                                        <div className="flex items-start gap-2">
+                                            <Phone className="text-green-600 mt-0.5" size={16} />
+                                            <div>
+                                                <span className="text-gray-600">Telefone: </span>
+                                                <span className="font-medium">{pedido.cliente.telefone}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {pedido.cliente.endereco && (
+                                        <div className="flex items-start gap-2">
+                                            <MapPin className="text-green-600 mt-0.5" size={16} />
+                                            <div>
+                                                <span className="text-gray-600">Endereço: </span>
+                                                <span className="font-medium">{pedido.cliente.endereco}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {pedido.formaPagamento && (
+                                        <div className="mt-1 pt-2 border-t border-green-200">
+                                            <span className="text-gray-600">Pagamento: </span>
+                                            <span className="font-semibold text-green-700">
+                                                {pedido.formaPagamento === 'dinheiro' ? 'Pagamento na Entrega (Dinheiro)' : pedido.formaPagamento}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* iFood Order Information */}
                         {ifoodOrdersInfo[pedido.id] && (

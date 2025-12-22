@@ -1,9 +1,18 @@
-import { createContext, useContext, useState, useMemo } from "react";
+import { createContext, useContext, useState, useMemo, useEffect } from "react";
+import { useOrderOrigin } from '@/hooks/useOrderOrigin';
 
 const CarrinhoContext = createContext(null);
 
 export default function CarrinhoProvider({ children }) {
     const [carrinhoItems, setCarrinhoItems] = useState([]);
+    const { origin } = useOrderOrigin();
+    const [orderOrigin, setOrderOrigin] = useState(origin);
+    const [clientData, setClientData] = useState(null);
+
+    // Atualiza origem quando detectada
+    useEffect(() => {
+        setOrderOrigin(origin);
+    }, [origin]);
 
     function adicionarItemCarrinho(item) {
         setCarrinhoItems((prev) => {
@@ -106,6 +115,10 @@ export default function CarrinhoProvider({ children }) {
             decrementarQuantidadeCarrinho,
             total,
             quantidade,
+            orderOrigin,
+            setOrderOrigin,
+            clientData,
+            setClientData,
         }}>
             {children}
         </CarrinhoContext.Provider>

@@ -7,6 +7,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { resetMesaParaNovoCliente } from "@/features/order/services/orderService";
 import { useToast } from "@/hooks/useToast";
 import { isIfoodOrder } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
+import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
 const TableCard = ({
   numero,
@@ -55,8 +56,12 @@ const TableCard = ({
 
   const currentStyle = statusStyleMap[status] || statusStyleMap["livre"];
   
-  // Check if this is the iFood virtual table
+  // Check if this it's a virtual table
   const isIfoodTable = mesa?.id && isIfoodOrder(mesa.id);
+  const isWATable = mesa?.id && mesa.id.startsWith('whatsapp');
+  
+  // Detecta origem dos pedidos da mesa
+  const [tableOrigin, setTableOrigin] = useState('mesaconvencional');
 
   const handleConfirm = async () => {
     if (mesa?.status === "entregue") {
@@ -93,7 +98,7 @@ const TableCard = ({
         {/* ícone + menu */}
         <div className="flex justify-between items-start">
           <div className={`p-2 rounded ${currentStyle.iconBg} relative`}>
-            {isIfoodTable ? (
+            {(isIfoodTable || isWATable) ? (
               <ShoppingBag02 className={`w-6 h-6 ${currentStyle.iconTxt}`} />
             ) : (
               <House02 className={`w-6 h-6 ${currentStyle.iconTxt}`} />
@@ -122,18 +127,25 @@ const TableCard = ({
 
         {/* conteúdo */}
         <div className="mt-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {isIfoodTable ? (
-              <span className="flex items-center gap-2">
-                <span>iFood</span>
-                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-                  Delivery
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {(isIfoodTable || isWATable) ? (
+                <span className="flex items-center gap-2">
+                  <span>{isIfoodTable ? "iFood" : "WhatsApp"}</span>
+                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                    Delivery
+                  </span>
                 </span>
-              </span>
-            ) : (
-              t('tables.tableLetter', { letter: numero })
+              ) : (
+                t('tables.tableLetter', { letter: numero })
+              )}
+            </h3>
+            
+            {/* Badge de origem */}
+            {mesa?.orderOrigin && status !== "livre" && (
+              <OrderOriginBadge origin={mesa.orderOrigin} size="small" />
             )}
-          </h3>
+          </div>
 
           {status !== "livre" && (
             <>

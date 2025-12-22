@@ -11,6 +11,7 @@ import { useCliente } from "../context/ClienteContext";
 import { solicitarGarcom } from "../services/garcomService";
 import { useToast } from "@/hooks/useToast";
 import { useTranslation } from "react-i18next";
+import { useOrderOrigin } from "@/hooks/useOrderOrigin";
 
 export default function MesaPage() {
     const { t } = useTranslation("cliente");
@@ -20,6 +21,7 @@ export default function MesaPage() {
     const { adicionarItemCarrinho } = useCarrinho();
     const [searchItem, setSearchItem] = useState("");
     const { idRestaurante, mesaId: mesaIdContext, numero: numeroMesaContext } = useCliente();
+    const { isWhatsApp } = useOrderOrigin();
     const { notify } = useToast();
     const [garcomLoading, setGarcomLoading] = useState(false);
     const [garcomSolicitado, setGarcomSolicitado] = useState(false);
@@ -81,14 +83,17 @@ export default function MesaPage() {
         <div className="p-4 mb-20 md:pb-28 md:px-6 lg:px-8 max-w-6xl mx-auto">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between py-4">
                 <h1 className="text-2xl font-semibold md:text-3xl">{t("mesa.title")} {mesaNumero}</h1>
-                <button
-                    type="button"
-                    onClick={handleChamarGarcom}
-                    disabled={garcomLoading || garcomSolicitado}
-                    className="inline-flex items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-amber-300 disabled:text-white"
-                >
-                    {garcomLoading ? t("mesa.calling") : garcomSolicitado ? t("mesa.called") : t("mesa.callWaiter")}
-                </button>
+                {/* Botão Chamar Garçom apenas para mesas convencionais */}
+                {!isWhatsApp && (
+                    <button
+                        type="button"
+                        onClick={handleChamarGarcom}
+                        disabled={garcomLoading || garcomSolicitado}
+                        className="inline-flex items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-amber-300 disabled:text-white"
+                    >
+                        {garcomLoading ? t("mesa.calling") : garcomSolicitado ? t("mesa.called") : t("mesa.callWaiter")}
+                    </button>
+                )}
             </div>
 
             <div className="relative mb-4 md:mb-6">

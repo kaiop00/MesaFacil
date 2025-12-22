@@ -634,6 +634,7 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
       status: "andamento",
       criadoEm: admin.firestore.FieldValue.serverTimestamp(),
       source: "ifood",
+      orderOrigin: "ifood",
     };
 
     // Only add optional fields if they exist

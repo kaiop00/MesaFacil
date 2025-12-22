@@ -101,7 +101,7 @@ export const getMesasPorStatus = async (idRestaurante) => {
  * Cria um novo pedido para a mesa, mesmo que já exista outro em andamento.
  * Integra com controle de estoque.
  */
-export const createPedido = async (idRestaurante, mesaId, items, total, observacoes = "") => {
+export const createPedido = async (idRestaurante, mesaId, items, total, observacoes = "", extraData = {}) => {
     const pedidoItems = items.map((item) => ({
         id: item.id,
         nome: item.nome,
@@ -137,14 +137,22 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
 
         // Sempre cria um novo pedido independente de haver outro em andamento
         const newPedidoRef = doc(pedidosRef);
-        transaction.set(newPedidoRef, {
+        
+        // Monta o payload do pedido com dados extras (origem, cliente, etc)
+        const pedidoPayload = {
             items: pedidoItems,
             total,
             status: "andamento",
             observacoes,
             read: false,
             criadoEm: serverTimestamp(),
-        });
+            // Campos adicionais para WhatsApp e outras origens
+            orderOrigin: extraData.orderOrigin || 'mesaconvencional',
+            ...(extraData.cliente && { cliente: extraData.cliente }),
+            ...(extraData.formaPagamento && { formaPagamento: extraData.formaPagamento }),
+        };
+        
+        transaction.set(newPedidoRef, pedidoPayload);
 
         // Atualiza status da mesa
         const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
