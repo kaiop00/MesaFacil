@@ -41,7 +41,16 @@
     "waiterOnWay": "Il cameriere sta arrivando",
     "waiterHelp": "Il cameriere verrà al tuo tavolo per aiutarti con il pagamento, attendi.",
     "waiterSuccess": "Il cameriere è stato chiamato. Attendi un momento.",
-    "waiterError": "Impossibile chiamare il cameriere. Riprova."
+    "waiterError": "Impossibile chiamare il cameriere. Riprova.",
+    "delivery": {
+      "outForDelivery": "Ordine in consegna!",
+      "outForDeliveryMessage": "Il tuo ordine è in arrivo. Attendi il corriere.",
+      "orderSummary": "Riepilogo dell'ordine",
+      "confirmReceipt": "Conferma ricezione",
+      "confirming": "Conferma in corso...",
+      "confirmSuccess": "Ricezione confermata! Grazie per il tuo ordine.",
+      "confirmError": "Impossibile confermare la ricezione. Riprova."
+    }
   },
   "totalPedidos": {
     "title": "Riepilogo Ordini",

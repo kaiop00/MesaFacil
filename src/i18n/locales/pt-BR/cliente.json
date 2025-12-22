@@ -41,7 +41,16 @@
     "waiterOnWay": "O garçom está a caminho",
     "waiterHelp": "O garçom irá até sua mesa para auxiliar com o pagamento, por favor aguarde.",
     "waiterSuccess": "O garçom foi acionado. Aguarde um instante.",
-    "waiterError": "Não foi possível chamar o garçom. Tente novamente."
+    "waiterError": "Não foi possível chamar o garçom. Tente novamente.",
+    "delivery": {
+      "outForDelivery": "Pedido saiu para entrega!",
+      "outForDeliveryMessage": "Seu pedido está a caminho. Aguarde a chegada do entregador.",
+      "orderSummary": "Resumo do pedido",
+      "confirmReceipt": "Confirmar recebimento",
+      "confirming": "Confirmando...",
+      "confirmSuccess": "Recebimento confirmado! Obrigado pelo seu pedido.",
+      "confirmError": "Não foi possível confirmar o recebimento. Tente novamente."
+    }
   },
   "totalPedidos": {
     "title": "Resumo dos Pedidos",

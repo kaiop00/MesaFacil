@@ -41,7 +41,16 @@
     "waiterOnWay": "The waiter is on the way",
     "waiterHelp": "The waiter will come to your table to assist with payment, please wait.",
     "waiterSuccess": "The waiter has been called. Please wait a moment.",
-    "waiterError": "Could not call the waiter. Please try again."
+    "waiterError": "Could not call the waiter. Please try again.",
+    "delivery": {
+      "outForDelivery": "Order out for delivery!",
+      "outForDeliveryMessage": "Your order is on its way. Please wait for the delivery driver.",
+      "orderSummary": "Order summary",
+      "confirmReceipt": "Confirm receipt",
+      "confirming": "Confirming...",
+      "confirmSuccess": "Receipt confirmed! Thank you for your order.",
+      "confirmError": "Could not confirm receipt. Please try again."
+    }
   },
   "totalPedidos": {
     "title": "Order Summary",
