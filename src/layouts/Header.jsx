@@ -10,6 +10,7 @@ import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
 import CategoriaConfigModal from "@/features/config/components/modals/CategoriasConfigModal";
+import WhatsAppConfigModal from "@/features/config/components/modals/WhatsAppConfigModal";
 import NotificationsModal from "@/features/notifications/components/NotificationsModal";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +29,7 @@ const Header = () => {
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
   const [isServiceFeeModalOpen, setIsServiceFeeModalOpen] = useState(false);
   const [isCoverChargeModalOpen, setIsCoverChargeModalOpen] = useState(false);
+  const [isWhatsAppConfigModalOpen, setIsWhatsAppConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -280,6 +282,16 @@ const Header = () => {
                       {t("common:header.coverCharge", "Couvert Artístico")}
                     </button>
                     <button
+                      onClick={() => {
+                        setIsWhatsAppConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Cardápio para WhatsApp
+                    </button>
+                    <button
                       onClick={handleBillingPortal}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
@@ -327,6 +339,10 @@ const Header = () => {
           <CoverChargeConfigModal
             isOpen={isCoverChargeModalOpen}
             onClose={() => setIsCoverChargeModalOpen(false)}
+          />
+          <WhatsAppConfigModal
+            isOpen={isWhatsAppConfigModalOpen}
+            onClose={() => setIsWhatsAppConfigModalOpen(false)}
           />
         </div>
       </div>
