@@ -371,7 +371,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                         </div>
                         <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
 
-                        {pedido.status === 'andamento' && (
+                        {(pedido.status === 'andamento' || pedido.status === 'entregue') && (
                             <div className="flex justify-end">
                                 <button
                                     onClick={() => handleOpenPaymentModal(pedido.id)}
