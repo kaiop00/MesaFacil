@@ -26,7 +26,7 @@ const KitchenPage = () => {
 
     setFinalizingId(order.id);
     try {
-      await finalizarPedidoEspecifico(idRestaurante, order.mesaId, order.id);
+      await finalizarPedidoEspecifico(idRestaurante, order.mesaId, order.id, {}, false);
       notify(t("messages.success"), "success");
       await refetch();
     } catch (err) {

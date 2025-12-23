@@ -265,7 +265,7 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
  * Finaliza um pedido específico (usado no DetailOrderModal)
  * Remove o pedido da subcoleção e mantém apenas no histórico
  */
-export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId, dadosPagamento = {}) => {
+export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId, dadosPagamento = {}, removerDaLista = true) => {
     const { formaPagamento = null, observacoesPagamento = null } = dadosPagamento;
     
     const pedidoDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoId);
@@ -283,22 +283,24 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
 
     const finalizadoEm = serverTimestamp();
 
-    // Salva no histórico antes de deletar
-    await salvarPedidoNoHistorico({
-        idRestaurante,
-        mesaId,
-        mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
-        pedidoId,
-        pedidoData: {
-            ...pedidoData,
+    // Salva no histórico se removerDaLista for true
+    if (removerDaLista) {
+        await salvarPedidoNoHistorico({
+            idRestaurante,
+            mesaId,
+            mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+            pedidoId,
+            pedidoData: {
+                ...pedidoData,
+                formaPagamento,
+                observacoesPagamento,
+            },
+            finalizadoEm,
+            status: "entregue",
             formaPagamento,
             observacoesPagamento,
-        },
-        finalizadoEm,
-        status: "entregue",
-        formaPagamento,
-        observacoesPagamento,
-    });
+        });
+    }
 
     // Update iFood order status if this is an iFood order
     if (isIfoodOrder(mesaId)) {
@@ -310,8 +312,17 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
         }
     }
 
-    // Delete o pedido da subcoleção da mesa
-    await deleteDoc(pedidoDocRef);
+    // Apenas atualiza o status do pedido se não for remover da lista
+    if (removerDaLista) {
+        // Delete o pedido da subcoleção da mesa
+        await deleteDoc(pedidoDocRef);
+    } else {
+        // Apenas atualiza o status para entregue
+        await updateDoc(pedidoDocRef, {
+            status: "entregue",
+            finalizadoEm,
+        });
+    }
 
     // Busca todos os pedidos restantes da mesa para decidir o status da mesa
     const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
@@ -320,7 +331,7 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
 
     const temAndamento = pedidos.some(p => p.status === "andamento");
 
-    if (!temAndamento && pedidos.length === 0) {
+    if (removerDaLista && !temAndamento && pedidos.length === 0) {
         // Se não há mais pedidos, libera a mesa
         await updateDoc(mesaDocRef, {
             status: "livre",

@@ -28,6 +28,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "pedidos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "cliente.cpf",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "criadoEm",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

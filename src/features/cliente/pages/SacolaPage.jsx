@@ -68,9 +68,9 @@ export default function SacolaPage() {
                 orderOrigin: 'whatsapp',
                 cliente: {
                     nome: clientFormData?.nome || '',
-                    cpf: clientFormData?.cpf?.replace(/\D/g, '') || '',
+                    cpf: clientFormData?.cpf || '', // Mantém CPF formatado
                     endereco: clientFormData?.endereco || '',
-                    telefone: clientFormData?.telefone?.replace(/\D/g, '') || '',
+                    telefone: clientFormData?.telefone || '', // Mantém telefone formatado
                 },
                 formaPagamento: 'dinheiro' // Pagamento no ato da entrega
             } : {

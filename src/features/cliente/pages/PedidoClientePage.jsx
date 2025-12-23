@@ -126,7 +126,7 @@ export default function PedidoClientePage() {
         setConfirmandoRecebimento(true);
 
         try {
-            await finalizarPedidoEspecifico(idRestaurante, mesaId, pedidoAtual.id);
+            await finalizarPedidoEspecifico(idRestaurante, mesaId, pedidoAtual.id, {}, false);
             notify(t("pedido.delivery.confirmSuccess"), "success");
             setStep(0);
         } catch (err) {
@@ -189,15 +189,39 @@ export default function PedidoClientePage() {
 
     return (
         <div className="flex flex-col justify-center items-center gap-3 mt-10">
-            <img
-                src={stepImageMap[step] || PedidoConfirmadoImg}
-                loading="lazy"
-                alt="Status do pedido"
-            />
-            <StepBars currentStep={step} total={4} />
-            <div className="px-7 mt-5 text-center">
-                <p>{statusText[step]}</p>
-            </div>
+            {loading ? (
+                <div className="text-center">
+                    <p className="text-gray-600">{t("common.loading") || "Carregando..."}</p>
+                </div>
+            ) : !pedidoAtual && pedidos.length === 0 ? (
+                <div className="text-center px-7">
+                    <div className="mb-4 text-4xl">📋</div>
+                    <p className="text-gray-600 text-lg">
+                        {isWhatsApp 
+                            ? t("pedido.noPedidosWhatsApp") || "Você ainda não tem pedidos. Faça seu primeiro pedido!"
+                            : t("pedido.noPedidos") || "Nenhum pedido encontrado"
+                        }
+                    </p>
+                    {isWhatsApp && (
+                        <a 
+                            href="/cardapio" 
+                            className="mt-4 inline-block bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                        >
+                            {t("common.viewMenu") || "Ver Cardápio"}
+                        </a>
+                    )}
+                </div>
+            ) : (
+                <>
+                    <img
+                        src={stepImageMap[step] || PedidoConfirmadoImg}
+                        loading="lazy"
+                        alt="Status do pedido"
+                    />
+                    <StepBars currentStep={step} total={4} />
+                    <div className="px-7 mt-5 text-center">
+                        <p>{statusText[step]}</p>
+                    </div>
 
             {step === 1 && pedidoAtual && (
                 <PedidoAndamentoInfo pedido={pedidoAtual} numeroMesa={numero} />
@@ -302,6 +326,8 @@ export default function PedidoClientePage() {
                     coverChargeLoading={coverChargeLoading}
                     mesaNumero={mesaNumeroExibicao}
                 />
+            )}
+                </>
             )}
         </div>
     );
