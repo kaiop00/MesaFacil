@@ -4,6 +4,7 @@ import {
     getDoc,
     setDoc,
     updateDoc,
+    deleteDoc,
     doc,
     serverTimestamp,
     runTransaction,
@@ -262,6 +263,7 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
 
 /**
  * Finaliza um pedido específico (usado no DetailOrderModal)
+ * Remove o pedido da subcoleção e mantém apenas no histórico
  */
 export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId, dadosPagamento = {}) => {
     const { formaPagamento = null, observacoesPagamento = null } = dadosPagamento;
@@ -281,27 +283,17 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
 
     const finalizadoEm = serverTimestamp();
 
-    const updateData = {
-        status: "entregue",
-        finalizadoEm,
-    };
-    
-    // Adiciona forma de pagamento se fornecida
-    if (formaPagamento) {
-        updateData.formaPagamento = formaPagamento;
-    }
-    if (observacoesPagamento) {
-        updateData.observacoesPagamento = observacoesPagamento;
-    }
-    
-    await updateDoc(pedidoDocRef, updateData);
-
+    // Salva no histórico antes de deletar
     await salvarPedidoNoHistorico({
         idRestaurante,
         mesaId,
         mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
         pedidoId,
-        pedidoData,
+        pedidoData: {
+            ...pedidoData,
+            formaPagamento,
+            observacoesPagamento,
+        },
         finalizadoEm,
         status: "entregue",
         formaPagamento,
@@ -318,15 +310,25 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
         }
     }
 
-    // Busca todos os pedidos da mesa para decidir o status da mesa
+    // Delete o pedido da subcoleção da mesa
+    await deleteDoc(pedidoDocRef);
+
+    // Busca todos os pedidos restantes da mesa para decidir o status da mesa
     const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
     const snapshot = await getDocs(pedidosRef);
     const pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const temAndamento = pedidos.some(p => p.status === "andamento");
 
-    if (!temAndamento) {
-        // Soma total dos pedidos entregues
+    if (!temAndamento && pedidos.length === 0) {
+        // Se não há mais pedidos, libera a mesa
+        await updateDoc(mesaDocRef, {
+            status: "livre",
+            entregueEm: serverTimestamp(),
+            total: 0,
+        });
+    } else if (!temAndamento) {
+        // Se ainda há pedidos mas nenhum em andamento, marca como entregue
         const totalEntregue = pedidos
             .filter(p => p.status === "entregue")
             .reduce((acc, p) => acc + (p.total || 0), 0);
