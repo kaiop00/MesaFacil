@@ -37,6 +37,8 @@
       "payment": "Realize o pagamento para finalizar",
       "waiterComing": "O garçom está a caminho"
     },
+    "noPedidos": "Nenhum pedido encontrado",
+    "noPedidosWhatsApp": "Você ainda não tem pedidos. Faça seu primeiro pedido!",
     "deliveredMessage": "quando terminar de comer clique em realizar pagamento",
     "waiterOnWay": "O garçom está a caminho",
     "waiterHelp": "O garçom irá até sua mesa para auxiliar com o pagamento, por favor aguarde.",
@@ -115,6 +117,7 @@
     "back": "Voltar",
     "continue": "Continuar",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "viewMenu": "Ver Cardápio"
   }
 }

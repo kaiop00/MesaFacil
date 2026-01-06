@@ -34,6 +34,7 @@ export default function SacolaPage() {
     const { origin, isWhatsApp } = useOrderOrigin();
     const [clientFormData, setClientFormData] = useState(null);
     const [isClientFormValid, setIsClientFormValid] = useState(false);
+    const [formaPagamento, setFormaPagamento] = useState('dinheiro');
 
     // Sincroniza origem do pedido
     useEffect(() => {
@@ -72,7 +73,7 @@ export default function SacolaPage() {
                     endereco: clientFormData?.endereco || '',
                     telefone: clientFormData?.telefone || '', // Mantém telefone formatado
                 },
-                formaPagamento: 'dinheiro' // Pagamento no ato da entrega
+                formaPagamento: formaPagamento
             } : {
                 orderOrigin: orderOrigin
             };
@@ -124,10 +125,54 @@ export default function SacolaPage() {
 
                     {/* Formulário de dados do cliente para pedidos WhatsApp */}
                     {isWhatsApp && (
-                        <ClientDataForm 
-                            onDataChange={handleClientDataChange}
-                            isRequired={true}
-                        />
+                        <>
+                            <ClientDataForm 
+                                onDataChange={handleClientDataChange}
+                                isRequired={true}
+                            />
+                            
+                            {/* Seletor de Forma de Pagamento */}
+                            <div className="flex flex-col gap-2 p-4 border border-gray-300 rounded-md bg-gray-50">
+                                <label className="text-sm font-medium text-gray-700">
+                                    Forma de Pagamento
+                                </label>
+                                <div className="flex flex-col gap-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="formaPagamento"
+                                            value="dinheiro"
+                                            checked={formaPagamento === 'dinheiro'}
+                                            onChange={(e) => setFormaPagamento(e.target.value)}
+                                            className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
+                                        />
+                                        <span className="text-sm">Dinheiro (na entrega)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="formaPagamento"
+                                            value="pix"
+                                            checked={formaPagamento === 'pix'}
+                                            onChange={(e) => setFormaPagamento(e.target.value)}
+                                            className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
+                                        />`Enviar Pedido (${formaPagamento === 'dinheiro' ? 'Dinheiro' : formaPagamento === 'pix' ? 'PIX Online' : 'Cartão'} na Entrega)`
+                                        <span className="text-sm">PIX (online)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="formaPagamento"
+                                            value="cartao"
+                                            checked={formaPagamento === 'cartao'}
+                                            onChange={(e) => setFormaPagamento(e.target.value)}
+                                            className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
+                                        />
+                                        <span className="text-sm">Cartão (na entrega)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </>
                     )}
 
                     <div className="flex flex-col gap-2">

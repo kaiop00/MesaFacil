@@ -37,6 +37,8 @@
       "payment": "Make payment to finish",
       "waiterComing": "The waiter is on the way"
     },
+    "noPedidos": "No orders found",
+    "noPedidosWhatsApp": "You don't have any orders yet. Place your first order!",
     "deliveredMessage": "when you finish eating, click make payment",
     "waiterOnWay": "The waiter is on the way",
     "waiterHelp": "The waiter will come to your table to assist with payment, please wait.",
@@ -115,6 +117,7 @@
     "back": "Back",
     "continue": "Continue",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "viewMenu": "View Menu"
   }
 }

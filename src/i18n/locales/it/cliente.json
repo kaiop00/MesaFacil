@@ -37,6 +37,8 @@
       "payment": "Effettua il pagamento per concludere",
       "waiterComing": "Il cameriere sta arrivando"
     },
+    "noPedidos": "Nessun ordine trovato",
+    "noPedidosWhatsApp": "Non hai ancora ordini. Fai il tuo primo ordine!",
     "deliveredMessage": "quando hai finito di mangiare, clicca su effettua pagamento",
     "waiterOnWay": "Il cameriere sta arrivando",
     "waiterHelp": "Il cameriere verrà al tuo tavolo per aiutarti con il pagamento, attendi.",
@@ -115,6 +117,7 @@
     "back": "Indietro",
     "continue": "Continua",
     "confirm": "Conferma",
-    "cancel": "Annulla"
+    "cancel": "Annulla",
+    "viewMenu": "Visualizza Menu"
   }
 }
