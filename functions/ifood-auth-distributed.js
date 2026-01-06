@@ -58,12 +58,6 @@ exports.ifoodRequestUserCode = onCall(
         headers: Object.fromEntries(response.headers.entries()),
       });
 
-      logger.info("iFood API response", {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-      });
-
       if (!response.ok) {
         const errorText = await response.text();
         logger.error("Failed to get userCode from iFood", {
@@ -95,10 +89,20 @@ exports.ifoodRequestUserCode = onCall(
         responseData: data,
       });
 
+      // Validate required fields from iFood API response
+      if (!data.userCode || !data.verificationCode) {
+        logger.error("Invalid response from iFood userCode API", {
+          hasUserCode: !!data.userCode,
+          hasVerificationCode: !!data.verificationCode,
+          responseData: data,
+        });
+        throw new Error("Resposta inválida da API do iFood. Campos obrigatórios ausentes.");
+      }
+
       // Store verification codes in Firestore
       const docRef = admin.firestore().doc(`restaurantes/${idRestaurante}/integrations/ifood`);
       await docRef.set({
-        verificationCode: data.verificationCode || data.userCode, // Use userCode as fallback
+        verificationCode: data.verificationCode,
         verificationCodeVerifier: data.verificationCodeVerifier || null,
         authorizationCodeVerifier: data.authorizationCodeVerifier || null,
         userCode: data.userCode,
@@ -110,7 +114,7 @@ exports.ifoodRequestUserCode = onCall(
 
       return {
         userCode: data.userCode,
-        verificationCode: data.verificationCode || data.userCode, // Use userCode as fallback
+        verificationCode: data.verificationCode,
         authorizationCodeVerifier: data.authorizationCodeVerifier,
         expiresIn: data.expiresIn,
       };

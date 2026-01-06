@@ -274,6 +274,16 @@ async function acknowledgeIfoodEvents(events, accessToken) {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      
+      // Se ACK já foi feito, não é erro crítico
+      if (response.status === 409 || response.status === 404) {
+        logger.warn("Events already acknowledged or not found", {
+          eventCount: events.length,
+          status: response.status,
+        });
+        return true; // Considera sucesso
+      }
+      
       logger.error("Failed to acknowledge events", {
         eventCount: events.length,
         error,
@@ -514,6 +524,11 @@ async function getMesaFacilItemById(idRestaurante, itemId) {
  */
 async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
   try {
+    // Validate required fields from iFood API response
+    if (!orderData.id) {
+      throw new Error("ID do pedido iFood ausente - resposta inválida da API");
+    }
+    
     // Get item mappings
     const mappings = await getIfoodItemMappings(idRestaurante);
     
@@ -637,9 +652,9 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
       orderOrigin: "ifood",
     };
 
-    // Only add optional fields if they exist
-    if (orderData.id) orderPayload.ifoodOrderId = orderData.id;
-    if (orderData.displayId) orderPayload.ifoodDisplayId = orderData.displayId;
+    // ID e displayId são sempre presentes na resposta do iFood
+    orderPayload.ifoodOrderId = orderData.id;
+    orderPayload.ifoodDisplayId = orderData.displayId || orderData.id; // fallback para displayId
     
     await newPedidoRef.set(orderPayload);
     
@@ -984,12 +999,16 @@ async function syncStatusToMesaFacilOrder(
   try {
     // Map iFood status to MesaFacil status
     const statusMap = {
+      "INTEGRATED": "andamento",       // Pedido integrado
+      "PENDING": "andamento",          // Pendente
       "PLACED": "andamento",           // Pedido recebido
+      "ACCEPTED": "andamento",         // Aceito pelo restaurante
       "CONFIRMED": "andamento",        // Confirmado pelo restaurante
       "READY_TO_PICKUP": "andamento",  // Pronto para retirada
       "DISPATCHED": "andamento",       // Saiu para entrega
       "CONCLUDED": "entregue",         // Concluído
       "CANCELLED": "cancelado",        // Cancelado
+      "REJECTED": "cancelado",         // Rejeitado pelo restaurante
     };
     
     const mesaFacilStatus = statusMap[newIfoodStatus] || "andamento";
@@ -1245,7 +1264,7 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
 exports.ifoodPolling = onSchedule(
   {
     schedule: "every 1 minutes",
-    timeoutSeconds: 540,
+    timeoutSeconds: 50,
     memory: "512MiB",
     secrets: [ifoodClientId, ifoodClientSecret],
   },
@@ -1261,44 +1280,71 @@ exports.ifoodPolling = onSchedule(
         return;
       }
 
-      // Group integrations that can share the same token
-      // For simplicity, we'll poll each restaurant separately
-      // In production, you could optimize by grouping restaurants with the same credentials
+      // Process in batches to respect API rate limits
+      const BATCH_SIZE = 10;
+      const DELAY_BETWEEN_BATCHES = 6000; // 6 seconds
       
-      for (const integration of integrations) {
-        try {
-          // Get valid access token
-          const accessToken = await getValidAccessToken(integration.credentials);
-          
-          // Poll events for this merchant
-          const events = await pollIfoodEvents([integration.merchantId], accessToken);
-          
-          if (events.length === 0) {
-            logger.info("No events for merchant", {
+      logger.info("Processing integrations in batches", {
+        totalIntegrations: integrations.length,
+        batchSize: BATCH_SIZE,
+        estimatedBatches: Math.ceil(integrations.length / BATCH_SIZE),
+      });
+
+      for (let i = 0; i < integrations.length; i += BATCH_SIZE) {
+        const batch = integrations.slice(i, i + BATCH_SIZE);
+        const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(integrations.length / BATCH_SIZE);
+        
+        logger.info("Processing batch", {
+          batchNumber,
+          totalBatches,
+          batchSize: batch.length,
+        });
+        
+        await Promise.all(batch.map(async (integration) => {
+          try {
+            // Get valid access token
+            const accessToken = await getValidAccessToken(integration.credentials);
+            
+            // Poll events for this merchant
+            const events = await pollIfoodEvents([integration.merchantId], accessToken);
+            
+            if (events.length === 0) {
+              logger.info("No events for merchant", {
+                merchantId: integration.merchantId,
+                restaurantId: integration.restaurantId,
+              });
+              return;
+            }
+
+            logger.info("Received events for merchant", {
               merchantId: integration.merchantId,
               restaurantId: integration.restaurantId,
+              eventCount: events.length,
             });
-            continue;
+
+            // Process events for this restaurant
+            await processEventsForRestaurant(
+              integration.restaurantId,
+              events,
+              accessToken
+            );
+          } catch (error) {
+            logger.error("Error processing integration", {
+              restaurantId: integration.restaurantId,
+              merchantId: integration.merchantId,
+              error: error.message,
+            });
           }
-
-          logger.info("Received events for merchant", {
-            merchantId: integration.merchantId,
-            restaurantId: integration.restaurantId,
-            eventCount: events.length,
+        }));
+        
+        // Delay between batches (except on the last batch)
+        if (i + BATCH_SIZE < integrations.length) {
+          logger.info("Waiting before next batch", {
+            delayMs: DELAY_BETWEEN_BATCHES,
+            nextBatch: batchNumber + 1,
           });
-
-          // Process events for this restaurant
-          await processEventsForRestaurant(
-            integration.restaurantId,
-            events,
-            accessToken
-          );
-        } catch (error) {
-          logger.error("Error processing integration", {
-            restaurantId: integration.restaurantId,
-            merchantId: integration.merchantId,
-            error: error.message,
-          });
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
       }
 
@@ -1319,7 +1365,7 @@ exports.ifoodPolling = onSchedule(
 exports.ifoodPollManual = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
-    timeoutSeconds: 300,
+    timeoutSeconds: 50,
   },
   async (request) => {
     try {
