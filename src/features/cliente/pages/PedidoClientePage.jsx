@@ -204,7 +204,7 @@ export default function PedidoClientePage() {
                     </p>
                     {isWhatsApp && (
                         <a 
-                            href="/cardapio" 
+                            href="/mesa/WA-whatsapp" 
                             className="mt-4 inline-block bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
                         >
                             {t("common.viewMenu") || "Ver Cardápio"}

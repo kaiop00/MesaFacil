@@ -109,7 +109,7 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 md:left-16 lg:left-64 bg-white shadow-md z-40 flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+    <header className="fixed top-0 left-0 right-0 md:left-16 lg:left-64 bg-white shadow-md z-40 flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">  
       {/* Nome do restaurante */}
       <div className="text-lg font-medium text-gray-900 truncate ml-12 md:ml-0">
         <NomeRestaurante />
