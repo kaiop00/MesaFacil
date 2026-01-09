@@ -250,7 +250,31 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                         </div>
                                     )}
                                     
-                                    {pedido.cliente.endereco && (
+                                    {/* Endereço estruturado */}
+                                    {pedido.cliente.enderecoDetalhado ? (
+                                        <div className="flex items-start gap-2">
+                                            <MapPin className="text-green-600 mt-0.5" size={16} />
+                                            <div className="flex-1">
+                                                <span className="text-gray-600">Endereço: </span>
+                                                <div className="font-medium">
+                                                    <p>
+                                                        {pedido.cliente.enderecoDetalhado.rua}
+                                                        {pedido.cliente.enderecoDetalhado.numero && `, ${pedido.cliente.enderecoDetalhado.numero}`}
+                                                        {pedido.cliente.enderecoDetalhado.complemento && ` - ${pedido.cliente.enderecoDetalhado.complemento}`}
+                                                    </p>
+                                                    <p className="text-gray-700">
+                                                        {pedido.cliente.enderecoDetalhado.bairro}
+                                                        {pedido.cliente.enderecoDetalhado.cidade && `, ${pedido.cliente.enderecoDetalhado.cidade}`}
+                                                    </p>
+                                                    {pedido.cliente.enderecoDetalhado.pontoReferencia && (
+                                                        <p className="text-xs text-gray-500 mt-1 italic">
+                                                            📍 Ref: {pedido.cliente.enderecoDetalhado.pontoReferencia}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : pedido.cliente.endereco && (
                                         <div className="flex items-start gap-2">
                                             <MapPin className="text-green-600 mt-0.5" size={16} />
                                             <div>

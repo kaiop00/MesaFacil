@@ -71,6 +71,7 @@ export default function SacolaPage() {
                     nome: clientFormData?.nome || '',
                     cpf: clientFormData?.cpf || '', // Mantém CPF formatado
                     endereco: clientFormData?.endereco || '',
+                    enderecoDetalhado: clientFormData?.enderecoDetalhado || null,
                     telefone: clientFormData?.telefone || '', // Mantém telefone formatado
                 },
                 formaPagamento: formaPagamento
@@ -141,34 +142,45 @@ export default function SacolaPage() {
                                         <input
                                             type="radio"
                                             name="formaPagamento"
+                                            value="pix"
+                                            checked={formaPagamento === 'pix'}
+                                            onChange={(e) => setFormaPagamento(e.target.value)}
+                                            className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
+                                        />
+                                        <span className="text-sm">PIX</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="formaPagamento"
                                             value="dinheiro"
                                             checked={formaPagamento === 'dinheiro'}
                                             onChange={(e) => setFormaPagamento(e.target.value)}
                                             className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
                                         />
-                                        <span className="text-sm">Dinheiro (na entrega)</span>
+                                        <span className="text-sm">Dinheiro</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="radio"
                                             name="formaPagamento"
-                                            value="pix"
-                                            checked={formaPagamento === 'pix'}
-                                            onChange={(e) => setFormaPagamento(e.target.value)}
-                                            className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
-                                        />`Enviar Pedido (${formaPagamento === 'dinheiro' ? 'Dinheiro' : formaPagamento === 'pix' ? 'PIX Online' : 'Cartão'} na Entrega)`
-                                        <span className="text-sm">PIX (online)</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="formaPagamento"
-                                            value="cartao"
-                                            checked={formaPagamento === 'cartao'}
+                                            value="credito"
+                                            checked={formaPagamento === 'credito'}
                                             onChange={(e) => setFormaPagamento(e.target.value)}
                                             className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
                                         />
-                                        <span className="text-sm">Cartão (na entrega)</span>
+                                        <span className="text-sm">Cartão de crédito</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="formaPagamento"
+                                            value="debito"
+                                            checked={formaPagamento === 'debito'}
+                                            onChange={(e) => setFormaPagamento(e.target.value)}
+                                            className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
+                                        />
+                                        <span className="text-sm">Cartão de débito</span>
                                     </label>
                                 </div>
                             </div>

@@ -5,11 +5,11 @@ import Dexie from 'dexie';
  * Database: mesaFacilDB
  * Stores:
  *   - clientes: dados básicos do cliente (nome, cpf, telefone)
- *   - enderecos: múltiplos endereços salvos com apelidos
+ *   - enderecos: múltiplos endereços salvos com apelidos e campos estruturados
  */
 export const db = new Dexie('mesaFacilDB');
 
-// Define schema - versão 2 adiciona store de endereços
+// Define schema - versão 3 adiciona campos estruturados de endereço
 db.version(1).stores({
   clientes: 'id, nome, cpf, endereco, telefone'
 });
@@ -32,6 +32,27 @@ db.version(2).stores({
   });
 });
 
+db.version(3).stores({
+  clientes: 'id, nome, cpf, telefone',
+  enderecos: '++id, clienteId, apelido, rua, numero, complemento, bairro, cidade, pontoReferencia, isDefault'
+}).upgrade(tx => {
+  // Migração: converte endereços antigos (campo único) para estruturado
+  return tx.table('enderecos').toCollection().modify((endereco) => {
+    // Se ainda tem o campo 'endereco' antigo, tenta parsear
+    if (endereco.endereco && !endereco.rua) {
+      // Tenta extrair informações básicas do endereço antigo
+      const enderecoAntigo = endereco.endereco;
+      endereco.rua = enderecoAntigo;
+      endereco.numero = '';
+      endereco.complemento = '';
+      endereco.bairro = '';
+      endereco.cidade = '';
+      endereco.pontoReferencia = '';
+      delete endereco.endereco;
+    }
+  });
+});
+
 /**
  * Interface do cliente
  * @typedef {Object} ClienteData
@@ -47,7 +68,12 @@ db.version(2).stores({
  * @property {number} id - ID auto-incrementado
  * @property {number} clienteId - ID do cliente (sempre 1)
  * @property {string} apelido - Nome do endereço (Casa, Trabalho, etc.)
- * @property {string} endereco - Endereço completo para entrega
+ * @property {string} rua - Rua ou avenida
+ * @property {string} numero - Número do endereço
+ * @property {string} complemento - Complemento (apto, bloco, etc.)
+ * @property {string} bairro - Bairro
+ * @property {string} cidade - Cidade
+ * @property {string} pontoReferencia - Ponto de referência para entrega
  * @property {boolean} isDefault - Se é o endereço padrão
  */
 
@@ -105,7 +131,7 @@ export async function clearClienteData() {
 
 /**
  * Adiciona um novo endereço para o cliente
- * @param {Object} enderecoData - { apelido, endereco, isDefault }
+ * @param {Object} enderecoData - { apelido, rua, numero, complemento, bairro, cidade, pontoReferencia, isDefault }
  * @returns {Promise<number>} ID do endereço criado
  */
 export async function addEndereco(enderecoData) {
@@ -121,7 +147,12 @@ export async function addEndereco(enderecoData) {
     const id = await db.enderecos.add({
       clienteId: 1,
       apelido: enderecoData.apelido || 'Novo Endereço',
-      endereco: enderecoData.endereco,
+      rua: enderecoData.rua || '',
+      numero: enderecoData.numero || '',
+      complemento: enderecoData.complemento || '',
+      bairro: enderecoData.bairro || '',
+      cidade: enderecoData.cidade || '',
+      pontoReferencia: enderecoData.pontoReferencia || '',
       isDefault: enderecoData.isDefault || false
     });
     return id;
@@ -134,7 +165,7 @@ export async function addEndereco(enderecoData) {
 /**
  * Atualiza um endereço existente
  * @param {number} id - ID do endereço
- * @param {Object} enderecoData - { apelido, endereco, isDefault }
+ * @param {Object} enderecoData - { apelido, rua, numero, complemento, bairro, cidade, pontoReferencia, isDefault }
  * @returns {Promise<number>} Número de registros atualizados
  */
 export async function updateEndereco(id, enderecoData) {

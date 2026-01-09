@@ -32,7 +32,12 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
 
   const [enderecoData, setEnderecoData] = useState({
     apelido: '',
-    endereco: ''
+    rua: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    pontoReferencia: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -55,19 +60,56 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
     if (selectedEndereco) {
       setEnderecoData({
         apelido: selectedEndereco.apelido || '',
-        endereco: selectedEndereco.endereco || ''
+        rua: selectedEndereco.rua || '',
+        numero: selectedEndereco.numero || '',
+        complemento: selectedEndereco.complemento || '',
+        bairro: selectedEndereco.bairro || '',
+        cidade: selectedEndereco.cidade || '',
+        pontoReferencia: selectedEndereco.pontoReferencia || ''
       });
     } else {
-      setEnderecoData({ apelido: '', endereco: '' });
+      setEnderecoData({ 
+        apelido: '', 
+        rua: '', 
+        numero: '', 
+        complemento: '', 
+        bairro: '', 
+        cidade: '', 
+        pontoReferencia: '' 
+      });
     }
   }, [selectedEndereco]);
+
+  /**
+   * Formata o endereço completo a partir dos campos
+   */
+  const formatEnderecoCompleto = (dados) => {
+    const partes = [];
+    if (dados.rua) partes.push(dados.rua);
+    if (dados.numero) partes.push(dados.numero);
+    if (dados.complemento) partes.push(dados.complemento);
+    if (dados.bairro) partes.push(dados.bairro);
+    if (dados.cidade) partes.push(dados.cidade);
+    if (dados.pontoReferencia) partes.push(`(Ref: ${dados.pontoReferencia})`);
+    return partes.join(', ');
+  };
 
   // Notifica componente pai sobre mudanças
   useEffect(() => {
     if (onDataChange) {
+      const enderecoAtual = selectedEndereco || enderecoData;
+      const enderecoCompleto = formatEnderecoCompleto(enderecoAtual);
       const fullData = {
         ...formData,
-        endereco: selectedEndereco?.endereco || enderecoData.endereco
+        endereco: enderecoCompleto,
+        enderecoDetalhado: {
+          rua: enderecoAtual.rua || '',
+          numero: enderecoAtual.numero || '',
+          complemento: enderecoAtual.complemento || '',
+          bairro: enderecoAtual.bairro || '',
+          cidade: enderecoAtual.cidade || '',
+          pontoReferencia: enderecoAtual.pontoReferencia || ''
+        }
       };
       onDataChange(fullData, isFormValid());
     }
@@ -95,11 +137,19 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
   const isFormValid = () => {
     if (!isRequired) return true;
 
-    const endereco = selectedEndereco?.endereco || enderecoData.endereco;
+    const enderecoAtual = selectedEndereco || enderecoData;
+    const temRua = (enderecoAtual.rua || '').trim().length >= 3;
+    const temNumero = (enderecoAtual.numero || '').trim().length >= 1;
+    const temBairro = (enderecoAtual.bairro || '').trim().length >= 2;
+    const temCidade = (enderecoAtual.cidade || '').trim().length >= 2;
+
     return (
       formData.nome.trim().length >= 3 &&
       isValidCPF(formData.cpf) &&
-      endereco.trim().length >= 10 &&
+      temRua &&
+      temNumero &&
+      temBairro &&
+      temCidade &&
       isValidPhone(formData.telefone)
     );
   };
@@ -181,8 +231,14 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
         newErrors.nome = 'Nome deve ter pelo menos 3 caracteres';
       } else if (name === 'cpf' && !isValidCPF(value)) {
         newErrors.cpf = 'CPF inválido';
-      } else if (name === 'endereco' && value.trim().length < 10) {
-        newErrors.endereco = 'Endereço muito curto';
+      } else if (name === 'rua' && value.trim().length < 3) {
+        newErrors.rua = 'Rua muito curta';
+      } else if (name === 'numero' && value.trim().length < 1) {
+        newErrors.numero = 'Informe o número';
+      } else if (name === 'bairro' && value.trim().length < 2) {
+        newErrors.bairro = 'Bairro muito curto';
+      } else if (name === 'cidade' && value.trim().length < 2) {
+        newErrors.cidade = 'Cidade muito curta';
       } else if (name === 'telefone' && !isValidPhone(value)) {
         newErrors.telefone = 'Telefone inválido';
       } else {
@@ -207,7 +263,15 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
   const handleAddEndereco = () => {
     setShowNewEnderecoForm(true);
     setEditingEnderecoId(null);
-    setEnderecoData({ apelido: '', endereco: '' });
+    setEnderecoData({ 
+      apelido: '', 
+      rua: '', 
+      numero: '', 
+      complemento: '', 
+      bairro: '', 
+      cidade: '', 
+      pontoReferencia: '' 
+    });
   };
 
   const handleEditEndereco = (endereco) => {
@@ -215,29 +279,55 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
     setShowNewEnderecoForm(false);
     setEnderecoData({
       apelido: endereco.apelido,
-      endereco: endereco.endereco
+      rua: endereco.rua || '',
+      numero: endereco.numero || '',
+      complemento: endereco.complemento || '',
+      bairro: endereco.bairro || '',
+      cidade: endereco.cidade || '',
+      pontoReferencia: endereco.pontoReferencia || ''
     });
   };
 
   const handleSaveEndereco = async () => {
-    if (!enderecoData.endereco.trim() || enderecoData.endereco.trim().length < 10) {
-      setErrors(prev => ({ ...prev, endereco: 'Endereço muito curto (mínimo 10 caracteres)' }));
+    // Validação dos campos obrigatórios
+    const newErrors = {};
+    if (!enderecoData.rua?.trim() || enderecoData.rua.trim().length < 3) {
+      newErrors.rua = 'Rua deve ter pelo menos 3 caracteres';
+    }
+    if (!enderecoData.numero?.trim()) {
+      newErrors.numero = 'Informe o número';
+    }
+    if (!enderecoData.bairro?.trim() || enderecoData.bairro.trim().length < 2) {
+      newErrors.bairro = 'Bairro deve ter pelo menos 2 caracteres';
+    }
+    if (!enderecoData.cidade?.trim() || enderecoData.cidade.trim().length < 2) {
+      newErrors.cidade = 'Cidade deve ter pelo menos 2 caracteres';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(prev => ({ ...prev, ...newErrors }));
       return;
     }
 
     const apelido = enderecoData.apelido.trim() || 'Endereço ' + (enderecos.length + 1);
 
+    const enderecoParaSalvar = {
+      apelido,
+      rua: enderecoData.rua.trim(),
+      numero: enderecoData.numero.trim(),
+      complemento: enderecoData.complemento?.trim() || '',
+      bairro: enderecoData.bairro.trim(),
+      cidade: enderecoData.cidade.trim(),
+      pontoReferencia: enderecoData.pontoReferencia?.trim() || ''
+    };
+
     if (editingEnderecoId) {
-      await updateEnderecoData(editingEnderecoId, {
-        apelido,
-        endereco: enderecoData.endereco.trim()
-      });
+      await updateEnderecoData(editingEnderecoId, enderecoParaSalvar);
       setEditingEnderecoId(null);
     } else {
       const isFirst = enderecos.length === 0;
       await addNewEndereco({
-        apelido,
-        endereco: enderecoData.endereco.trim(),
+        ...enderecoParaSalvar,
         isDefault: isFirst
       });
       setShowNewEnderecoForm(false);
@@ -250,10 +340,23 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
     if (selectedEndereco) {
       setEnderecoData({
         apelido: selectedEndereco.apelido,
-        endereco: selectedEndereco.endereco
+        rua: selectedEndereco.rua || '',
+        numero: selectedEndereco.numero || '',
+        complemento: selectedEndereco.complemento || '',
+        bairro: selectedEndereco.bairro || '',
+        cidade: selectedEndereco.cidade || '',
+        pontoReferencia: selectedEndereco.pontoReferencia || ''
       });
     } else {
-      setEnderecoData({ apelido: '', endereco: '' });
+      setEnderecoData({ 
+        apelido: '', 
+        rua: '', 
+        numero: '', 
+        complemento: '', 
+        bairro: '', 
+        cidade: '', 
+        pontoReferencia: '' 
+      });
     }
   };
 
@@ -394,7 +497,10 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
                       )}
                     </div>
                     <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                      {endereco.endereco}
+                      {endereco.rua}, {endereco.numero}
+                      {endereco.complemento && `, ${endereco.complemento}`}
+                      {endereco.bairro && ` - ${endereco.bairro}`}
+                      {endereco.cidade && `, ${endereco.cidade}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 ml-2">
@@ -472,25 +578,128 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
             </div>
 
             <div className="mb-3">
-              <label htmlFor="endereco" className="block text-sm font-medium mb-1.5 text-gray-700">
-                Endereço Completo *
+              <label htmlFor="rua" className="block text-sm font-medium mb-1.5 text-gray-700">
+                Rua / Avenida *
               </label>
-              <textarea
-                id="endereco"
-                name="endereco"
-                value={enderecoData.endereco}
+              <input
+                type="text"
+                id="rua"
+                name="rua"
+                value={enderecoData.rua}
                 onChange={handleEnderecoChange}
                 onBlur={handleBlur}
-                placeholder="Rua, número, complemento, bairro, cidade"
-                className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors resize-none ${
-                  errors.endereco 
+                placeholder="Ex: Rua das Flores"
+                className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                  errors.rua 
                     ? 'border-red-500 focus:ring-red-500' 
                     : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
                 } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
-                rows="3"
                 required={isRequired}
               />
-              {errors.endereco && <span className="block text-red-500 text-xs mt-1">{errors.endereco}</span>}
+              {errors.rua && <span className="block text-red-500 text-xs mt-1">{errors.rua}</span>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label htmlFor="numero" className="block text-sm font-medium mb-1.5 text-gray-700">
+                  Número *
+                </label>
+                <input
+                  type="text"
+                  id="numero"
+                  name="numero"
+                  value={enderecoData.numero}
+                  onChange={handleEnderecoChange}
+                  onBlur={handleBlur}
+                  placeholder="123"
+                  className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                    errors.numero 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
+                  required={isRequired}
+                />
+                {errors.numero && <span className="block text-red-500 text-xs mt-1">{errors.numero}</span>}
+              </div>
+
+              <div>
+                <label htmlFor="complemento" className="block text-sm font-medium mb-1.5 text-gray-700">
+                  Complemento
+                </label>
+                <input
+                  type="text"
+                  id="complemento"
+                  name="complemento"
+                  value={enderecoData.complemento}
+                  onChange={handleEnderecoChange}
+                  placeholder="Apto, Bloco..."
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:border-green-500 focus:ring-green-500 focus:outline-none focus:ring-2 focus:ring-opacity-20"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label htmlFor="bairro" className="block text-sm font-medium mb-1.5 text-gray-700">
+                  Bairro *
+                </label>
+                <input
+                  type="text"
+                  id="bairro"
+                  name="bairro"
+                  value={enderecoData.bairro}
+                  onChange={handleEnderecoChange}
+                  onBlur={handleBlur}
+                  placeholder="Centro"
+                  className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                    errors.bairro 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
+                  required={isRequired}
+                />
+                {errors.bairro && <span className="block text-red-500 text-xs mt-1">{errors.bairro}</span>}
+              </div>
+
+              <div>
+                <label htmlFor="cidade" className="block text-sm font-medium mb-1.5 text-gray-700">
+                  Cidade *
+                </label>
+                <input
+                  type="text"
+                  id="cidade"
+                  name="cidade"
+                  value={enderecoData.cidade}
+                  onChange={handleEnderecoChange}
+                  onBlur={handleBlur}
+                  placeholder="São Paulo"
+                  className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                    errors.cidade 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
+                  required={isRequired}
+                />
+                {errors.cidade && <span className="block text-red-500 text-xs mt-1">{errors.cidade}</span>}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="pontoReferencia" className="block text-sm font-medium mb-1.5 text-gray-700">
+                Ponto de Referência
+              </label>
+              <input
+                type="text"
+                id="pontoReferencia"
+                name="pontoReferencia"
+                value={enderecoData.pontoReferencia}
+                onChange={handleEnderecoChange}
+                placeholder="Próximo ao mercado, em frente à praça..."
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:border-green-500 focus:ring-green-500 focus:outline-none focus:ring-2 focus:ring-opacity-20"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Ajuda o entregador a encontrar você mais facilmente
+              </p>
             </div>
 
             <div className="flex gap-2">
