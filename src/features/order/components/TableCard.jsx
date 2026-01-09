@@ -83,10 +83,12 @@ const TableCard = ({
       setShowOptions(false);
       return;
     } else if (mesa?.status === "entregue") {
-      setModalConfig({
-        title: t('messages.confirm.finishOrder'),
-        message: t('messages.confirm.finishOrderDescription'),
-      });
+      // setModalConfig({
+      //   title: t('messages.confirm.finishOrder'),
+      //   message: t('messages.confirm.finishOrderDescription'),
+      // });
+      setIsDetailModalOpen(true);
+      setShowOptions(false);
     }
     setIsConfirmModalOpen(true);
     setShowOptions(false);
