@@ -288,8 +288,34 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                         <div className="mt-1 pt-2 border-t border-green-200">
                                             <span className="text-gray-600">Pagamento: </span>
                                             <span className="font-semibold text-green-700">
-                                                {pedido.formaPagamento === 'dinheiro' ? 'Pagamento na Entrega (Dinheiro)' : pedido.formaPagamento}
+                                                {pedido.formaPagamento === 'dinheiro' 
+                                                    ? 'Dinheiro (na entrega)' 
+                                                    : pedido.formaPagamento === 'credito'
+                                                        ? 'Cartão de Crédito'
+                                                        : pedido.formaPagamento === 'debito'
+                                                            ? 'Cartão de Débito'
+                                                            : pedido.formaPagamento === 'pix'
+                                                                ? 'PIX'
+                                                                : pedido.formaPagamento}
                                             </span>
+                                        </div>
+                                    )}
+
+                                    {/* Informações de troco */}
+                                    {pedido.troco?.precisaTroco && (
+                                        <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-lg">
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-yellow-800">💵 Troco para:</span>
+                                                <span className="font-bold text-yellow-900">
+                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pedido.troco.valorPagamento || 0)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm mt-1">
+                                                <span className="text-green-800">🔄 Levar troco de:</span>
+                                                <span className="font-bold text-green-700">
+                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pedido.troco.valorTroco || 0)}
+                                                </span>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

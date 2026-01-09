@@ -63,6 +63,7 @@ export const useKitchenOrders = (idRestaurante) => {
               orderOrigin: pedido?.orderOrigin || "",
               cliente: pedido?.cliente || null,
               formaPagamento: pedido?.formaPagamento || "",
+              troco: pedido?.troco || null,
             }));
         })
       );

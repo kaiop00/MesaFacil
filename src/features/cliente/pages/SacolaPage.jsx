@@ -35,6 +35,13 @@ export default function SacolaPage() {
     const [clientFormData, setClientFormData] = useState(null);
     const [isClientFormValid, setIsClientFormValid] = useState(false);
     const [formaPagamento, setFormaPagamento] = useState('dinheiro');
+    const [precisaTroco, setPrecisaTroco] = useState(false);
+    const [valorPagamento, setValorPagamento] = useState('');
+
+    // Calcula o troco automaticamente
+    const valorTroco = precisaTroco && valorPagamento 
+        ? Math.max(0, parseFloat(valorPagamento.replace(',', '.')) - total)
+        : 0;
 
     // Sincroniza origem do pedido
     useEffect(() => {
@@ -74,7 +81,13 @@ export default function SacolaPage() {
                     enderecoDetalhado: clientFormData?.enderecoDetalhado || null,
                     telefone: clientFormData?.telefone || '', // Mantém telefone formatado
                 },
-                formaPagamento: formaPagamento
+                formaPagamento: formaPagamento,
+                // Dados de troco (apenas para dinheiro)
+                troco: formaPagamento === 'dinheiro' && precisaTroco ? {
+                    precisaTroco: true,
+                    valorPagamento: parseFloat(valorPagamento.replace(',', '.')) || 0,
+                    valorTroco: valorTroco
+                } : null
             } : {
                 orderOrigin: orderOrigin
             };
@@ -155,11 +168,71 @@ export default function SacolaPage() {
                                             name="formaPagamento"
                                             value="dinheiro"
                                             checked={formaPagamento === 'dinheiro'}
-                                            onChange={(e) => setFormaPagamento(e.target.value)}
+                                            onChange={(e) => {
+                                                setFormaPagamento(e.target.value);
+                                            }}
                                             className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B]"
                                         />
                                         <span className="text-sm">Dinheiro</span>
                                     </label>
+
+                                    {/* Seção de troco - apenas para dinheiro */}
+                                    {formaPagamento === 'dinheiro' && (
+                                        <div className="ml-6 mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={precisaTroco}
+                                                    onChange={(e) => {
+                                                        setPrecisaTroco(e.target.checked);
+                                                        if (!e.target.checked) setValorPagamento('');
+                                                    }}
+                                                    className="w-4 h-4 text-[#D9A23B] focus:ring-[#D9A23B] rounded"
+                                                />
+                                                <span className="text-sm font-medium text-gray-700">Precisa de troco?</span>
+                                            </label>
+
+                                            {precisaTroco && (
+                                                <div className="mt-3 space-y-2">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-600 mb-1">
+                                                            Vai pagar com quanto?
+                                                        </label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                value={valorPagamento}
+                                                                onChange={(e) => {
+                                                                    // Permite apenas números e vírgula/ponto
+                                                                    const value = e.target.value.replace(/[^0-9,.]/, '');
+                                                                    setValorPagamento(value);
+                                                                }}
+                                                                placeholder="0,00"
+                                                                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:border-[#D9A23B] focus:ring-[#D9A23B] focus:outline-none focus:ring-2 focus:ring-opacity-20"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {valorPagamento && parseFloat(valorPagamento.replace(',', '.')) >= total && (
+                                                        <div className="flex justify-between items-center p-2 bg-green-100 border border-green-300 rounded text-sm">
+                                                            <span className="text-green-800 font-medium">Troco:</span>
+                                                            <span className="text-green-800 font-bold">
+                                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorTroco)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {valorPagamento && parseFloat(valorPagamento.replace(',', '.')) < total && (
+                                                        <div className="p-2 bg-red-100 border border-red-300 rounded text-sm text-red-700">
+                                                            O valor deve ser maior ou igual ao total do pedido
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="radio"

@@ -123,9 +123,25 @@ export const useKitchenPrint = () => {
         ? 'Dinheiro (na entrega)' 
         : order.formaPagamento === 'cartao'
           ? 'Cartão (na entrega)'
-          : order.formaPagamento === 'pix'
-            ? 'PIX'
-            : sanitize(order.formaPagamento || '-');
+          : order.formaPagamento === 'credito'
+            ? 'Cartão de Crédito'
+            : order.formaPagamento === 'debito'
+              ? 'Cartão de Débito'
+              : order.formaPagamento === 'pix'
+                ? 'PIX'
+                : sanitize(order.formaPagamento || '-');
+
+      // Seção de troco (apenas para dinheiro)
+      const trocoSection = order.troco?.precisaTroco ? `
+        <div class="row" style="margin-top: 2mm;">
+          <span style="font-weight: 600;">Valor pago</span>
+          <span style="font-weight: 700;">${currencyFormatter.format(order.troco.valorPagamento || 0)}</span>
+        </div>
+        <div class="row" style="margin-top: 2mm;">
+          <span style="font-weight: 600;">Troco de</span>
+          <span style="font-weight: 700;">${currencyFormatter.format(order.troco.valorTroco || 0)}</span>
+        </div>
+      ` : '';
 
       return `
         ${cliente.nome ? `
@@ -150,6 +166,7 @@ export const useKitchenPrint = () => {
           <span style="font-weight: 600;">Pagamento</span>
           <span style="font-weight: 700;">${formaPagamentoLabel}</span>
         </div>
+        ${trocoSection}
       `;
     },
     []
