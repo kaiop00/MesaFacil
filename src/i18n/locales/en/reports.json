@@ -45,9 +45,19 @@
         "orderNumber": "Order No.",
         "table": "Table",
         "date": "Date",
-        "value": "Value"
+        "value": "Value",
+        "paymentMethod": "Payment Method"
       },
-      "tablePrefix": "Table"
+      "tablePrefix": "Table",
+      "noPaymentMethod": "Not informed",
+      "paymentMethods": {
+        "cash": "Cash",
+        "debit": "Debit",
+        "credit": "Credit",
+        "pix": "PIX",
+        "ifood": "iFood",
+        "voucher": "Voucher/Courtesy"
+      }
     },
     "period": {
       "columns": {

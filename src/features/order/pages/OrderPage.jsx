@@ -12,6 +12,7 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic"; // ✅ s
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import IfoodStatusMonitor from "@/features/integrations/ifood/components/IfoodStatusMonitor";
 
 const OrderPage = () => {
   const { t } = useTranslation('order');
@@ -90,6 +91,12 @@ const OrderPage = () => {
     <CardapioProvider>
       <OrderProvider>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 space-y-12">
+          
+          {/* Monitor de status do iFood - funciona em background */}
+          <IfoodStatusMonitor 
+            idRestaurante={idRestaurante} 
+            enabled={hasPermission('view_orders')} 
+          />
 
           {hasPermission('create_orders') && (
             <CardHeader

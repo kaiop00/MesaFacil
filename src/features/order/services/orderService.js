@@ -4,6 +4,7 @@ import {
     getDoc,
     setDoc,
     updateDoc,
+    deleteDoc,
     doc,
     serverTimestamp,
     runTransaction,
@@ -15,6 +16,10 @@ import {
     processarBaixaEstoque, 
     verificarEstoqueDisponivel 
 } from "@/services/ingredientes/ingredientesService";
+import { 
+    isIfoodOrder, 
+    updateIfoodOrderStatusFromMesaFacil 
+} from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 
 const historicoCollection = (idRestaurante) =>
     collection(db, "restaurantes", idRestaurante, "historicoPedidos");
@@ -44,6 +49,8 @@ const salvarPedidoNoHistorico = async ({
     pedidoData,
     finalizadoEm,
     status = "entregue",
+    formaPagamento = null,
+    observacoesPagamento = null,
 }) => {
     if (!idRestaurante || !mesaId || !pedidoId || !pedidoData) {
         return;
@@ -62,6 +69,8 @@ const salvarPedidoNoHistorico = async ({
         criadoEm: pedidoData.criadoEm || serverTimestamp(),
         finalizadoEm: finalizadoEm || pedidoData.finalizadoEm || null,
         archivedAt: serverTimestamp(),
+        formaPagamento: formaPagamento || pedidoData.formaPagamento || null,
+        observacoesPagamento: observacoesPagamento || pedidoData.observacoesPagamento || null,
     };
 
     await setDoc(historicoRef, payload, { merge: true });
@@ -93,7 +102,7 @@ export const getMesasPorStatus = async (idRestaurante) => {
  * Cria um novo pedido para a mesa, mesmo que já exista outro em andamento.
  * Integra com controle de estoque.
  */
-export const createPedido = async (idRestaurante, mesaId, items, total, observacoes = "") => {
+export const createPedido = async (idRestaurante, mesaId, items, total, observacoes = "", extraData = {}) => {
     const pedidoItems = items.map((item) => ({
         id: item.id,
         nome: item.nome,
@@ -129,14 +138,23 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
 
         // Sempre cria um novo pedido independente de haver outro em andamento
         const newPedidoRef = doc(pedidosRef);
-        transaction.set(newPedidoRef, {
+        
+        // Monta o payload do pedido com dados extras (origem, cliente, etc)
+        const pedidoPayload = {
             items: pedidoItems,
             total,
             status: "andamento",
             observacoes,
             read: false,
             criadoEm: serverTimestamp(),
-        });
+            // Campos adicionais para WhatsApp e outras origens
+            orderOrigin: extraData.orderOrigin || 'mesaconvencional',
+            ...(extraData.cliente && { cliente: extraData.cliente }),
+            ...(extraData.formaPagamento && { formaPagamento: extraData.formaPagamento }),
+            ...(extraData.troco && { troco: extraData.troco }),
+        };
+        
+        transaction.set(newPedidoRef, pedidoPayload);
 
         // Atualiza status da mesa
         const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
@@ -184,7 +202,9 @@ export const getPedidosDaMesa = async (idRestaurante, mesaId) => {
 /**
  * Finaliza o pedido e atualiza o status da mesa para 'entregue'
  */
-export const finalizarPedido = async (idRestaurante, mesaId) => {
+export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}) => {
+    const { formaPagamento = null, observacoesPagamento = null } = dadosPagamento;
+    
     const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
     const snapshot = await getDocs(pedidosRef);
 
@@ -205,10 +225,22 @@ export const finalizarPedido = async (idRestaurante, mesaId) => {
         pedidosAndamento.map(async (docSnap) => {
             const pedidoDocRef = doc(pedidosRef, docSnap.id);
             const finalizadoEm = serverTimestamp();
-            await updateDoc(pedidoDocRef, {
+            
+            const updateData = {
                 status: "entregue",
                 finalizadoEm,
-            });
+            };
+            
+            // Adiciona forma de pagamento se fornecida
+            if (formaPagamento) {
+                updateData.formaPagamento = formaPagamento;
+            }
+            if (observacoesPagamento) {
+                updateData.observacoesPagamento = observacoesPagamento;
+            }
+            
+            await updateDoc(pedidoDocRef, updateData);
+            
             await salvarPedidoNoHistorico({
                 idRestaurante,
                 mesaId,
@@ -217,6 +249,8 @@ export const finalizarPedido = async (idRestaurante, mesaId) => {
                 pedidoData: docSnap.data(),
                 finalizadoEm,
                 status: "entregue",
+                formaPagamento,
+                observacoesPagamento,
             });
         })
     );
@@ -229,10 +263,12 @@ export const finalizarPedido = async (idRestaurante, mesaId) => {
 };
 
 /**
- * Finaliza apenas um pedido específico de uma mesa.
- * Se não restarem pedidos em andamento, marca a mesa como 'entregue' e soma o total dos pedidos entregues.
+ * Finaliza um pedido específico (usado no DetailOrderModal)
+ * Remove o pedido da subcoleção e mantém apenas no histórico
  */
-export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId) => {
+export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId, dadosPagamento = {}, removerDaLista = true) => {
+    const { formaPagamento = null, observacoesPagamento = null } = dadosPagamento;
+    
     const pedidoDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoId);
     const pedidoSnapshot = await getDoc(pedidoDocRef);
 
@@ -248,30 +284,63 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId)
 
     const finalizadoEm = serverTimestamp();
 
-    await updateDoc(pedidoDocRef, {
-        status: "entregue",
-        finalizadoEm,
-    });
+    // Salva no histórico se removerDaLista for true
+    if (removerDaLista) {
+        await salvarPedidoNoHistorico({
+            idRestaurante,
+            mesaId,
+            mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+            pedidoId,
+            pedidoData: {
+                ...pedidoData,
+                formaPagamento,
+                observacoesPagamento,
+            },
+            finalizadoEm,
+            status: "entregue",
+            formaPagamento,
+            observacoesPagamento,
+        });
+    }
 
-    await salvarPedidoNoHistorico({
-        idRestaurante,
-        mesaId,
-        mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
-        pedidoId,
-        pedidoData,
-        finalizadoEm,
-        status: "entregue",
-    });
+    // Update iFood order status if this is an iFood order
+    if (isIfoodOrder(mesaId)) {
+        try {
+            await updateIfoodOrderStatusFromMesaFacil(idRestaurante, pedidoId, 'entregue');
+        } catch (error) {
+            console.error('Error updating iFood order status:', error);
+            // Don't fail the entire operation if iFood update fails
+        }
+    }
 
-    // 2) Busca todos os pedidos da mesa para decidir o status da mesa
+    // Apenas atualiza o status do pedido se não for remover da lista
+    if (removerDaLista) {
+        // Delete o pedido da subcoleção da mesa
+        await deleteDoc(pedidoDocRef);
+    } else {
+        // Apenas atualiza o status para entregue
+        await updateDoc(pedidoDocRef, {
+            status: "entregue",
+            finalizadoEm,
+        });
+    }
+
+    // Busca todos os pedidos restantes da mesa para decidir o status da mesa
     const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
     const snapshot = await getDocs(pedidosRef);
     const pedidos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const temAndamento = pedidos.some(p => p.status === "andamento");
 
-    if (!temAndamento) {
-        // Soma total dos pedidos entregues
+    if (removerDaLista && !temAndamento && pedidos.length === 0) {
+        // Se não há mais pedidos, libera a mesa
+        await updateDoc(mesaDocRef, {
+            status: "livre",
+            entregueEm: serverTimestamp(),
+            total: 0,
+        });
+    } else if (!temAndamento) {
+        // Se ainda há pedidos mas nenhum em andamento, marca como entregue
         const totalEntregue = pedidos
             .filter(p => p.status === "entregue")
             .reduce((acc, p) => acc + (p.total || 0), 0);
@@ -344,6 +413,16 @@ export const cancelarPedido = async (idRestaurante, mesaId, pedidoId) => {
                     }));
                     
                     await processarBaixaEstoque(idRestaurante, reverterIngredientes, `CANCELAMENTO-${pedidoId}`);
+                }
+            }
+            
+            // Update iFood order status if this is an iFood order
+            if (isIfoodOrder(mesaId)) {
+                try {
+                    await updateIfoodOrderStatusFromMesaFacil(idRestaurante, pedidoId, 'cancelado');
+                } catch (error) {
+                    console.error('Error updating iFood order status on cancellation:', error);
+                    // Don't fail the operation if iFood update fails
                 }
             }
             

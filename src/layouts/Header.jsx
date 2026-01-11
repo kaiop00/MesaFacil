@@ -10,6 +10,7 @@ import { logout } from "@/services/firebase/authService";
 import NomeRestaurante from "@/components/NomeRestaurante";
 import { useImagemDoRestaurante } from "@/hooks/useImagemDoRestaurante";
 import CategoriaConfigModal from "@/features/config/components/modals/CategoriasConfigModal";
+import WhatsAppConfigModal from "@/features/config/components/modals/WhatsAppConfigModal";
 import NotificationsModal from "@/features/notifications/components/NotificationsModal";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +29,7 @@ const Header = () => {
   const [isCategoriaConfigModalOpen, setIsCategoriaConfigModalOpen] = useState(false);
   const [isServiceFeeModalOpen, setIsServiceFeeModalOpen] = useState(false);
   const [isCoverChargeModalOpen, setIsCoverChargeModalOpen] = useState(false);
+  const [isWhatsAppConfigModalOpen, setIsWhatsAppConfigModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -107,7 +109,7 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 md:left-16 lg:left-64 bg-white shadow-md z-40 flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+    <header className="fixed top-0 left-0 right-0 md:left-16 lg:left-64 bg-white shadow-md z-40 flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">  
       {/* Nome do restaurante */}
       <div className="text-lg font-medium text-gray-900 truncate ml-12 md:ml-0">
         <NomeRestaurante />
@@ -280,6 +282,16 @@ const Header = () => {
                       {t("common:header.coverCharge", "Couvert Artístico")}
                     </button>
                     <button
+                      onClick={() => {
+                        setIsWhatsAppConfigModalOpen(true);
+                        setIsDropdownOpen(false);
+                        setIsSubMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Cardápio para WhatsApp
+                    </button>
+                    <button
                       onClick={handleBillingPortal}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
@@ -327,6 +339,10 @@ const Header = () => {
           <CoverChargeConfigModal
             isOpen={isCoverChargeModalOpen}
             onClose={() => setIsCoverChargeModalOpen(false)}
+          />
+          <WhatsAppConfigModal
+            isOpen={isWhatsAppConfigModalOpen}
+            onClose={() => setIsWhatsAppConfigModalOpen(false)}
           />
         </div>
       </div>

@@ -75,6 +75,103 @@ export const useKitchenPrint = () => {
     [t]
   );
 
+  /**
+   * Verifica se o pedido é via WhatsApp
+   */
+  const isWhatsAppOrder = (order) => {
+    return order?.orderOrigin === 'whatsapp' || 
+           order?.mesaId === 'mesa-whatsapp-delivery' ||
+           order?.mesaId === 'whatsapp';
+  };
+
+  /**
+   * Monta a seção de informações do cliente/entrega para pedidos WhatsApp
+   */
+  const buildDeliverySection = useCallback(
+    (order) => {
+      if (!isWhatsAppOrder(order)) {
+        return '';
+      }
+
+      const cliente = order?.cliente || {};
+      let enderecoFormatado = '';
+
+      // Verifica se tem endereço estruturado (novo formato)
+      if (cliente.enderecoDetalhado) {
+        const end = cliente.enderecoDetalhado;
+        const partes = [];
+        if (end.rua) partes.push(sanitize(end.rua));
+        if (end.numero) partes.push(sanitize(end.numero));
+        if (end.complemento) partes.push(sanitize(end.complemento));
+        enderecoFormatado = partes.join(', ');
+        
+        const linha2 = [];
+        if (end.bairro) linha2.push(sanitize(end.bairro));
+        if (end.cidade) linha2.push(sanitize(end.cidade));
+        if (linha2.length > 0) {
+          enderecoFormatado += `<br/>${linha2.join(', ')}`;
+        }
+        if (end.pontoReferencia) {
+          enderecoFormatado += `<br/><small>Ref: ${sanitize(end.pontoReferencia)}</small>`;
+        }
+      } else if (cliente.endereco) {
+        // Formato antigo (campo único)
+        enderecoFormatado = sanitize(cliente.endereco);
+      }
+
+      const formaPagamentoLabel = order.formaPagamento === 'dinheiro' 
+        ? 'Dinheiro (na entrega)' 
+        : order.formaPagamento === 'cartao'
+          ? 'Cartão (na entrega)'
+          : order.formaPagamento === 'credito'
+            ? 'Cartão de Crédito'
+            : order.formaPagamento === 'debito'
+              ? 'Cartão de Débito'
+              : order.formaPagamento === 'pix'
+                ? 'PIX'
+                : sanitize(order.formaPagamento || '-');
+
+      // Seção de troco (apenas para dinheiro)
+      const trocoSection = order.troco?.precisaTroco ? `
+        <div class="row" style="margin-top: 2mm;">
+          <span style="font-weight: 600;">Valor pago</span>
+          <span style="font-weight: 700;">${currencyFormatter.format(order.troco.valorPagamento || 0)}</span>
+        </div>
+        <div class="row" style="margin-top: 2mm;">
+          <span style="font-weight: 600;">Troco de</span>
+          <span style="font-weight: 700;">${currencyFormatter.format(order.troco.valorTroco || 0)}</span>
+        </div>
+      ` : '';
+
+      return `
+        ${cliente.nome ? `
+          <div class="row">
+            <span>Cliente</span>
+            <span>${sanitize(cliente.nome)}</span>
+          </div>
+        ` : ''}
+        ${cliente.telefone ? `
+          <div class="row">
+            <span>Telefone</span>
+            <span>${sanitize(cliente.telefone)}</span>
+          </div>
+        ` : ''}
+        ${enderecoFormatado ? `
+          <div class="row" style="flex-direction: column; align-items: flex-start;">
+            <span style="font-weight: 600; margin-bottom: 1mm;">Endereço:</span>
+            <span style="text-align: left;">${enderecoFormatado}</span>
+          </div>
+        ` : ''}
+        <div class="row" style="margin-top: 2mm;">
+          <span style="font-weight: 600;">Pagamento</span>
+          <span style="font-weight: 700;">${formaPagamentoLabel}</span>
+        </div>
+        ${trocoSection}
+      `;
+    },
+    []
+  );
+
   const buildHtml = useCallback(
     (order) => {
       const createdAt = formatDate(order?.criadoEm);
@@ -237,10 +334,14 @@ export const useKitchenPrint = () => {
               })}</div>
               <div class="divider"></div>
 
-              <div class="row">
-                <span>${t("print.table")}</span>
-                <span>${sanitize(order?.mesaNumero)}</span>
-              </div>
+              ${isWhatsAppOrder(order) ? `
+                ${buildDeliverySection(order)}
+              ` : `
+                <div class="row">
+                  <span>${t("print.table")}</span>
+                  <span>${sanitize(order?.mesaNumero)}</span>
+                </div>
+              `}
               <div class="row">
                 <span>${t("print.createdAt")}</span>
                 <span>${createdAtLabel}</span>
@@ -270,7 +371,7 @@ export const useKitchenPrint = () => {
         </html>
       `;
     },
-    [buildItemsSection, t]
+    [buildItemsSection, buildDeliverySection, t]
   );
 
   const printOrder = useCallback(

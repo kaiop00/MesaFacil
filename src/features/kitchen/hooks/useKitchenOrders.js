@@ -59,6 +59,11 @@ export const useKitchenOrders = (idRestaurante) => {
               observacoes: pedido?.observacoes || "",
               status: pedido?.status || "",
               items: pedido?.items || [],
+              // Campos para pedidos WhatsApp
+              orderOrigin: pedido?.orderOrigin || "",
+              cliente: pedido?.cliente || null,
+              formaPagamento: pedido?.formaPagamento || "",
+              troco: pedido?.troco || null,
             }));
         })
       );

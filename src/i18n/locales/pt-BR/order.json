@@ -40,6 +40,22 @@
         "create": "Criar Comanda"
       }
     },
+    "payment": {
+      "title": "Finalizar Mesa - Forma de Pagamento",
+      "subtitle": "Selecione a forma de pagamento",
+      "table": "Mesa",
+      "total": "Valor Total",
+      "selectMethod": "Selecione a forma de pagamento",
+      "observations": "Observações",
+      "optional": "opcional",
+      "observationsPlaceholder": "Ex: Cliente pagou metade em dinheiro e metade no PIX...",
+      "warning": "⚠️ Selecione uma forma de pagamento antes de confirmar",
+      "buttons": {
+        "cancel": "Cancelar",
+        "confirm": "Confirmar Pagamento",
+        "processing": "Processando..."
+      }
+    },
     "addItems": {
       "title": "Adicionar Itens",
       "searchItems": "Pesquisar itens...",
@@ -121,7 +137,8 @@
       "itemUpdated": "Item atualizado com sucesso!",
       "itemRemoved": "Item removido da comanda!",
       "orderFinished": "Comanda finalizada com sucesso!",
-      "tableFreed": "Mesa liberada com sucesso!"
+      "tableFreed": "Mesa liberada com sucesso!",
+      "paymentConfirmed": "Pagamento confirmado e mesa finalizada!"
     },
     "error": {
       "createOrder": "Erro ao criar comanda",
@@ -158,5 +175,31 @@
     "quantity": "Quantidade",
     "price": "Preço",
     "actions": "Ver todos"
+  },
+  "payment": {
+    "methods": {
+      "cash": "Dinheiro",
+      "debit": "Débito",
+      "credit": "Crédito",
+      "pix": "PIX",
+      "ifood": "iFood",
+      "voucher": "Voucher/Cortesia"
+    },
+    "modal": {
+      "title": "Forma de Pagamento",
+      "subtitle": "Selecione a forma de pagamento",
+      "table": "Mesa",
+      "total": "Valor Total",
+      "selectMethod": "Selecione a forma de pagamento",
+      "observations": "Observações",
+      "optional": "opcional",
+      "observationsPlaceholder": "Ex: Cliente pagou metade em dinheiro e metade no PIX...",
+      "warning": "⚠️ Selecione uma forma de pagamento antes de confirmar",
+      "buttons": {
+        "cancel": "Cancelar",
+        "confirm": "Confirmar Pagamento",
+        "processing": "Processando..."
+      }
+    }
   }
 }

@@ -39,8 +39,22 @@
         "cancel": "Annulla",
         "create": "Crea Ordine"
       }
-    },
-    "addItems": {
+    },    "payment": {
+      "title": "Finalizza Tavolo - Metodo di Pagamento",
+      "subtitle": "Seleziona il metodo di pagamento",
+      "table": "Tavolo",
+      "total": "Importo Totale",
+      "selectMethod": "Seleziona il metodo di pagamento",
+      "observations": "Osservazioni",
+      "optional": "opzionale",
+      "observationsPlaceholder": "Es: Cliente ha pagato metà in contanti e metà con PIX...",
+      "warning": "⚠️ Seleziona un metodo di pagamento prima di confermare",
+      "buttons": {
+        "cancel": "Annulla",
+        "confirm": "Conferma Pagamento",
+        "processing": "Elaborazione..."
+      }
+    },    "addItems": {
       "title": "Aggiungi Articoli",
       "searchItems": "Cerca articoli...",
       "noItems": "Nessun articolo trovato",
@@ -121,7 +135,8 @@
       "itemUpdated": "Articolo aggiornato con successo!",
       "itemRemoved": "Articolo rimosso dall'ordine!",
       "orderFinished": "Ordine completato con successo!",
-      "tableFreed": "Tavolo liberato con successo!"
+      "tableFreed": "Tavolo liberato con successo!",
+      "paymentConfirmed": "Pagamento confermato e tavolo finalizzato!"
     },
     "error": {
       "createOrder": "Errore nella creazione dell'ordine",
@@ -157,6 +172,31 @@
     "total": "Totale",
     "quantity": "Quantità",
     "price": "Prezzo",
-    "actions": "Vedi tutti"
+    "actions": "Vedi tutti"  },
+  "payment": {
+    "methods": {
+      "cash": "Contanti",
+      "debit": "Debito",
+      "credit": "Credito",
+      "pix": "PIX",
+      "ifood": "iFood",
+      "voucher": "Buono/Cortesia"
+    },
+    "modal": {
+      "title": "Metodo di Pagamento",
+      "subtitle": "Seleziona il metodo di pagamento",
+      "table": "Tavolo",
+      "total": "Importo Totale",
+      "selectMethod": "Seleziona il metodo di pagamento",
+      "observations": "Osservazioni",
+      "optional": "opzionale",
+      "observationsPlaceholder": "Es: Cliente ha pagato metà in contanti e metà con PIX...",
+      "warning": "⚠️ Seleziona un metodo di pagamento prima di confermare",
+      "buttons": {
+        "cancel": "Annulla",
+        "confirm": "Conferma Pagamento",
+        "processing": "Elaborazione..."
+      }
+    }
   }
 }

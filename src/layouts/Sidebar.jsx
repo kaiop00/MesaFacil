@@ -13,6 +13,7 @@ import {
   Slider01,
   Building03,
   Lock,
+  Link as LinkIcon,
 } from "react-coolicons";
 import { usePlan } from "@/contexts/PlanContext";
 import { FEATURE_FLAGS } from "@/constants/planFeatures";
@@ -48,6 +49,12 @@ const Sidebar = () => {
       icon: <ArrowDownUp size={20} />, 
       path: "/home/promocoes",
       feature: null  // Promoções disponíveis para todos os planos
+    },
+    { 
+      name: t("common:sidebar.integrations"), 
+      icon: <LinkIcon size={20} />, 
+      path: "/home/integracoes/ifood",
+      feature: null
     },
     { 
       name: t("common:sidebar.items"), 

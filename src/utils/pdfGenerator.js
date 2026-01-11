@@ -130,13 +130,42 @@ const checkPageSpace = (doc, currentY, requiredSpace = 30) => {
   return currentY;
 };
 
+const getPaymentMethodLabel = (method, t = null) => {
+  if (!method) return t ? t('tables.sales.noPaymentMethod') : 'Não informado';
+  
+  const methodMapPt = {
+    'dinheiro': 'Dinheiro',
+    'debito': 'Débito',
+    'credito': 'Crédito',
+    'pix': 'PIX',
+    'ifood': 'iFood',
+    'voucher': 'Voucher/Cortesia'
+  };
+  
+  if (!t) {
+    return methodMapPt[method] || method;
+  }
+  
+  const methodMap = {
+    'dinheiro': t('tables.sales.paymentMethods.cash'),
+    'debito': t('tables.sales.paymentMethods.debit'),
+    'credito': t('tables.sales.paymentMethods.credit'),
+    'pix': t('tables.sales.paymentMethods.pix'),
+    'ifood': t('tables.sales.paymentMethods.ifood'),
+    'voucher': t('tables.sales.paymentMethods.voucher')
+  };
+  
+  return methodMap[method] || method;
+};
+
 const generateSalesTable = (doc, orders, startY, t = null) => {
   const tableColumns = t ? [
     t('tables.sales.columns.orderNumber'),
     t('tables.sales.columns.table'),
     t('tables.sales.columns.date'),
-    t('tables.sales.columns.value')
-  ] : ['Nº Pedido', 'Mesa', 'Data', 'Valor'];
+    t('tables.sales.columns.value'),
+    t('tables.sales.columns.paymentMethod')
+  ] : ['Nº Pedido', 'Mesa', 'Data', 'Valor', 'Método de Pagamento'];
 
   const tablePrefix = t ? t('tables.sales.tablePrefix') : 'Mesa';
 
@@ -144,7 +173,8 @@ const generateSalesTable = (doc, orders, startY, t = null) => {
     order.numero.slice(-8),
     `${tablePrefix} ${order.mesa}`,
     order.data,
-    formatCurrency(order.valor)
+    formatCurrency(order.valor),
+    getPaymentMethodLabel(order.formaPagamento, t)
   ]);
 
   autoTable(doc, {

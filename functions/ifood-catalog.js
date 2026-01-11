@@ -188,13 +188,13 @@ exports.ifoodGetCatalog = onRequest(
         status: catalog.status,
       });
 
-      // Step 2: Fetch categories and items from the catalog
-      logger.info("Step 2: Fetching categories and items", {
+      // Step 2: Fetch categories (without items)
+      logger.info("Step 2: Fetching categories", {
         catalogId,
       });
 
       const categoriesResponse = await fetch(
-        `${IFOOD_API_BASE_URL}/catalog/v2.0/merchants/${integrationData.merchantId}/catalogs/${catalogId}/categories?include_items=true`,
+        `${IFOOD_API_BASE_URL}/catalog/v2.0/merchants/${integrationData.merchantId}/catalogs/${catalogId}/categories`,
         {
           method: "GET",
           headers: {
@@ -217,11 +217,24 @@ exports.ifoodGetCatalog = onRequest(
         });
       }
 
-      const catalogData = await categoriesResponse.json();
+      const categories = await categoriesResponse.json();
       logger.info("Categories fetched successfully", {
-        categoriesCount: catalogData.length,
-        originalObject: catalogData,
+        categoriesCount: categories.length,
+        categories: categories.map(c => ({
+          id: c.id,
+          name: c.name,
+          status: c.status,
+        })),
       });
+
+      // Step 3: Fetch items for each category
+      logger.info("Step 3: Fetching items for each category");
+      
+      const catalogData = await fetchItemsForCategories(
+        integrationData.merchantId,
+        categories,
+        accessToken
+      );
 
       // Parse and structure the catalog data
       const parsedCatalog = parseCatalogData(catalogData);
@@ -247,12 +260,94 @@ exports.ifoodGetCatalog = onRequest(
 );
 
 /**
+ * Fetch items for each category
+ * This is a separate step required by iFood API
+ */
+async function fetchItemsForCategories(merchantId, categories, accessToken) {
+  const categoriesWithItems = [];
+  
+  for (const category of categories) {
+    try {
+      logger.info("Fetching items for category", {
+        categoryId: category.id,
+        categoryName: category.name,
+      });
+      
+      const itemsResponse = await fetch(
+        `${IFOOD_API_BASE_URL}/catalog/v2.0/merchants/${merchantId}/categories/${category.id}/items`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Accept": "application/json",
+            "User-Agent": "MesaFacil/1.0",
+          },
+        }
+      );
+      
+      if (!itemsResponse.ok) {
+        const errorText = await itemsResponse.text();
+        logger.error("Failed to fetch items for category", {
+          categoryId: category.id,
+          categoryName: category.name,
+          status: itemsResponse.status,
+          error: errorText,
+        });
+        
+        // Continue with next category even if one fails
+        categoriesWithItems.push({
+          ...category,
+          items: [],
+          error: `Failed to fetch items: ${itemsResponse.status}`,
+        });
+        continue;
+      }
+      
+      const categoryData = await itemsResponse.json();
+      
+      logger.info("Items fetched for category", {
+        categoryId: category.id,
+        categoryName: category.name,
+        itemsCount: categoryData.items?.length || 0,
+      });
+      
+      // Merge category info with items data
+      categoriesWithItems.push({
+        ...category,
+        items: categoryData.items || [],
+        products: categoryData.products || [],
+        optionGroups: categoryData.optionGroups || [],
+        options: categoryData.options || [],
+      });
+      
+    } catch (error) {
+      logger.error("Error fetching items for category", {
+        categoryId: category.id,
+        categoryName: category.name,
+        error: error.message,
+      });
+      
+      categoriesWithItems.push({
+        ...category,
+        items: [],
+        error: error.message,
+      });
+    }
+  }
+  
+  return categoriesWithItems;
+}
+
+/**
  * Parse catalog data into a standardized format
- * Following iFood API structure: categories with items
+ * Data structure from iFood API after fetching categories and their items separately
  */
 function parseCatalogData(categoriesData) {
   const items = [];
   const categories = [];
+  const products = [];
+  const optionGroups = [];
+  const options = [];
   
   try {
     if (!Array.isArray(categoriesData)) {
@@ -260,6 +355,9 @@ function parseCatalogData(categoriesData) {
       return {
         items: [],
         categories: [],
+        products: [],
+        optionGroups: [],
+        options: [],
         totalItems: 0,
         totalCategories: 0,
         parseError: "Invalid data format",
@@ -271,6 +369,7 @@ function parseCatalogData(categoriesData) {
       const categoryId = category.id;
       const categoryName = category.name || "Sem categoria";
       
+      // Add category info
       categories.push({
         id: categoryId,
         name: categoryName,
@@ -278,7 +377,61 @@ function parseCatalogData(categoriesData) {
         sequence: category.sequence || categoryIndex,
         index: category.index || categoryIndex,
         template: category.template || "DEFAULT",
+        error: category.error || null,
       });
+      
+      // Collect products from this category
+      if (category.products && Array.isArray(category.products)) {
+        category.products.forEach(product => {
+          products.push({
+            id: product.id,
+            externalCode: product.externalCode || "",
+            name: product.name || "",
+            description: product.description || "",
+            additionalInformation: product.additionalInformation || "",
+            imagePath: product.imagePath || "",
+            ean: product.ean || null,
+            serving: product.serving || "SERVES_1",
+            dietaryRestrictions: product.dietaryRestrictions || [],
+            quantity: product.quantity || null,
+            optionGroups: product.optionGroups || [],
+          });
+        });
+      }
+      
+      // Collect option groups from this category
+      if (category.optionGroups && Array.isArray(category.optionGroups)) {
+        category.optionGroups.forEach(group => {
+          optionGroups.push({
+            id: group.id,
+            name: group.name || "",
+            externalCode: group.externalCode || "",
+            status: group.status || "AVAILABLE",
+            index: group.index || 0,
+            optionGroupType: group.optionGroupType || "DEFAULT",
+            optionIds: group.optionIds || [],
+          });
+        });
+      }
+      
+      // Collect options from this category
+      if (category.options && Array.isArray(category.options)) {
+        category.options.forEach(option => {
+          options.push({
+            id: option.id,
+            status: option.status || "AVAILABLE",
+            index: option.index || 0,
+            productId: option.productId || "",
+            price: {
+              value: option.price?.value || 0,
+              originalValue: option.price?.originalValue || option.price?.value || 0,
+            },
+            externalCode: option.externalCode || "",
+            contextModifiers: option.contextModifiers || [],
+            fractions: option.fractions || null,
+          });
+        });
+      }
       
       // Get items from this category
       const categoryItems = category.items || [];
@@ -287,56 +440,31 @@ function parseCatalogData(categoriesData) {
         items.push({
           // Basic info
           id: item.id,
+          type: item.type || "DEFAULT",
           externalCode: item.externalCode || item.id,
-          name: item.name || "Item sem nome",
-          description: item.description || "",
-          
-          // Pricing
-          price: item.price?.value || 0,
-          originalPrice: item.price?.originalValue || item.price?.value || 0,
-          
-          // Product info
-          productId: item.productId,
           
           // Category association
           categoryId: categoryId,
           categoryName: categoryName,
           
           // Status and ordering
+          status: item.status || "AVAILABLE",
           available: item.status === "AVAILABLE",
           sequence: item.sequence || 0,
           index: item.index || 0,
           
-          // Media
-          imagePath: item.imagePath || "",
+          // Pricing
+          price: {
+            value: item.price?.value || 0,
+            originalValue: item.price?.originalValue || item.price?.value || 0,
+          },
           
-          // Additional details
-          serving: item.serving || "SERVES_1",
-          ean: item.ean || null,
-          dietaryRestrictions: item.dietaryRestrictions || [],
+          // Product reference
+          productId: item.productId,
           
           // Scheduling
           shifts: item.shifts || [],
-          
-          // Option groups (complementos)
-          optionGroups: (item.optionGroups || []).map(group => ({
-            id: group.id,
-            name: group.name,
-            min: group.min || 0,
-            max: group.max || 999,
-            sequence: group.sequence || 0,
-            status: group.status || "AVAILABLE",
-            // Options will be populated if available in the response
-            options: (group.options || []).map(opt => ({
-              id: opt.id,
-              name: opt.name,
-              description: opt.description || "",
-              price: opt.price?.value || 0,
-              externalCode: opt.externalCode || opt.id,
-              status: opt.status || "AVAILABLE",
-              sequence: opt.sequence || 0,
-            })),
-          })),
+          tags: item.tags || [],
           
           // Context modifiers (different prices/status for different contexts)
           contextModifiers: item.contextModifiers || [],
@@ -347,8 +475,14 @@ function parseCatalogData(categoriesData) {
     return {
       items,
       categories,
+      products,
+      optionGroups,
+      options,
       totalItems: items.length,
       totalCategories: categories.length,
+      totalProducts: products.length,
+      totalOptionGroups: optionGroups.length,
+      totalOptions: options.length,
     };
     
   } catch (error) {
@@ -356,8 +490,14 @@ function parseCatalogData(categoriesData) {
     return {
       items: [],
       categories: [],
+      products: [],
+      optionGroups: [],
+      options: [],
       totalItems: 0,
       totalCategories: 0,
+      totalProducts: 0,
+      totalOptionGroups: 0,
+      totalOptions: 0,
       parseError: error.message,
     };
   }

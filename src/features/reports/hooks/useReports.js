@@ -75,6 +75,7 @@ export const useReports = (idRestaurante, tables) => {
           order.status ||
           (order.finalizadoEm ? "Finalizado" : "Em andamento"),
         mesa: order.mesaNumero,
+        formaPagamento: order.formaPagamento || null,
       })),
     };
   };

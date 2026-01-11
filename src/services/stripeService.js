@@ -1,15 +1,27 @@
 import { loadStripe } from '@stripe/stripe-js';
 
+// ============================================
+// TEMPORARY: STRIPE DISABLED
+// A conta do Stripe foi temporariamente desativada
+// Este flag desativa as verificações de plano e assinaturas
+// Para reativar, altere para false
+// ============================================
+const STRIPE_TEMPORARILY_DISABLED = true;
+
 // Get Stripe publishable key from environment
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 // Validate key exists
-if (!stripePublishableKey) {
+if (!stripePublishableKey && !STRIPE_TEMPORARILY_DISABLED) {
   console.error('⚠️ VITE_STRIPE_PUBLISHABLE_KEY is not configured in .env file');
 }
 
 // Initialize Stripe with publishable key
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+const stripePromise = (stripePublishableKey && !STRIPE_TEMPORARILY_DISABLED) ? loadStripe(stripePublishableKey) : null;
+
+if (STRIPE_TEMPORARILY_DISABLED) {
+  console.warn('⚠️ STRIPE TEMPORARIAMENTE DESATIVADO - Todas as funcionalidades de plano estão liberadas');
+}
 
 /**
  * Stripe Service for handling payments and billing
@@ -23,6 +35,11 @@ class StripeService {
   }
 
   async init() {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      console.warn('⚠️ Stripe init skipped - STRIPE_TEMPORARILY_DISABLED is true');
+      return;
+    }
+    
     if (!stripePromise) {
       console.error('Stripe cannot be initialized: Missing VITE_STRIPE_PUBLISHABLE_KEY');
       return;
@@ -44,6 +61,16 @@ class StripeService {
    * @returns {Promise<Object>} Checkout session response
    */
   async createCheckoutSession(priceId, customerEmail, metadata = {}) {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      console.warn('⚠️ Stripe checkout session skipped - returning mock data');
+      return {
+        id: 'mock_session_' + Date.now(),
+        url: '/payment-success?session_id=mock_disabled',
+        mode: 'subscription',
+        status: 'complete'
+      };
+    }
+    
     try {
       const requestBody = {
         priceId,
@@ -83,6 +110,34 @@ class StripeService {
    * @returns {Promise<Object>} Session verification response
    */
   async verifyCheckoutSession(sessionId) {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      console.warn('⚠️ Stripe session verification skipped - returning mock data');
+      return {
+        session: {
+          id: sessionId,
+          status: 'complete',
+          customer: 'mock_customer_disabled',
+          subscription: 'mock_subscription_disabled',
+          mode: 'subscription'
+        },
+        customer: {
+          id: 'mock_customer_disabled',
+          email: 'disabled@stripe.com'
+        },
+        subscription: {
+          id: 'mock_subscription_disabled',
+          status: 'active',
+          items: {
+            data: [{
+              price: { id: 'mock_price_premium' }
+            }]
+          },
+          current_period_end: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60), // 1 year from now
+          created: Math.floor(Date.now() / 1000)
+        }
+      };
+    }
+    
     try {
       const response = await fetch(`${this.apiBaseUrl}/verifySession/${sessionId}`, {
         method: 'GET',
@@ -111,6 +166,13 @@ class StripeService {
    * @param {Object} metadata - Additional metadata
    */
   async redirectToCheckout(priceId, customerEmail, metadata = {}) {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      console.warn('⚠️ Stripe checkout redirect skipped - Stripe is temporarily disabled');
+      // Instead of redirecting to Stripe, just show a notification
+      alert('Sistema de pagamento temporariamente desativado. Todas as funcionalidades estão liberadas.');
+      return;
+    }
+    
     try {
       // Create checkout session (this returns the session URL)
       const session = await this.createCheckoutSession(priceId, customerEmail, metadata);
@@ -181,6 +243,24 @@ class StripeService {
    * @returns {Promise<Object>} Customer subscription data
    */
   async getCustomerSubscription(customerId) {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      console.warn('⚠️ Stripe subscription fetch skipped - returning mock premium subscription');
+      return {
+        subscription: {
+          id: 'mock_subscription_disabled',
+          status: 'active',
+          items: {
+            data: [{
+              price: { id: 'mock_price_premium' }
+            }]
+          },
+          current_period_end: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60), // 1 year from now
+          created: Math.floor(Date.now() / 1000),
+          cancel_at_period_end: false
+        }
+      };
+    }
+    
     try {
       const response = await fetch(`${this.apiBaseUrl}/getCustomerSubscription/${customerId}`, {
         method: 'GET',
@@ -209,6 +289,20 @@ class StripeService {
    * @returns {Promise<Object>} Plan information
    */
   async getCurrentPlan(customerId) {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      console.warn('⚠️ Stripe plan fetch skipped - granting semiannual plan access');
+      // Return a premium plan with long expiration
+      return {
+        planId: 'semiannual',
+        status: 'active',
+        expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)), // 1 year from now
+        createdAt: new Date(),
+        cancelAtPeriodEnd: false,
+        stripeSubscriptionId: 'mock_subscription_disabled',
+        stripePriceId: 'mock_price_semiannual'
+      };
+    }
+    
     try {
       if (!customerId) {
         return extractPlanFromSubscription(null);
@@ -324,6 +418,9 @@ export default stripeService;
 
 // Export class for testing or multiple instances if needed
 export { StripeService };
+
+// Export the temporarily disabled flag for use in other components
+export { STRIPE_TEMPORARILY_DISABLED };
 
 /**
  * Price ID mappings for environment variables

@@ -39,8 +39,22 @@
         "cancel": "Cancelar",
         "create": "Crear Pedido"
       }
-    },
-    "addItems": {
+    },    "payment": {
+      "title": "Finalizar Mesa - Forma de Pago",
+      "subtitle": "Seleccione la forma de pago",
+      "table": "Mesa",
+      "total": "Valor Total",
+      "selectMethod": "Seleccione la forma de pago",
+      "observations": "Observaciones",
+      "optional": "opcional",
+      "observationsPlaceholder": "Ej: Cliente pagó mitad en efectivo y mitad en PIX...",
+      "warning": "⚠️ Seleccione una forma de pago antes de confirmar",
+      "buttons": {
+        "cancel": "Cancelar",
+        "confirm": "Confirmar Pago",
+        "processing": "Procesando..."
+      }
+    },    "addItems": {
       "title": "Agregar Artículos",
       "searchItems": "Buscar artículos...",
       "noItems": "No se encontraron artículos",
@@ -121,7 +135,8 @@
       "itemUpdated": "¡Artículo actualizado con éxito!",
       "itemRemoved": "¡Artículo eliminado del pedido!",
       "orderFinished": "¡Pedido finalizado con éxito!",
-      "tableFreed": "¡Mesa liberada con éxito!"
+      "tableFreed": "¡Mesa liberada con éxito!",
+      "paymentConfirmed": "¡Pago confirmado y mesa finalizada!"
     },
     "error": {
       "createOrder": "Error al crear el pedido",
@@ -158,5 +173,15 @@
     "quantity": "Cantidad",
     "price": "Precio",
     "actions": "Ver todos"
+  },
+  "payment": {
+    "methods": {
+      "cash": "Efectivo",
+      "debit": "Débito",
+      "credit": "Crédito",
+      "pix": "PIX",
+      "ifood": "iFood",
+      "voucher": "Voucher/Cortesía"
+    }
   }
 }

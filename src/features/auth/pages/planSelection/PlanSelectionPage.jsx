@@ -6,7 +6,7 @@ import PlanCard from '../../components/PlanCard';
 import { PLANS_DATA } from '../../constants/plansData';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/useToast';
-import stripeService from '@/services/stripeService';
+import stripeService, { STRIPE_TEMPORARILY_DISABLED } from '@/services/stripeService';
 import mesafacil from '@/assets/mesafacil.png';
 
 export default function PlanSelectionPage() {
@@ -23,6 +23,26 @@ export default function PlanSelectionPage() {
   // Check if user has an existing subscription in Stripe
   useEffect(() => {
     const checkExistingSubscription = async () => {
+      // TEMPORARY: If Stripe is disabled, skip subscription check and redirect to home
+      if (STRIPE_TEMPORARILY_DISABLED) {
+        if (resolvedRestaurantId) {
+          notify('Sistema de pagamento desativado. Acesso premium concedido automaticamente!', 'info');
+          // Grant premium plan and redirect
+          try {
+            await setUserPlan(resolvedRestaurantId, null, null);
+          } catch (error) {
+            console.error('Error setting user plan:', error);
+          }
+          // Redirect to home after short delay
+          setTimeout(() => {
+            navigate('/home', { replace: true });
+          }, 1500);
+        } else {
+          setIsCheckingSubscription(false);
+        }
+        return;
+      }
+      
       if (!stripeCustomerId) {
         // No Stripe customer, show plan selection
         setIsCheckingSubscription(false);
@@ -55,7 +75,7 @@ export default function PlanSelectionPage() {
     };
 
     checkExistingSubscription();
-  }, [stripeCustomerId, notify]);
+  }, [stripeCustomerId, notify, resolvedRestaurantId, setUserPlan, navigate]);
 
   const handlePlanSelect = (plan) => {
     setSelectedPlan(plan);
@@ -70,6 +90,18 @@ export default function PlanSelectionPage() {
     setIsProcessing(true);
     
     try {
+      // TEMPORARY: Check if Stripe is disabled
+      const STRIPE_DISABLED = true; // Set to false to re-enable Stripe
+      
+      if (STRIPE_DISABLED) {
+        // When Stripe is disabled, grant premium access regardless of selected plan
+        notify('⚠️ Sistema de pagamento temporariamente desativado. Acesso premium concedido!', 'info');
+        // Grant premium plan directly
+        await setUserPlan(resolvedRestaurantId, null, null);
+        navigate('/home', { replace: true });
+        return;
+      }
+      
       if (selectedPlan.id === 'free') {
         await setUserPlan(resolvedRestaurantId, null, null);
         notify('Plano gratuito ativado com sucesso!', 'success');
@@ -124,9 +156,35 @@ export default function PlanSelectionPage() {
 
       {/* Corpo principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* TEMPORARY: Stripe Disabled Warning */}
+        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-8 max-w-4xl mx-auto">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-yellow-900 text-lg mb-2">
+                ⚠️ Sistema de Pagamento Temporariamente Desativado
+              </h3>
+              <p className="text-yellow-800 mb-2">
+                Nossa conta do Stripe está temporariamente desativada para manutenção. Durante este período:
+              </p>
+              <ul className="list-disc list-inside text-yellow-800 space-y-1 ml-4">
+                <li>Todas as funcionalidades premium estão liberadas gratuitamente</li>
+                <li>Não é necessário realizar pagamento</li>
+                <li>Você terá acesso completo ao sistema</li>
+              </ul>
+              <p className="text-yellow-700 text-sm mt-3 font-medium">
+                O sistema de cobrança será reativado em breve. Aproveite o acesso completo!
+              </p>
+            </div>
+          </div>
+        </div>
+        
         {/* Título da seção */}
-        <div className="text-center mb-12">
-          {/* Alert if no restaurant ID */}
+        <div className="text-center mb-12">{/* Alert if no restaurant ID */}
           {!resolvedRestaurantId && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-w-md mx-auto mb-8">
               <p className="text-red-800">

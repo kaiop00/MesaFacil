@@ -21,15 +21,7 @@ export const usePlanManagement = () => {
         customerId = await getStripeCustomerId(restaurantId);
       }
 
-      if (!customerId) {
-        // No Stripe customer, return free plan
-        const freePlan = { planId: 'free', status: 'active', expiresAt: null };
-        setCurrentPlan(freePlan);
-        setHasActivePlan(true);
-        return freePlan;
-      }
-
-      // Fetch plan from Stripe
+      // Fetch plan from Stripe (will return mock premium plan if Stripe is disabled)
       const plan = await stripeService.getCurrentPlan(customerId);
       
       // Check if plan is active
@@ -48,7 +40,15 @@ export const usePlanManagement = () => {
       }
     } catch (error) {
       console.error('Erro ao verificar plano do restaurante:', error);
-      return null;
+      // When Stripe is disabled, return premium plan on error
+      const premiumPlan = { 
+        planId: 'semiannual', 
+        status: 'active', 
+        expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
+      };
+      setCurrentPlan(premiumPlan);
+      setHasActivePlan(true);
+      return premiumPlan;
     }
   }, [stripeCustomerId]);
 

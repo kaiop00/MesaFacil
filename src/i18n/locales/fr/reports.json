@@ -45,9 +45,19 @@
         "orderNumber": "N° de commande",
         "table": "Table",
         "date": "Date",
-        "value": "Valeur"
+        "value": "Valeur",
+        "paymentMethod": "Méthode de paiement"
       },
-      "tablePrefix": "Table"
+      "tablePrefix": "Table",
+      "noPaymentMethod": "Non renseigné",
+      "paymentMethods": {
+        "cash": "Espèces",
+        "debit": "Débit",
+        "credit": "Crédit",
+        "pix": "PIX",
+        "ifood": "iFood",
+        "voucher": "Bon/Gratuité"
+      }
     },
     "period": {
       "columns": {

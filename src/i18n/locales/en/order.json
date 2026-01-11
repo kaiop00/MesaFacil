@@ -40,6 +40,22 @@
         "create": "Create Order"
       }
     },
+    "payment": {
+      "title": "Finish Table - Payment Method",
+      "subtitle": "Select payment method",
+      "table": "Table",
+      "total": "Total Amount",
+      "selectMethod": "Select payment method",
+      "observations": "Observations",
+      "optional": "optional",
+      "observationsPlaceholder": "Ex: Customer paid half cash and half via PIX...",
+      "warning": "⚠️ Select a payment method before confirming",
+      "buttons": {
+        "cancel": "Cancel",
+        "confirm": "Confirm Payment",
+        "processing": "Processing..."
+      }
+    },
     "addItems": {
       "title": "Add Items",
       "searchItems": "Search items...",
@@ -121,7 +137,8 @@
       "itemUpdated": "Item updated successfully!",
       "itemRemoved": "Item removed from order!",
       "orderFinished": "Order finished successfully!",
-      "tableFreed": "Table freed successfully!"
+      "tableFreed": "Table freed successfully!",
+      "paymentConfirmed": "Payment confirmed and table finished!"
     },
     "error": {
       "createOrder": "Error creating order",
@@ -157,6 +174,31 @@
     "total": "Total",
     "quantity": "Quantity",
     "price": "Price",
-    "actions": "See all"
+    "actions": "See all"  },
+  "payment": {
+    "methods": {
+      "cash": "Cash",
+      "debit": "Debit",
+      "credit": "Credit",
+      "pix": "PIX",
+      "ifood": "iFood",
+      "voucher": "Voucher/Courtesy"
+    },
+    "modal": {
+      "title": "Payment Method",
+      "subtitle": "Select payment method",
+      "table": "Table",
+      "total": "Total Amount",
+      "selectMethod": "Select payment method",
+      "observations": "Observations",
+      "optional": "optional",
+      "observationsPlaceholder": "Ex: Customer paid half cash and half via PIX...",
+      "warning": "⚠️ Select a payment method before confirming",
+      "buttons": {
+        "cancel": "Cancel",
+        "confirm": "Confirm Payment",
+        "processing": "Processing..."
+      }
+    }
   }
 }

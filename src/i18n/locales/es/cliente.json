@@ -37,11 +37,22 @@
       "payment": "Realice el pago para finalizar",
       "waiterComing": "El camarero está en camino"
     },
+    "noPedidos": "No se encontraron pedidos",
+    "noPedidosWhatsApp": "Aún no tienes pedidos. ¡Haz tu primer pedido!",
     "deliveredMessage": "cuando termine de comer, haga clic en realizar pago",
     "waiterOnWay": "El camarero está en camino",
     "waiterHelp": "El camarero vendrá a su mesa para ayudar con el pago, por favor espere.",
     "waiterSuccess": "Se ha llamado al camarero. Por favor, espere un momento.",
-    "waiterError": "No se pudo llamar al camarero. Por favor, inténtelo de nuevo."
+    "waiterError": "No se pudo llamar al camarero. Por favor, inténtelo de nuevo.",
+    "delivery": {
+      "outForDelivery": "¡Pedido salió para entrega!",
+      "outForDeliveryMessage": "Su pedido está en camino. Espere al repartidor.",
+      "orderSummary": "Resumen del pedido",
+      "confirmReceipt": "Confirmar recepción",
+      "confirming": "Confirmando...",
+      "confirmSuccess": "¡Recepción confirmada! Gracias por su pedido.",
+      "confirmError": "No se pudo confirmar la recepción. Inténtelo de nuevo."
+    }
   },
   "totalPedidos": {
     "title": "Resumen de Pedidos",
@@ -106,6 +117,7 @@
     "back": "Volver",
     "continue": "Continuar",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "viewMenu": "Ver Menú"
   }
 }

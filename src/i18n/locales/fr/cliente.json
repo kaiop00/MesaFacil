@@ -37,11 +37,22 @@
       "payment": "Effectuer le paiement pour terminer",
       "waiterComing": "Le serveur est en route"
     },
+    "noPedidos": "Aucune commande trouvée",
+    "noPedidosWhatsApp": "Vous n'avez pas encore de commandes. Passez votre première commande !",
     "deliveredMessage": "quand vous aurez fini de manger, cliquez sur effectuer le paiement",
     "waiterOnWay": "Le serveur est en route",
     "waiterHelp": "Le serveur viendra à votre table pour vous aider avec le paiement, veuillez patienter.",
     "waiterSuccess": "Le serveur a été appelé. Veuillez patienter un instant.",
-    "waiterError": "Impossible d'appeler le serveur. Veuillez réessayer."
+    "waiterError": "Impossible d'appeler le serveur. Veuillez réessayer.",
+    "delivery": {
+      "outForDelivery": "Commande en cours de livraison !",
+      "outForDeliveryMessage": "Votre commande est en route. Veuillez attendre le livreur.",
+      "orderSummary": "Résumé de la commande",
+      "confirmReceipt": "Confirmer la réception",
+      "confirming": "Confirmation en cours...",
+      "confirmSuccess": "Réception confirmée ! Merci pour votre commande.",
+      "confirmError": "Impossible de confirmer la réception. Veuillez réessayer."
+    }
   },
   "totalPedidos": {
     "title": "Résumé de la commande",
@@ -106,6 +117,7 @@
     "back": "Retour",
     "continue": "Continuer",
     "confirm": "Confirmer",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "viewMenu": "Voir le menu"
   }
 }
