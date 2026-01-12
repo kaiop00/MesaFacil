@@ -192,7 +192,8 @@ export const useKitchenPrint = () => {
             <style>
               @page {
                 size: 80mm auto;
-                margin: 0;
+                margin: 0 !important;
+                padding: 0 !important;
               }
               :root {
                 color-scheme: light;
@@ -201,37 +202,33 @@ export const useKitchenPrint = () => {
               *::before,
               *::after {
                 box-sizing: border-box;
-              }
-              html,
-              body {
-                width: 100%;
-                max-width: 100%;
-                min-height: 100%;
                 margin: 0;
                 padding: 0;
-                background: #ffffff;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
+              }
+              html {
+                width: 80mm;
+                margin: 0;
+                padding: 0;
               }
               body {
                 width: 80mm;
-                margin: 0 auto;
+                max-width: 80mm;
+                min-width: 80mm;
+                margin: 0 !important;
+                padding: 2mm 3mm;
+                background: #ffffff;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
                 font-family: "Roboto Mono", "Courier New", Courier, monospace;
                 font-size: 12px;
                 line-height: 1.35;
                 color: #111827;
-                padding: 4mm 0;
-                background: #ffffff;
               }
               .ticket {
-                width: 72mm;
-                max-width: 72mm;
-                margin: 0 auto;
-                padding: 4mm 0;
+                width: 100%;
+                max-width: 100%;
+                margin: 0;
+                padding: 2mm 0;
               }
               .row {
                 display: flex;
@@ -300,25 +297,31 @@ export const useKitchenPrint = () => {
                 text-align: center;
               }
               @media print {
-                html,
-                body {
-                  width: 100%;
-                  max-width: 100%;
+                @page {
+                  size: 80mm auto;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+                html {
+                  width: 80mm;
                   margin: 0;
                   padding: 0;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: flex-start;
                 }
                 body {
+                  width: 80mm !important;
+                  max-width: 80mm !important;
+                  min-width: 80mm !important;
+                  margin: 0 !important;
+                  padding: 2mm 3mm !important;
                   font-size: 12px;
                   line-height: 1.35;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
                 .ticket {
-                  width: 72mm;
-                  max-width: 72mm;
-                  padding: 4mm 0;
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  padding: 2mm 0;
                 }
                 .row {
                   margin-bottom: 2.5mm;
