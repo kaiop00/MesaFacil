@@ -269,7 +269,7 @@ export default function MainPage() {
                     {/* Copyright */}
                     <div className="flex flex-col md:flex-row justify-between items-center border-t border-gray-800 mt-12 pt-8 text-center">
                         <p className="text-gray-500 text-sm">
-                            &copy; {new Date().getFullYear()} mesafacil Inc. Todos os direitos reservados.
+                            &copy; {new Date().getFullYear()} IDEIA LTDA. Todos os direitos reservados.
                         </p>
                         <div className="flex space-x-4 pt-2">
                             <a

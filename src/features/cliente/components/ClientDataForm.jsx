@@ -8,8 +8,9 @@ import { useClientData } from '@/hooks/useClientData';
  * @param {Object} props
  * @param {Function} props.onDataChange - Callback quando dados mudam
  * @param {boolean} props.isRequired - Se o preenchimento é obrigatório
+ * @param {boolean} props.isRetirada - Se é pedido para retirada (sem endereço)
  */
-export function ClientDataForm({ onDataChange, isRequired = true }) {
+export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = false }) {
   const { 
     clientData, 
     enderecos, 
@@ -97,23 +98,33 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
   // Notifica componente pai sobre mudanças
   useEffect(() => {
     if (onDataChange) {
-      const enderecoAtual = selectedEndereco || enderecoData;
-      const enderecoCompleto = formatEnderecoCompleto(enderecoAtual);
-      const fullData = {
-        ...formData,
-        endereco: enderecoCompleto,
-        enderecoDetalhado: {
-          rua: enderecoAtual.rua || '',
-          numero: enderecoAtual.numero || '',
-          complemento: enderecoAtual.complemento || '',
-          bairro: enderecoAtual.bairro || '',
-          cidade: enderecoAtual.cidade || '',
-          pontoReferencia: enderecoAtual.pontoReferencia || ''
-        }
-      };
-      onDataChange(fullData, isFormValid());
+      // Para retirada, não precisa de endereço
+      if (isRetirada) {
+        const fullData = {
+          ...formData,
+          endereco: '',
+          enderecoDetalhado: null
+        };
+        onDataChange(fullData, isFormValid());
+      } else {
+        const enderecoAtual = selectedEndereco || enderecoData;
+        const enderecoCompleto = formatEnderecoCompleto(enderecoAtual);
+        const fullData = {
+          ...formData,
+          endereco: enderecoCompleto,
+          enderecoDetalhado: {
+            rua: enderecoAtual.rua || '',
+            numero: enderecoAtual.numero || '',
+            complemento: enderecoAtual.complemento || '',
+            bairro: enderecoAtual.bairro || '',
+            cidade: enderecoAtual.cidade || '',
+            pontoReferencia: enderecoAtual.pontoReferencia || ''
+          }
+        };
+        onDataChange(fullData, isFormValid());
+      }
     }
-  }, [formData, selectedEndereco, enderecoData]);
+  }, [formData, selectedEndereco, enderecoData, isRetirada]);
 
   /**
    * Valida CPF (apenas formato básico)
@@ -133,10 +144,24 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
 
   /**
    * Valida formulário completo
+   * Para retirada, não precisa validar endereço
    */
   const isFormValid = () => {
     if (!isRequired) return true;
 
+    // Validação básica (nome, CPF, telefone) - obrigatória para ambos os modos
+    const validacaoBasica = (
+      formData.nome.trim().length >= 3 &&
+      isValidCPF(formData.cpf) &&
+      isValidPhone(formData.telefone)
+    );
+
+    // Para retirada, apenas validação básica
+    if (isRetirada) {
+      return validacaoBasica;
+    }
+
+    // Para delivery, também valida endereço
     const enderecoAtual = selectedEndereco || enderecoData;
     const temRua = (enderecoAtual.rua || '').trim().length >= 3;
     const temNumero = (enderecoAtual.numero || '').trim().length >= 1;
@@ -144,13 +169,11 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
     const temCidade = (enderecoAtual.cidade || '').trim().length >= 2;
 
     return (
-      formData.nome.trim().length >= 3 &&
-      isValidCPF(formData.cpf) &&
+      validacaoBasica &&
       temRua &&
       temNumero &&
       temBairro &&
-      temCidade &&
-      isValidPhone(formData.telefone)
+      temCidade
     );
   };
 
@@ -380,8 +403,21 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 my-4">
       <h3 className="text-lg font-semibold mb-4 text-gray-800">
-        Dados para Entrega {isRequired && <span className="text-red-500">*</span>}
+        {isRetirada ? 'Dados para Retirada' : 'Dados para Entrega'} {isRequired && <span className="text-red-500">*</span>}
       </h3>
+
+      {/* Mensagem informativa para retirada */}
+      {isRetirada && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🏪</span>
+            <div>
+              <p className="text-sm font-medium text-blue-800">Pedido para Retirada</p>
+              <p className="text-xs text-blue-600">Você retirará seu pedido diretamente no restaurante</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Campos do cliente */}
       <div className="mb-4">
@@ -450,7 +486,8 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
         {errors.telefone && <span className="block text-red-500 text-xs mt-1">{errors.telefone}</span>}
       </div>
 
-      {/* Seção de endereços */}
+      {/* Seção de endereços - apenas para delivery */}
+      {!isRetirada && (
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-gray-700">
@@ -723,13 +760,17 @@ export function ClientDataForm({ onDataChange, isRequired = true }) {
           </div>
         )}
       </div>
+      )}
 
       <div className="flex items-start gap-2 bg-green-50 p-3 rounded-md mt-4">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" className="flex-shrink-0 text-green-600 mt-0.5">
           <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm1 12H7V7h2v5zm0-6H7V4h2v2z"/>
         </svg>
         <p className="text-xs text-green-800 leading-relaxed">
-          Seus dados e endereços serão salvos no dispositivo para facilitar próximos pedidos.
+          {isRetirada 
+            ? 'Seus dados serão salvos no dispositivo para facilitar próximos pedidos.'
+            : 'Seus dados e endereços serão salvos no dispositivo para facilitar próximos pedidos.'
+          }
         </p>
       </div>
     </div>

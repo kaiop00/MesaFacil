@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "../hooks/useServiceFee";
 import { useCoverCharge } from "../hooks/useCoverCharge";
 import { useOrderOrigin } from "@/hooks/useOrderOrigin";
+import { useMesa } from "../hooks/useMesa";
 import { finalizarPedidoEspecifico } from "@/features/order/services/orderService";
 import {
     computeServiceFeeAmount,
@@ -33,18 +34,23 @@ export default function PedidoClientePage() {
     const [garcomState, setGarcomState] = useState({ loading: false, solicitado: false });
     const { isWhatsApp } = useOrderOrigin();
     const [confirmandoRecebimento, setConfirmandoRecebimento] = useState(false);
+    const { origin: orderOrigin } = useOrderOrigin();
+    const { mesa } = useMesa();
+    const numeroPessoas = mesa?.numeroPessoas || 1;
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
-    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: serviceFeeExempt,
+    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
     const {
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: coverChargeExempt,
+    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     const valorServico = computeServiceFeeAmount(totalPedidos, serviceFeePercent);
-    const valorCouvert = computeCoverChargeAmount(coverChargeEnabled, coverChargeValue);
+    const valorCouvert = computeCoverChargeAmount(coverChargeEnabled, coverChargeValue, numeroPessoas);
     const totalComServico = computeTotalWithService(
         totalPedidos,
         serviceFeePercent,
@@ -282,9 +288,11 @@ export default function PedidoClientePage() {
                             totalPedidos={totalPedidos}
                             serviceFeePercent={serviceFeePercent}
                             serviceFeeLoading={serviceFeeLoading}
+                            serviceFeeExempt={serviceFeeExempt}
                             coverChargeEnabled={coverChargeEnabled}
-                            coverChargeAmount={valorCouvert}
+                            coverChargeAmount={coverChargeValue}
                             coverChargeLoading={coverChargeLoading}
+                            numeroPessoas={numeroPessoas}
                             mesaId={mesaId}
                             idRestaurante={idRestaurante}
                             onRealizarPagamento={() => {
@@ -304,9 +312,11 @@ export default function PedidoClientePage() {
                     totalPedidos={totalPedidos}
                     serviceFeePercent={serviceFeePercent}
                     serviceFeeLoading={serviceFeeLoading}
+                    serviceFeeExempt={serviceFeeExempt}
                     coverChargeEnabled={coverChargeEnabled}
-                    coverChargeAmount={valorCouvert}
+                    coverChargeAmount={coverChargeValue}
                     coverChargeLoading={coverChargeLoading}
+                    numeroPessoas={numeroPessoas}
                     onVoltar={handleVoltarParaPedidos}
                     onChamarGarcom={handleChamarGarcom}
                     chamarGarcomLoading={garcomState.loading}
@@ -321,9 +331,11 @@ export default function PedidoClientePage() {
                     totalPedidos={totalPedidos}
                     serviceFeePercent={serviceFeePercent}
                     serviceFeeLoading={serviceFeeLoading}
+                    serviceFeeExempt={serviceFeeExempt}
                     coverChargeEnabled={coverChargeEnabled}
-                    coverChargeAmount={valorCouvert}
+                    coverChargeAmount={coverChargeValue}
                     coverChargeLoading={coverChargeLoading}
+                    numeroPessoas={numeroPessoas}
                     mesaNumero={mesaNumeroExibicao}
                 />
             )}

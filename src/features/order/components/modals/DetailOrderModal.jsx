@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
@@ -7,6 +7,8 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
 import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
 import {
     computeTotalPedidos,
     computeServiceFeeAmount,
@@ -27,7 +29,7 @@ import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodSt
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
-const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) => {
+const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onMesaUpdate }) => {
     const { t } = useTranslation('order');
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -35,16 +37,69 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
     const [ifoodOrdersInfo, setIfoodOrdersInfo] = useState({}); // { [pedidoId]: ifoodOrderData }
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
+    const [numeroPessoas, setNumeroPessoas] = useState(1);
     const { notify } = useToast();
+    
+    // Calcular orderOrigin a partir da mesa ou do primeiro pedido
+    const orderOrigin = useMemo(() => {
+        // Verificar se a mesa é WhatsApp
+        if (mesaSelecionada?.orderOrigin) {
+            return mesaSelecionada.orderOrigin;
+        }
+        // Verificar se há pedidos com origem
+        if (pedidos.length > 0 && pedidos[0]?.orderOrigin) {
+            return pedidos[0].orderOrigin;
+        }
+        return null;
+    }, [mesaSelecionada, pedidos]);
+    
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
-    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: serviceFeeExempt,
+    } = useServiceFee(idRestaurante, { 
+        enabled: Boolean(idRestaurante), 
+        orderOrigin 
+    });
     const {
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: coverChargeExempt,
+    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
+
+    // Sincroniza numeroPessoas com a mesa selecionada
+    useEffect(() => {
+        if (mesaSelecionada?.numeroPessoas) {
+            setNumeroPessoas(mesaSelecionada.numeroPessoas);
+        } else {
+            setNumeroPessoas(1);
+        }
+    }, [mesaSelecionada?.id, mesaSelecionada?.numeroPessoas]);
+
+    // Verifica se é delivery (WhatsApp ou iFood)
+    const isDelivery = orderOrigin === 'whatsapp' || orderOrigin === 'ifood';
+
+    // Função para atualizar número de pessoas na mesa
+    const handleNumeroPessoasChange = useCallback(async (novoNumero) => {
+        if (!idRestaurante || !mesaSelecionada?.id) return;
+        
+        const numero = Math.max(1, Math.min(99, Math.floor(novoNumero)));
+        setNumeroPessoas(numero);
+        
+        try {
+            const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaSelecionada.id);
+            await updateDoc(mesaDocRef, { numeroPessoas: numero });
+            
+            // Notifica o componente pai para atualizar a lista de mesas
+            if (typeof onMesaUpdate === 'function') {
+                onMesaUpdate({ ...mesaSelecionada, numeroPessoas: numero });
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar número de pessoas:", error);
+            notify("Erro ao atualizar número de pessoas", "error");
+        }
+    }, [idRestaurante, mesaSelecionada, onMesaUpdate, notify]);
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -140,9 +195,10 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         () => computeServiceFeeAmount(totalSemTaxa, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
         [totalSemTaxa, percentNormalized]
     );
+    // Usa o estado local numeroPessoas para o cálculo do couvert
     const valorCouvert = useMemo(
-        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeValue),
-        [coverChargeEnabled, coverChargeValue]
+        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeValue, numeroPessoas),
+        [coverChargeEnabled, coverChargeValue, numeroPessoas]
     );
     const totalComServico = useMemo(
         () => computeTotalWithService(
@@ -157,12 +213,16 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
     });
-    const serviceLabel = percentNormalized > 0
+    const serviceLabel = serviceFeeExempt
+        ? "Taxa de serviço"
+        : percentNormalized > 0
         ? `Taxa de serviço (${formattedPercent}%)`
         : "Taxa de serviço";
     const serviceValueLabel = serviceFeeLoading
         ? t("page.loading")
-        : percentNormalized > 0
+        : serviceFeeExempt
+            ? "Isento"
+            : percentNormalized > 0
             ? formatCurrency(valorServico)
             : "Isento";
     const coverLabel = t("cliente:payment.summary.coverCharge");
@@ -206,7 +266,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                         {t('modals.orderDetail.title')} Nº {pedido.id}
                                     </p>
                                     {pedido.orderOrigin && (
-                                        <OrderOriginBadge origin={pedido.orderOrigin} size="small" />
+                                        <OrderOriginBadge 
+                                            origin={pedido.orderOrigin} 
+                                            size="small" 
+                                            tipoEntrega={pedido.tipoEntrega}
+                                        />
                                     )}
                                 </div>
                                 <p className="text-sm text-gray-600">
@@ -223,16 +287,18 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
 
                         {/* WhatsApp Order Client Information */}
                         {pedido.orderOrigin === 'whatsapp' && pedido.cliente && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                            <div className={`${pedido.tipoEntrega === 'retirada' ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'} border rounded-lg p-3 space-y-2`}>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-xl">💬</span>
-                                    <span className="font-semibold text-green-900">Pedido WhatsApp - Entrega</span>
+                                    <span className="text-xl">{pedido.tipoEntrega === 'retirada' ? '🏪' : '🛵'}</span>
+                                    <span className={`font-semibold ${pedido.tipoEntrega === 'retirada' ? 'text-blue-900' : 'text-green-900'}`}>
+                                        {pedido.tipoEntrega === 'retirada' ? 'Pedido WhatsApp - Retirada' : 'Pedido WhatsApp - Entrega'}
+                                    </span>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 gap-2 text-sm">
                                     {pedido.cliente.nome && (
                                         <div className="flex items-start gap-2">
-                                            <User01 className="text-green-600 mt-0.5" size={16} />
+                                            <User01 className={`${pedido.tipoEntrega === 'retirada' ? 'text-blue-600' : 'text-green-600'} mt-0.5`} size={16} />
                                             <div>
                                                 <span className="text-gray-600">Cliente: </span>
                                                 <span className="font-medium">{pedido.cliente.nome}</span>
@@ -242,7 +308,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                     
                                     {pedido.cliente.telefone && (
                                         <div className="flex items-start gap-2">
-                                            <Phone className="text-green-600 mt-0.5" size={16} />
+                                            <Phone className={`${pedido.tipoEntrega === 'retirada' ? 'text-blue-600' : 'text-green-600'} mt-0.5`} size={16} />
                                             <div>
                                                 <span className="text-gray-600">Telefone: </span>
                                                 <span className="font-medium">{pedido.cliente.telefone}</span>
@@ -250,8 +316,8 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                         </div>
                                     )}
                                     
-                                    {/* Endereço estruturado */}
-                                    {pedido.cliente.enderecoDetalhado ? (
+                                    {/* Endereço estruturado - apenas para delivery */}
+                                    {pedido.tipoEntrega !== 'retirada' && pedido.cliente.enderecoDetalhado ? (
                                         <div className="flex items-start gap-2">
                                             <MapPin className="text-green-600 mt-0.5" size={16} />
                                             <div className="flex-1">
@@ -274,7 +340,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                                 </div>
                                             </div>
                                         </div>
-                                    ) : pedido.cliente.endereco && (
+                                    ) : pedido.tipoEntrega !== 'retirada' && pedido.cliente.endereco && (
                                         <div className="flex items-start gap-2">
                                             <MapPin className="text-green-600 mt-0.5" size={16} />
                                             <div>
@@ -283,13 +349,23 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Mensagem de retirada */}
+                                    {pedido.tipoEntrega === 'retirada' && (
+                                        <div className="flex items-start gap-2 p-2 bg-blue-100 rounded-lg">
+                                            <span className="text-blue-600 mt-0.5">📍</span>
+                                            <div className="text-blue-800">
+                                                <span className="font-medium">Cliente retirará no local</span>
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     {pedido.formaPagamento && (
-                                        <div className="mt-1 pt-2 border-t border-green-200">
+                                        <div className={`mt-1 pt-2 border-t ${pedido.tipoEntrega === 'retirada' ? 'border-blue-200' : 'border-green-200'}`}>
                                             <span className="text-gray-600">Pagamento: </span>
-                                            <span className="font-semibold text-green-700">
+                                            <span className={`font-semibold ${pedido.tipoEntrega === 'retirada' ? 'text-blue-700' : 'text-green-700'}`}>
                                                 {pedido.formaPagamento === 'dinheiro' 
-                                                    ? 'Dinheiro (na entrega)' 
+                                                    ? `Dinheiro (${pedido.tipoEntrega === 'retirada' ? 'no local' : 'na entrega'})` 
                                                     : pedido.formaPagamento === 'credito'
                                                         ? 'Cartão de Crédito'
                                                         : pedido.formaPagamento === 'debito'
@@ -437,7 +513,47 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
             </div>
 
             {!loading && pedidos.length > 0 && (
-                <div className="mt-6 border border-gray-200 rounded-lg bg-slate-50 p-4 space-y-2 text-gray-900">
+                <div className="mt-6 border border-gray-200 rounded-lg bg-slate-50 p-4 space-y-3 text-gray-900">
+                    {/* Seletor de número de pessoas - apenas para mesas convencionais com couvert ativo */}
+                    {!isDelivery && coverChargeEnabled && (
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                            <span className="text-sm font-medium text-gray-700">
+                                👥 Pessoas na mesa
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleNumeroPessoasChange(numeroPessoas - 1)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-lg font-bold disabled:opacity-50 transition-colors"
+                                    disabled={numeroPessoas <= 1}
+                                >
+                                    −
+                                </button>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="99"
+                                    value={numeroPessoas}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (!isNaN(val) && val >= 1 && val <= 99) {
+                                            handleNumeroPessoasChange(val);
+                                        }
+                                    }}
+                                    className="w-14 text-center text-base font-semibold border border-gray-300 rounded-md py-1"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => handleNumeroPessoasChange(numeroPessoas + 1)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-lg font-bold disabled:opacity-50 transition-colors"
+                                    disabled={numeroPessoas >= 99}
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="flex justify-between font-semibold">
                         <span>Valor sem taxa</span>
                         <span>{formatCurrency(totalSemTaxa)}</span>
@@ -447,7 +563,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                         <span>{serviceValueLabel}</span>
                     </div>
                     <div className="flex justify-between text-sm font-medium">
-                        <span>{coverLabel}</span>
+                        <span>{coverLabel}{!isDelivery && coverChargeEnabled && numeroPessoas > 1 ? ` (${numeroPessoas}x)` : ''}</span>
                         <span>{coverValueLabel}</span>
                     </div>
                     <div className="flex justify-between font-semibold">

@@ -149,6 +149,7 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
             criadoEm: serverTimestamp(),
             // Campos adicionais para WhatsApp e outras origens
             orderOrigin: extraData.orderOrigin || 'mesaconvencional',
+            ...(extraData.tipoEntrega && { tipoEntrega: extraData.tipoEntrega }),
             ...(extraData.cliente && { cliente: extraData.cliente }),
             ...(extraData.formaPagamento && { formaPagamento: extraData.formaPagamento }),
             ...(extraData.troco && { troco: extraData.troco }),
