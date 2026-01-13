@@ -33,15 +33,18 @@ export default function PedidoClientePage() {
     const [garcomState, setGarcomState] = useState({ loading: false, solicitado: false });
     const { isWhatsApp } = useOrderOrigin();
     const [confirmandoRecebimento, setConfirmandoRecebimento] = useState(false);
+    const { origin: orderOrigin } = useOrderOrigin();
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
-    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: serviceFeeExempt,
+    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
     const {
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: coverChargeExempt,
+    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     const valorServico = computeServiceFeeAmount(totalPedidos, serviceFeePercent);
     const valorCouvert = computeCoverChargeAmount(coverChargeEnabled, coverChargeValue);
@@ -282,6 +285,7 @@ export default function PedidoClientePage() {
                             totalPedidos={totalPedidos}
                             serviceFeePercent={serviceFeePercent}
                             serviceFeeLoading={serviceFeeLoading}
+                            serviceFeeExempt={serviceFeeExempt}
                             coverChargeEnabled={coverChargeEnabled}
                             coverChargeAmount={valorCouvert}
                             coverChargeLoading={coverChargeLoading}
@@ -304,6 +308,7 @@ export default function PedidoClientePage() {
                     totalPedidos={totalPedidos}
                     serviceFeePercent={serviceFeePercent}
                     serviceFeeLoading={serviceFeeLoading}
+                    serviceFeeExempt={serviceFeeExempt}
                     coverChargeEnabled={coverChargeEnabled}
                     coverChargeAmount={valorCouvert}
                     coverChargeLoading={coverChargeLoading}
@@ -321,6 +326,7 @@ export default function PedidoClientePage() {
                     totalPedidos={totalPedidos}
                     serviceFeePercent={serviceFeePercent}
                     serviceFeeLoading={serviceFeeLoading}
+                    serviceFeeExempt={serviceFeeExempt}
                     coverChargeEnabled={coverChargeEnabled}
                     coverChargeAmount={valorCouvert}
                     coverChargeLoading={coverChargeLoading}

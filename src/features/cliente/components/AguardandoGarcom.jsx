@@ -15,6 +15,7 @@ export default function AguardandoGarcom({
     totalPedidos = 0,
     serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
     serviceFeeLoading = false,
+    serviceFeeExempt = false,
     coverChargeEnabled = false,
     coverChargeAmount = 0,
     coverChargeLoading = false,
@@ -36,12 +37,16 @@ export default function AguardandoGarcom({
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
     });
-    const serviceLabel = percentNormalized > 0
+    const serviceLabel = serviceFeeExempt
+        ? t("payment.summary.serviceFee")
+        : percentNormalized > 0
         ? `${t("payment.summary.serviceFee")} (${formattedPercent}%)`
         : t("payment.summary.serviceFee");
     const serviceValueLabel = serviceFeeLoading
         ? t("common.loading")
-        : percentNormalized > 0
+        : serviceFeeExempt
+            ? t("totalPedidos.serviceFeeExempt")
+            : percentNormalized > 0
             ? formatCurrency(valorServico)
             : t("totalPedidos.serviceFeeExempt");
     const coverValueLabel = coverChargeLoading

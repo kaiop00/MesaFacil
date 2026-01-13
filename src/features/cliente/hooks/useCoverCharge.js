@@ -8,12 +8,24 @@ const DEFAULT_COVER_STATE = {
     value: 0,
 };
 
-export function useCoverCharge(idRestaurante, { enabled = true } = {}) {
+export function useCoverCharge(idRestaurante, { enabled = true, orderOrigin = null } = {}) {
     const [cover, setCover] = useState(DEFAULT_COVER_STATE);
     const [loading, setLoading] = useState(Boolean(enabled && idRestaurante));
     const [error, setError] = useState(null);
+    const [isExempt, setIsExempt] = useState(false);
 
     useEffect(() => {
+        // WhatsApp e iFood são isentos de couvert artístico
+        const shouldExempt = orderOrigin === 'whatsapp' || orderOrigin === 'ifood';
+        setIsExempt(shouldExempt);
+        
+        if (shouldExempt) {
+            setCover(DEFAULT_COVER_STATE);
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
         if (!enabled || !idRestaurante) {
             setCover(DEFAULT_COVER_STATE);
             setLoading(false);
@@ -54,12 +66,13 @@ export function useCoverCharge(idRestaurante, { enabled = true } = {}) {
         );
 
         return () => unsubscribe();
-    }, [idRestaurante, enabled]);
+    }, [idRestaurante, enabled, orderOrigin]);
 
     return {
         enabled: cover.enabled,
         value: cover.value,
         loading,
         error,
+        isExempt,
     };
 }

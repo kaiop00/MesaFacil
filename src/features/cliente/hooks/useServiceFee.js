@@ -6,12 +6,24 @@ import {
     normalizeServicePercentage,
 } from "../utils/pedidos";
 
-export function useServiceFee(idRestaurante, { enabled = true } = {}) {
+export function useServiceFee(idRestaurante, { enabled = true, orderOrigin = null } = {}) {
     const [percent, setPercent] = useState(DEFAULT_SERVICE_FEE_PERCENT);
     const [loading, setLoading] = useState(Boolean(enabled && idRestaurante));
     const [error, setError] = useState(null);
+    const [isExempt, setIsExempt] = useState(false);
 
     useEffect(() => {
+        // WhatsApp e iFood são isentos de taxa de serviço
+        const shouldExempt = orderOrigin === 'whatsapp' || orderOrigin === 'ifood';
+        setIsExempt(shouldExempt);
+        
+        if (shouldExempt) {
+            setPercent(0);
+            setLoading(false);
+            setError(null);
+            return;
+        }
+
         if (!enabled || !idRestaurante) {
             setPercent(DEFAULT_SERVICE_FEE_PERCENT);
             setLoading(false);
@@ -49,11 +61,12 @@ export function useServiceFee(idRestaurante, { enabled = true } = {}) {
         );
 
         return () => unsubscribe();
-    }, [idRestaurante, enabled]);
+    }, [idRestaurante, enabled, orderOrigin]);
 
     return {
         percent,
         loading,
         error,
+        isExempt,
     };
 }

@@ -13,6 +13,7 @@ export default function PagamentoResumo({
     totalPedidos = 0,
     serviceFeePercent = DEFAULT_SERVICE_FEE_PERCENT,
     serviceFeeLoading = false,
+    serviceFeeExempt = false,
     coverChargeEnabled = false,
     coverChargeAmount = 0,
     coverChargeLoading = false,
@@ -67,6 +68,7 @@ export default function PagamentoResumo({
                         subtotal={totalPedidos}
                         serviceFeePercent={serviceFeePercent}
                         serviceFeeLoading={serviceFeeLoading}
+                        serviceFeeExempt={serviceFeeExempt}
                         coverChargeEnabled={coverChargeEnabled}
                         coverChargeAmount={coverChargeAmount}
                         coverChargeLoading={coverChargeLoading}

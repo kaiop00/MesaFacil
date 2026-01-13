@@ -36,15 +36,34 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
     const { notify } = useToast();
+    
+    // Calcular orderOrigin a partir da mesa ou do primeiro pedido
+    const orderOrigin = useMemo(() => {
+        // Verificar se a mesa é WhatsApp
+        if (mesaSelecionada?.orderOrigin) {
+            return mesaSelecionada.orderOrigin;
+        }
+        // Verificar se há pedidos com origem
+        if (pedidos.length > 0 && pedidos[0]?.orderOrigin) {
+            return pedidos[0].orderOrigin;
+        }
+        return null;
+    }, [mesaSelecionada, pedidos]);
+    
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
-    } = useServiceFee(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: serviceFeeExempt,
+    } = useServiceFee(idRestaurante, { 
+        enabled: Boolean(idRestaurante), 
+        orderOrigin 
+    });
     const {
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante) });
+        isExempt: coverChargeExempt,
+    } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -157,12 +176,16 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
     });
-    const serviceLabel = percentNormalized > 0
+    const serviceLabel = serviceFeeExempt
+        ? "Taxa de serviço"
+        : percentNormalized > 0
         ? `Taxa de serviço (${formattedPercent}%)`
         : "Taxa de serviço";
     const serviceValueLabel = serviceFeeLoading
         ? t("page.loading")
-        : percentNormalized > 0
+        : serviceFeeExempt
+            ? "Isento"
+            : percentNormalized > 0
             ? formatCurrency(valorServico)
             : "Isento";
     const coverLabel = t("cliente:payment.summary.coverCharge");
