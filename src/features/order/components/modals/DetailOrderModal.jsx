@@ -206,7 +206,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                         {t('modals.orderDetail.title')} Nº {pedido.id}
                                     </p>
                                     {pedido.orderOrigin && (
-                                        <OrderOriginBadge origin={pedido.orderOrigin} size="small" />
+                                        <OrderOriginBadge 
+                                            origin={pedido.orderOrigin} 
+                                            size="small" 
+                                            tipoEntrega={pedido.tipoEntrega}
+                                        />
                                     )}
                                 </div>
                                 <p className="text-sm text-gray-600">
@@ -223,16 +227,18 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
 
                         {/* WhatsApp Order Client Information */}
                         {pedido.orderOrigin === 'whatsapp' && pedido.cliente && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                            <div className={`${pedido.tipoEntrega === 'retirada' ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'} border rounded-lg p-3 space-y-2`}>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-xl">💬</span>
-                                    <span className="font-semibold text-green-900">Pedido WhatsApp - Entrega</span>
+                                    <span className="text-xl">{pedido.tipoEntrega === 'retirada' ? '🏪' : '🛵'}</span>
+                                    <span className={`font-semibold ${pedido.tipoEntrega === 'retirada' ? 'text-blue-900' : 'text-green-900'}`}>
+                                        {pedido.tipoEntrega === 'retirada' ? 'Pedido WhatsApp - Retirada' : 'Pedido WhatsApp - Entrega'}
+                                    </span>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 gap-2 text-sm">
                                     {pedido.cliente.nome && (
                                         <div className="flex items-start gap-2">
-                                            <User01 className="text-green-600 mt-0.5" size={16} />
+                                            <User01 className={`${pedido.tipoEntrega === 'retirada' ? 'text-blue-600' : 'text-green-600'} mt-0.5`} size={16} />
                                             <div>
                                                 <span className="text-gray-600">Cliente: </span>
                                                 <span className="font-medium">{pedido.cliente.nome}</span>
@@ -242,7 +248,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                     
                                     {pedido.cliente.telefone && (
                                         <div className="flex items-start gap-2">
-                                            <Phone className="text-green-600 mt-0.5" size={16} />
+                                            <Phone className={`${pedido.tipoEntrega === 'retirada' ? 'text-blue-600' : 'text-green-600'} mt-0.5`} size={16} />
                                             <div>
                                                 <span className="text-gray-600">Telefone: </span>
                                                 <span className="font-medium">{pedido.cliente.telefone}</span>
@@ -250,8 +256,8 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                         </div>
                                     )}
                                     
-                                    {/* Endereço estruturado */}
-                                    {pedido.cliente.enderecoDetalhado ? (
+                                    {/* Endereço estruturado - apenas para delivery */}
+                                    {pedido.tipoEntrega !== 'retirada' && pedido.cliente.enderecoDetalhado ? (
                                         <div className="flex items-start gap-2">
                                             <MapPin className="text-green-600 mt-0.5" size={16} />
                                             <div className="flex-1">
@@ -274,7 +280,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                                 </div>
                                             </div>
                                         </div>
-                                    ) : pedido.cliente.endereco && (
+                                    ) : pedido.tipoEntrega !== 'retirada' && pedido.cliente.endereco && (
                                         <div className="flex items-start gap-2">
                                             <MapPin className="text-green-600 mt-0.5" size={16} />
                                             <div>
@@ -283,13 +289,23 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Mensagem de retirada */}
+                                    {pedido.tipoEntrega === 'retirada' && (
+                                        <div className="flex items-start gap-2 p-2 bg-blue-100 rounded-lg">
+                                            <span className="text-blue-600 mt-0.5">📍</span>
+                                            <div className="text-blue-800">
+                                                <span className="font-medium">Cliente retirará no local</span>
+                                            </div>
+                                        </div>
+                                    )}
                                     
                                     {pedido.formaPagamento && (
-                                        <div className="mt-1 pt-2 border-t border-green-200">
+                                        <div className={`mt-1 pt-2 border-t ${pedido.tipoEntrega === 'retirada' ? 'border-blue-200' : 'border-green-200'}`}>
                                             <span className="text-gray-600">Pagamento: </span>
-                                            <span className="font-semibold text-green-700">
+                                            <span className={`font-semibold ${pedido.tipoEntrega === 'retirada' ? 'text-blue-700' : 'text-green-700'}`}>
                                                 {pedido.formaPagamento === 'dinheiro' 
-                                                    ? 'Dinheiro (na entrega)' 
+                                                    ? `Dinheiro (${pedido.tipoEntrega === 'retirada' ? 'no local' : 'na entrega'})` 
                                                     : pedido.formaPagamento === 'credito'
                                                         ? 'Cartão de Crédito'
                                                         : pedido.formaPagamento === 'debito'

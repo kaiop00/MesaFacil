@@ -37,6 +37,8 @@ export default function SacolaPage() {
     const [formaPagamento, setFormaPagamento] = useState('dinheiro');
     const [precisaTroco, setPrecisaTroco] = useState(false);
     const [valorPagamento, setValorPagamento] = useState('');
+    const [tipoEntrega, setTipoEntrega] = useState('delivery'); // 'delivery' ou 'retirada'
+    const isRetirada = tipoEntrega === 'retirada';
 
     // Calcula o troco automaticamente
     const valorTroco = precisaTroco && valorPagamento 
@@ -62,8 +64,13 @@ export default function SacolaPage() {
         }
 
         // Valida dados do cliente para pedidos WhatsApp
+        // Para retirada, validação é mais simples (sem endereço)
         if (isWhatsApp && !isClientFormValid) {
-            notify("Por favor, preencha todos os dados de entrega", "error");
+            notify(isRetirada 
+                ? "Por favor, preencha seus dados para retirada" 
+                : "Por favor, preencha todos os dados de entrega", 
+                "error"
+            );
             return;
         }
 
@@ -74,11 +81,13 @@ export default function SacolaPage() {
             // Prepara dados extras para pedidos WhatsApp
             const extraData = isWhatsApp ? {
                 orderOrigin: 'whatsapp',
+                tipoEntrega: tipoEntrega, // 'delivery' ou 'retirada'
                 cliente: {
                     nome: clientFormData?.nome || '',
                     cpf: clientFormData?.cpf || '', // Mantém CPF formatado
-                    endereco: clientFormData?.endereco || '',
-                    enderecoDetalhado: clientFormData?.enderecoDetalhado || null,
+                    // Para retirada, não precisa de endereço
+                    endereco: isRetirada ? '' : (clientFormData?.endereco || ''),
+                    enderecoDetalhado: isRetirada ? null : (clientFormData?.enderecoDetalhado || null),
                     telefone: clientFormData?.telefone || '', // Mantém telefone formatado
                 },
                 formaPagamento: formaPagamento,
@@ -137,18 +146,55 @@ export default function SacolaPage() {
                         ))}
                     </div>
 
-                    {/* Formulário de dados do cliente para pedidos WhatsApp */}
+                    {/* Seção WhatsApp: Tipo de entrega, dados e pagamento */}
                     {isWhatsApp && (
                         <>
+                            {/* Seletor de Tipo de Entrega (Delivery ou Retirada) */}
+                            <div className="flex flex-col gap-3 p-4 border border-gray-300 rounded-md bg-gray-50">
+                                <label className="text-sm font-medium text-gray-700">
+                                    Como deseja receber seu pedido?
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setTipoEntrega('delivery')}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                                            tipoEntrega === 'delivery'
+                                                ? 'border-green-500 bg-green-50 text-green-700'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <span className="text-2xl">🛵</span>
+                                        <span className="font-semibold text-sm">Delivery</span>
+                                        <span className="text-xs text-center">Receba em casa</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTipoEntrega('retirada')}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                                            tipoEntrega === 'retirada'
+                                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <span className="text-2xl">🏪</span>
+                                        <span className="font-semibold text-sm">Retirada</span>
+                                        <span className="text-xs text-center">Retire no local</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Formulário de dados do cliente */}
                             <ClientDataForm 
                                 onDataChange={handleClientDataChange}
                                 isRequired={true}
+                                isRetirada={isRetirada}
                             />
                             
                             {/* Seletor de Forma de Pagamento */}
                             <div className="flex flex-col gap-2 p-4 border border-gray-300 rounded-md bg-gray-50">
                                 <label className="text-sm font-medium text-gray-700">
-                                    Forma de Pagamento
+                                    Forma de Pagamento {isRetirada ? '(no local)' : '(na entrega)'}
                                 </label>
                                 <div className="flex flex-col gap-2">
                                     <label className="flex items-center gap-2 cursor-pointer">
@@ -285,7 +331,11 @@ export default function SacolaPage() {
               flex items-center justify-center
             "
                     >
-                        {loading ? <LoadingSpinner /> : (isWhatsApp ? 'Enviar Pedido (Pagamento na Entrega)' : t("sacola.confirmOrder"))}
+                        {loading ? <LoadingSpinner /> : (
+                            isWhatsApp 
+                                ? (isRetirada ? 'Enviar Pedido (Retirada no Local)' : 'Enviar Pedido (Pagamento na Entrega)') 
+                                : t("sacola.confirmOrder")
+                        )}
                     </button>
                 </form>
             )}

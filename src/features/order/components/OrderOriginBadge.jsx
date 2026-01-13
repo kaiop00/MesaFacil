@@ -5,14 +5,29 @@ import React from 'react';
  * @param {Object} props
  * @param {string} props.origin - Origem: 'whatsapp', 'ifood', 'mesaconvencional'
  * @param {string} props.size - Tamanho: 'small', 'medium', 'large'
+ * @param {string} props.tipoEntrega - Tipo de entrega para WhatsApp: 'delivery', 'retirada'
  */
-export function OrderOriginBadge({ origin = 'mesaconvencional', size = 'medium' }) {
+export function OrderOriginBadge({ origin = 'mesaconvencional', size = 'medium', tipoEntrega = null }) {
   const configs = {
     whatsapp: {
       label: 'WhatsApp',
       icon: '💬',
       bgClass: 'bg-gradient-to-r from-green-500 to-green-600',
       hoverClass: 'hover:shadow-green-500/40'
+    },
+    // Variação: WhatsApp Delivery
+    'whatsapp-delivery': {
+      label: 'Delivery',
+      icon: '🛵',
+      bgClass: 'bg-gradient-to-r from-green-500 to-green-600',
+      hoverClass: 'hover:shadow-green-500/40'
+    },
+    // Variação: WhatsApp Retirada
+    'whatsapp-retirada': {
+      label: 'Retirada',
+      icon: '🏪',
+      bgClass: 'bg-gradient-to-r from-blue-500 to-blue-600',
+      hoverClass: 'hover:shadow-blue-500/40'
     },
     ifood: {
       label: 'iFood',
@@ -34,7 +49,13 @@ export function OrderOriginBadge({ origin = 'mesaconvencional', size = 'medium' 
     large: 'px-3 py-1.5 text-sm gap-1.5'
   };
 
-  const config = configs[origin] || configs.mesaconvencional;
+  // Determina a config correta baseado na origem e tipo de entrega
+  let configKey = origin;
+  if (origin === 'whatsapp' && tipoEntrega) {
+    configKey = `whatsapp-${tipoEntrega}`;
+  }
+
+  const config = configs[configKey] || configs[origin] || configs.mesaconvencional;
   const sizeClass = sizeClasses[size] || sizeClasses.medium;
 
   return (

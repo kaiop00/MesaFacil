@@ -2,8 +2,9 @@
 
 ## Visão Geral
 
-Este documento descreve a implementação completa da integração WhatsApp para pedidos delivery, incluindo:
+Este documento descreve a implementação completa da integração WhatsApp para pedidos delivery e retirada, incluindo:
 - Captura de origem do pedido (WhatsApp, iFood, Mesa Convencional)
+- **Escolha do tipo de entrega (Delivery ou Retirada)**
 - Coleta e armazenamento de dados do cliente no IndexedDB
 - Exibição da origem no painel de pedidos do restaurante
 - Geração de links para compartilhamento via WhatsApp
@@ -19,6 +20,15 @@ O sistema distingue entre três origens:
 | `whatsapp` | Pedidos via mesa virtual WhatsApp | Mesa com ID `mesa-whatsapp-delivery` |
 | `ifood` | Pedidos da integração iFood | Definido automaticamente pelo webhook |
 | `mesaconvencional` | Pedidos via QR Code ou direto | Padrão quando não é WhatsApp nem iFood |
+
+### 1.1 Tipos de Entrega (WhatsApp)
+
+Para pedidos WhatsApp, o cliente pode escolher entre:
+
+| Tipo | Descrição | Dados Necessários |
+|------|-----------|-------------------|
+| `delivery` | Entrega no endereço do cliente | Nome, CPF, Telefone, **Endereço completo** |
+| `retirada` | Cliente retira no restaurante | Nome, CPF, Telefone |
 
 ### 2. Mesa Virtual WhatsApp
 
@@ -50,21 +60,28 @@ A integração usa uma **mesa virtual** fixa com ID `mesa-whatsapp-delivery`:
 4. Cliente navega pelo cardápio e adiciona itens
 
 5. Na página de checkout (SacolaPage):
-   - ClientDataForm é exibido automaticamente
-   - Dados são auto-preenchidos do IndexedDB (se existirem)
-   - Cliente preenche: nome, CPF, endereço, telefone
+   a) Cliente ESCOLHE o tipo de entrega:
+      - 🛵 Delivery (receber em casa)
+      - 🏪 Retirada (retirar no local)
+   
+   b) ClientDataForm é exibido automaticamente:
+      - Para DELIVERY: Nome, CPF, Telefone + Endereço completo
+      - Para RETIRADA: Nome, CPF, Telefone (sem endereço)
+   
+   c) Dados são auto-preenchidos do IndexedDB (se existirem)
 
 6. Ao confirmar pedido:
    - Dados são salvos no IndexedDB (para próximos pedidos)
    - Pedido é criado na mesa WhatsApp com:
      * orderOrigin: 'whatsapp'
-     * cliente: { nome, cpf, endereco, telefone }
-     * formaPagamento: 'dinheiro' (pagamento na entrega)
+     * tipoEntrega: 'delivery' ou 'retirada'
+     * cliente: { nome, cpf, endereco (se delivery), telefone }
+     * formaPagamento: 'dinheiro', 'pix', 'credito', 'debito'
 
 7. Painel do restaurante exibe:
-   - Mesa "WhatsApp" com badge verde
+   - Mesa "WhatsApp" com badge (🛵 Delivery ou 🏪 Retirada)
    - Dados do cliente
-   - Endereço de entrega
+   - Endereço de entrega (se delivery) ou "Retirar no local" (se retirada)
    - Forma de pagamento
 ```
 
@@ -172,16 +189,27 @@ restaurantes/{idRestaurante}/mesas/{mesaId}/pedidos/{pedidoId}
   // Campos de origem
   orderOrigin: 'whatsapp' | 'ifood' | 'mesaconvencional',
   
+  // Tipo de entrega (apenas para WhatsApp)
+  tipoEntrega: 'delivery' | 'retirada',
+  
   // Dados do cliente (apenas para WhatsApp)
   cliente: {
     nome: string,
     cpf: string,
-    endereco: string,
+    endereco: string,           // Vazio para retirada
+    enderecoDetalhado: object,  // Null para retirada
     telefone: string
   },
   
   // Forma de pagamento
-  formaPagamento: 'dinheiro' | 'cartao' | 'pix'
+  formaPagamento: 'dinheiro' | 'pix' | 'credito' | 'debito',
+  
+  // Dados de troco (apenas para dinheiro)
+  troco: {
+    precisaTroco: boolean,
+    valorPagamento: number,
+    valorTroco: number
+  } | null
 }
 ```
 
@@ -324,22 +352,32 @@ const message = generateWhatsAppMessage(link, 'Meu Restaurante');
 
 ## Badges Visuais
 
-### Cores por Origem
+### Cores por Origem e Tipo de Entrega
 
-| Origem | Cor | Ícone |
-|--------|-----|-------|
-| WhatsApp | Verde (#25D366) | 💬 |
-| iFood | Vermelho (#EA1D2C) | 🍔 |
-| Mesa Convencional | Cinza (#6c757d) | 🍽️ |
+| Origem | Tipo | Cor | Ícone |
+|--------|------|-----|-------|
+| WhatsApp | Delivery | Verde (#22C55E) | 🛵 |
+| WhatsApp | Retirada | Azul (#3B82F6) | 🏪 |
+| iFood | - | Vermelho (#EA1D2C) | 🍔 |
+| Mesa Convencional | - | Cinza (#6c757d) | 🍽️ |
 
 ## Validações
 
 ### ClientDataForm
 
+#### Para Delivery (todos obrigatórios):
 - **Nome**: mínimo 3 caracteres
 - **CPF**: 11 dígitos (formato: 000.000.000-00)
 - **Telefone**: mínimo 10 dígitos (formato: (00) 00000-0000)
-- **Endereço**: mínimo 10 caracteres
+- **Rua**: mínimo 3 caracteres
+- **Número**: obrigatório
+- **Bairro**: mínimo 2 caracteres
+- **Cidade**: mínimo 2 caracteres
+
+#### Para Retirada (sem endereço):
+- **Nome**: mínimo 3 caracteres
+- **CPF**: 11 dígitos (formato: 000.000.000-00)
+- **Telefone**: mínimo 10 dígitos (formato: (00) 00000-0000)
 
 Formatação automática aplicada durante digitação.
 
@@ -357,17 +395,31 @@ Formatação automática aplicada durante digitação.
 
 ### Testar Fluxo de Pedido WhatsApp
 
+#### Testar Delivery:
 1. Acesse o link copiado: `http://localhost:3000/mesa/seu-slug-mesa-whatsapp-delivery/pedido`
-2. Verifique no console: `sessionStorage.getItem('orderOrigin')` deve ser `'whatsapp'`
-3. Adicione itens ao carrinho
-4. Vá para a sacola
-5. Verifique se o formulário de dados do cliente aparece automaticamente
-6. Preencha: nome, CPF, endereço, telefone
-7. Confirme o pedido
-8. Verifique no painel admin:
-   - Mesa "WhatsApp" aparece com badge verde
-   - Pedido exibe dados do cliente
-   - Badge "WhatsApp" aparece no pedido
+2. Adicione itens ao carrinho
+3. Vá para a sacola
+4. Selecione **"🛵 Delivery"**
+5. Verifique se o formulário de dados do cliente aparece COM campos de endereço
+6. Preencha: nome, CPF, telefone, rua, número, bairro, cidade
+7. Escolha forma de pagamento
+8. Confirme o pedido
+9. Verifique no painel admin:
+   - Badge "🛵 Delivery" verde aparece no pedido
+   - Endereço de entrega é exibido
+
+#### Testar Retirada:
+1. Acesse o link copiado: `http://localhost:3000/mesa/seu-slug-mesa-whatsapp-delivery/pedido`
+2. Adicione itens ao carrinho
+3. Vá para a sacola
+4. Selecione **"🏪 Retirada"**
+5. Verifique se o formulário de dados do cliente aparece SEM campos de endereço
+6. Preencha: nome, CPF, telefone
+7. Escolha forma de pagamento
+8. Confirme o pedido
+9. Verifique no painel admin:
+   - Badge "🏪 Retirada" azul aparece no pedido
+   - Mensagem "Cliente retirará no local" é exibida
 
 ### Testar IndexedDB
 
@@ -507,18 +559,18 @@ SacolaPage (exibe formulário)
     ↓
 IndexedDB (salva dados cliente)
     ↓
-orderService (cria pedido)
+orderService (cria pedido com tipoEntrega)
     ↓
-Firestore (persiste com origin)
+Firestore (persiste com origin + tipoEntrega)
     ↓
-Painel Admin (exibe badge)
+Painel Admin (exibe badge Delivery/Retirada)
 ```
 
 ### Componentes Chave
 
 1. **Detecção**: `useOrderOrigin` + `useCliente`
 2. **Storage**: IndexedDB via Dexie
-3. **UI**: `ClientDataForm` + `OrderOriginBadge`
+3. **UI**: `ClientDataForm` (com prop `isRetirada`) + `OrderOriginBadge` (com prop `tipoEntrega`)
 4. **Backend**: `orderService` + `whatsappService`
 5. **Config**: `WhatsAppConfigModal` no Header
 
@@ -532,7 +584,7 @@ Painel Admin (exibe badge)
 
 ---
 
-**Versão**: 2.0.0  
-**Data**: 2025-12-17  
-**Mudanças**: Migração para sistema de mesa virtual  
+**Versão**: 2.1.0  
+**Data**: 2026-01-13  
+**Mudanças**: Adicionada funcionalidade de Retirada no cardápio WhatsApp  
 **Autor**: GitHub Copilot
