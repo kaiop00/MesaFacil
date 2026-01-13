@@ -191,7 +191,7 @@ export const useKitchenPrint = () => {
             <title>${t("print.windowTitle")}</title>
             <style>
               @page {
-                size: 72mm auto;
+                size: 70mm auto;
                 margin: 0 !important;
                 padding: 0 !important;
               }
@@ -206,14 +206,14 @@ export const useKitchenPrint = () => {
                 padding: 0;
               }
               html {
-                width: 72mm;
+                width: 70mm;
                 margin: 0;
                 padding: 0;
               }
               body {
-                width: 72mm;
-                max-width: 72mm;
-                min-width: 72mm;
+                width: 70mm;
+                max-width: 70mm;
+                min-width: 70mm;
                 margin: 0 !important;
                 padding: 2mm 3mm;
                 background: #ffffff;
@@ -298,19 +298,19 @@ export const useKitchenPrint = () => {
               }
               @media print {
                 @page {
-                  size: 72mm auto;
+                  size: 70mm auto;
                   margin: 0 !important;
                   padding: 0 !important;
                 }
                 html {
-                  width: 72mm;
+                  width: 70mm;
                   margin: 0;
                   padding: 0;
                 }
                 body {
-                  width: 72mm !important;
-                  max-width: 72mm !important;
-                  min-width: 72mm !important;
+                  width: 70mm !important;
+                  max-width: 70mm !important;
+                  min-width: 70mm !important;
                   margin: 0 !important;
                   padding: 2mm 3mm !important;
                   font-size: 12px;
