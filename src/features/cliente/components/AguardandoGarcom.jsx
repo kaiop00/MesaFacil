@@ -19,6 +19,7 @@ export default function AguardandoGarcom({
     coverChargeEnabled = false,
     coverChargeAmount = 0,
     coverChargeLoading = false,
+    numeroPessoas = 1,
     mesaNumero,
 }) {
     const { t } = useTranslation("cliente");
@@ -26,7 +27,7 @@ export default function AguardandoGarcom({
     const mesaNumeroExibicao = mesaNumero || numero;
     const percentNormalized = normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT);
     const valorServico = computeServiceFeeAmount(totalPedidos, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
-    const valorCouvert = computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount);
+    const valorCouvert = computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount, numeroPessoas);
     const totalComServico = computeTotalWithService(
         totalPedidos,
         percentNormalized,

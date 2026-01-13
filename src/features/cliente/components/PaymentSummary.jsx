@@ -19,12 +19,13 @@ const PaymentSummary = ({
     coverChargeEnabled = false,
     coverChargeAmount = 0,
     coverChargeLoading = false,
+    numeroPessoas = 1,
 }) => {
     const { t } = useTranslation("cliente");
     const subtotalValue = typeof subtotal === "number" && Number.isFinite(subtotal) ? subtotal : 0;
     const percentNormalized = normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT);
     const serviceAmount = computeServiceFeeAmount(subtotalValue, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT);
-    const coverAmount = computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount);
+    const coverAmount = computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount, numeroPessoas);
     const totalWithService = computeTotalWithService(
         subtotalValue,
         percentNormalized,

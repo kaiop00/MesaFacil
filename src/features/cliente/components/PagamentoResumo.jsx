@@ -17,6 +17,7 @@ export default function PagamentoResumo({
     coverChargeEnabled = false,
     coverChargeAmount = 0,
     coverChargeLoading = false,
+    numeroPessoas = 1,
     onVoltar,
     onChamarGarcom,
     chamarGarcomLoading = false,
@@ -72,6 +73,7 @@ export default function PagamentoResumo({
                         coverChargeEnabled={coverChargeEnabled}
                         coverChargeAmount={coverChargeAmount}
                         coverChargeLoading={coverChargeLoading}
+                        numeroPessoas={numeroPessoas}
                     />
 
                     <PaymentOptionSelector

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
@@ -7,6 +7,8 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
 import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
 import {
     computeTotalPedidos,
     computeServiceFeeAmount,
@@ -27,7 +29,7 @@ import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodSt
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
-const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) => {
+const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onMesaUpdate }) => {
     const { t } = useTranslation('order');
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -35,6 +37,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
     const [ifoodOrdersInfo, setIfoodOrdersInfo] = useState({}); // { [pedidoId]: ifoodOrderData }
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
+    const [numeroPessoas, setNumeroPessoas] = useState(1);
     const { notify } = useToast();
     
     // Calcular orderOrigin a partir da mesa ou do primeiro pedido
@@ -64,6 +67,39 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         loading: coverChargeLoading,
         isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
+
+    // Sincroniza numeroPessoas com a mesa selecionada
+    useEffect(() => {
+        if (mesaSelecionada?.numeroPessoas) {
+            setNumeroPessoas(mesaSelecionada.numeroPessoas);
+        } else {
+            setNumeroPessoas(1);
+        }
+    }, [mesaSelecionada?.id, mesaSelecionada?.numeroPessoas]);
+
+    // Verifica se é delivery (WhatsApp ou iFood)
+    const isDelivery = orderOrigin === 'whatsapp' || orderOrigin === 'ifood';
+
+    // Função para atualizar número de pessoas na mesa
+    const handleNumeroPessoasChange = useCallback(async (novoNumero) => {
+        if (!idRestaurante || !mesaSelecionada?.id) return;
+        
+        const numero = Math.max(1, Math.min(99, Math.floor(novoNumero)));
+        setNumeroPessoas(numero);
+        
+        try {
+            const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaSelecionada.id);
+            await updateDoc(mesaDocRef, { numeroPessoas: numero });
+            
+            // Notifica o componente pai para atualizar a lista de mesas
+            if (typeof onMesaUpdate === 'function') {
+                onMesaUpdate({ ...mesaSelecionada, numeroPessoas: numero });
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar número de pessoas:", error);
+            notify("Erro ao atualizar número de pessoas", "error");
+        }
+    }, [idRestaurante, mesaSelecionada, onMesaUpdate, notify]);
 
     useEffect(() => {
         const fetchPedidos = async () => {
@@ -159,9 +195,10 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
         () => computeServiceFeeAmount(totalSemTaxa, percentNormalized, DEFAULT_SERVICE_FEE_PERCENT),
         [totalSemTaxa, percentNormalized]
     );
+    // Usa o estado local numeroPessoas para o cálculo do couvert
     const valorCouvert = useMemo(
-        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeValue),
-        [coverChargeEnabled, coverChargeValue]
+        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeValue, numeroPessoas),
+        [coverChargeEnabled, coverChargeValue, numeroPessoas]
     );
     const totalComServico = useMemo(
         () => computeTotalWithService(
@@ -476,7 +513,47 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
             </div>
 
             {!loading && pedidos.length > 0 && (
-                <div className="mt-6 border border-gray-200 rounded-lg bg-slate-50 p-4 space-y-2 text-gray-900">
+                <div className="mt-6 border border-gray-200 rounded-lg bg-slate-50 p-4 space-y-3 text-gray-900">
+                    {/* Seletor de número de pessoas - apenas para mesas convencionais com couvert ativo */}
+                    {!isDelivery && coverChargeEnabled && (
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                            <span className="text-sm font-medium text-gray-700">
+                                👥 Pessoas na mesa
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleNumeroPessoasChange(numeroPessoas - 1)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-lg font-bold disabled:opacity-50 transition-colors"
+                                    disabled={numeroPessoas <= 1}
+                                >
+                                    −
+                                </button>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="99"
+                                    value={numeroPessoas}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (!isNaN(val) && val >= 1 && val <= 99) {
+                                            handleNumeroPessoasChange(val);
+                                        }
+                                    }}
+                                    className="w-14 text-center text-base font-semibold border border-gray-300 rounded-md py-1"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => handleNumeroPessoasChange(numeroPessoas + 1)}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-lg font-bold disabled:opacity-50 transition-colors"
+                                    disabled={numeroPessoas >= 99}
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="flex justify-between font-semibold">
                         <span>Valor sem taxa</span>
                         <span>{formatCurrency(totalSemTaxa)}</span>
@@ -486,7 +563,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante }) =
                         <span>{serviceValueLabel}</span>
                     </div>
                     <div className="flex justify-between text-sm font-medium">
-                        <span>{coverLabel}</span>
+                        <span>{coverLabel}{!isDelivery && coverChargeEnabled && numeroPessoas > 1 ? ` (${numeroPessoas}x)` : ''}</span>
                         <span>{coverValueLabel}</span>
                     </div>
                     <div className="flex justify-between font-semibold">

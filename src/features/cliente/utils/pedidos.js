@@ -84,11 +84,15 @@ export function normalizeCoverValue(value) {
     return DEFAULT_COVER_CHARGE_VALUE;
 }
 
-export function computeCoverChargeAmount(isEnabled, value) {
+export function computeCoverChargeAmount(isEnabled, value, numeroPessoas = 1) {
     if (!isEnabled) {
         return 0;
     }
-    return normalizeCoverValue(value);
+    const pessoas = typeof numeroPessoas === "number" && Number.isFinite(numeroPessoas) && numeroPessoas >= 1
+        ? Math.floor(numeroPessoas)
+        : 1;
+    const valorUnitario = normalizeCoverValue(value);
+    return Number((valorUnitario * pessoas).toFixed(2));
 }
 
 export function computeTotalWithService(

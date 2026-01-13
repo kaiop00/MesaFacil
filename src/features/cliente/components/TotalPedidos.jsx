@@ -24,6 +24,7 @@ export default function TotalPedidos({
     coverChargeEnabled = false,
     coverChargeAmount = 0,
     coverChargeLoading = false,
+    numeroPessoas = 1,
     mesaId,
     idRestaurante,
     onRealizarPagamento,
@@ -53,8 +54,8 @@ export default function TotalPedidos({
         [totalResumo, percentNormalized]
     );
     const valorCouvert = useMemo(
-        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount),
-        [coverChargeEnabled, coverChargeAmount]
+        () => computeCoverChargeAmount(coverChargeEnabled, coverChargeAmount, numeroPessoas),
+        [coverChargeEnabled, coverChargeAmount, numeroPessoas]
     );
     const totalComServico = useMemo(
         () => computeTotalWithService(
