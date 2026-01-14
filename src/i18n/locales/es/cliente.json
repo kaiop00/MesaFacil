@@ -35,7 +35,9 @@
       "confirmed": "Pedido Confirmado, su pedido ha sido enviado a la cocina y será preparado en unos minutos",
       "delivered": "Pedido entregado",
       "payment": "Realice el pago para finalizar",
-      "waiterComing": "El camarero está en camino"
+      "waiterComing": "El camarero está en camino",
+      "readyForPickup": "¡Pedido listo para recoger!",
+      "outForDelivery": "¡Pedido salió para entrega!"
     },
     "noPedidos": "No se encontraron pedidos",
     "noPedidosWhatsApp": "Aún no tienes pedidos. ¡Haz tu primer pedido!",
@@ -44,6 +46,14 @@
     "waiterHelp": "El camarero vendrá a su mesa para ayudar con el pago, por favor espere.",
     "waiterSuccess": "Se ha llamado al camarero. Por favor, espere un momento.",
     "waiterError": "No se pudo llamar al camarero. Por favor, inténtelo de nuevo.",
+    "pickup": {
+      "ready": "¡Pedido listo para recoger!",
+      "readyMessage": "¡Su pedido está listo! Diríjase al mostrador para recogerlo.",
+      "confirmPickup": "Confirmar Recogida",
+      "confirming": "Confirmando...",
+      "confirmSuccess": "¡Recogida confirmada! Gracias por su pedido.",
+      "confirmError": "No se pudo confirmar la recogida. Inténtelo de nuevo."
+    },
     "delivery": {
       "outForDelivery": "¡Pedido salió para entrega!",
       "outForDeliveryMessage": "Su pedido está en camino. Espere al repartidor.",

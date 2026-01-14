@@ -35,7 +35,9 @@
       "confirmed": "Ordine Confermato, il tuo ordine è stato inviato alla cucina e sarà preparato tra pochi minuti",
       "delivered": "Ordine consegnato",
       "payment": "Effettua il pagamento per concludere",
-      "waiterComing": "Il cameriere sta arrivando"
+      "waiterComing": "Il cameriere sta arrivando",
+      "readyForPickup": "Ordine pronto per il ritiro!",
+      "outForDelivery": "Ordine in consegna!"
     },
     "noPedidos": "Nessun ordine trovato",
     "noPedidosWhatsApp": "Non hai ancora ordini. Fai il tuo primo ordine!",
@@ -44,6 +46,14 @@
     "waiterHelp": "Il cameriere verrà al tuo tavolo per aiutarti con il pagamento, attendi.",
     "waiterSuccess": "Il cameriere è stato chiamato. Attendi un momento.",
     "waiterError": "Impossibile chiamare il cameriere. Riprova.",
+    "pickup": {
+      "ready": "Ordine pronto per il ritiro!",
+      "readyMessage": "Il tuo ordine è pronto! Recati al bancone per ritirarlo.",
+      "confirmPickup": "Conferma Ritiro",
+      "confirming": "Conferma in corso...",
+      "confirmSuccess": "Ritiro confermato! Grazie per il tuo ordine.",
+      "confirmError": "Impossibile confermare il ritiro. Riprova."
+    },
     "delivery": {
       "outForDelivery": "Ordine in consegna!",
       "outForDeliveryMessage": "Il tuo ordine è in arrivo. Attendi il corriere.",
