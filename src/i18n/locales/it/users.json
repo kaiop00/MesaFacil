@@ -56,7 +56,8 @@
     "orders": "Ordini",
     "kitchen": "Cucina",
     "reports": "Rapporti",
-    "config": "Impostazioni"
+    "config": "Impostazioni",
+    "integrations": "Integrazioni"
   },
   "permissionLabels": {
     "view_dashboard": "Visualizza Pannello",
@@ -82,7 +83,19 @@
     "view_reports": "Visualizza Rapporti",
     "export_reports": "Esporta Rapporti",
     "view_config": "Visualizza Impostazioni",
-    "edit_config": "Modifica Impostazioni"
+    "edit_config": "Modifica Impostazioni",
+    "manage_tables": "Gestisci Tavoli",
+    "manage_colors": "Gestisci Colori",
+    "manage_categories": "Gestisci Categorie",
+    "manage_service_fee": "Gestisci Costo del Servizio",
+    "manage_cover_charge": "Gestisci Coperto Artistico",
+    "manage_whatsapp_menu": "Gestisci Menu WhatsApp",
+    "manage_billing": "Gestisci Abbonamento",
+    "manage_ifood_integration": "Gestisci Integrazione iFood"
+  },
+  "planRestriction": {
+    "title": "Piano Gratuito",
+    "message": "Alcuni permessi di gestione sono disponibili solo nei piani a pagamento. Aggiorna il tuo piano per sbloccare tutte le funzionalità."
   },
   "modal": {
     "new": {

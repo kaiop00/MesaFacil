@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 import PrivateRoute from "@/components/PrivateRoute";
 import RequireFeature from "@/components/RequireFeature";
+import RequirePermission from "@/components/RequirePermission";
 import RedirectHandler from "@/components/RedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -188,7 +189,11 @@ const router = createBrowserRouter([
           },
           { 
             path: "integracoes/ifood", 
-            element: <IfoodIntegrationPage />
+            element: (
+              <RequirePermission permission="manage_ifood_integration">
+                <IfoodIntegrationPage />
+              </RequirePermission>
+            )
           },
         ],
       }

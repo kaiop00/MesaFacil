@@ -56,7 +56,8 @@
     "orders": "Orders",
     "kitchen": "Kitchen",
     "reports": "Reports",
-    "config": "Settings"
+    "config": "Settings",
+    "integrations": "Integrations"
   },
   "permissionLabels": {
     "view_dashboard": "View Dashboard",
@@ -82,7 +83,19 @@
     "view_reports": "View Reports",
     "export_reports": "Export Reports",
     "view_config": "View Settings",
-    "edit_config": "Edit Settings"
+    "edit_config": "Edit Settings",
+    "manage_tables": "Manage Tables",
+    "manage_colors": "Manage Colors",
+    "manage_categories": "Manage Categories",
+    "manage_service_fee": "Manage Service Fee",
+    "manage_cover_charge": "Manage Cover Charge",
+    "manage_whatsapp_menu": "Manage WhatsApp Menu",
+    "manage_billing": "Manage Subscription",
+    "manage_ifood_integration": "Manage iFood Integration"
+  },
+  "planRestriction": {
+    "title": "Free Plan",
+    "message": "Some management permissions are only available in paid plans. Upgrade your plan to unlock all features."
   },
   "modal": {
     "new": {

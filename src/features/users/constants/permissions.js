@@ -39,6 +39,16 @@ export const getPermissions = (t) => ({
   [t('users:permissionCategories.config')]: [
     { id: 'view_config', label: t('users:permissionLabels.view_config') },
     { id: 'edit_config', label: t('users:permissionLabels.edit_config') },
+    { id: 'manage_tables', label: t('users:permissionLabels.manage_tables') },
+    { id: 'manage_colors', label: t('users:permissionLabels.manage_colors') },
+    { id: 'manage_categories', label: t('users:permissionLabels.manage_categories') },
+    { id: 'manage_service_fee', label: t('users:permissionLabels.manage_service_fee') },
+    { id: 'manage_cover_charge', label: t('users:permissionLabels.manage_cover_charge') },
+    { id: 'manage_whatsapp_menu', label: t('users:permissionLabels.manage_whatsapp_menu') },
+    { id: 'manage_billing', label: t('users:permissionLabels.manage_billing') },
+  ],
+  [t('users:permissionCategories.integrations')]: [
+    { id: 'manage_ifood_integration', label: t('users:permissionLabels.manage_ifood_integration') },
   ]
 });
 
@@ -83,5 +93,15 @@ export const PERMISSIONS = {
   'Configurações': [
     { id: 'view_config', label: 'Visualizar Configurações' },
     { id: 'edit_config', label: 'Editar Configurações' },
+    { id: 'manage_tables', label: 'Gerenciar Mesas' },
+    { id: 'manage_colors', label: 'Gerenciar Cores' },
+    { id: 'manage_categories', label: 'Gerenciar Categorias' },
+    { id: 'manage_service_fee', label: 'Gerenciar Taxa de Serviço' },
+    { id: 'manage_cover_charge', label: 'Gerenciar Couvert Artístico' },
+    { id: 'manage_whatsapp_menu', label: 'Gerenciar Cardápio WhatsApp' },
+    { id: 'manage_billing', label: 'Gerenciar Assinatura' },
+  ],
+  'Integrações': [
+    { id: 'manage_ifood_integration', label: 'Gerenciar Integração iFood' },
   ]
 };

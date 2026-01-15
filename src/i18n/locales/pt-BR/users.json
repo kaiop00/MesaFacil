@@ -56,7 +56,8 @@
     "orders": "Pedidos",
     "kitchen": "Cozinha",
     "reports": "Relatórios",
-    "config": "Configurações"
+    "config": "Configurações",
+    "integrations": "Integrações"
   },
   "permissionLabels": {
     "view_dashboard": "Visualizar Painel",
@@ -82,7 +83,19 @@
     "view_reports": "Visualizar Relatórios",
     "export_reports": "Exportar Relatórios",
     "view_config": "Visualizar Configurações",
-    "edit_config": "Editar Configurações"
+    "edit_config": "Editar Configurações",
+    "manage_tables": "Gerenciar Mesas",
+    "manage_colors": "Gerenciar Cores",
+    "manage_categories": "Gerenciar Categorias",
+    "manage_service_fee": "Gerenciar Taxa de Serviço",
+    "manage_cover_charge": "Gerenciar Couvert Artístico",
+    "manage_whatsapp_menu": "Gerenciar Cardápio WhatsApp",
+    "manage_billing": "Gerenciar Assinatura",
+    "manage_ifood_integration": "Gerenciar Integração iFood"
+  },
+  "planRestriction": {
+    "title": "Plano Gratuito",
+    "message": "Algumas permissões de gerenciamento estão disponíveis apenas em planos pagos. Atualize seu plano para liberar todas as funcionalidades."
   },
   "modal": {
     "new": {

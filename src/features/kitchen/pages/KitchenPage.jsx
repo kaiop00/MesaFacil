@@ -1,5 +1,6 @@
 import { useState } from "react";
 import CardHeader from "@/components/CardHeader";
+import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,16 +40,10 @@ const KitchenPage = () => {
 
   if (!hasPermission('view_kitchen')) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            {t("page.noPermission")}
-          </h2>
-          <p className="text-gray-600">
-            {t("page.noPermissionMessage")}
-          </p>
-        </div>
-      </div>
+      <PermissionDeniedPage 
+        message={t("page.noPermissionMessage")}
+        description={t("page.contactAdmin")}
+      />
     );
   }
 
