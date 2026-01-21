@@ -412,8 +412,8 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
           <div className="flex items-center gap-2">
             <span className="text-xl">🏪</span>
             <div>
-              <p className="text-sm font-medium text-blue-800">Pedido para Retirada</p>
-              <p className="text-xs text-blue-600">Você retirará seu pedido diretamente no restaurante</p>
+              <p className="text-sm font-medium text-blue-800">Pedido pronto para retirada</p>
+              <p className="text-xs text-blue-600">Você pode retirar seu pedido diretamente no estabelecimento</p>
             </div>
           </div>
         </div>

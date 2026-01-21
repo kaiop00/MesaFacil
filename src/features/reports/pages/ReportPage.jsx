@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import CardHeader from "@/components/CardHeader";
+import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useTables } from "@/features/config/hooks/useTables";
@@ -25,16 +26,10 @@ const ReportPage = () => {
   // Verifica permissão de visualizar relatórios
   if (!hasPermission('view_reports')) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 text-center">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            {t('page.noPermission') || 'Sem Permissão'}
-          </h2>
-          <p className="text-gray-600">
-            {t('page.noPermissionMessage') || 'Você não tem permissão para acessar relatórios. Entre em contato com o administrador do sistema.'}
-          </p>
-        </div>
-      </div>
+      <PermissionDeniedPage 
+        message={t('page.noPermissionMessage') || 'Você não tem permissão para acessar relatórios.'}
+        description={t('page.contactAdmin') || 'Entre em contato com o administrador do sistema para solicitar acesso.'}
+      />
     );
   }
 

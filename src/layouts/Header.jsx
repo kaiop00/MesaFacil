@@ -14,6 +14,7 @@ import WhatsAppConfigModal from "@/features/config/components/modals/WhatsAppCon
 import NotificationsModal from "@/features/notifications/components/NotificationsModal";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import PlanInfo from "@/components/PlanInfo";
 import stripeService from "@/services/stripeService";
 import { useToast } from "@/hooks/useToast";
@@ -35,6 +36,7 @@ const Header = () => {
   const navigate = useNavigate();
   const imagemRestaurante = useImagemDoRestaurante();
   const { idRestaurante } = useAuth();
+  const { hasPermission, isAdmin } = usePermissions();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
   const { notify } = useToast();
@@ -231,72 +233,86 @@ const Header = () => {
 
                 {isSubMenuOpen && (
                   <div className="absolute top-0 right-full mr-1 w-48 bg-white rounded-md shadow-lg py-1 border z-50">
-                    <button
-                      onClick={() => {
-                        setIsConfigModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {t("common:header.tables")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsColorsConfigModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {t("common:header.photoColors")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsCategoriaConfigModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {t("common:header.categories")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsServiceFeeModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {t("common:header.serviceFee", "Taxa de serviço")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsCoverChargeModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {t("common:header.coverCharge", "Couvert Artístico")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsWhatsAppConfigModalOpen(true);
-                        setIsDropdownOpen(false);
-                        setIsSubMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Cardápio para WhatsApp
-                    </button>
-                    <button
-                      onClick={handleBillingPortal}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Gerenciar Assinatura
-                    </button>
+                    {(isAdmin() || hasPermission('manage_tables')) && (
+                      <button
+                        onClick={() => {
+                          setIsConfigModalOpen(true);
+                          setIsDropdownOpen(false);
+                          setIsSubMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        {t("common:header.tables")}
+                      </button>
+                    )}
+                    {(isAdmin() || hasPermission('manage_colors')) && (
+                      <button
+                        onClick={() => {
+                          setIsColorsConfigModalOpen(true);
+                          setIsDropdownOpen(false);
+                          setIsSubMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        {t("common:header.photoColors")}
+                      </button>
+                    )}
+                    {(isAdmin() || hasPermission('manage_categories')) && (
+                      <button
+                        onClick={() => {
+                          setIsCategoriaConfigModalOpen(true);
+                          setIsDropdownOpen(false);
+                          setIsSubMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        {t("common:header.categories")}
+                      </button>
+                    )}
+                    {(isAdmin() || hasPermission('manage_service_fee')) && (
+                      <button
+                        onClick={() => {
+                          setIsServiceFeeModalOpen(true);
+                          setIsDropdownOpen(false);
+                          setIsSubMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        {t("common:header.serviceFee", "Taxa de serviço")}
+                      </button>
+                    )}
+                    {(isAdmin() || hasPermission('manage_cover_charge')) && (
+                      <button
+                        onClick={() => {
+                          setIsCoverChargeModalOpen(true);
+                          setIsDropdownOpen(false);
+                          setIsSubMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        {t("common:header.coverCharge", "Couvert Artístico")}
+                      </button>
+                    )}
+                    {(isAdmin() || hasPermission('manage_whatsapp_menu')) && (
+                      <button
+                        onClick={() => {
+                          setIsWhatsAppConfigModalOpen(true);
+                          setIsDropdownOpen(false);
+                          setIsSubMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Cardápio para WhatsApp
+                      </button>
+                    )}
+                    {(isAdmin() || hasPermission('manage_billing')) && (
+                      <button
+                        onClick={handleBillingPortal}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Gerenciar Assinatura
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

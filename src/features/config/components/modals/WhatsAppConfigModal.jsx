@@ -24,6 +24,7 @@ const WhatsAppConfigModal = ({ isOpen, onClose }) => {
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const [taxaEntrega, setTaxaEntrega] = useState('');
 
   useEffect(() => {
     if (isOpen && idRestaurante) {
@@ -36,6 +37,7 @@ const WhatsAppConfigModal = ({ isOpen, onClose }) => {
       setLoading(true);
       const config = await getWhatsAppConfig(idRestaurante);
       setEnabled(config?.enabled || false);
+      setTaxaEntrega(config?.taxaEntrega?.toString() || '');
       setShowIntro(!config?.enabled); // Mostra intro se nunca foi ativado
     } catch (error) {
       console.error('Erro ao carregar configuração WhatsApp:', error);
@@ -75,6 +77,20 @@ const WhatsAppConfigModal = ({ isOpen, onClose }) => {
         error.message || 'Erro ao salvar configurações', 
         'error'
       );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveTaxaEntrega = async () => {
+    try {
+      setSaving(true);
+      const valor = parseFloat(taxaEntrega.replace(',', '.')) || 0;
+      await updateWhatsAppConfig(idRestaurante, { taxaEntrega: valor });
+      notify('Taxa de entrega atualizada com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao salvar taxa de entrega:', error);
+      notify('Erro ao salvar taxa de entrega', 'error');
     } finally {
       setSaving(false);
     }
@@ -151,6 +167,49 @@ const WhatsAppConfigModal = ({ isOpen, onClose }) => {
             {/* Gerador de link - só aparece quando ativado */}
             {enabled && (
               <>
+                {/* Configuração da Taxa de Entrega */}
+                <div className="border-t border-gray-200 pt-6 mb-6">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>🚚</span>
+                    Taxa de Entrega
+                  </h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Defina uma taxa fixa para pedidos de delivery. A taxa será exibida no resumo do pedido e na comanda impressa.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label htmlFor="taxaEntrega" className="block text-sm font-medium text-gray-700 mb-1">
+                        Valor da taxa (R$)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                        <input
+                          id="taxaEntrega"
+                          type="text"
+                          value={taxaEntrega}
+                          onChange={(e) => {
+                            // Permite apenas números e vírgula/ponto
+                            const value = e.target.value.replace(/[^0-9.,]/g, '');
+                            setTaxaEntrega(value);
+                          }}
+                          placeholder="0,00"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Deixe 0 ou vazio para não cobrar taxa de entrega
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleSaveTaxaEntrega}
+                      disabled={saving}
+                      className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                    >
+                      {saving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="border-t border-gray-200 pt-6 mb-6">
                   <h4 className="font-semibold text-gray-900 mb-4">
                     Compartilhe o Link do Cardápio

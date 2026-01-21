@@ -35,7 +35,9 @@
       "confirmed": "Pedido Confirmado, seu pedido foi enviado para a cozinha e será preparado dentro de alguns minutos",
       "delivered": "Pedido entregue",
       "payment": "Realize o pagamento para finalizar",
-      "waiterComing": "O garçom está a caminho"
+      "waiterComing": "O garçom está a caminho",
+      "readyForPickup": "Pedido pronto para retirada!",
+      "outForDelivery": "Pedido saiu para entrega!"
     },
     "noPedidos": "Nenhum pedido encontrado",
     "noPedidosWhatsApp": "Você ainda não tem pedidos. Faça seu primeiro pedido!",
@@ -44,6 +46,14 @@
     "waiterHelp": "O garçom irá até sua mesa para auxiliar com o pagamento, por favor aguarde.",
     "waiterSuccess": "O garçom foi acionado. Aguarde um instante.",
     "waiterError": "Não foi possível chamar o garçom. Tente novamente.",
+    "pickup": {
+      "ready": "Pedido pronto para retirada!",
+      "readyMessage": "Seu pedido está pronto! Dirija-se ao balcão para retirar.",
+      "confirmPickup": "Confirmar Retirada",
+      "confirming": "Confirmando...",
+      "confirmSuccess": "Retirada confirmada! Obrigado pelo seu pedido.",
+      "confirmError": "Não foi possível confirmar a retirada. Tente novamente."
+    },
     "delivery": {
       "outForDelivery": "Pedido saiu para entrega!",
       "outForDeliveryMessage": "Seu pedido está a caminho. Aguarde a chegada do entregador.",

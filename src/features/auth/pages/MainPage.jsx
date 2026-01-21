@@ -273,9 +273,10 @@ export default function MainPage() {
                         </p>
                         <div className="flex space-x-4 pt-2">
                             <a
-                                href="#"
+                                href="https://www.instagram.com/ideia.code"
                                 className="text-gray-400 hover:text-white transition-colors"
                                 aria-label="Social"
+                                target="_blank"
                             >
                                 <Instagram />
                             </a>

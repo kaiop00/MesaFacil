@@ -95,14 +95,41 @@ export function computeCoverChargeAmount(isEnabled, value, numeroPessoas = 1) {
     return Number((valorUnitario * pessoas).toFixed(2));
 }
 
+// ========================================
+// TAXA DE ENTREGA (Delivery Fee)
+// ========================================
+export const DEFAULT_DELIVERY_FEE = 0;
+
+export function normalizeDeliveryFee(value) {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        return Number(value.toFixed(2));
+    }
+
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+        return Number(parsed.toFixed(2));
+    }
+
+    return DEFAULT_DELIVERY_FEE;
+}
+
+export function computeDeliveryFeeAmount(isEnabled, value) {
+    if (!isEnabled) {
+        return 0;
+    }
+    return normalizeDeliveryFee(value);
+}
+
 export function computeTotalWithService(
     total = 0,
     percentage,
     fallback = DEFAULT_SERVICE_FEE_PERCENT,
-    coverAmount = 0
+    coverAmount = 0,
+    deliveryFeeAmount = 0
 ) {
     const subtotal = typeof total === "number" && Number.isFinite(total) ? total : 0;
     const serviceAmount = computeServiceFeeAmount(subtotal, percentage, fallback);
     const extras = Number.isFinite(coverAmount) ? coverAmount : 0;
-    return Number((subtotal + serviceAmount + extras).toFixed(2));
+    const delivery = Number.isFinite(deliveryFeeAmount) ? deliveryFeeAmount : 0;
+    return Number((subtotal + serviceAmount + extras + delivery).toFixed(2));
 }

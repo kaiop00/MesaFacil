@@ -172,6 +172,50 @@ export const useKitchenPrint = () => {
     []
   );
 
+  /**
+   * Monta a seção de totais com taxa de entrega (quando aplicável)
+   */
+  const buildTotalSection = useCallback(
+    (order) => {
+      const total = Number(order?.total || 0);
+      const taxaEntrega = order?.taxaEntrega;
+      
+      // Verifica se é um pedido WhatsApp delivery com taxa de entrega
+      if (isWhatsAppOrder(order) && 
+          order?.tipoEntrega === 'delivery' && 
+          taxaEntrega?.aplicada && 
+          taxaEntrega?.valor > 0) {
+        
+        // Calcula o subtotal (total - taxa de entrega)
+        const subtotal = total - taxaEntrega.valor;
+        
+        return `
+          <div class="row">
+            <span>Subtotal</span>
+            <span>${currencyFormatter.format(subtotal)}</span>
+          </div>
+          <div class="row">
+            <span>🚚 Taxa de entrega</span>
+            <span>${currencyFormatter.format(taxaEntrega.valor)}</span>
+          </div>
+          <div class="row" style="font-weight: 700; margin-top: 2mm;">
+            <span>${t("print.total")}</span>
+            <span>${currencyFormatter.format(total)}</span>
+          </div>
+        `;
+      }
+      
+      // Total simples (sem taxa de entrega)
+      return `
+        <div class="row">
+          <span>${t("print.total")}</span>
+          <span>${currencyFormatter.format(total)}</span>
+        </div>
+      `;
+    },
+    [t]
+  );
+
   const buildHtml = useCallback(
     (order) => {
       const createdAt = formatDate(order?.criadoEm);
@@ -355,10 +399,7 @@ export const useKitchenPrint = () => {
               ${buildItemsSection(order)}
 
               <div class="divider"></div>
-              <div class="row">
-                <span>${t("print.total")}</span>
-                <span>${totalLabel}</span>
-              </div>
+              ${buildTotalSection(order)}
 
               <div class="divider"></div>
               <div class="row title">${t("print.observations")}</div>
@@ -374,7 +415,7 @@ export const useKitchenPrint = () => {
         </html>
       `;
     },
-    [buildItemsSection, buildDeliverySection, t]
+    [buildItemsSection, buildDeliverySection, buildTotalSection, t]
   );
 
   const printOrder = useCallback(

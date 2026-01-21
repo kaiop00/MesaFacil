@@ -68,14 +68,37 @@ export default function PedidoClientePage() {
         return numero || pedidoAtual?.mesaNumero || mesaId;
     }, [numero, pedidoAtual, mesaId]);
 
+    // Detecta se é pedido de retirada ou delivery
+    const isRetirada = useMemo(() => {
+        return pedidoAtual?.tipoEntrega === 'retirada';
+    }, [pedidoAtual]);
+
+    // Para WhatsApp: apenas 2 steps (0: inicial, 1: preparando, 2: pronto)
+    // Para mesa convencional: 4 steps (0: inicial, 1: confirmado, 2: entregue, 3: pagamento, 4: garçom)
     const baseStep = useMemo(() => {
         if (!pedidoAtual) return 0;
+        
+        if (isWhatsApp) {
+            // Para WhatsApp: apenas 2 estados
+            if (pedidoAtual.status === "andamento") return 1;
+            if (pedidoAtual.status === "entregue") return 2;
+            return 0;
+        }
+        
+        // Para mesa convencional: lógica original
         if (pedidoAtual.status === "andamento") return 1;
         if (pedidoAtual.status === "entregue") return 2;
         return 0;
-    }, [pedidoAtual]);
+    }, [pedidoAtual, isWhatsApp]);
 
     useEffect(() => {
+        // Para WhatsApp, não permitir steps além de 2
+        if (isWhatsApp) {
+            setStep(baseStep);
+            return;
+        }
+        
+        // Lógica original para mesa convencional
         setStep((prev) => {
             if (baseStep <= 1) {
                 return baseStep;
@@ -91,7 +114,7 @@ export default function PedidoClientePage() {
 
             return baseStep;
         });
-    }, [baseStep, garcomState.solicitado]);
+    }, [baseStep, garcomState.solicitado, isWhatsApp]);
 
     useEffect(() => {
         if (baseStep <= 1 && garcomState.solicitado) {
@@ -99,13 +122,26 @@ export default function PedidoClientePage() {
         }
     }, [baseStep, garcomState.solicitado]);
 
-    const statusText = {
-        0: t("pedido.status.none"),
-        1: t("pedido.status.confirmed"),
-        2: t("pedido.status.delivered"),
-        3: t("pedido.status.payment"),
-        4: t("pedido.status.waiterComing"),
-    };
+    // Textos de status diferenciados para WhatsApp
+    const statusText = useMemo(() => {
+        if (isWhatsApp) {
+            return {
+                0: t("pedido.status.none"),
+                1: t("pedido.status.confirmed"),
+                2: isRetirada 
+                    ? t("pedido.status.readyForPickup") || "Pedido pronto para retirada!"
+                    : t("pedido.status.outForDelivery") || "Pedido saiu para entrega!",
+            };
+        }
+        
+        return {
+            0: t("pedido.status.none"),
+            1: t("pedido.status.confirmed"),
+            2: t("pedido.status.delivered"),
+            3: t("pedido.status.payment"),
+            4: t("pedido.status.waiterComing"),
+        };
+    }, [t, isWhatsApp, isRetirada]);
 
     const stepImageMap = {
         1: PedidoConfirmadoImg,
@@ -224,58 +260,107 @@ export default function PedidoClientePage() {
                         loading="lazy"
                         alt="Status do pedido"
                     />
-                    <StepBars currentStep={step} total={4} />
+                    {/* WhatsApp: 2 steps | Mesa convencional: 4 steps */}
+                    <StepBars currentStep={step} total={isWhatsApp ? 2 : 4} />
                     <div className="px-7 mt-5 text-center">
                         <p>{statusText[step]}</p>
                     </div>
 
+            {/* Step 1: Pedido em andamento/preparação */}
             {step === 1 && pedidoAtual && (
                 <PedidoAndamentoInfo pedido={pedidoAtual} numeroMesa={numero} />
             )}
 
+            {/* Step 2 para WhatsApp: Pedido pronto (delivery ou retirada) */}
             {step === 2 && isWhatsApp && (
                 <div className="text-sm mt-5 text-center text-gray-700 px-7">
                     <div className="flex flex-col gap-4">
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <p className="text-green-800 font-medium text-base">
-                                🚴 {t("pedido.delivery.outForDelivery")}
-                            </p>
-                            <p className="text-green-600 text-sm mt-2">
-                                {t("pedido.delivery.outForDeliveryMessage")}
-                            </p>
-                        </div>
-                        
-                        {pedidoAtual && (
-                            <div className="bg-gray-50 rounded-lg p-3">
-                                <p className="text-gray-600 text-xs mb-2">
-                                    {t("pedido.delivery.orderSummary")}
-                                </p>
-                                <p className="font-semibold text-gray-800">
-                                    {t("common.total")}: R$ {totalPedidos.toFixed(2)}
-                                </p>
-                            </div>
+                        {isRetirada ? (
+                            // Retirada no local
+                            <>
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <p className="text-blue-800 font-medium text-base">
+                                        🏪 {t("pedido.pickup.ready") || "Pedido pronto para retirada!"}
+                                    </p>
+                                    <p className="text-blue-600 text-sm mt-2">
+                                        {t("pedido.pickup.readyMessage") || "Seu pedido está pronto! Dirija-se ao balcão para retirar."}
+                                    </p>
+                                </div>
+                                
+                                {pedidoAtual && (
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <p className="text-gray-600 text-xs mb-2">
+                                            {t("pedido.delivery.orderSummary") || "Resumo do pedido"}
+                                        </p>
+                                        <p className="font-semibold text-gray-800">
+                                            {t("common.total")}: R$ {totalPedidos.toFixed(2)}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                <button
+                                    onClick={handleConfirmarRecebimento}
+                                    disabled={confirmandoRecebimento}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {confirmandoRecebimento ? (
+                                        <>
+                                            <span className="animate-spin">⏳</span>
+                                            {t("pedido.pickup.confirming") || "Confirmando..."}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {t("pedido.pickup.confirmPickup") || "Confirmar Retirada"}
+                                        </>
+                                    )}
+                                </button>
+                            </>
+                        ) : (
+                            // Delivery
+                            <>
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <p className="text-green-800 font-medium text-base">
+                                        🚴 {t("pedido.delivery.outForDelivery") || "Pedido saiu para entrega!"}
+                                    </p>
+                                    <p className="text-green-600 text-sm mt-2">
+                                        {t("pedido.delivery.outForDeliveryMessage") || "Seu pedido está a caminho!"}
+                                    </p>
+                                </div>
+                                
+                                {pedidoAtual && (
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <p className="text-gray-600 text-xs mb-2">
+                                            {t("pedido.delivery.orderSummary") || "Resumo do pedido"}
+                                        </p>
+                                        <p className="font-semibold text-gray-800">
+                                            {t("common.total")}: R$ {totalPedidos.toFixed(2)}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                <button
+                                    onClick={handleConfirmarRecebimento}
+                                    disabled={confirmandoRecebimento}
+                                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {confirmandoRecebimento ? (
+                                        <>
+                                            <span className="animate-spin">⏳</span>
+                                            {t("pedido.delivery.confirming") || "Confirmando..."}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {t("pedido.delivery.confirmReceipt") || "Confirmar Recebimento"}
+                                        </>
+                                    )}
+                                </button>
+                            </>
                         )}
-                        
-                        <button
-                            onClick={handleConfirmarRecebimento}
-                            disabled={confirmandoRecebimento}
-                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                        >
-                            {confirmandoRecebimento ? (
-                                <>
-                                    <span className="animate-spin">⏳</span>
-                                    {t("pedido.delivery.confirming")}
-                                </>
-                            ) : (
-                                <>
-                                    {t("pedido.delivery.confirmReceipt")}
-                                </>
-                            )}
-                        </button>
                     </div>
                 </div>
             )}
 
+            {/* Step 2 para mesa convencional: Pedido entregue */}
             {step === 2 && !isWhatsApp && (
                 <div className="text-sm mt-5 text-center text-gray-700 px-7">
                     <p>{t("pedido.deliveredMessage")}</p>
@@ -304,7 +389,8 @@ export default function PedidoClientePage() {
                 </div>
             )}
 
-            {step === 3 && (
+            {/* Step 3: Resumo de pagamento (apenas mesa convencional) */}
+            {step === 3 && !isWhatsApp && (
                 <PagamentoResumo
                     pedidos={pedidos}
                     loading={loading}
@@ -325,7 +411,8 @@ export default function PedidoClientePage() {
                 />
             )}
 
-            {step === 4 && (
+            {/* Step 4: Aguardando garçom (apenas mesa convencional) */}
+            {step === 4 && !isWhatsApp && (
                 <AguardandoGarcom
                     pedidos={pedidos}
                     totalPedidos={totalPedidos}

@@ -56,7 +56,8 @@
     "orders": "Pedidos",
     "kitchen": "Cocina",
     "reports": "Informes",
-    "config": "Configuración"
+    "config": "Configuración",
+    "integrations": "Integraciones"
   },
   "permissionLabels": {
     "view_dashboard": "Ver Panel",
@@ -82,7 +83,19 @@
     "view_reports": "Ver Informes",
     "export_reports": "Exportar Informes",
     "view_config": "Ver Configuración",
-    "edit_config": "Editar Configuración"
+    "edit_config": "Editar Configuración",
+    "manage_tables": "Administrar Mesas",
+    "manage_colors": "Administrar Colores",
+    "manage_categories": "Administrar Categorías",
+    "manage_service_fee": "Administrar Cargo por Servicio",
+    "manage_cover_charge": "Administrar Couvert Artístico",
+    "manage_whatsapp_menu": "Administrar Menú WhatsApp",
+    "manage_billing": "Administrar Suscripción",
+    "manage_ifood_integration": "Administrar Integración iFood"
+  },
+  "planRestriction": {
+    "title": "Plan Gratuito",
+    "message": "Algunos permisos de gestión solo están disponibles en planes de pago. Actualice su plan para desbloquear todas las funciones."
   },
   "modal": {
     "new": {

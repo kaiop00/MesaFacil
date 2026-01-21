@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
+import { usePlan } from "@/contexts/PlanContext";
 import { getPermissions } from "../../../constants/permissions";
+import { filterPermissionsByPlan, requiresPaidPlan } from "../../../utils/permissionRestrictions";
+import { Lock } from "react-coolicons";
 
 const UserPermissions = ({ 
   permissions = {}, 
@@ -9,7 +12,10 @@ const UserPermissions = ({
   readOnly = false 
 }) => {
   const { t } = useTranslation();
-  const PERMISSIONS = getPermissions(t);
+  const { planId } = usePlan();
+  const ALL_PERMISSIONS = getPermissions(t);
+  const PERMISSIONS = filterPermissionsByPlan(ALL_PERMISSIONS, planId);
+  
   const ALL_PERMISSION_IDS = Object.values(PERMISSIONS)
     .flatMap(category => category.map(permission => permission.id));
 
@@ -75,6 +81,22 @@ const UserPermissions = ({
 
   return (
     <div className="space-y-6">
+      {planId === 'free' && !readOnly && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <Lock size={20} className="text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800 mb-1">
+                {t("users:planRestriction.title", "Plano Gratuito")}
+              </h4>
+              <p className="text-xs text-yellow-700">
+                {t("users:planRestriction.message", "Algumas permissões de gerenciamento estão disponíveis apenas em planos pagos. Atualize seu plano para liberar todas as funcionalidades.")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
         <span className="text-sm font-medium text-gray-700">
           {t("users:form.selectAllPermissions")}
@@ -101,38 +123,55 @@ const UserPermissions = ({
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {perms.map((permission) => (
-                <label
-                  key={permission.id}
-                  className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md"
-                >
-                  <span className="text-sm text-gray-700">
-                    {permission.label}
-                  </span>
+              {perms.map((permission) => {
+                const isPaidOnly = requiresPaidPlan(permission.id);
+                const isLocked = isPaidOnly && planId === 'free';
+                
+                return (
+                  <label
+                    key={permission.id}
+                    className={`flex items-center justify-between p-2 rounded-md ${
+                      isLocked 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                        : 'hover:bg-gray-50 cursor-pointer'
+                    }`}
+                  >
+                    <span className="text-sm text-gray-700 flex items-center">
+                      {permission.label}
+                      {isLocked && (
+                        <Lock size={14} className="ml-2 text-gray-400" />
+                      )}
+                    </span>
 
 
-                  <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                    <input
-                      type="checkbox"
-                      checked={permissions[permission.id] || false}
-                      onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
-                      className="sr-only"
-                      id={`toggle-${permission.id}`}
-                    />
-
-                    <label
-                      htmlFor={`toggle-${permission.id}`}
-                      className={`block overflow-hidden h-6 rounded-full cursor-pointer ${permissions[permission.id] ? 'bg-yellow-500' : 'bg-gray-200'
-                        }`}
-                    >
-                      <span
-                        className={`block h-6 w-6 rounded-full bg-white transform transition-transform duration-200 ease-in-out ${permissions[permission.id] ? 'translate-x-4' : 'translate-x-0'
-                          }`}
+                    <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        checked={permissions[permission.id] || false}
+                        onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
+                        disabled={isLocked}
+                        className="sr-only"
+                        id={`toggle-${permission.id}`}
                       />
-                    </label>
-                  </div>
-                </label>
-              ))}
+
+                      <label
+                        htmlFor={`toggle-${permission.id}`}
+                        className={`block overflow-hidden h-6 rounded-full ${
+                          isLocked 
+                            ? 'cursor-not-allowed bg-gray-200' 
+                            : `cursor-pointer ${permissions[permission.id] ? 'bg-yellow-500' : 'bg-gray-200'}`
+                        }`}
+                      >
+                        <span
+                          className={`block h-6 w-6 rounded-full bg-white transform transition-transform duration-200 ease-in-out ${
+                            permissions[permission.id] && !isLocked ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                        />
+                      </label>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </section>
         ))}

@@ -7,6 +7,7 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
 import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
+import { useDeliveryFee } from "@/features/cliente/hooks/useDeliveryFee";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import {
@@ -14,6 +15,7 @@ import {
     computeServiceFeeAmount,
     computeTotalWithService,
     computeCoverChargeAmount,
+    computeDeliveryFeeAmount,
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
     formatCurrency,
@@ -52,6 +54,14 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         }
         return null;
     }, [mesaSelecionada, pedidos]);
+
+    // Calcula tipoEntrega (delivery ou retirada) a partir do primeiro pedido WhatsApp
+    const tipoEntrega = useMemo(() => {
+        if (pedidos.length > 0 && pedidos[0]?.tipoEntrega) {
+            return pedidos[0].tipoEntrega;
+        }
+        return 'delivery'; // default para delivery
+    }, [pedidos]);
     
     const {
         percent: serviceFeePercent,
@@ -67,6 +77,17 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         loading: coverChargeLoading,
         isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
+    
+    // Hook para taxa de entrega (somente para pedidos WhatsApp delivery)
+    const {
+        value: deliveryFeeValue,
+        loading: deliveryFeeLoading,
+        isApplicable: deliveryFeeApplicable,
+    } = useDeliveryFee(idRestaurante, { 
+        enabled: Boolean(idRestaurante), 
+        orderOrigin,
+        tipoEntrega 
+    });
 
     // Sincroniza numeroPessoas com a mesa selecionada
     useEffect(() => {
@@ -200,14 +221,20 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         () => computeCoverChargeAmount(coverChargeEnabled, coverChargeValue, numeroPessoas),
         [coverChargeEnabled, coverChargeValue, numeroPessoas]
     );
+    // Calcula a taxa de entrega (somente para WhatsApp delivery)
+    const valorTaxaEntrega = useMemo(
+        () => computeDeliveryFeeAmount(deliveryFeeApplicable, deliveryFeeValue),
+        [deliveryFeeApplicable, deliveryFeeValue]
+    );
     const totalComServico = useMemo(
         () => computeTotalWithService(
             totalSemTaxa,
             percentNormalized,
             DEFAULT_SERVICE_FEE_PERCENT,
-            valorCouvert
+            valorCouvert,
+            valorTaxaEntrega
         ),
-        [totalSemTaxa, percentNormalized, valorCouvert]
+        [totalSemTaxa, percentNormalized, valorCouvert, valorTaxaEntrega]
     );
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
@@ -231,7 +258,14 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         : valorCouvert > 0
             ? formatCurrency(valorCouvert)
             : t("cliente:payment.summary.coverChargeNotApplied");
-    const totalComServicoLabel = serviceFeeLoading
+    // Label para taxa de entrega
+    const deliveryFeeLabel = "Taxa de entrega";
+    const deliveryFeeValueLabel = deliveryFeeLoading
+        ? t("page.loading")
+        : deliveryFeeApplicable && valorTaxaEntrega > 0
+            ? formatCurrency(valorTaxaEntrega)
+            : "Não aplicável";
+    const totalComServicoLabel = serviceFeeLoading || deliveryFeeLoading
         ? t("page.loading")
         : formatCurrency(totalComServico);
 
@@ -566,6 +600,13 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                         <span>{coverLabel}{!isDelivery && coverChargeEnabled && numeroPessoas > 1 ? ` (${numeroPessoas}x)` : ''}</span>
                         <span>{coverValueLabel}</span>
                     </div>
+                    {/* Taxa de entrega - somente para pedidos WhatsApp delivery */}
+                    {orderOrigin === 'whatsapp' && tipoEntrega === 'delivery' && (
+                        <div className="flex justify-between text-sm font-medium">
+                            <span>🚚 {deliveryFeeLabel}</span>
+                            <span>{deliveryFeeValueLabel}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between font-semibold">
                         <span>Total com taxa</span>
                         <span>{totalComServicoLabel}</span>

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
@@ -10,6 +10,8 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { useTranslation } from "react-i18next";
 import { useOrderOrigin } from "@/hooks/useOrderOrigin";
 import ClientDataForm from "../components/ClientDataForm";
+import { useDeliveryFee } from "../hooks/useDeliveryFee";
+import { computeDeliveryFeeAmount, formatCurrency } from "../utils/pedidos";
 
 export default function SacolaPage() {
     const { t } = useTranslation("cliente");
@@ -40,9 +42,32 @@ export default function SacolaPage() {
     const [tipoEntrega, setTipoEntrega] = useState('delivery'); // 'delivery' ou 'retirada'
     const isRetirada = tipoEntrega === 'retirada';
 
-    // Calcula o troco automaticamente
+    // Hook para taxa de entrega (somente para WhatsApp delivery)
+    const {
+        value: deliveryFeeValue,
+        loading: deliveryFeeLoading,
+        isApplicable: deliveryFeeApplicable,
+    } = useDeliveryFee(idRestaurante, {
+        enabled: Boolean(idRestaurante) && isWhatsApp,
+        orderOrigin: origin,
+        tipoEntrega
+    });
+
+    // Calcula o valor da taxa de entrega
+    const valorTaxaEntrega = useMemo(
+        () => computeDeliveryFeeAmount(deliveryFeeApplicable, deliveryFeeValue),
+        [deliveryFeeApplicable, deliveryFeeValue]
+    );
+
+    // Total com taxa de entrega
+    const totalComTaxaEntrega = useMemo(
+        () => total + valorTaxaEntrega,
+        [total, valorTaxaEntrega]
+    );
+
+    // Calcula o troco automaticamente (baseado no total com taxa)
     const valorTroco = precisaTroco && valorPagamento 
-        ? Math.max(0, parseFloat(valorPagamento.replace(',', '.')) - total)
+        ? Math.max(0, parseFloat(valorPagamento.replace(',', '.')) - totalComTaxaEntrega)
         : 0;
 
     // Sincroniza origem do pedido
@@ -96,6 +121,11 @@ export default function SacolaPage() {
                     precisaTroco: true,
                     valorPagamento: parseFloat(valorPagamento.replace(',', '.')) || 0,
                     valorTroco: valorTroco
+                } : null,
+                // Taxa de entrega (apenas para delivery)
+                taxaEntrega: tipoEntrega === 'delivery' ? {
+                    valor: valorTaxaEntrega,
+                    aplicada: deliveryFeeApplicable && valorTaxaEntrega > 0
                 } : null
             } : {
                 orderOrigin: orderOrigin
@@ -105,7 +135,7 @@ export default function SacolaPage() {
                 idRestaurante,
                 mesaId,
                 carrinhoItems,
-                total,
+                totalComTaxaEntrega, // Usa o total com a taxa de entrega
                 observacoes,
                 extraData
             );
@@ -303,6 +333,31 @@ export default function SacolaPage() {
                                     </label>
                                 </div>
                             </div>
+
+                            {/* Resumo com Taxa de Entrega - apenas para delivery */}
+                            {tipoEntrega === 'delivery' && (
+                                <div className="p-4 border border-gray-300 rounded-md bg-gray-50 space-y-2">
+                                    <p className="text-sm font-medium text-gray-700">Resumo do Pedido</p>
+                                    <div className="flex justify-between text-sm">
+                                        <span>Subtotal</span>
+                                        <span>{formatCurrency(total)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span>🚚 Taxa de entrega</span>
+                                        <span>
+                                            {deliveryFeeLoading 
+                                                ? 'Carregando...' 
+                                                : valorTaxaEntrega > 0 
+                                                    ? formatCurrency(valorTaxaEntrega)
+                                                    : 'Grátis'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-200">
+                                        <span>Total</span>
+                                        <span>{formatCurrency(totalComTaxaEntrega)}</span>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
 
