@@ -107,7 +107,21 @@ const IfoodIntegrationPage = () => {
             notify("Código de usuário gerado! Acesse o Portal do iFood para autorizar.", "success");
         } catch (error) {
             console.error("Error requesting userCode:", error);
-            notify(error.message || "Erro ao solicitar código de usuário", "error");
+            
+            // Check if it's a 403 error (iFood API instability)
+            const errorMessage = error.message || "";
+            const is403Error = errorMessage.includes("403") || 
+                               errorMessage.toLowerCase().includes("acesso negado") ||
+                               errorMessage.toLowerCase().includes("access denied");
+            
+            if (is403Error) {
+                notify(
+                    "A API do iFood está temporariamente instável. Por favor, atualize a página e tente novamente em alguns segundos.",
+                    "warning"
+                );
+            } else {
+                notify(error.message || "Erro ao solicitar código de usuário", "error");
+            }
         } finally {
             setRequestingUserCode(false);
         }
