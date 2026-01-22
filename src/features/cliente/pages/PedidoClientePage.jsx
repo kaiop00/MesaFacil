@@ -292,9 +292,26 @@ export default function PedidoClientePage() {
                                         <p className="text-gray-600 text-xs mb-2">
                                             {t("pedido.delivery.orderSummary") || "Resumo do pedido"}
                                         </p>
-                                        <p className="font-semibold text-gray-800">
-                                            {t("common.total")}: R$ {totalPedidos.toFixed(2)}
-                                        </p>
+                                        {pedidoAtual.taxaEntrega?.aplicada && pedidoAtual.taxaEntrega?.valor > 0 ? (
+                                            <div className="space-y-1 text-sm">
+                                                <div className="flex justify-between text-gray-700">
+                                                    <span>Subtotal:</span>
+                                                    <span>R$ {(totalPedidos - pedidoAtual.taxaEntrega.valor).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-gray-700">
+                                                    <span>Taxa de entrega:</span>
+                                                    <span>R$ {pedidoAtual.taxaEntrega.valor.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between font-semibold text-gray-800 pt-1 border-t border-gray-300">
+                                                    <span>{t("common.total")}:</span>
+                                                    <span>R$ {totalPedidos.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="font-semibold text-gray-800">
+                                                {t("common.total")}: R$ {totalPedidos.toFixed(2)}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                                 
@@ -332,9 +349,26 @@ export default function PedidoClientePage() {
                                         <p className="text-gray-600 text-xs mb-2">
                                             {t("pedido.delivery.orderSummary") || "Resumo do pedido"}
                                         </p>
-                                        <p className="font-semibold text-gray-800">
-                                            {t("common.total")}: R$ {totalPedidos.toFixed(2)}
-                                        </p>
+                                        {pedidoAtual.taxaEntrega?.aplicada && pedidoAtual.taxaEntrega?.valor > 0 ? (
+                                            <div className="space-y-1 text-sm">
+                                                <div className="flex justify-between text-gray-700">
+                                                    <span>Subtotal:</span>
+                                                    <span>R$ {(totalPedidos - pedidoAtual.taxaEntrega.valor).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-gray-700">
+                                                    <span>Taxa de entrega:</span>
+                                                    <span>R$ {pedidoAtual.taxaEntrega.valor.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between font-semibold text-gray-800 pt-1 border-t border-gray-300">
+                                                    <span>{t("common.total")}:</span>
+                                                    <span>R$ {totalPedidos.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="font-semibold text-gray-800">
+                                                {t("common.total")}: R$ {totalPedidos.toFixed(2)}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                                 
