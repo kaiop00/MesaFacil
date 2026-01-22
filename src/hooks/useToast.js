@@ -13,6 +13,10 @@ export function useToast() {
       info: {
         style: { background: '#2563eb', color: '#fff', borderRadius: '8px', padding: '12px 16px' },
       },
+      warning: {
+        style: { background: '#f59e0b', color: '#fff', borderRadius: '8px', padding: '12px 16px' },
+        duration: 6000,
+      },
     };
 
     const config = styles[status] || {};
