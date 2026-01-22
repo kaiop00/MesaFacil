@@ -153,6 +153,7 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
             ...(extraData.cliente && { cliente: extraData.cliente }),
             ...(extraData.formaPagamento && { formaPagamento: extraData.formaPagamento }),
             ...(extraData.troco && { troco: extraData.troco }),
+            ...(extraData.taxaEntrega && { taxaEntrega: extraData.taxaEntrega }),
         };
         
         transaction.set(newPedidoRef, pedidoPayload);
