@@ -195,7 +195,7 @@ export const useKitchenPrint = () => {
             <span>${currencyFormatter.format(subtotal)}</span>
           </div>
           <div class="row">
-            <span>🚚 Taxa de entrega</span>
+            <span>Taxa de entrega</span>
             <span>${currencyFormatter.format(taxaEntrega.valor)}</span>
           </div>
           <div class="row" style="font-weight: 700; margin-top: 2mm;">
