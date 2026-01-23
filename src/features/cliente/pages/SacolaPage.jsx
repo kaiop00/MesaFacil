@@ -343,7 +343,7 @@ export default function SacolaPage() {
                                         <span>{formatCurrency(total)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span>🚚 Taxa de entrega</span>
+                                        <span>Taxa de entrega</span>
                                         <span>
                                             {deliveryFeeLoading 
                                                 ? 'Carregando...' 
