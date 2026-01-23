@@ -41,7 +41,15 @@ async function refreshAccessTokenIfNeeded(idRestaurante, docRef, currentData) {
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "MesaFacil/1.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+        "Connection": "keep-alive",
+        "Origin": "https://portal.ifood.com.br",
+        "Referer": "https://portal.ifood.com.br/",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
       },
       body: requestBody,
     });
@@ -144,7 +152,9 @@ exports.ifoodGetCatalog = onRequest(
           headers: {
             "Authorization": `Bearer ${accessToken}`,
             "Accept": "application/json",
-            "User-Agent": "MesaFacil/1.0",
+            "User-Agent": "Mozilla/5.0 (compatible; MesaFacil/1.0)",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Connection": "keep-alive",
           },
         }
       );
@@ -200,7 +210,9 @@ exports.ifoodGetCatalog = onRequest(
           headers: {
             "Authorization": `Bearer ${accessToken}`,
             "Accept": "application/json",
-            "User-Agent": "MesaFacil/1.0",
+            "User-Agent": "Mozilla/5.0 (compatible; MesaFacil/1.0)",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Connection": "keep-alive",
           },
         }
       );
@@ -280,7 +292,9 @@ async function fetchItemsForCategories(merchantId, categories, accessToken) {
           headers: {
             "Authorization": `Bearer ${accessToken}`,
             "Accept": "application/json",
-            "User-Agent": "MesaFacil/1.0",
+            "User-Agent": "Mozilla/5.0 (compatible; MesaFacil/1.0)",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Connection": "keep-alive",
           },
         }
       );

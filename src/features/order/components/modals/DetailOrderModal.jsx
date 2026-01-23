@@ -26,6 +26,7 @@ import {
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
+import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrderActions";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
@@ -498,6 +499,41 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     <IfoodStatusHistory 
                                         statusHistory={ifoodOrdersInfo[pedido.id].statusHistory}
                                         currentStatus={ifoodOrdersInfo[pedido.id].ifoodStatus}
+                                    />
+                                )}
+                                
+                                {/* iFood Order Actions */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodOrderActions
+                                        idRestaurante={idRestaurante}
+                                        ifoodOrderId={ifoodOrdersInfo[pedido.id].fullOrder.ifoodOrderId}
+                                        currentStatus={ifoodOrdersInfo[pedido.id].ifoodStatus}
+                                        orderType={ifoodOrdersInfo[pedido.id].fullOrder.orderType || "DELIVERY"}
+                                        onActionComplete={async () => {
+                                            // Reload orders after action
+                                            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
+                                            setPedidos(dados || []);
+                                            
+                                            // Reload iFood info
+                                            if (dados && dados.length > 0) {
+                                                const ifoodInfoMap = {};
+                                                for (const ped of dados) {
+                                                    try {
+                                                        const ifoodOrder = await getIfoodOrderForMesaFacilOrder(idRestaurante, ped.id);
+                                                        if (ifoodOrder) {
+                                                            ifoodInfoMap[ped.id] = {
+                                                                ...extractIfoodCustomerInfo(ifoodOrder),
+                                                                statusHistory: ped.ifoodStatusHistory || [],
+                                                                fullOrder: ifoodOrder
+                                                            };
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Error reloading iFood order info:', error);
+                                                    }
+                                                }
+                                                setIfoodOrdersInfo(ifoodInfoMap);
+                                            }
+                                        }}
                                     />
                                 )}
                             </div>

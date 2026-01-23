@@ -47,7 +47,15 @@ exports.ifoodRequestUserCode = onCall(
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "MesaFacil/1.0",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+          "Accept-Encoding": "gzip, deflate, br, zstd",
+          "Connection": "keep-alive",
+          "Origin": "https://portal.ifood.com.br",
+          "Referer": "https://portal.ifood.com.br/",
+          "Sec-Fetch-Dest": "empty",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Site": "same-site",
         },
         body: requestBody,
       });
@@ -90,10 +98,10 @@ exports.ifoodRequestUserCode = onCall(
       });
 
       // Validate required fields from iFood API response
-      if (!data.userCode || !data.verificationCode) {
+      if (!data.userCode || !data.authorizationCodeVerifier) {
         logger.error("Invalid response from iFood userCode API", {
           hasUserCode: !!data.userCode,
-          hasVerificationCode: !!data.verificationCode,
+          hasAuthorizationCodeVerifier: !!data.authorizationCodeVerifier,
           responseData: data,
         });
         throw new Error("Resposta inválida da API do iFood. Campos obrigatórios ausentes.");
@@ -102,10 +110,10 @@ exports.ifoodRequestUserCode = onCall(
       // Store verification codes in Firestore
       const docRef = admin.firestore().doc(`restaurantes/${idRestaurante}/integrations/ifood`);
       await docRef.set({
-        verificationCode: data.verificationCode,
-        verificationCodeVerifier: data.verificationCodeVerifier || null,
-        authorizationCodeVerifier: data.authorizationCodeVerifier || null,
         userCode: data.userCode,
+        authorizationCodeVerifier: data.authorizationCodeVerifier,
+        verificationUrl: data.verificationUrl || null,
+        verificationUrlComplete: data.verificationUrlComplete || null,
         userCodeExpiresAt: admin.firestore.Timestamp.fromDate(
           new Date(Date.now() + (data.expiresIn || 600) * 1000)
         ),
@@ -114,7 +122,8 @@ exports.ifoodRequestUserCode = onCall(
 
       return {
         userCode: data.userCode,
-        verificationCode: data.verificationCode,
+        verificationUrl: data.verificationUrl,
+        verificationUrlComplete: data.verificationUrlComplete,
         authorizationCodeVerifier: data.authorizationCodeVerifier,
         expiresIn: data.expiresIn,
       };
@@ -174,7 +183,15 @@ exports.ifoodExchangeCode = onCall(
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "MesaFacil/1.0",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+          "Accept-Encoding": "gzip, deflate, br, zstd",
+          "Connection": "keep-alive",
+          "Origin": "https://portal.ifood.com.br",
+          "Referer": "https://portal.ifood.com.br/",
+          "Sec-Fetch-Dest": "empty",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Site": "same-site",
         },
         body: requestBody,
       });
@@ -236,11 +253,11 @@ exports.ifoodExchangeCode = onCall(
         authorizedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         // Clean up temporary codes
-        verificationCode: admin.firestore.FieldValue.delete(),
-        verificationCodeVerifier: admin.firestore.FieldValue.delete(),
         authorizationCodeVerifier: admin.firestore.FieldValue.delete(),
         userCode: admin.firestore.FieldValue.delete(),
         userCodeExpiresAt: admin.firestore.FieldValue.delete(),
+        verificationUrl: admin.firestore.FieldValue.delete(),
+        verificationUrlComplete: admin.firestore.FieldValue.delete(),
         // Clean up error fields since authorization succeeded
         lastError: admin.firestore.FieldValue.delete(),
         lastErrorAt: admin.firestore.FieldValue.delete(),
