@@ -90,7 +90,7 @@ const TableCard = ({
       setIsDetailModalOpen(true);
       setShowOptions(false);
     }
-    setIsConfirmModalOpen(true);
+    setIsConfirmModalOpen(false);
     setShowOptions(false);
   }
 
