@@ -7,7 +7,6 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
 import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
-import { useDeliveryFee } from "@/features/cliente/hooks/useDeliveryFee";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import {
@@ -15,7 +14,6 @@ import {
     computeServiceFeeAmount,
     computeTotalWithService,
     computeCoverChargeAmount,
-    computeDeliveryFeeAmount,
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
     formatCurrency,
@@ -77,17 +75,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         loading: coverChargeLoading,
         isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
-    
-    // Hook para taxa de entrega (somente para pedidos WhatsApp delivery)
-    const {
-        value: deliveryFeeValue,
-        loading: deliveryFeeLoading,
-        isApplicable: deliveryFeeApplicable,
-    } = useDeliveryFee(idRestaurante, { 
-        enabled: Boolean(idRestaurante), 
-        orderOrigin,
-        tipoEntrega 
-    });
 
     // Sincroniza numeroPessoas com a mesa selecionada
     useEffect(() => {
@@ -221,20 +208,27 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         () => computeCoverChargeAmount(coverChargeEnabled, coverChargeValue, numeroPessoas),
         [coverChargeEnabled, coverChargeValue, numeroPessoas]
     );
-    // Calcula a taxa de entrega (somente para WhatsApp delivery)
-    const valorTaxaEntrega = useMemo(
-        () => computeDeliveryFeeAmount(deliveryFeeApplicable, deliveryFeeValue),
-        [deliveryFeeApplicable, deliveryFeeValue]
+    // Calcula a taxa de entrega embutida nos pedidos (para exibição)
+    const valorTaxaEntregaEmbutida = useMemo(
+        () => pedidos.reduce((acc, pedido) => {
+            if (pedido.taxaEntrega?.aplicada && pedido.taxaEntrega?.valor > 0) {
+                return acc + Number(pedido.taxaEntrega.valor);
+            }
+            return acc;
+        }, 0),
+        [pedidos]
     );
+    
+    // Total com serviço - NÃO adiciona taxa de entrega pois já está embutida no pedido.total
     const totalComServico = useMemo(
         () => computeTotalWithService(
             totalSemTaxa,
             percentNormalized,
             DEFAULT_SERVICE_FEE_PERCENT,
             valorCouvert,
-            valorTaxaEntrega
+            0 // Taxa de entrega já está incluída no total dos pedidos
         ),
-        [totalSemTaxa, percentNormalized, valorCouvert, valorTaxaEntrega]
+        [totalSemTaxa, percentNormalized, valorCouvert]
     );
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
@@ -258,16 +252,21 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         : valorCouvert > 0
             ? formatCurrency(valorCouvert)
             : t("cliente:payment.summary.coverChargeNotApplied");
-    // Label para taxa de entrega
+    // Label para taxa de entrega (mostra valor embutido nos pedidos)
     const deliveryFeeLabel = "Taxa de entrega";
-    const deliveryFeeValueLabel = deliveryFeeLoading
-        ? t("page.loading")
-        : deliveryFeeApplicable && valorTaxaEntrega > 0
-            ? formatCurrency(valorTaxaEntrega)
-            : "Não aplicável";
-    const totalComServicoLabel = serviceFeeLoading || deliveryFeeLoading
+    const deliveryFeeValueLabel = valorTaxaEntregaEmbutida > 0
+        ? `${formatCurrency(valorTaxaEntregaEmbutida)} (já inclusa)`
+        : "Não aplicável";
+    const totalComServicoLabel = serviceFeeLoading
         ? t("page.loading")
         : formatCurrency(totalComServico);
+
+    // Calcula o total do pedido específico que está sendo finalizado
+    const totalPedidoParaFinalizar = useMemo(() => {
+        if (!pedidoParaFinalizar) return 0;
+        const pedido = pedidos.find(p => p.id === pedidoParaFinalizar);
+        return pedido?.total || 0;
+    }, [pedidoParaFinalizar, pedidos]);
 
     return (
         <BaseModalWithHeader
@@ -511,23 +510,44 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                             readOnly                       // Flag de só leitura
                         />
 
-                        <div>
-                            <p className="font-semibold text-sm">{t('modals.orderDetail.total')}</p>
-                            <p className="text-gray-800 font-bold">
-                                R$
-                                {
-                                    Number(
-                                        pedido.total ??
-                                        (
-                                            pedido.items?.reduce(
-                                                (sum, item) =>
-                                                    sum + (item.price || 0) * (item.quantity || 1),
-                                                0
+                        {/* Exibição do total com taxa de entrega individual quando aplicável */}
+                        <div className="space-y-1">
+                            {pedido.taxaEntrega?.aplicada && pedido.taxaEntrega?.valor > 0 ? (
+                                <>
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>Subtotal:</span>
+                                        <span>
+                                            {formatCurrency(
+                                                Number(pedido.total || 0) - Number(pedido.taxaEntrega.valor || 0)
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>Taxa de entrega:</span>
+                                        <span>{formatCurrency(pedido.taxaEntrega.valor)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-semibold text-gray-800 pt-1 border-t border-gray-200">
+                                        <span>{t('modals.orderDetail.total')}:</span>
+                                        <span>{formatCurrency(pedido.total || 0)}</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex justify-between font-semibold">
+                                    <span>{t('modals.orderDetail.total')}:</span>
+                                    <span className="text-gray-800">
+                                        {formatCurrency(
+                                            Number(
+                                                pedido.total ??
+                                                (pedido.items?.reduce(
+                                                    (sum, item) =>
+                                                        sum + (item.price || 0) * (item.quantity || 1),
+                                                    0
+                                                ) || 0)
                                             )
-                                        )
-                                    ).toFixed(2)
-                                }
-                            </p>
+                                        )}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                         <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
 
@@ -600,9 +620,9 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                         <span>{coverLabel}{!isDelivery && coverChargeEnabled && numeroPessoas > 1 ? ` (${numeroPessoas}x)` : ''}</span>
                         <span>{coverValueLabel}</span>
                     </div>
-                    {/* Taxa de entrega - somente para pedidos WhatsApp delivery */}
-                    {orderOrigin === 'whatsapp' && tipoEntrega === 'delivery' && (
-                        <div className="flex justify-between text-sm font-medium">
+                    {/* Taxa de entrega - mostra quando há taxa embutida nos pedidos */}
+                    {valorTaxaEntregaEmbutida > 0 && (
+                        <div className="flex justify-between text-sm font-medium text-gray-500">
                             <span>🚚 {deliveryFeeLabel}</span>
                             <span>{deliveryFeeValueLabel}</span>
                         </div>
@@ -629,7 +649,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 onClose={handleClosePaymentModal}
                 onConfirm={handleConfirmPayment}
                 mesaNumero={mesaSelecionada?.numero}
-                totalValue={totalComServico}
+                totalValue={totalPedidoParaFinalizar}
                 loading={!!finalizando[pedidoParaFinalizar]}
             />
         </BaseModalWithHeader>
