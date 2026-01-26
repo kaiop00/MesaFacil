@@ -132,7 +132,7 @@ exports.ifoodConfirmOrder = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
-    region: "southamerica-east1",
+    region: "us-central1",
   },
   async (request) => {
     try {
@@ -220,7 +220,7 @@ exports.ifoodDispatchOrder = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
-    region: "southamerica-east1",
+    region: "us-central1",
   },
   async (request) => {
     try {
@@ -308,7 +308,7 @@ exports.ifoodMarkReadyToPickup = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
-    region: "southamerica-east1",
+    region: "us-central1",
   },
   async (request) => {
     try {
@@ -397,7 +397,7 @@ exports.ifoodGetCancellationReasons = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
-    region: "southamerica-east1",
+    region: "us-central1",
   },
   async (request) => {
     try {
@@ -477,7 +477,7 @@ exports.ifoodRequestCancellation = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
-    region: "southamerica-east1",
+    region: "us-central1",
   },
   async (request) => {
     try {
@@ -589,7 +589,7 @@ exports.ifoodAcceptCancellation = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
-    region: "southamerica-east1",
+    region: "us-central1",
   },
   async (request) => {
     try {
@@ -678,7 +678,7 @@ exports.ifoodDenyCancellation = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
-    region: "southamerica-east1",
+    region: "us-central1",
   },
   async (request) => {
     try {

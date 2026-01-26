@@ -164,18 +164,12 @@ exports.ifoodExchangeCode = onCall(
       const {authorizationCodeVerifier} = docSnap.data();
 
       // Exchange authorization code for tokens
-      const requestBody = [
-        `grantType=authorization_code`,
-        `clientId=${encodeURIComponent(ifoodClientId.value())}`,
-        `clientSecret=${encodeURIComponent(ifoodClientSecret.value())}`,
-        `authorizationCode=${encodeURIComponent(authorizationCode)}`,
-        `authorizationCodeVerifier=${encodeURIComponent(authorizationCodeVerifier)}`,
-      ].join('&');
+      const requestBody = 
+        `grantType=authorization_code&clientId=${ifoodClientId.value()}&clientSecret=${ifoodClientSecret.value()}&authorizationCode=${authorizationCode}&authorizationCodeVerifier=${authorizationCodeVerifier}`;
 
       logger.info("Request details", {
         url: `${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/token`,
-        authCodeLength: authorizationCode.length,
-        verifierLength: authorizationCodeVerifier.length,
+        body: requestBody
       });
 
       const response = await fetch(`${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/token`, {
@@ -186,12 +180,8 @@ exports.ifoodExchangeCode = onCall(
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
           "Accept-Encoding": "gzip, deflate, br, zstd",
-          "Connection": "keep-alive",
-          "Origin": "https://portal.ifood.com.br",
-          "Referer": "https://portal.ifood.com.br/",
-          "Sec-Fetch-Dest": "empty",
-          "Sec-Fetch-Mode": "cors",
-          "Sec-Fetch-Site": "same-site",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
         },
         body: requestBody,
       });
