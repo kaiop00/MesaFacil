@@ -5,14 +5,23 @@ import { getAll } from "@/services/firebase/firestoreService";
 
 /**
  * Create a virtual table for iFood orders
- * Returns a table ID specifically for iFood orders
+ * Creates separate tables for DELIVERY and TAKEOUT orders
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} orderType - Order type (DELIVERY or TAKEOUT)
+ * @returns {Promise<string>} - Table ID
  */
-export const getOrCreateIfoodTable = async (idRestaurante) => {
+export const getOrCreateIfoodTable = async (idRestaurante, orderType = "DELIVERY") => {
     const { doc, getDoc, setDoc, serverTimestamp } = await import("firebase/firestore");
     const { db } = await import("@/config/firebaseConfig");
     
-    // iFood orders use a special virtual table
-    const ifoodTableId = "ifood-delivery";
+    // Determine table ID and name based on order type
+    const isTakeout = orderType === "TAKEOUT";
+    const ifoodTableId = isTakeout ? "ifood-takeout" : "ifood-delivery";
+    const tableName = isTakeout ? "iFood Retirada" : "iFood Delivery";
+    const tableDescription = isTakeout 
+        ? "Mesa virtual para pedidos de retirada do iFood" 
+        : "Mesa virtual para pedidos de delivery do iFood";
+    
     const tableRef = doc(db, "restaurantes", idRestaurante, "mesas", ifoodTableId);
     
     // Check if table exists
@@ -21,16 +30,18 @@ export const getOrCreateIfoodTable = async (idRestaurante) => {
     if (!tableSnap.exists()) {
         // Create the virtual table
         await setDoc(tableRef, {
-            numero: "iFood",
+            numero: tableName,
+            nome: tableName,
             capacidade: 999,
             status: "ocupada",
             tipo: "virtual",
-            descricao: "Mesa virtual para pedidos do iFood",
+            descricao: tableDescription,
             createdAt: serverTimestamp(),
             isVirtual: true,
             source: "ifood",
+            orderType: orderType,
         });
-        console.log("Created virtual table for iFood orders");
+        console.log(`Created virtual table for iFood ${orderType} orders:`, ifoodTableId);
     }
     
     return ifoodTableId;
@@ -127,8 +138,9 @@ export const syncIfoodOrderToMesaFacil = async (idRestaurante, ifoodOrderId) => 
             };
         }
         
-        // Get or create virtual table for iFood orders
-        const mesaId = await getOrCreateIfoodTable(idRestaurante);
+        // Get or create virtual table for iFood orders based on order type
+        const orderType = ifoodOrder.orderType || "DELIVERY";
+        const mesaId = await getOrCreateIfoodTable(idRestaurante, orderType);
         
         // Transform items with mapping support
         const items = await transformIfoodItems(ifoodOrder.items || [], idRestaurante);
@@ -137,14 +149,60 @@ export const syncIfoodOrderToMesaFacil = async (idRestaurante, ifoodOrderId) => 
         const total = ifoodOrder.total?.orderAmount || 0;
         
         // Create observations with customer and delivery info
-        const observations = [
+        const isTakeout = orderType === "TAKEOUT";
+        const isScheduled = ifoodOrder.orderTiming === "SCHEDULED" || ifoodOrder.isScheduled;
+        const observationParts = [
             `Cliente iFood: ${ifoodOrder.customer?.name || "N/A"}`,
             ifoodOrder.customer?.phone ? `Tel: ${ifoodOrder.customer.phone}` : "",
-            ifoodOrder.delivery?.address ? 
-                `Endereço: ${ifoodOrder.delivery.address.formattedAddress || ifoodOrder.delivery.address.streetName || ""}` : "",
-            ifoodOrder.delivery?.observations ? `Obs: ${ifoodOrder.delivery.observations}` : "",
-            `Pedido iFood #${ifoodOrder.displayId || ifoodOrderId}`,
-        ].filter(Boolean).join("\n");
+        ];
+        
+        // Only add delivery address for DELIVERY orders
+        if (!isTakeout && ifoodOrder.delivery?.address) {
+            observationParts.push(
+                `Endereço: ${ifoodOrder.delivery.address.formattedAddress || ifoodOrder.delivery.address.streetName || ""}`
+            );
+        }
+        
+        if (ifoodOrder.delivery?.observations) {
+            observationParts.push(`Obs: ${ifoodOrder.delivery.observations}`);
+        }
+        
+        // Add order type indicator
+        if (isTakeout) {
+            observationParts.push("🏪 PEDIDO PARA RETIRADA");
+        }
+        
+        // Add scheduled time indicator
+        if (isScheduled) {
+            let scheduledText = "📅 PEDIDO AGENDADO";
+            if (ifoodOrder.scheduledFor) {
+                // Handle both Firestore Timestamp and ISO string
+                const scheduledDate = ifoodOrder.scheduledFor.toDate 
+                    ? ifoodOrder.scheduledFor.toDate() 
+                    : new Date(ifoodOrder.scheduledFor);
+                scheduledText += ` para ${scheduledDate.toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}`;
+            } else if (ifoodOrder.schedule?.deliveryDateTimeStart) {
+                const scheduledDate = new Date(ifoodOrder.schedule.deliveryDateTimeStart);
+                scheduledText += ` para ${scheduledDate.toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}`;
+            }
+            observationParts.push(scheduledText);
+        }
+        
+        observationParts.push(`Pedido iFood #${ifoodOrder.displayId || ifoodOrderId}`);
+        
+        const observations = observationParts.filter(Boolean).join("\n");
         
         // Create order in MesaFacil system
         // Note: We skip stock verification for iFood orders since they're already confirmed

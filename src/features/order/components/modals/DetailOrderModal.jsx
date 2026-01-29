@@ -27,6 +27,7 @@ import {
 import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
 import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrderActions";
+import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
@@ -443,7 +444,25 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                             #{ifoodOrdersInfo[pedido.id].displayId}
                                         </span>
                                     )}
+                                    {/* Order Type Badge */}
+                                    {ifoodOrdersInfo[pedido.id].fullOrder?.orderType === "TAKEOUT" && (
+                                        <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                                            🏪 Retirada
+                                        </span>
+                                    )}
                                 </div>
+                                
+                                {/* Scheduled Order Alert - Prominent Display */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodScheduledBadge
+                                        isScheduled={ifoodOrdersInfo[pedido.id].fullOrder.isScheduled}
+                                        scheduledFor={ifoodOrdersInfo[pedido.id].fullOrder.scheduledFor}
+                                        scheduledForEnd={ifoodOrdersInfo[pedido.id].fullOrder.scheduledForEnd}
+                                        schedule={ifoodOrdersInfo[pedido.id].fullOrder.schedule}
+                                        orderTiming={ifoodOrdersInfo[pedido.id].fullOrder.orderTiming}
+                                        variant="card"
+                                    />
+                                )}
                                 
                                 <div className="grid grid-cols-1 gap-2 text-sm">
                                     {ifoodOrdersInfo[pedido.id].name && (

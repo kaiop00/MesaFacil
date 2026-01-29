@@ -346,11 +346,20 @@ async function markEventAsProcessed(idRestaurante, event) {
 
 /**
  * Get or create virtual table for iFood orders
+ * Creates separate tables for DELIVERY and TAKEOUT orders
  * @param {string} idRestaurante - Restaurant ID
+ * @param {string} orderType - Order type (DELIVERY or TAKEOUT)
  * @return {Promise<string>} - Table ID
  */
-async function getOrCreateIfoodTable(idRestaurante) {
-  const tableId = "ifood-delivery";
+async function getOrCreateIfoodTable(idRestaurante, orderType = "DELIVERY") {
+  // Determine table ID and name based on order type
+  const isTakeout = orderType === "TAKEOUT";
+  const tableId = isTakeout ? "ifood-takeout" : "ifood-delivery";
+  const tableName = isTakeout ? "iFood Retirada" : "iFood Delivery";
+  const tableDescription = isTakeout 
+    ? "Mesa virtual para pedidos de retirada do iFood" 
+    : "Mesa virtual para pedidos de delivery do iFood";
+  
   const tableRef = admin.firestore()
     .doc(`restaurantes/${idRestaurante}/mesas/${tableId}`);
   
@@ -358,16 +367,22 @@ async function getOrCreateIfoodTable(idRestaurante) {
   
   if (!tableDoc.exists) {
     await tableRef.set({
-      numero: "iFood",
+      numero: tableName,
+      nome: tableName,
       capacidade: 999,
       status: "livre",
       tipo: "virtual",
-      descricao: "Mesa virtual para pedidos do iFood",
+      descricao: tableDescription,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isVirtual: true,
       source: "ifood",
+      orderType: orderType,
     });
-    logger.info("Created virtual table for iFood orders", {idRestaurante});
+    logger.info("Created virtual table for iFood orders", {
+      idRestaurante,
+      tableId,
+      orderType,
+    });
   }
   
   return tableId;
@@ -626,15 +641,45 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
     // Calculate total
     const total = orderData.total?.orderAmount || 0;
     
+    // Determine order type and timing
+    const orderType = orderData.orderType || "DELIVERY";
+    const orderTiming = orderData.orderTiming || "IMMEDIATE";
+    const isTakeout = orderType === "TAKEOUT";
+    const isScheduled = orderTiming === "SCHEDULED";
+    
     // Create observations - filter out empty values
-    const observations = [
+    // For TAKEOUT, we don't need delivery address
+    const observationParts = [
       orderData.customer?.name ? `Cliente iFood: ${orderData.customer.name}` : "Cliente iFood",
       orderData.customer?.phone?.number ? `Tel: ${orderData.customer.phone.number}` : null,
-      orderData.delivery?.deliveryAddress ? 
-        `Endereço: ${orderData.delivery.deliveryAddress.formattedAddress || orderData.delivery.deliveryAddress.streetName || ""}` : null,
-      orderData.delivery?.observations ? `Obs: ${orderData.delivery.observations}` : null,
-      `Pedido iFood #${orderData.displayId || orderData.id}`,
-    ].filter(Boolean).join("\n");
+    ];
+    
+    // Only add delivery address for DELIVERY orders
+    if (!isTakeout && orderData.delivery?.deliveryAddress) {
+      observationParts.push(
+        `Endereço: ${orderData.delivery.deliveryAddress.formattedAddress || orderData.delivery.deliveryAddress.streetName || ""}`
+      );
+    }
+    
+    // Add delivery observations if present
+    if (orderData.delivery?.observations) {
+      observationParts.push(`Obs: ${orderData.delivery.observations}`);
+    }
+    
+    // Add order type indicator
+    if (isTakeout) {
+      observationParts.push("🏪 PEDIDO PARA RETIRADA");
+    }
+    
+    // Add scheduled time if applicable
+    if (isScheduled && orderData.schedule?.deliveryDateTimeStart) {
+      const scheduledDate = new Date(orderData.schedule.deliveryDateTimeStart);
+      observationParts.push(`📅 Agendado para: ${scheduledDate.toLocaleString('pt-BR')}`);
+    }
+    
+    observationParts.push(`Pedido iFood #${orderData.displayId || orderData.id}`);
+    
+    const observations = observationParts.filter(Boolean).join("\n");
     
     // Create order in MesaFacil
     const pedidosRef = admin.firestore()
@@ -650,6 +695,17 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
       criadoEm: admin.firestore.FieldValue.serverTimestamp(),
       source: "ifood",
       orderOrigin: "ifood",
+      
+      // Order type fields for TAKEOUT/DELIVERY support
+      orderType: orderType,
+      orderTiming: orderTiming,
+      isTakeout: isTakeout,
+      isScheduled: isScheduled,
+      
+      // Scheduled delivery time (if applicable)
+      scheduledFor: isScheduled && orderData.schedule?.deliveryDateTimeStart 
+        ? admin.firestore.Timestamp.fromDate(new Date(orderData.schedule.deliveryDateTimeStart))
+        : null,
     };
 
     // ID e displayId são sempre presentes na resposta do iFood
@@ -734,13 +790,37 @@ async function processIfoodOrder(idRestaurante, orderData) {
     const statusChanged = existingData && 
       existingData.ifoodStatus !== orderData.orderStatus;
 
+    // Determine order timing
+    const orderTiming = orderData.orderTiming || "IMMEDIATE";
+    const isScheduled = orderTiming === "SCHEDULED";
+    
+    // Log warning if scheduled order is missing scheduledFor date
+    if (isScheduled && !orderData.schedule?.deliveryDateTimeStart) {
+      logger.warn("Scheduled order missing delivery date/time", {
+        idRestaurante,
+        orderId,
+        orderTiming,
+        schedule: orderData.schedule,
+      });
+    }
+
     // Transform iFood order to MesaFacil format
     const transformedOrder = {
       ifoodOrderId: orderId,
       displayId: orderData.displayId || orderId,
       createdAt: orderData.createdAt || admin.firestore.FieldValue.serverTimestamp(),
       orderType: orderData.orderType || "DELIVERY",
-      orderTiming: orderData.orderTiming || "IMMEDIATE",
+      orderTiming: orderTiming,
+      
+      // Scheduled order fields
+      isScheduled: isScheduled,
+      scheduledFor: isScheduled && orderData.schedule?.deliveryDateTimeStart
+        ? admin.firestore.Timestamp.fromDate(new Date(orderData.schedule.deliveryDateTimeStart))
+        : null,
+      scheduledForEnd: isScheduled && orderData.schedule?.deliveryDateTimeEnd
+        ? admin.firestore.Timestamp.fromDate(new Date(orderData.schedule.deliveryDateTimeEnd))
+        : null,
+      schedule: orderData.schedule || null,
       
       // Customer info
       customer: {
@@ -800,10 +880,22 @@ async function processIfoodOrder(idRestaurante, orderData) {
 
     await orderRef.set(transformedOrder, {merge: true});
 
+    // Log scheduled order info
+    if (isScheduled) {
+      logger.info("Processed scheduled iFood order", {
+        idRestaurante,
+        orderId,
+        scheduledFor: transformedOrder.scheduledFor,
+        isNewOrder,
+      });
+    }
+
     // If this is a new order, create MesaFacil order automatically
     if (isNewOrder || !existingData?.mesaFacilOrderId) {
       try {
-        const mesaId = await getOrCreateIfoodTable(idRestaurante);
+        // Determine table based on order type (DELIVERY or TAKEOUT)
+        const orderType = orderData.orderType || "DELIVERY";
+        const mesaId = await getOrCreateIfoodTable(idRestaurante, orderType);
         const mesaFacilOrderId = await createMesaFacilOrderFromIfood(
           idRestaurante,
           mesaId,
