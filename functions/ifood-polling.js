@@ -855,10 +855,45 @@ async function processIfoodOrder(idRestaurante, orderData) {
         deliveryFee: orderData.total?.deliveryFee || 0,
         benefits: orderData.total?.benefits || 0,
         orderAmount: orderData.total?.orderAmount || 0,
+        additionalFees: orderData.total?.additionalFees || 0,
+        discount: orderData.total?.discount || 0,
       },
       
-      // Payments
-      payments: orderData.payments || [],
+      // Payments with detailed information
+      // iFood returns payments as: { pending, prepaid, methods: [...] }
+      payments: (() => {
+        const paymentsData = orderData.payments;
+        if (!paymentsData) return [];
+        
+        // Handle the iFood payment structure
+        const methods = paymentsData.methods || paymentsData || [];
+        if (!Array.isArray(methods)) return [];
+        
+        return methods.map((payment) => ({
+          name: payment.name || payment.method || "Não especificado",
+          code: payment.code || payment.method || "",
+          value: payment.value || 0,
+          prepaid: payment.prepaid || false,
+          issuer: payment.issuer || "",
+          currency: payment.currency || "BRL",
+          // Additional payment details for homologation
+          type: payment.type || "",            // "ONLINE", "OFFLINE"
+          method: payment.method || "",        // "CASH", "CREDIT", "DEBIT", "PIX", etc.
+          brand: payment.brand || payment.card?.brand || "",  // "VISA", "MASTERCARD", "ELO", etc.
+          // Change for cash payments - can be in payment.cash.changeFor or payment.changeFor
+          changeFor: payment.cash?.changeFor || payment.changeFor || 0,
+          // Card details if present
+          card: payment.card || null,
+          // Collector info (for on-delivery payment)
+          collector: payment.collector || "",
+          // Transaction details
+          transactionCode: payment.transactionCode || "",
+          authorizationCode: payment.authorizationCode || "",
+        }));
+      })(),
+      
+      // Original payments object for reference
+      paymentsRaw: orderData.payments || null,
       
       // Status
       status: orderData.orderStatus || "PLACED",

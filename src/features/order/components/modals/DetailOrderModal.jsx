@@ -28,6 +28,7 @@ import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
 import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrderActions";
 import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
+import IfoodPaymentDetails from "@/features/integrations/ifood/components/IfoodPaymentDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
@@ -511,6 +512,15 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                         </div>
                                     )}
                                 </div>
+                                
+                                {/* iFood Payment Details */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodPaymentDetails
+                                        payments={ifoodOrdersInfo[pedido.id].fullOrder.payments}
+                                        orderTotal={ifoodOrdersInfo[pedido.id].fullOrder.total?.orderAmount || 0}
+                                        rawData={ifoodOrdersInfo[pedido.id].fullOrder.rawData}
+                                    />
+                                )}
                                 
                                 {/* iFood Status History */}
                                 {ifoodOrdersInfo[pedido.id].statusHistory && 

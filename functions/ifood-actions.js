@@ -8,6 +8,14 @@ const admin = require("firebase-admin");
 // iFood API configuration
 const IFOOD_API_BASE_URL = "https://merchant-api.ifood.com.br";
 
+// Standard headers for iFood API requests
+// Using lowercase 'accept' and adding User-Agent to avoid WAF blocks
+const IFOOD_API_HEADERS = {
+  "accept": "application/json",
+  "Content-Type": "application/json",
+  "User-Agent": "MesaFacil/1.0 (Firebase Cloud Functions)",
+};
+
 // Define secrets for distributed app credentials
 const ifoodClientId = defineSecret("IFOOD_CLIENT_ID");
 const ifoodClientSecret = defineSecret("IFOOD_CLIENT_SECRET");
@@ -34,8 +42,9 @@ async function refreshIfoodAccessToken(credentials) {
     const response = await fetch(`${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/token`, {
       method: "POST",
       headers: {
-        "Accept": "application/json",
+        "accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "MesaFacil/1.0 (Firebase Cloud Functions)",
       },
       body: params,
     });
@@ -153,8 +162,8 @@ exports.ifoodConfirmOrder = onCall(
         {
           method: "POST",
           headers: {
+            ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
           },
         }
       );
@@ -241,8 +250,8 @@ exports.ifoodDispatchOrder = onCall(
         {
           method: "POST",
           headers: {
+            ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
           },
         }
       );
@@ -329,8 +338,8 @@ exports.ifoodMarkReadyToPickup = onCall(
         {
           method: "POST",
           headers: {
+            ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
           },
         }
       );
@@ -418,8 +427,8 @@ exports.ifoodGetCancellationReasons = onCall(
         {
           method: "GET",
           headers: {
+            ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
           },
         }
       );
@@ -513,9 +522,8 @@ exports.ifoodRequestCancellation = onCall(
         {
           method: "POST",
           headers: {
+            ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
           },
           body: JSON.stringify(body),
         }
@@ -610,8 +618,8 @@ exports.ifoodAcceptCancellation = onCall(
         {
           method: "POST",
           headers: {
+            ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
           },
         }
       );
@@ -706,9 +714,8 @@ exports.ifoodDenyCancellation = onCall(
         {
           method: "POST",
           headers: {
+            ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
           },
           body: JSON.stringify(body),
         }
