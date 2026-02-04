@@ -455,14 +455,32 @@ exports.ifoodGetCancellationReasons = onCall(
 
       const reasons = await response.json();
       
+      // Log detailed structure to debug field names
       logger.info("Motivos de cancelamento obtidos", {
         orderId,
         reasonCount: Array.isArray(reasons) ? reasons.length : 0,
+        firstReason: Array.isArray(reasons) && reasons.length > 0 ? reasons[0] : null,
+        allFields: Array.isArray(reasons) && reasons.length > 0 ? Object.keys(reasons[0]) : [],
+      });
+
+      // Normalize field names - iFood may use different field names
+      // Possible fields: cancelCodeId, cancellationCode, code, cancelCode
+      const normalizedReasons = Array.isArray(reasons) ? reasons.map(r => ({
+        code: r.cancelCodeId || r.cancellationCode || r.code || r.cancelCode,
+        description: r.description || r.cancelDescription || r.reason || '',
+        // Keep original for debugging
+        _original: r,
+      })) : [];
+
+      logger.info("Motivos normalizados", {
+        orderId,
+        normalizedCount: normalizedReasons.length,
+        firstNormalized: normalizedReasons.length > 0 ? normalizedReasons[0] : null,
       });
 
       return {
         success: true,
-        reasons: reasons,
+        reasons: normalizedReasons,
         orderId,
       };
     } catch (error) {

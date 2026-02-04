@@ -29,6 +29,7 @@ import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodSt
 import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrderActions";
 import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
 import IfoodPaymentDetails from "@/features/integrations/ifood/components/IfoodPaymentDetails";
+import IfoodBenefitsDetails from "@/features/integrations/ifood/components/IfoodBenefitsDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
@@ -518,6 +519,15 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     <IfoodPaymentDetails
                                         payments={ifoodOrdersInfo[pedido.id].fullOrder.payments}
                                         orderTotal={ifoodOrdersInfo[pedido.id].fullOrder.total?.orderAmount || 0}
+                                        rawData={ifoodOrdersInfo[pedido.id].fullOrder.rawData}
+                                    />
+                                )}
+                                
+                                {/* iFood Benefits/Coupons Details */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodBenefitsDetails
+                                        benefits={ifoodOrdersInfo[pedido.id].fullOrder.benefits}
+                                        totalBenefits={ifoodOrdersInfo[pedido.id].fullOrder.total?.benefits || 0}
                                         rawData={ifoodOrdersInfo[pedido.id].fullOrder.rawData}
                                     />
                                 )}
