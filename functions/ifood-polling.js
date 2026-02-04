@@ -858,6 +858,16 @@ async function processIfoodOrder(idRestaurante, orderData) {
         additionalFees: orderData.total?.additionalFees || 0,
         discount: orderData.total?.discount || 0,
       },
+
+      // Benefits/Coupons details (for iFood homologation)
+      // Shows discount value and sponsor (iFood/Merchant)
+      benefits: (orderData.benefits || []).map(benefit => ({
+        value: benefit.value || 0,
+        sponsorshipValue: benefit.sponsorshipValue || benefit.value || 0,
+        target: benefit.target || "",            // "DELIVERY_FEE", "ITEM", "CART"
+        sponsorshipType: benefit.sponsorshipType || "", // "IFOOD", "MERCHANT"
+        description: benefit.description || "",
+      })),
       
       // Payments with detailed information
       // iFood returns payments as: { pending, prepaid, methods: [...] }
