@@ -26,6 +26,9 @@ import {
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
+import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrderActions";
+import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
+import IfoodPaymentDetails from "@/features/integrations/ifood/components/IfoodPaymentDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 
@@ -442,7 +445,25 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                             #{ifoodOrdersInfo[pedido.id].displayId}
                                         </span>
                                     )}
+                                    {/* Order Type Badge */}
+                                    {ifoodOrdersInfo[pedido.id].fullOrder?.orderType === "TAKEOUT" && (
+                                        <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                                            🏪 Retirada
+                                        </span>
+                                    )}
                                 </div>
+                                
+                                {/* Scheduled Order Alert - Prominent Display */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodScheduledBadge
+                                        isScheduled={ifoodOrdersInfo[pedido.id].fullOrder.isScheduled}
+                                        scheduledFor={ifoodOrdersInfo[pedido.id].fullOrder.scheduledFor}
+                                        scheduledForEnd={ifoodOrdersInfo[pedido.id].fullOrder.scheduledForEnd}
+                                        schedule={ifoodOrdersInfo[pedido.id].fullOrder.schedule}
+                                        orderTiming={ifoodOrdersInfo[pedido.id].fullOrder.orderTiming}
+                                        variant="card"
+                                    />
+                                )}
                                 
                                 <div className="grid grid-cols-1 gap-2 text-sm">
                                     {ifoodOrdersInfo[pedido.id].name && (
@@ -492,12 +513,56 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     )}
                                 </div>
                                 
+                                {/* iFood Payment Details */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodPaymentDetails
+                                        payments={ifoodOrdersInfo[pedido.id].fullOrder.payments}
+                                        orderTotal={ifoodOrdersInfo[pedido.id].fullOrder.total?.orderAmount || 0}
+                                        rawData={ifoodOrdersInfo[pedido.id].fullOrder.rawData}
+                                    />
+                                )}
+                                
                                 {/* iFood Status History */}
                                 {ifoodOrdersInfo[pedido.id].statusHistory && 
                                  ifoodOrdersInfo[pedido.id].statusHistory.length > 0 && (
                                     <IfoodStatusHistory 
                                         statusHistory={ifoodOrdersInfo[pedido.id].statusHistory}
                                         currentStatus={ifoodOrdersInfo[pedido.id].ifoodStatus}
+                                    />
+                                )}
+                                
+                                {/* iFood Order Actions */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodOrderActions
+                                        idRestaurante={idRestaurante}
+                                        ifoodOrderId={ifoodOrdersInfo[pedido.id].fullOrder.ifoodOrderId}
+                                        currentStatus={ifoodOrdersInfo[pedido.id].ifoodStatus}
+                                        orderType={ifoodOrdersInfo[pedido.id].fullOrder.orderType || "DELIVERY"}
+                                        onActionComplete={async () => {
+                                            // Reload orders after action
+                                            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
+                                            setPedidos(dados || []);
+                                            
+                                            // Reload iFood info
+                                            if (dados && dados.length > 0) {
+                                                const ifoodInfoMap = {};
+                                                for (const ped of dados) {
+                                                    try {
+                                                        const ifoodOrder = await getIfoodOrderForMesaFacilOrder(idRestaurante, ped.id);
+                                                        if (ifoodOrder) {
+                                                            ifoodInfoMap[ped.id] = {
+                                                                ...extractIfoodCustomerInfo(ifoodOrder),
+                                                                statusHistory: ped.ifoodStatusHistory || [],
+                                                                fullOrder: ifoodOrder
+                                                            };
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Error reloading iFood order info:', error);
+                                                    }
+                                                }
+                                                setIfoodOrdersInfo(ifoodInfoMap);
+                                            }
+                                        }}
                                     />
                                 )}
                             </div>

@@ -371,9 +371,29 @@ const {
 } = require("./ifood-auth-distributed");
 const {ifoodGetCatalog} = require("./ifood-catalog");
 
+// iFood Order Actions (confirm, dispatch, cancel, etc.)
+const {
+  ifoodConfirmOrder,
+  ifoodDispatchOrder,
+  ifoodMarkReadyToPickup,
+  ifoodGetCancellationReasons,
+  ifoodRequestCancellation,
+  ifoodAcceptCancellation,
+  ifoodDenyCancellation,
+} = require("./ifood-actions");
+
 exports.ifoodPolling = ifoodPolling;
 exports.ifoodPollManual = ifoodPollManual;
 exports.ifoodRequestUserCode = ifoodRequestUserCode;
 exports.ifoodExchangeCode = ifoodExchangeCode;
 exports.ifoodRevokeAuth = ifoodRevokeAuth;
 exports.ifoodGetCatalog = ifoodGetCatalog;
+
+// Export iFood Order Actions
+exports.ifoodConfirmOrder = ifoodConfirmOrder;
+exports.ifoodDispatchOrder = ifoodDispatchOrder;
+exports.ifoodMarkReadyToPickup = ifoodMarkReadyToPickup;
+exports.ifoodGetCancellationReasons = ifoodGetCancellationReasons;
+exports.ifoodRequestCancellation = ifoodRequestCancellation;
+exports.ifoodAcceptCancellation = ifoodAcceptCancellation;
+exports.ifoodDenyCancellation = ifoodDenyCancellation;

@@ -34,7 +34,7 @@ const IfoodIntegrationPage = () => {
     
     // UserCode flow states
     const [userCode, setUserCode] = useState("");
-    const [verificationCode, setVerificationCode] = useState("");
+    const [verificationUrlComplete, setVerificationUrlComplete] = useState("");
     const [requestingUserCode, setRequestingUserCode] = useState(false);
     const [exchangingCode, setExchangingCode] = useState(false);
     const [authorizationCode, setAuthorizationCode] = useState("");
@@ -103,16 +103,15 @@ const IfoodIntegrationPage = () => {
             setRequestingUserCode(true);
             const result = await requestIfoodUserCode(idRestaurante);
             setUserCode(result.userCode);
-            setVerificationCode(result.verificationCode);
+            setVerificationUrlComplete(result.verificationUrlComplete || "");
             notify("Código de usuário gerado! Acesse o Portal do iFood para autorizar.", "success");
         } catch (error) {
             console.error("Error requesting userCode:", error);
             
             // Check if it's a 403 error (iFood API instability)
             const errorMessage = error.message || "";
-            const is403Error = errorMessage.includes("403") || 
-                               errorMessage.toLowerCase().includes("acesso negado") ||
-                               errorMessage.toLowerCase().includes("access denied");
+            const is403Error = errorMessage.includes("INTERNAL") || 
+                               errorMessage.toLowerCase().includes("FirebaseError: INTERNAL")
             
             if (is403Error) {
                 notify(
@@ -140,7 +139,7 @@ const IfoodIntegrationPage = () => {
             
             // Reset states
             setUserCode("");
-            setVerificationCode("");
+            setVerificationUrlComplete("");
             setAuthorizationCode("");
             
             // Reload data
@@ -324,7 +323,7 @@ const IfoodIntegrationPage = () => {
                                         </p>
                                         <div className="bg-white rounded p-3 mb-3">
                                             <div className="text-3xl font-bold text-center text-green-600 tracking-wider">
-                                                {verificationCode}
+                                                {userCode}
                                             </div>
                                         </div>
                                         <a 
@@ -364,7 +363,7 @@ const IfoodIntegrationPage = () => {
                                     <button
                                         onClick={() => {
                                             setUserCode("");
-                                            setVerificationCode("");
+                                            setVerificationUrlComplete("");
                                             setAuthorizationCode("");
                                         }}
                                         className="text-sm text-gray-600 hover:text-gray-900 underline"

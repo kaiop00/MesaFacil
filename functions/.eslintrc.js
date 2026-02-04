@@ -1,4 +1,5 @@
 /* eslint-env node */
+/* eslint-disable no-undef */
 module.exports = {
   env: {
     es6: true,
