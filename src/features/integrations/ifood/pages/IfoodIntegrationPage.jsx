@@ -20,6 +20,7 @@ import {
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { CheckboxCheck, TriangleWarning, ArrowReload02, Link, Settings } from "react-coolicons";
 import IfoodItemMappingModal from "@/features/integrations/ifood/components/IfoodItemMappingModal";
+import { useIfoodRetry } from "@/features/integrations/ifood/hooks/useIfoodRetry";
 
 const IfoodIntegrationPage = () => {
     const { idRestaurante } = useAuth();
@@ -27,7 +28,6 @@ const IfoodIntegrationPage = () => {
     
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
-    const [polling, setPolling] = useState(false);
     const [stats, setStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(false);
     const [showMappingModal, setShowMappingModal] = useState(false);
@@ -35,9 +35,14 @@ const IfoodIntegrationPage = () => {
     // UserCode flow states
     const [userCode, setUserCode] = useState("");
     const [verificationUrlComplete, setVerificationUrlComplete] = useState("");
-    const [requestingUserCode, setRequestingUserCode] = useState(false);
-    const [exchangingCode, setExchangingCode] = useState(false);
     const [authorizationCode, setAuthorizationCode] = useState("");
+    
+    // Retry hooks for iFood API calls
+    const userCodeRetry = useIfoodRetry();
+    const exchangeCodeRetry = useIfoodRetry();
+    const pollRetry = useIfoodRetry();
+    const syncRetry = useIfoodRetry();
+    const revokeRetry = useIfoodRetry();
     
     const [integrationStatus, setIntegrationStatus] = useState({
         enabled: false,
@@ -100,29 +105,39 @@ const IfoodIntegrationPage = () => {
 
     const handleRequestUserCode = async () => {
         try {
-            setRequestingUserCode(true);
-            const result = await requestIfoodUserCode(idRestaurante);
-            setUserCode(result.userCode);
-            setVerificationUrlComplete(result.verificationUrlComplete || "");
-            notify("Código de usuário gerado! Acesse o Portal do iFood para autorizar.", "success");
+            await userCodeRetry.executeWithRetry(
+                () => requestIfoodUserCode(idRestaurante),
+                {
+                    actionName: "geração do código de usuário",
+                    onSuccess: (result) => {
+                        setUserCode(result.userCode);
+                        setVerificationUrlComplete(result.verificationUrlComplete || "");
+                        notify("Código de usuário gerado! Acesse o Portal do iFood para autorizar.", "success");
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `A API do iFood está instável. Tentativa ${attempt}/${maxAttempts}. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        const errorMessage = error?.message || "";
+                        const is403Error = errorMessage.includes("INTERNAL") || 
+                                           errorMessage.toLowerCase().includes("FirebaseError: INTERNAL");
+                        
+                        if (is403Error) {
+                            notify(
+                                "Não foi possível conectar com o iFood após várias tentativas. A API pode estar temporariamente instável. Tente novamente mais tarde.",
+                                "error"
+                            );
+                        } else {
+                            notify(error.message || "Erro ao solicitar código de usuário", "error");
+                        }
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error requesting userCode:", error);
-            
-            // Check if it's a 403 error (iFood API instability)
-            const errorMessage = error.message || "";
-            const is403Error = errorMessage.includes("INTERNAL") || 
-                               errorMessage.toLowerCase().includes("FirebaseError: INTERNAL")
-            
-            if (is403Error) {
-                notify(
-                    "A API do iFood está temporariamente instável. Por favor, atualize a página e tente novamente em alguns segundos.",
-                    "warning"
-                );
-            } else {
-                notify(error.message || "Erro ao solicitar código de usuário", "error");
-            }
-        } finally {
-            setRequestingUserCode(false);
         }
     };
 
@@ -133,23 +148,35 @@ const IfoodIntegrationPage = () => {
         }
 
         try {
-            setExchangingCode(true);
-            await exchangeAuthorizationCode(idRestaurante, authorizationCode);
-            notify("Autorização concluída com sucesso!", "success");
-            
-            // Reset states
-            setUserCode("");
-            setVerificationUrlComplete("");
-            setAuthorizationCode("");
-            
-            // Reload data
-            await loadIntegrationStatus();
-            await loadCredentials();
+            await exchangeCodeRetry.executeWithRetry(
+                () => exchangeAuthorizationCode(idRestaurante, authorizationCode),
+                {
+                    actionName: "troca do código de autorização",
+                    onSuccess: async () => {
+                        notify("Autorização concluída com sucesso!", "success");
+                        
+                        // Reset states
+                        setUserCode("");
+                        setVerificationUrlComplete("");
+                        setAuthorizationCode("");
+                        
+                        // Reload data
+                        await loadIntegrationStatus();
+                        await loadCredentials();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `A API do iFood está instável. Tentativa ${attempt}/${maxAttempts}. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao trocar código de autorização", "error");
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error exchanging code:", error);
-            notify(error.message || "Erro ao trocar código de autorização", "error");
-        } finally {
-            setExchangingCode(false);
         }
     };
 
@@ -159,12 +186,27 @@ const IfoodIntegrationPage = () => {
         }
 
         try {
-            await revokeIfoodAuth(idRestaurante);
-            notify("Autorização revogada com sucesso", "success");
-            await loadIntegrationStatus();
+            await revokeRetry.executeWithRetry(
+                () => revokeIfoodAuth(idRestaurante),
+                {
+                    actionName: "revogação da autorização",
+                    onSuccess: async () => {
+                        notify("Autorização revogada com sucesso", "success");
+                        await loadIntegrationStatus();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao revogar autorização", "error");
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error revoking authorization:", error);
-            notify("Erro ao revogar autorização", "error");
         }
     };
 
@@ -185,49 +227,75 @@ const IfoodIntegrationPage = () => {
 
     const handleManualPoll = async () => {
         try {
-            setPolling(true);
-            const result = await triggerManualIfoodPoll(idRestaurante);
-            notify(`Busca manual concluída! ${result.eventCount} eventos processados.`, "success");
-            
-            // Clear any previous errors since polling worked successfully
-            if (integrationStatus.lastError) {
-                await clearIfoodErrors(idRestaurante);
-                await loadIntegrationStatus();
-            }
-            
-            await loadStats();
+            await pollRetry.executeWithRetry(
+                () => triggerManualIfoodPoll(idRestaurante),
+                {
+                    actionName: "busca de pedidos",
+                    onSuccess: async (result) => {
+                        notify(`Busca manual concluída! ${result.eventCount} eventos processados.`, "success");
+                        
+                        // Clear any previous errors since polling worked successfully
+                        if (integrationStatus.lastError) {
+                            await clearIfoodErrors(idRestaurante);
+                            await loadIntegrationStatus();
+                        }
+                        
+                        await loadStats();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao buscar pedidos manualmente", "error");
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error triggering manual poll:", error);
-            notify("Erro ao buscar pedidos manualmente", "error");
-        } finally {
-            setPolling(false);
         }
     };
 
     const handleSyncAll = async () => {
         try {
             setSyncing(true);
-            const results = await autoSyncPendingIfoodOrders(idRestaurante);
-            
-            if (results.failed > 0) {
-                notify(
-                    `Sincronizados ${results.synced} de ${results.total} pedidos. ${results.failed} falharam.`,
-                    "warning"
-                );
-            } else {
-                notify(`${results.synced} pedidos sincronizados com sucesso!`, "success");
-                
-                // Clear any previous errors since sync worked successfully
-                if (integrationStatus.lastError) {
-                    await clearIfoodErrors(idRestaurante);
-                    await loadIntegrationStatus();
+            await syncRetry.executeWithRetry(
+                () => autoSyncPendingIfoodOrders(idRestaurante),
+                {
+                    actionName: "sincronização de pedidos",
+                    onSuccess: async (results) => {
+                        if (results.failed > 0) {
+                            notify(
+                                `Sincronizados ${results.synced} de ${results.total} pedidos. ${results.failed} falharam.`,
+                                "warning"
+                            );
+                        } else {
+                            notify(`${results.synced} pedidos sincronizados com sucesso!`, "success");
+                            
+                            // Clear any previous errors since sync worked successfully
+                            if (integrationStatus.lastError) {
+                                await clearIfoodErrors(idRestaurante);
+                                await loadIntegrationStatus();
+                            }
+                        }
+                        
+                        await loadStats();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao sincronizar pedidos", "error");
+                    },
                 }
-            }
-            
-            await loadStats();
+            );
         } catch (error) {
             console.error("Error syncing orders:", error);
-            notify("Erro ao sincronizar pedidos", "error");
         } finally {
             setSyncing(false);
         }
@@ -306,14 +374,35 @@ const IfoodIntegrationPage = () => {
                     <div className="flex gap-3 flex-wrap">
                         {!integrationStatus.isAuthorized ? (
                             !userCode ? (
-                                <button
-                                    onClick={handleRequestUserCode}
-                                    disabled={requestingUserCode}
-                                    className="flex items-center px-4 py-2 bg-primary-dynamic text-white rounded hover:opacity-90 disabled:opacity-50"
-                                >
-                                    <Link className="w-5 h-5 mr-2" />
-                                    {requestingUserCode ? "Gerando código..." : "Gerar Código de Autorização"}
-                                </button>
+                                <div className="flex flex-col">
+                                    <button
+                                        onClick={handleRequestUserCode}
+                                        disabled={userCodeRetry.isExecuting}
+                                        className="flex items-center px-4 py-2 bg-primary-dynamic text-white rounded hover:opacity-90 disabled:opacity-50"
+                                    >
+                                        {userCodeRetry.isExecuting ? (
+                                            <LoadingSpinnerDynamic size={5} className="mr-2" />
+                                        ) : (
+                                            <Link className="w-5 h-5 mr-2" />
+                                        )}
+                                        {userCodeRetry.isRetrying 
+                                            ? `Aguardando (${userCodeRetry.countdown}s)...` 
+                                            : userCodeRetry.isExecuting 
+                                                ? "Gerando código..." 
+                                                : "Gerar Código de Autorização"}
+                                    </button>
+                                    {userCodeRetry.isRetrying && (
+                                        <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                                            <div className="flex items-center gap-2">
+                                                <LoadingSpinnerDynamic size={3} />
+                                                <span>
+                                                    Tentativa {userCodeRetry.currentAttempt}/{userCodeRetry.maxAttempts}. 
+                                                    Próxima tentativa em {userCodeRetry.countdown}s...
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <div className="w-full space-y-4">
                                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -348,16 +437,32 @@ const IfoodIntegrationPage = () => {
                                                 value={authorizationCode}
                                                 onChange={(e) => setAuthorizationCode(e.target.value)}
                                                 placeholder="Cole o código de autorização"
-                                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-dynamic"
+                                                disabled={exchangeCodeRetry.isExecuting}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-dynamic disabled:opacity-50"
                                             />
                                             <button
                                                 onClick={handleExchangeCode}
-                                                disabled={exchangingCode || !authorizationCode.trim()}
+                                                disabled={exchangeCodeRetry.isExecuting || !authorizationCode.trim()}
                                                 className="px-4 py-2 bg-primary-dynamic text-white rounded hover:opacity-90 disabled:opacity-50"
                                             >
-                                                {exchangingCode ? "Conectando..." : "Conectar"}
+                                                {exchangeCodeRetry.isRetrying 
+                                                    ? `Aguardando (${exchangeCodeRetry.countdown}s)...` 
+                                                    : exchangeCodeRetry.isExecuting 
+                                                        ? "Conectando..." 
+                                                        : "Conectar"}
                                             </button>
                                         </div>
+                                        {exchangeCodeRetry.isRetrying && (
+                                            <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                                                <div className="flex items-center gap-2">
+                                                    <LoadingSpinnerDynamic size={3} />
+                                                    <span>
+                                                        Tentativa {exchangeCodeRetry.currentAttempt}/{exchangeCodeRetry.maxAttempts}. 
+                                                        Próxima tentativa em {exchangeCodeRetry.countdown}s...
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <button
@@ -376,10 +481,19 @@ const IfoodIntegrationPage = () => {
                             <>
                                 <button
                                     onClick={handleRevoke}
-                                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                    disabled={revokeRetry.isExecuting}
+                                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                                 >
-                                    <Link className="w-5 h-5 mr-2" />
-                                    Desconectar
+                                    {revokeRetry.isExecuting ? (
+                                        <LoadingSpinnerDynamic size={5} className="mr-2" />
+                                    ) : (
+                                        <Link className="w-5 h-5 mr-2" />
+                                    )}
+                                    {revokeRetry.isRetrying 
+                                        ? `Aguardando (${revokeRetry.countdown}s)...` 
+                                        : revokeRetry.isExecuting 
+                                            ? "Desconectando..." 
+                                            : "Desconectar"}
                                 </button>
                                 <button
                                     onClick={handleToggleEnabled}
@@ -448,25 +562,48 @@ const IfoodIntegrationPage = () => {
                         </div>
                     )}
 
-                    <div className="mt-4 flex gap-3">
-                        {stats && stats.pending > 0 && (
-                            <button
-                                onClick={handleSyncAll}
-                                disabled={syncing}
-                                className="flex items-center px-4 py-2 bg-primary-dynamic text-white rounded hover:opacity-90 disabled:opacity-50"
-                            >
-                                <ArrowReload02 className={`w-5 h-5 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                                {syncing ? "Sincronizando..." : `Sincronizar ${stats.pending} Pedidos Pendentes`}
-                            </button>
+                    <div className="mt-4 flex flex-col gap-3">
+                        {/* Retry Status Banner */}
+                        {(pollRetry.isRetrying || syncRetry.isRetrying) && (
+                            <div className="p-3 bg-orange-50 border border-orange-200 rounded text-sm text-orange-700">
+                                <div className="flex items-center gap-2">
+                                    <LoadingSpinnerDynamic size={4} />
+                                    <span>
+                                        {pollRetry.isRetrying && `Buscando pedidos... Tentativa ${pollRetry.currentAttempt}/${pollRetry.maxAttempts}. Próxima em ${pollRetry.countdown}s`}
+                                        {syncRetry.isRetrying && `Sincronizando... Tentativa ${syncRetry.currentAttempt}/${syncRetry.maxAttempts}. Próxima em ${syncRetry.countdown}s`}
+                                    </span>
+                                </div>
+                            </div>
                         )}
-                        <button
-                            onClick={handleManualPoll}
-                            disabled={polling}
-                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                        >
-                            <ArrowReload02 className={`w-5 h-5 mr-2 ${polling ? 'animate-spin' : ''}`} />
-                            {polling ? "Buscando..." : "Buscar Novos Pedidos"}
-                        </button>
+                        
+                        <div className="flex gap-3 flex-wrap">
+                            {stats && stats.pending > 0 && (
+                                <button
+                                    onClick={handleSyncAll}
+                                    disabled={syncing || syncRetry.isExecuting}
+                                    className="flex items-center px-4 py-2 bg-primary-dynamic text-white rounded hover:opacity-90 disabled:opacity-50"
+                                >
+                                    <ArrowReload02 className={`w-5 h-5 mr-2 ${syncRetry.isExecuting ? 'animate-spin' : ''}`} />
+                                    {syncRetry.isRetrying 
+                                        ? `Aguardando (${syncRetry.countdown}s)...` 
+                                        : syncRetry.isExecuting 
+                                            ? "Sincronizando..." 
+                                            : `Sincronizar ${stats.pending} Pedidos Pendentes`}
+                                </button>
+                            )}
+                            <button
+                                onClick={handleManualPoll}
+                                disabled={pollRetry.isExecuting}
+                                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                <ArrowReload02 className={`w-5 h-5 mr-2 ${pollRetry.isExecuting ? 'animate-spin' : ''}`} />
+                                {pollRetry.isRetrying 
+                                    ? `Aguardando (${pollRetry.countdown}s)...` 
+                                    : pollRetry.isExecuting 
+                                        ? "Buscando..." 
+                                        : "Buscar Novos Pedidos"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
