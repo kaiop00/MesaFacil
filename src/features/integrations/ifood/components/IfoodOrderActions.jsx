@@ -9,6 +9,7 @@ import {
 } from "../services/ifoodActionsService";
 import { CheckboxCheck, Save, DownloadPackage, DeleteRow } from "react-coolicons";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { useIfoodRetry, formatRetryMessage } from "../hooks/useIfoodRetry";
 
 /**
  * Component to display action buttons for iFood orders
@@ -27,12 +28,22 @@ const IfoodOrderActions = ({
     onActionComplete 
 }) => {
     const { notify } = useToast();
-    const [loading, setLoading] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancellationReasons, setCancellationReasons] = useState([]);
     const [selectedReason, setSelectedReason] = useState(null);
     const [cancelReasonText, setCancelReasonText] = useState("");
     const [loadingReasons, setLoadingReasons] = useState(false);
+
+    // Retry hooks for each action
+    const confirmRetry = useIfoodRetry();
+    const dispatchRetry = useIfoodRetry();
+    const readyRetry = useIfoodRetry();
+    const cancelRetry = useIfoodRetry();
+    const reasonsRetry = useIfoodRetry();
+
+    // Combined loading state
+    const loading = confirmRetry.isExecuting || dispatchRetry.isExecuting || 
+                   readyRetry.isExecuting || cancelRetry.isExecuting;
 
     // Determine which actions are available based on current status
     const canConfirm = currentStatus === "PLACED";
@@ -43,48 +54,84 @@ const IfoodOrderActions = ({
     const handleConfirm = async () => {
         if (!confirm("Confirmar o recebimento deste pedido no iFood?")) return;
 
-        setLoading(true);
         try {
-            await confirmIfoodOrder(idRestaurante, ifoodOrderId);
-            notify("Pedido confirmado com sucesso no iFood", "success");
-            if (onActionComplete) onActionComplete();
+            await confirmRetry.executeWithRetry(
+                () => confirmIfoodOrder(idRestaurante, ifoodOrderId),
+                {
+                    actionName: "confirmação do pedido",
+                    onSuccess: () => {
+                        notify("Pedido confirmado com sucesso no iFood", "success");
+                        if (onActionComplete) onActionComplete();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao confirmar pedido", "error");
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error confirming order:", error);
-            notify(error.message || "Erro ao confirmar pedido", "error");
-        } finally {
-            setLoading(false);
         }
     };
 
     const handleDispatch = async () => {
         if (!confirm("Marcar este pedido como despachado/saiu para entrega?")) return;
 
-        setLoading(true);
         try {
-            await dispatchIfoodOrder(idRestaurante, ifoodOrderId);
-            notify("Pedido despachado com sucesso", "success");
-            if (onActionComplete) onActionComplete();
+            await dispatchRetry.executeWithRetry(
+                () => dispatchIfoodOrder(idRestaurante, ifoodOrderId),
+                {
+                    actionName: "despacho do pedido",
+                    onSuccess: () => {
+                        notify("Pedido despachado com sucesso", "success");
+                        if (onActionComplete) onActionComplete();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao despachar pedido", "error");
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error dispatching order:", error);
-            notify(error.message || "Erro ao despachar pedido", "error");
-        } finally {
-            setLoading(false);
         }
     };
 
     const handleMarkReady = async () => {
         if (!confirm("Marcar este pedido como pronto para retirada?")) return;
 
-        setLoading(true);
         try {
-            await markIfoodOrderReadyToPickup(idRestaurante, ifoodOrderId);
-            notify("Pedido marcado como pronto para retirada", "success");
-            if (onActionComplete) onActionComplete();
+            await readyRetry.executeWithRetry(
+                () => markIfoodOrderReadyToPickup(idRestaurante, ifoodOrderId),
+                {
+                    actionName: "marcação do pedido como pronto",
+                    onSuccess: () => {
+                        notify("Pedido marcado como pronto para retirada", "success");
+                        if (onActionComplete) onActionComplete();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao marcar pedido como pronto", "error");
+                    },
+                }
+            );
         } catch (error) {
             console.error("Error marking order ready:", error);
-            notify(error.message || "Erro ao marcar pedido como pronto", "error");
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -93,17 +140,32 @@ const IfoodOrderActions = ({
         setLoadingReasons(true);
         
         try {
-            const result = await getIfoodCancellationReasons(idRestaurante, ifoodOrderId);
-            setCancellationReasons(result.reasons || []);
-            
-            if (result.reasons && result.reasons.length > 0) {
-                setSelectedReason(result.reasons[0].code);
-            }
+            await reasonsRetry.executeWithRetry(
+                () => getIfoodCancellationReasons(idRestaurante, ifoodOrderId),
+                {
+                    actionName: "busca de motivos de cancelamento",
+                    onSuccess: (result) => {
+                        setCancellationReasons(result.reasons || []);
+                        if (result.reasons && result.reasons.length > 0) {
+                            setSelectedReason(result.reasons[0].code);
+                        }
+                        setLoadingReasons(false);
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        console.error("Error fetching cancellation reasons:", error);
+                        notify("Erro ao buscar motivos de cancelamento", "error");
+                        setShowCancelModal(false);
+                        setLoadingReasons(false);
+                    },
+                }
+            );
         } catch (error) {
-            console.error("Error fetching cancellation reasons:", error);
-            notify("Erro ao buscar motivos de cancelamento", "error");
-            setShowCancelModal(false);
-        } finally {
             setLoadingReasons(false);
         }
     };
@@ -114,22 +176,34 @@ const IfoodOrderActions = ({
             return;
         }
 
-        setLoading(true);
         try {
-            await requestIfoodOrderCancellation(
-                idRestaurante, 
-                ifoodOrderId, 
-                selectedReason,
-                cancelReasonText
+            await cancelRetry.executeWithRetry(
+                () => requestIfoodOrderCancellation(
+                    idRestaurante, 
+                    ifoodOrderId, 
+                    selectedReason,
+                    cancelReasonText
+                ),
+                {
+                    actionName: "cancelamento do pedido",
+                    onSuccess: () => {
+                        notify("Cancelamento solicitado com sucesso", "success");
+                        setShowCancelModal(false);
+                        if (onActionComplete) onActionComplete();
+                    },
+                    onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
+                        notify(
+                            `Tentativa ${attempt}/${maxAttempts} falhou. Reenviando em ${nextAttemptIn}s...`,
+                            "warning"
+                        );
+                    },
+                    onError: (error) => {
+                        notify(error.message || "Erro ao cancelar pedido", "error");
+                    },
+                }
             );
-            notify("Cancelamento solicitado com sucesso", "success");
-            setShowCancelModal(false);
-            if (onActionComplete) onActionComplete();
         } catch (error) {
             console.error("Error cancelling order:", error);
-            notify(error.message || "Erro ao cancelar pedido", "error");
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -143,49 +217,64 @@ const IfoodOrderActions = ({
             <div className="border-t border-orange-200 pt-3">
                 <p className="text-xs text-orange-700 mb-2 font-medium">Ações do Pedido:</p>
                 
+                {/* Retry Status Banner */}
+                {(confirmRetry.isRetrying || dispatchRetry.isRetrying || readyRetry.isRetrying || cancelRetry.isRetrying) && (
+                    <div className="mb-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
+                        <div className="flex items-center gap-2">
+                            <LoadingSpinnerDynamic size={3} />
+                            <span>
+                                {confirmRetry.isRetrying && `Confirmando... Tentativa ${confirmRetry.currentAttempt}/${confirmRetry.maxAttempts}. Próxima em ${confirmRetry.countdown}s`}
+                                {dispatchRetry.isRetrying && `Despachando... Tentativa ${dispatchRetry.currentAttempt}/${dispatchRetry.maxAttempts}. Próxima em ${dispatchRetry.countdown}s`}
+                                {readyRetry.isRetrying && `Marcando pronto... Tentativa ${readyRetry.currentAttempt}/${readyRetry.maxAttempts}. Próxima em ${readyRetry.countdown}s`}
+                                {cancelRetry.isRetrying && `Cancelando... Tentativa ${cancelRetry.currentAttempt}/${cancelRetry.maxAttempts}. Próxima em ${cancelRetry.countdown}s`}
+                            </span>
+                        </div>
+                    </div>
+                )}
+                
                 <div className="flex flex-wrap gap-2">
                     {canConfirm && (
                         <button
                             onClick={handleConfirm}
-                            disabled={loading}
+                            disabled={loading || confirmRetry.isRetrying}
                             className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? (
+                            {confirmRetry.isExecuting ? (
                                 <LoadingSpinnerDynamic size={4} />
                             ) : (
                                 <CheckboxCheck size={16} />
                             )}
-                            Confirmar
+                            {confirmRetry.isRetrying ? `Aguardando (${confirmRetry.countdown}s)` : "Confirmar"}
                         </button>
                     )}
 
                     {canDispatch && (
                         <button
                             onClick={handleDispatch}
-                            disabled={loading}
+                            disabled={loading || dispatchRetry.isRetrying}
                             className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? (
+                            {dispatchRetry.isExecuting ? (
                                 <LoadingSpinnerDynamic size={4} />
                             ) : (
                                 <Save size={16} />
                             )}
-                            Despachar
+                            {dispatchRetry.isRetrying ? `Aguardando (${dispatchRetry.countdown}s)` : "Despachar"}
                         </button>
                     )}
 
                     {canMarkReady && (
                         <button
                             onClick={handleMarkReady}
-                            disabled={loading}
+                            disabled={loading || readyRetry.isRetrying}
                             className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading ? (
+                            {readyRetry.isExecuting ? (
                                 <LoadingSpinnerDynamic size={4} />
                             ) : (
                                 <DownloadPackage size={16} />
                             )}
-                            Pronto
+                            {readyRetry.isRetrying ? `Aguardando (${readyRetry.countdown}s)` : "Pronto"}
                         </button>
                     )}
 
@@ -254,22 +343,39 @@ const IfoodOrderActions = ({
                                             ⚠️ Atenção: O cancelamento será enviado ao iFood e não poderá ser desfeito.
                                         </p>
                                     </div>
+                                    
+                                    {/* Retry Status in Modal */}
+                                    {cancelRetry.isRetrying && (
+                                        <div className="bg-orange-50 border border-orange-200 rounded p-3">
+                                            <div className="flex items-center gap-2 text-xs text-orange-700">
+                                                <LoadingSpinnerDynamic size={3} />
+                                                <span>
+                                                    Tentativa {cancelRetry.currentAttempt}/{cancelRetry.maxAttempts}. 
+                                                    Próxima tentativa em {cancelRetry.countdown}s...
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex gap-3 mt-6">
                                     <button
                                         onClick={() => setShowCancelModal(false)}
-                                        disabled={loading}
+                                        disabled={cancelRetry.isExecuting}
                                         className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
                                     >
                                         Voltar
                                     </button>
                                     <button
                                         onClick={handleCancelOrder}
-                                        disabled={loading || !selectedReason}
+                                        disabled={cancelRetry.isExecuting || !selectedReason}
                                         className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {loading ? "Cancelando..." : "Confirmar Cancelamento"}
+                                        {cancelRetry.isRetrying 
+                                            ? `Aguardando (${cancelRetry.countdown}s)...` 
+                                            : cancelRetry.isExecuting 
+                                                ? "Cancelando..." 
+                                                : "Confirmar Cancelamento"}
                                     </button>
                                 </div>
                             </>

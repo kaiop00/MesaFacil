@@ -23,6 +23,7 @@ exports.ifoodRequestUserCode = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
+    cors: true,
   },
   async (request) => {
     try {
@@ -142,6 +143,7 @@ exports.ifoodExchangeCode = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 60,
+    cors: true,
   },
   async (request) => {
     try {
@@ -274,6 +276,7 @@ exports.ifoodExchangeCode = onCall(
 exports.ifoodRevokeAuth = onCall(
   {
     timeoutSeconds: 30,
+    cors: true,
   },
   async (request) => {
     try {

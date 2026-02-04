@@ -1503,6 +1503,7 @@ exports.ifoodPollManual = onCall(
   {
     secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 50,
+    cors: true,
   },
   async (request) => {
     try {
