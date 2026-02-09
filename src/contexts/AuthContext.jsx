@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebaseConfig";
-import stripeService from "@/services/stripeService";
+import stripeService, { STRIPE_TEMPORARILY_DISABLED } from "@/services/stripeService";
 import { getStripeCustomerId } from "@/services/firebase/restaurantService";
 
 // ✅ Cria o contexto
@@ -48,18 +48,43 @@ export const AuthProvider = ({ children }) => {
               setPlan(planData);
             } catch (error) {
               console.error("Error fetching plan from Stripe:", error);
-              // Set free plan as fallback
-              setPlan({ planId: 'free', status: 'active', expiresAt: null });
+              // Set free plan as fallback (or premium if Stripe is disabled)
+              if (STRIPE_TEMPORARILY_DISABLED) {
+                setPlan({ 
+                  planId: 'monthly', 
+                  status: 'active', 
+                  expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
+                });
+              } else {
+                setPlan({ planId: 'free', status: 'active', expiresAt: null });
+              }
             }
           } else {
-            // No Stripe customer, set free plan
-            setPlan({ planId: 'free', status: 'active', expiresAt: null });
+            // No Stripe customer - grant premium access if Stripe is disabled, otherwise free plan
+            if (STRIPE_TEMPORARILY_DISABLED) {
+              setPlan({ 
+                planId: 'monthly', 
+                status: 'active', 
+                expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
+              });
+            } else {
+              setPlan({ planId: 'free', status: 'active', expiresAt: null });
+            }
           }
         } catch (error) {
           console.error("Error loading user data:", error);
           setRole("user");
           setIdRestaurante(null);
-          setPlan({ planId: 'free', status: 'active', expiresAt: null });
+          // Grant premium access if Stripe is disabled, otherwise free plan
+          if (STRIPE_TEMPORARILY_DISABLED) {
+            setPlan({ 
+              planId: 'monthly', 
+              status: 'active', 
+              expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
+            });
+          } else {
+            setPlan({ planId: 'free', status: 'active', expiresAt: null });
+          }
         }
       } else {
         setUser(null);
