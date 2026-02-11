@@ -20,7 +20,8 @@
     "details": "Detalhes",
     "edit": "Editar",
     "deactivate": "Inativar",
-    "activate": "Ativar"
+    "activate": "Ativar",
+    "delete": "Excluir"
   },
   "form": {
     "name": "Nome",
@@ -122,6 +123,13 @@
       "info": "O usuário terá acesso ao sistema novamente.",
       "confirm": "Ativar",
       "processing": "Ativando..."
+    },
+    "delete": {
+      "title": "Excluir Usuário",
+      "message": "Tem certeza que deseja excluir permanentemente o usuário",
+      "warning": "⚠️ Esta ação não pode ser desfeita. Todos os dados do usuário serão removidos.",
+      "confirm": "Excluir",
+      "processing": "Excluindo..."
     }
   },
   "messages": {
@@ -131,6 +139,8 @@
     "activateSuccess": "Usuário ativado com sucesso!",
     "deactivateError": "Erro ao desativar usuário. Tente novamente.",
     "activateError": "Erro ao ativar usuário. Tente novamente.",
+    "deleteSuccess": "Usuário excluído com sucesso!",
+    "deleteError": "Erro ao excluir usuário. Tente novamente.",
     "emailExists": "Email já cadastrado",
     "error": "ID do restaurante não encontrado",
     "userIdNotFound": "ID do usuário não encontrado"

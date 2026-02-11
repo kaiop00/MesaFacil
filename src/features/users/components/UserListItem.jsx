@@ -1,9 +1,9 @@
-import { MoreHorizontal, MagnifyingGlassPlus, EditPencil01, CloseLg, Check } from "react-coolicons";
+import { MoreHorizontal, MagnifyingGlassPlus, EditPencil01, CloseLg, Check, TrashFull } from "react-coolicons";
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
 
-const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, onActivateClick }) => {
+const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, onActivateClick, onDeleteClick }) => {
   const { t } = useTranslation();
   const { hasPermission } = usePermissions();
   const [isOpen, setIsOpen] = useState(false);
@@ -42,6 +42,8 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
       } else if (user.status === 'Ativo') {
         onDeactivateClick?.(user);
       }
+    } else if (action === 'delete' && onDeleteClick) {
+      onDeleteClick(user);
     } else {
       console.log(`${action} user:`, user.id);
     }
@@ -118,6 +120,16 @@ const UserListItem = ({ user, onDetailsClick, onEditClick, onDeactivateClick, on
                       <span className="text-green-500">{t("users:actions.activate")}</span>
                     </>
                   )}
+                </button>
+              )}
+
+              {hasPermission('delete_users') && (
+                <button
+                  onClick={(e) => handleAction(e, 'delete')}
+                  className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50"
+                >
+                  <TrashFull className="w-4 h-4 mr-2 text-red-600" />
+                  <span className="text-red-600">{t("users:actions.delete")}</span>
                 </button>
               )}
             </div>

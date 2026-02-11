@@ -92,7 +92,8 @@
       "buttons": {
         "addItems": "Adicionar Itens",
         "finishOrder": "Finalizar Comanda", 
-        "close": "Fechar"
+        "close": "Fechar",
+        "print": "Imprimir"
       }
     }
   },
