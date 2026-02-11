@@ -85,6 +85,31 @@ export const useKitchenPrint = () => {
   };
 
   /**
+   * Verifica se o pedido é para retirada no balcão
+   */
+  const isPickupOrder = (order) => {
+    return order?.tipoEntrega === 'retirada';
+  };
+
+  /**
+   * Monta a seção de aviso de retirada no balcão
+   */
+  const buildPickupNoticeSection = useCallback(
+    (order) => {
+      if (!isPickupOrder(order)) {
+        return '';
+      }
+
+      return `
+        <div class="row center" style="padding: 3mm 0; margin-bottom: 3mm;">
+          <span style="font-weight: 700; font-size: 14px;">RETIRADA NO BALCÃO</span>
+        </div>
+      `;
+    },
+    []
+  );
+
+  /**
    * Monta a seção de informações do cliente/entrega para pedidos WhatsApp
    */
   const buildDeliverySection = useCallback(
@@ -381,6 +406,8 @@ export const useKitchenPrint = () => {
               })}</div>
               <div class="divider"></div>
 
+              ${buildPickupNoticeSection(order)}
+
               ${isWhatsAppOrder(order) ? `
                 ${buildDeliverySection(order)}
               ` : `
@@ -415,7 +442,7 @@ export const useKitchenPrint = () => {
         </html>
       `;
     },
-    [buildItemsSection, buildDeliverySection, buildTotalSection, t]
+    [buildItemsSection, buildDeliverySection, buildTotalSection, buildPickupNoticeSection, t]
   );
 
   const printOrder = useCallback(

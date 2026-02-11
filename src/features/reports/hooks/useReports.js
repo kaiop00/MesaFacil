@@ -87,9 +87,11 @@ export const useReports = (idRestaurante, tables) => {
    * @returns {Object} Dados agrupados por período
    */
   const generatePeriodReport = async (startDate, endDate) => {
-    const start = new Date(startDate + "T00:00:00");
-    const end = new Date(endDate + "T23:59:59");
-    console.log(start);
+    // Parse dates as local time to avoid timezone issues
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const start = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+    const end = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     // Execute all table queries in parallel for the entire period (ONE REQUEST PER TABLE)
     const tablesOrdersPromises = tables.map(async (table) => {

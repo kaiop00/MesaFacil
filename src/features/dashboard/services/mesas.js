@@ -17,6 +17,20 @@ const timestampToDate = (value) => {
 const normalizeDateInput = (value, endOfDay = false) => {
   if (!value) return null;
   if (value instanceof Date) return value;
+  
+  // If value is a string in YYYY-MM-DD format, parse it as local time
+  // This prevents timezone issues where "2026-02-10" is interpreted as UTC
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    const parsed = new Date(year, month - 1, day);
+    if (endOfDay) {
+      parsed.setHours(23, 59, 59, 999);
+    } else {
+      parsed.setHours(0, 0, 0, 0);
+    }
+    return parsed;
+  }
+  
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
   if (endOfDay) {

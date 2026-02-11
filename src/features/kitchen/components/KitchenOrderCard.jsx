@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Printer, Building03 } from "react-coolicons";
+import { Printer, Building03, ShoppingBag02 } from "react-coolicons";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
@@ -30,12 +30,25 @@ const KitchenOrderCard = ({ order, onFinalize, onPrint, finalizing }) => {
   const observation =
     order?.observacoes?.trim() || t("cards.noObservations");
 
+  // Check if is a pickup order (retirada)
+  const isPickup = order?.tipoEntrega === 'retirada';
+
   return (
     <article className="flex flex-col gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      {/* Pickup Alert Banner */}
+      {isPickup && (
+        <div className="flex items-center gap-2 rounded-lg bg-blue-100 border border-blue-300 px-4 py-3 text-blue-800">
+          <ShoppingBag02 size={20} className="text-blue-600 flex-shrink-0" />
+          <span className="font-semibold text-sm">
+            {t("cards.pickupNotice") || "RETIRADA NO BALCÃO"}
+          </span>
+        </div>
+      )}
+
       <header className="flex items-start justify-between">
         <div className="flex items-start gap-3">
-          <div className="rounded-xl bg-primary-dynamic-opacity p-3 text-primary-dynamic">
-            <Building03 size={22} />
+          <div className={`rounded-xl p-3 ${isPickup ? 'bg-blue-100 text-blue-600' : 'bg-primary-dynamic-opacity text-primary-dynamic'}`}>
+            {isPickup ? <ShoppingBag02 size={22} /> : <Building03 size={22} />}
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">

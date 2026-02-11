@@ -96,6 +96,20 @@ export async function remove(idRestaurante, subcollectionName, docId) {
 }
 
 /**
+ * Remove múltiplos documentos por IDs na subcoleção
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
+ * @param {string[]} docIds - Array de IDs dos documentos a serem removidos
+ */
+export async function removeMultiple(idRestaurante, subcollectionName, docIds) {
+  const deletePromises = docIds.map(docId => {
+    const docRef = doc(db, 'restaurantes', idRestaurante, subcollectionName, docId);
+    return deleteDoc(docRef);
+  });
+  await Promise.all(deletePromises);
+}
+
+/**
  * Busca movimentações com filtros aplicados no Firestore
  * @param {string} idRestaurante
  * @param {string} itemId

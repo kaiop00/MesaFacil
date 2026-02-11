@@ -15,7 +15,8 @@ const UserListTable = ({
   onUserDetails,
   onEditClick,
   onDeactivateClick,
-  onActivateClick
+  onActivateClick,
+  onDeleteClick
 }) => {
   const { t } = useTranslation();
   
@@ -113,6 +114,7 @@ const UserListTable = ({
                           onEditClick={onEditClick}
                           onDeactivateClick={onDeactivateClick}
                           onActivateClick={onActivateClick}
+                          onDeleteClick={onDeleteClick}
                         />
                       ))}
                     </>

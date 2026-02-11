@@ -24,7 +24,7 @@ import {
     formatIfoodStatus,
     isIfoodOrder
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
-import { User01, Phone, MapPin, ShoppingBag02 } from "react-coolicons";
+import { User01, Phone, MapPin, ShoppingBag02, Printer } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
 import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrderActions";
 import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
@@ -32,6 +32,7 @@ import IfoodPaymentDetails from "@/features/integrations/ifood/components/IfoodP
 import IfoodBenefitsDetails from "@/features/integrations/ifood/components/IfoodBenefitsDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
+import { useDetailOrderPrint } from "@/features/order/hooks/useDetailOrderPrint";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onMesaUpdate }) => {
     const { t } = useTranslation('order');
@@ -43,6 +44,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
     const [numeroPessoas, setNumeroPessoas] = useState(1);
     const { notify } = useToast();
+    const { printDetailOrder } = useDetailOrderPrint();
     
     // Calcular orderOrigin a partir da mesa ou do primeiro pedido
     const orderOrigin = useMemo(() => {
@@ -271,6 +273,23 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         const pedido = pedidos.find(p => p.id === pedidoParaFinalizar);
         return pedido?.total || 0;
     }, [pedidoParaFinalizar, pedidos]);
+
+    // Handler para imprimir comanda
+    const handlePrintComanda = useCallback(() => {
+        printDetailOrder({
+            mesaNumero: mesaSelecionada?.numero || "-",
+            pedidos,
+            totalSemTaxa,
+            serviceFeePercent: percentNormalized,
+            valorServico,
+            serviceFeeExempt,
+            coverChargeEnabled,
+            coverChargeValue,
+            numeroPessoas,
+            valorCouvert,
+            totalComServico,
+        });
+    }, [printDetailOrder, mesaSelecionada, pedidos, totalSemTaxa, percentNormalized, valorServico, serviceFeeExempt, coverChargeEnabled, coverChargeValue, numeroPessoas, valorCouvert, totalComServico]);
 
     return (
         <BaseModalWithHeader
@@ -710,6 +729,15 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             )}
 
             <div className="flex justify-end gap-2 mt-6">
+                {!loading && pedidos.length > 0 && !isDelivery && (
+                    <button
+                        onClick={handlePrintComanda}
+                        className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-300 rounded hover:bg-amber-100 text-amber-600 font-semibold cursor-pointer"
+                    >
+                        <Printer size={18} />
+                        {t('modals.orderDetail.buttons.print') || 'Imprimir'}
+                    </button>
+                )}
                 <button
                     onClick={onClose}
                     className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-[#334155] font-semibold cursor-pointer"

@@ -9,6 +9,7 @@ import UserDetailsModal from "@/features/users/components/modals/UserDetailsModa
 import EditUserModal from "@/features/users/components/modals/EditUserModal";
 import DeactivateUserModal from "@/features/users/components/modals/DeactivateUserModal";
 import ActivateUserModal from "@/features/users/components/modals/ActivateUserModal";
+import DeleteUserModal from "@/features/users/components/modals/DeleteUserModal";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 
@@ -21,6 +22,7 @@ const UsersPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [isActivateModalOpen, setIsActivateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,11 @@ const UsersPage = () => {
   const handleUserActivate = (user) => {
     setSelectedUser(user);
     setIsActivateModalOpen(true);
+  };
+
+  const handleUserDelete = (user) => {
+    setSelectedUser(user);
+    setIsDeleteModalOpen(true);
   };
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -126,6 +133,7 @@ const UsersPage = () => {
         onEditClick={handleUserEdit}
         onDeactivateClick={handleUserDeactivate}
         onActivateClick={handleUserActivate}
+        onDeleteClick={handleUserDelete}
       />
 
       <NewUserModal
@@ -164,6 +172,12 @@ const UsersPage = () => {
       <ActivateUserModal
         isOpen={isActivateModalOpen}
         onClose={() => setIsActivateModalOpen(false)}
+        user={selectedUser}
+      />
+
+      <DeleteUserModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
         user={selectedUser}
       />
     </div>

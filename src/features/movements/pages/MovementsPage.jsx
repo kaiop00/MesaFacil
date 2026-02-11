@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getAll, create, update, remove } from "@/services/firebase/firestoreService";
+import { getAll, create, update, remove, removeMultiple } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
 import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import MovementsTable from "../components/MovementsTable";
 import MovementsFormModal from "../components/MovementsFormModal";
 import MovementDetailsModal from "../components/MovementDetailsModal";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+
+const MOVEMENTS_RETENTION_DAYS = 20;
 
 const MovementsPage = () => {
   const { t } = useTranslation("movements");
@@ -33,16 +35,48 @@ const MovementsPage = () => {
   const [selectedMovement, setSelectedMovement] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Clean up old movements (older than MOVEMENTS_RETENTION_DAYS)
+  const cleanupOldMovements = useCallback(async (movements) => {
+    if (!idRestaurante || movements.length === 0) return movements;
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - MOVEMENTS_RETENTION_DAYS);
+
+    const oldMovements = movements.filter((movement) => {
+      const createdAt = movement.createdAt ? new Date(movement.createdAt) : null;
+      return createdAt && createdAt < cutoffDate;
+    });
+
+    if (oldMovements.length > 0) {
+      try {
+        const oldIds = oldMovements.map((m) => m.id);
+        await removeMultiple(idRestaurante, 'movimentos', oldIds);
+        console.log(`[Movements] Removidos ${oldMovements.length} registros antigos (mais de ${MOVEMENTS_RETENTION_DAYS} dias)`);
+        
+        // Return filtered movements (without old ones)
+        return movements.filter((m) => !oldIds.includes(m.id));
+      } catch (err) {
+        console.error("Error cleaning up old movements:", err);
+        return movements;
+      }
+    }
+
+    return movements;
+  }, [idRestaurante]);
+
   // Load movements from Firestore
   const loadMovements = useCallback(async () => {
     if (!idRestaurante) return;
     
     setLoading(true);
     try {
-      const movementsData = await getAll(idRestaurante, 'movimentos', {
+      let movementsData = await getAll(idRestaurante, 'movimentos', {
         orderByField: 'createdAt',
         order: 'desc'
       });
+      
+      // Clean up movements older than retention period
+      movementsData = await cleanupOldMovements(movementsData);
       
       setAllMovements(movementsData);
     } catch (err) {
@@ -51,7 +85,7 @@ const MovementsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [idRestaurante, t]);
+  }, [idRestaurante, t, cleanupOldMovements]);
 
   // Filter and paginate movements based on search and pagination
   useEffect(() => {

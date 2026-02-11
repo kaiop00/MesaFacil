@@ -27,7 +27,8 @@
     "noObservations": "Nenhuma observação adicionada",
     "finish": "Finalizar",
     "finalizing": "Finalizando...",
-    "print": "Imprimir"
+    "print": "Imprimir",
+    "pickupNotice": "RETIRADA NO BALCÃO"
   },
   "print": {
     "windowTitle": "Imprimir pedido",
