@@ -74,6 +74,12 @@ const Sidebar = () => {
       path: "/home/usuarios",
       feature: FEATURE_FLAGS.EMPLOYEE_MANAGEMENT
     },
+    { 
+      name: t("common:sidebar.fiscal"), 
+      icon: <FileDocument size={20} />, 
+      path: "/home/fiscal",
+      feature: null
+    },
   ];
 
   return (
