@@ -1,0 +1,78 @@
+{
+  "title": "Configuration Fiscale (NFC-e)",
+  "subtitle": "Configurez les données de l'entreprise pour l'émission de la Note Fiscale Électronique au Consommateur.",
+  "status": {
+    "registered": "Entreprise enregistrée sur Nuvem Fiscal",
+    "notRegistered": "Entreprise non enregistrée",
+    "active": "NFC-e actif"
+  },
+  "sections": {
+    "company": "Données de l'Entreprise",
+    "address": "Adresse de l'Établissement",
+    "nfce": "Configuration NFC-e"
+  },
+  "fields": {
+    "cnpj": "CNPJ",
+    "razaoSocial": "Raison Sociale",
+    "nomeFantasia": "Nom Commercial",
+    "inscricaoMunicipal": "Inscription Municipale",
+    "fone": "Téléphone",
+    "email": "E-mail",
+    "inscricaoEstadual": "Inscription d'État",
+    "crt": "Code de Régime Fiscal (CRT)",
+    "cep": "CEP",
+    "logradouro": "Adresse",
+    "numero": "Numéro",
+    "complemento": "Complément",
+    "bairro": "Quartier",
+    "municipio": "Commune",
+    "codigoMunicipio": "Code IBGE de la Commune",
+    "uf": "UF",
+    "idCsc": "ID du CSC",
+    "csc": "CSC (Code de Sécurité du Contribuable)",
+    "serie": "Série",
+    "proximoNumero": "Prochain Numéro",
+    "ncmPadrao": "NCM Par Défaut",
+    "searchingCep": "Recherche du CEP..."
+  },
+  "placeholders": {
+    "razaoSocial": "Raison sociale de l'entreprise",
+    "nomeFantasia": "Nom commercial (optionnel)",
+    "selectUf": "Sélectionnez",
+    "csc": "Jeton CSC de la SEFAZ"
+  },
+  "tooltips": {
+    "codigoMunicipio": "Code IBGE à 7 chiffres de la commune. Rempli automatiquement par le CEP.",
+    "idCsc": "Numéro d'identification du CSC, obtenu sur le portail SEFAZ de votre état.",
+    "csc": "Code de Sécurité du Contribuable, obtenu sur le portail SEFAZ de votre état.",
+    "ncmPadrao": "NCM par défaut pour les articles sans NCM individuel. Utilisez 21069090 pour les aliments préparés en général."
+  },
+  "buttons": {
+    "save": "Enregistrer la Configuration",
+    "saving": "Enregistrement...",
+    "registerCompany": "Enregistrer l'Entreprise sur Nuvem Fiscal",
+    "updateCompany": "Mettre à jour l'Entreprise sur Nuvem Fiscal",
+    "registering": "Enregistrement..."
+  },
+  "messages": {
+    "saved": "Configuration fiscale enregistrée avec succès !",
+    "errorSaving": "Erreur lors de l'enregistrement de la configuration fiscale.",
+    "errorLoading": "Erreur lors du chargement de la configuration fiscale.",
+    "empresaRegistrada": "Entreprise enregistrée/mise à jour avec succès sur Nuvem Fiscal !",
+    "errorRegistrando": "Erreur lors de l'enregistrement de l'entreprise sur Nuvem Fiscal.",
+    "invalidCnpj": "CNPJ invalide. Saisissez les 14 chiffres.",
+    "requiredRazaoSocial": "La Raison Sociale est obligatoire.",
+    "requiredIE": "L'Inscription d'État est obligatoire.",
+    "invalidCep": "CEP invalide. Saisissez les 8 chiffres.",
+    "requiredCodigoMunicipio": "Le code de la commune (IBGE) est obligatoire.",
+    "requiredEmail": "L'e-mail est obligatoire.",
+    "requiredCsc": "Le CSC et l'ID du CSC sont obligatoires pour NFC-e."
+  },
+  "info": {
+    "title": "Informations importantes :",
+    "item1": "L'environnement est configuré pour l'HOMOLOGATION (tests). Les notes n'auront aucune valeur fiscale.",
+    "item2": "Obtenez le CSC et l'ID du CSC sur le portail SEFAZ de votre état.",
+    "item3": "Après l'enregistrement, cliquez sur « Enregistrer l'Entreprise » pour synchroniser avec Nuvem Fiscal.",
+    "item4": "L'émission de NFC-e sera automatiquement disponible après l'enregistrement et l'activation."
+  }
+}

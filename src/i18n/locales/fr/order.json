@@ -181,5 +181,38 @@
       "pix": "PIX",
       "ifood": "iFood",
       "voucher": "Bon/Courtoisie"
-    }  }
+    }
+  },
+  "nfce": {
+    "modal": {
+      "title": "Émettre NFC-e",
+      "subtitle": "Note Fiscale Électronique au Consommateur",
+      "description": "Souhaitez-vous émettre la NFC-e pour cette commande ? Saisissez le CPF/CNPJ du consommateur ci-dessous (optionnel).",
+      "cpfLabel": "CPF ou CNPJ du consommateur",
+      "cpfHint": "Si non renseigné, la note sera émise sans identification du consommateur.",
+      "optional": "optionnel",
+      "loading": "Émission de la NFC-e...",
+      "loadingHint": "Communication avec la SEFAZ. Cela peut prendre quelques secondes.",
+      "success": {
+        "title": "NFC-e émise avec succès !",
+        "description": "La note fiscale a été autorisée par la SEFAZ.",
+        "accessKey": "Clé d'Accès",
+        "viewDanfce": "Voir DANFC-e"
+      },
+      "error": {
+        "title": "Erreur lors de l'émission de la NFC-e"
+      },
+      "errors": {
+        "rejected": "La note fiscale a été rejetée par la SEFAZ.",
+        "generic": "Une erreur est survenue lors de l'émission de la NFC-e. Veuillez réessayer.",
+        "timeout": "Délai d'attente dépassé pour la réponse de la SEFAZ. Veuillez réessayer la consultation."
+      },
+      "buttons": {
+        "skip": "Passer",
+        "emit": "Émettre NFC-e",
+        "close": "Fermer",
+        "retry": "Réessayer"
+      }
+    }
+  }
 }

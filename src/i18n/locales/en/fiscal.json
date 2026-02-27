@@ -1,0 +1,78 @@
+{
+  "title": "Fiscal Configuration (NFC-e)",
+  "subtitle": "Configure company data for issuing Electronic Consumer Invoice (NFC-e).",
+  "status": {
+    "registered": "Company registered on Nuvem Fiscal",
+    "notRegistered": "Company not registered",
+    "active": "NFC-e active"
+  },
+  "sections": {
+    "company": "Company Data",
+    "address": "Establishment Address",
+    "nfce": "NFC-e Configuration"
+  },
+  "fields": {
+    "cnpj": "CNPJ",
+    "razaoSocial": "Legal Name",
+    "nomeFantasia": "Trade Name",
+    "inscricaoMunicipal": "Municipal Registration",
+    "fone": "Phone",
+    "email": "Email",
+    "inscricaoEstadual": "State Registration",
+    "crt": "Tax Regime Code (CRT)",
+    "cep": "CEP",
+    "logradouro": "Street",
+    "numero": "Number",
+    "complemento": "Complement",
+    "bairro": "Neighborhood",
+    "municipio": "City",
+    "codigoMunicipio": "IBGE City Code",
+    "uf": "UF",
+    "idCsc": "CSC ID",
+    "csc": "CSC (Taxpayer Security Code)",
+    "serie": "Series",
+    "proximoNumero": "Next Number",
+    "ncmPadrao": "Default NCM",
+    "searchingCep": "Searching CEP..."
+  },
+  "placeholders": {
+    "razaoSocial": "Company legal name",
+    "nomeFantasia": "Trade name (optional)",
+    "selectUf": "Select",
+    "csc": "SEFAZ CSC Token"
+  },
+  "tooltips": {
+    "codigoMunicipio": "7-digit IBGE code for the city. Automatically filled by CEP.",
+    "idCsc": "CSC identification number, obtained from your state's SEFAZ portal.",
+    "csc": "Taxpayer Security Code, obtained from your state's SEFAZ portal.",
+    "ncmPadrao": "Default NCM for items without an individual NCM. Use 21069090 for general prepared foods."
+  },
+  "buttons": {
+    "save": "Save Configuration",
+    "saving": "Saving...",
+    "registerCompany": "Register Company on Nuvem Fiscal",
+    "updateCompany": "Update Company on Nuvem Fiscal",
+    "registering": "Registering..."
+  },
+  "messages": {
+    "saved": "Fiscal configuration saved successfully!",
+    "errorSaving": "Error saving fiscal configuration.",
+    "errorLoading": "Error loading fiscal configuration.",
+    "empresaRegistrada": "Company successfully registered/updated on Nuvem Fiscal!",
+    "errorRegistrando": "Error registering company on Nuvem Fiscal.",
+    "invalidCnpj": "Invalid CNPJ. Enter the 14 digits.",
+    "requiredRazaoSocial": "Legal Name is required.",
+    "requiredIE": "State Registration is required.",
+    "invalidCep": "Invalid CEP. Enter the 8 digits.",
+    "requiredCodigoMunicipio": "City code (IBGE) is required.",
+    "requiredEmail": "Email is required.",
+    "requiredCsc": "CSC and CSC ID are required for NFC-e."
+  },
+  "info": {
+    "title": "Important information:",
+    "item1": "The environment is configured for HOMOLOGATION (testing). Invoices will have no fiscal value.",
+    "item2": "Obtain the CSC and CSC ID from your state's SEFAZ portal.",
+    "item3": "After saving, click \"Register Company\" to sync with Nuvem Fiscal.",
+    "item4": "NFC-e issuance will be automatically available after registration and activation."
+  }
+}

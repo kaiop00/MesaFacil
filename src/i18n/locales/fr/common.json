@@ -31,7 +31,8 @@
     "integrations": "Intégrations",
     "items": "Articles",
     "movements": "Mouvements",
-    "users": "Utilisateurs"
+    "users": "Utilisateurs",
+    "fiscal": "NFC-e"
   },
   "stock": {
     "impact": "Impact sur le stock",

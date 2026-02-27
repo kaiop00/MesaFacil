@@ -31,6 +31,8 @@ import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodS
 import IfoodPaymentDetails from "@/features/integrations/ifood/components/IfoodPaymentDetails";
 import IfoodBenefitsDetails from "@/features/integrations/ifood/components/IfoodBenefitsDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
+import NfceModal from "@/features/order/components/modals/NfceModal";
+import { buscarConfigFiscal } from "@/features/fiscal/services/configFiscalService";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 import { useDetailOrderPrint } from "@/features/order/hooks/useDetailOrderPrint";
 
@@ -42,6 +44,8 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     const [ifoodOrdersInfo, setIfoodOrdersInfo] = useState({}); // { [pedidoId]: ifoodOrderData }
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
+    const [showNfceModal, setShowNfceModal] = useState(false);
+    const [nfcePedidoInfo, setNfcePedidoInfo] = useState(null);
     const [numeroPessoas, setNumeroPessoas] = useState(1);
     const { notify } = useToast();
     const { printDetailOrder } = useDetailOrderPrint();
@@ -192,6 +196,21 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             
             // Fechar modal de pagamento
             handleClosePaymentModal();
+
+            // Verificar se NFC-e está ativo e oferecer emissão
+            try {
+                const configFiscal = await buscarConfigFiscal(idRestaurante);
+                if (configFiscal?.ativo && configFiscal?.empresaRegistrada) {
+                    setNfcePedidoInfo({
+                        mesaId: mesaSelecionada.id,
+                        pedidoId: pedidoParaFinalizar,
+                    });
+                    setShowNfceModal(true);
+                }
+            } catch (fiscalErr) {
+                // Não bloquear o fluxo se houver erro ao verificar config fiscal
+                console.warn("Erro ao verificar config fiscal:", fiscalErr);
+            }
         } catch (error) {
             console.error("Erro ao finalizar pedido:", error);
             notify(t('messages.error.finishOrder'), "error");
@@ -327,6 +346,16 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                             size="small" 
                                             tipoEntrega={pedido.tipoEntrega}
                                         />
+                                    )}
+                                    {pedido.nfceStatus === "autorizado" && (
+                                        <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                                            NFC-e ✓
+                                        </span>
+                                    )}
+                                    {pedido.nfceStatus === "rejeitado" && (
+                                        <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                            NFC-e ✗
+                                        </span>
                                     )}
                                 </div>
                                 <p className="text-sm text-gray-600">
@@ -754,6 +783,18 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 mesaNumero={mesaSelecionada?.numero}
                 totalValue={totalPedidoParaFinalizar}
                 loading={!!finalizando[pedidoParaFinalizar]}
+            />
+
+            {/* Modal de NFC-e */}
+            <NfceModal
+                isOpen={showNfceModal}
+                onClose={() => {
+                    setShowNfceModal(false);
+                    setNfcePedidoInfo(null);
+                }}
+                idRestaurante={idRestaurante}
+                mesaId={nfcePedidoInfo?.mesaId}
+                pedidoId={nfcePedidoInfo?.pedidoId}
             />
         </BaseModalWithHeader>
     );
