@@ -822,19 +822,32 @@ async function processIfoodOrder(idRestaurante, orderData) {
         : null,
       schedule: orderData.schedule || null,
       
-      // Customer info
+      // Customer info (all fields from iFood Order Details API)
       customer: {
+        id: orderData.customer?.id || "",
         name: orderData.customer?.name || "Cliente iFood",
         phone: orderData.customer?.phone?.number || "",
+        phoneLocalizer: orderData.customer?.phone?.localizer || "",
+        phoneLocalizerExpiration: orderData.customer?.phone?.localizerExpiration || "",
         documentNumber: orderData.customer?.documentNumber || "",
+        documentType: orderData.customer?.documentType || "",
+        ordersCountOnMerchant: orderData.customer?.ordersCountOnMerchant ?? null,
+        segmentation: orderData.customer?.segmentation || "",
       },
       
-      // Delivery info
+      // Delivery info (all fields from iFood Order Details API)
       delivery: orderData.delivery ? {
         address: orderData.delivery.deliveryAddress || {},
         deliveredBy: orderData.delivery.deliveredBy || "IFOOD",
         observations: orderData.delivery.observations || "",
+        mode: orderData.delivery.mode || "",
+        description: orderData.delivery.description || "",
+        pickupCode: orderData.delivery.pickupCode || "",
+        deliveryDateTime: orderData.delivery.deliveryDateTime || "",
       } : null,
+      
+      // Takeout info
+      takeout: orderData.takeout || null,
       
       // Items
       items: (orderData.items || []).map((item) => ({

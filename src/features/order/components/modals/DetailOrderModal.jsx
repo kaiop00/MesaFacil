@@ -21,7 +21,6 @@ import {
 import { 
     getIfoodOrderForMesaFacilOrder, 
     extractIfoodCustomerInfo,
-    formatIfoodStatus,
     isIfoodOrder
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 import { User01, Phone, MapPin, ShoppingBag02, Printer } from "react-coolicons";
@@ -30,6 +29,7 @@ import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrd
 import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
 import IfoodPaymentDetails from "@/features/integrations/ifood/components/IfoodPaymentDetails";
 import IfoodBenefitsDetails from "@/features/integrations/ifood/components/IfoodBenefitsDetails";
+import IfoodCustomerDetails from "@/features/integrations/ifood/components/IfoodCustomerDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 import { useDetailOrderPrint } from "@/features/order/hooks/useDetailOrderPrint";
@@ -486,51 +486,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                 )}
                                 
                                 <div className="grid grid-cols-1 gap-2 text-sm">
-                                    {ifoodOrdersInfo[pedido.id].name && (
-                                        <div className="flex items-start gap-2">
-                                            <User01 className="text-orange-600 mt-0.5" size={16} />
-                                            <div>
-                                                <span className="text-gray-600">Cliente: </span>
-                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].name}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].phone && (
-                                        <div className="flex items-start gap-2">
-                                            <Phone className="text-orange-600 mt-0.5" size={16} />
-                                            <div>
-                                                <span className="text-gray-600">Telefone: </span>
-                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].phone}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].address && (
-                                        <div className="flex items-start gap-2">
-                                            <MapPin className="text-orange-600 mt-0.5" size={16} />
-                                            <div>
-                                                <span className="text-gray-600">Endereço: </span>
-                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].address}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].ifoodStatus && (
-                                        <div className="mt-1 pt-2 border-t border-orange-200">
-                                            <span className="text-gray-600">Status iFood: </span>
-                                            <span className="font-semibold text-orange-700">
-                                                {formatIfoodStatus(ifoodOrdersInfo[pedido.id].ifoodStatus)}
-                                            </span>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].observations && (
-                                        <div className="mt-1 pt-2 border-t border-orange-200">
-                                            <span className="text-gray-600">Observações: </span>
-                                            <span className="text-gray-800 italic">{ifoodOrdersInfo[pedido.id].observations}</span>
-                                        </div>
-                                    )}
+                                    {/* Complete Customer Details (all iFood consumer data) */}
+                                    <IfoodCustomerDetails
+                                        customerInfo={ifoodOrdersInfo[pedido.id]}
+                                        orderType={ifoodOrdersInfo[pedido.id].fullOrder?.orderType || "DELIVERY"}
+                                    />
                                 </div>
                                 
                                 {/* iFood Payment Details */}
@@ -643,7 +603,10 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                 </div>
                             )}
                         </div>
-                        <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
+                        {/* Observations - hide for iFood orders since IfoodCustomerDetails already shows all info */}
+                        {pedido.observacoes && !ifoodOrdersInfo[pedido.id] && (
+                            <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
+                        )}
 
                         {(pedido.status === 'andamento' || pedido.status === 'entregue') && (
                             <div className="flex justify-end">
