@@ -382,6 +382,13 @@ const {
   ifoodDenyCancellation,
 } = require("./ifood-actions");
 
+// NFC-e (Nota Fiscal de Consumidor Eletrônica) via Nuvem Fiscal
+const {
+  nfceRegistrarEmpresa,
+  nfceEmitir,
+  nfceConsultar,
+} = require("./nfce");
+
 exports.ifoodPolling = ifoodPolling;
 exports.ifoodPollManual = ifoodPollManual;
 exports.ifoodRequestUserCode = ifoodRequestUserCode;
@@ -397,3 +404,8 @@ exports.ifoodGetCancellationReasons = ifoodGetCancellationReasons;
 exports.ifoodRequestCancellation = ifoodRequestCancellation;
 exports.ifoodAcceptCancellation = ifoodAcceptCancellation;
 exports.ifoodDenyCancellation = ifoodDenyCancellation;
+
+// NFC-e
+exports.nfceRegistrarEmpresa = nfceRegistrarEmpresa;
+exports.nfceEmitir = nfceEmitir;
+exports.nfceConsultar = nfceConsultar;
