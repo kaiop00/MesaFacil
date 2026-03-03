@@ -190,6 +190,11 @@ export const formatIfoodStatus = (status) => {
         'DISPATCHED': 'Saiu para Entrega',
         'CONCLUDED': 'Concluído',
         'CANCELLED': 'Cancelado',
+        'CANCELLATION_REQUESTED': 'Cancelamento Solicitado',
+        'INTEGRATED': 'Integrado',
+        'PENDING': 'Pendente',
+        'ACCEPTED': 'Aceito',
+        'REJECTED': 'Rejeitado',
     };
     
     return statusMap[status] || status;

@@ -2,6 +2,28 @@ import { Clock, CheckboxCheck, TriangleWarning, ArrowRightSm } from "react-cooli
 import { formatIfoodStatus } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 
 /**
+ * Get a label for the source of a status change
+ * @param {string} source - "ifood" | "mesafacil" | undefined
+ * @returns {{ label: string, className: string }}
+ */
+const getSourceBadge = (source) => {
+    if (source === "mesafacil") {
+        return {
+            label: "MesaFácil",
+            className: "bg-blue-100 text-blue-700",
+        };
+    }
+    if (source === "ifood") {
+        return {
+            label: "iFood",
+            className: "bg-red-100 text-red-700",
+        };
+    }
+    // Unknown source — could be legacy data before source tracking
+    return null;
+};
+
+/**
  * Component to display iFood order status history timeline
  */
 const IfoodStatusHistory = ({ statusHistory, currentStatus }) => {
@@ -35,11 +57,12 @@ const IfoodStatusHistory = ({ statusHistory, currentStatus }) => {
                         hour: '2-digit',
                         minute: '2-digit'
                     });
+                    const sourceBadge = getSourceBadge(entry.source);
 
                     return (
                         <div 
                             key={index} 
-                            className={`flex items-start gap-2 text-sm ${
+                            className={`flex items-center gap-2 text-sm ${
                                 isCurrentStatus ? 'font-semibold' : ''
                             }`}
                         >
@@ -58,9 +81,16 @@ const IfoodStatusHistory = ({ statusHistory, currentStatus }) => {
                                     }`}>
                                         {formatIfoodStatus(entry.status)}
                                     </span>
-                                    <span className="text-xs text-gray-500 whitespace-nowrap">
-                                        {timeStr}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        {sourceBadge && (
+                                            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${sourceBadge.className}`}>
+                                                {sourceBadge.label}
+                                            </span>
+                                        )}
+                                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                                            {timeStr}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

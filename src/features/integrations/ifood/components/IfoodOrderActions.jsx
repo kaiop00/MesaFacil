@@ -50,6 +50,7 @@ const IfoodOrderActions = ({
     const canDispatch = currentStatus === "CONFIRMED" && orderType === "DELIVERY";
     const canMarkReady = currentStatus === "CONFIRMED" && orderType === "TAKEOUT";
     const canCancel = ["PLACED", "CONFIRMED"].includes(currentStatus);
+    const isCancellationRequested = currentStatus === "CANCELLATION_REQUESTED";
 
     const handleConfirm = async () => {
         if (!confirm("Confirmar o recebimento deste pedido no iFood?")) return;
@@ -208,7 +209,7 @@ const IfoodOrderActions = ({
     };
 
     // Don't show anything if no actions are available
-    if (!canConfirm && !canDispatch && !canMarkReady && !canCancel) {
+    if (!canConfirm && !canDispatch && !canMarkReady && !canCancel && !isCancellationRequested) {
         return null;
     }
 
@@ -216,6 +217,13 @@ const IfoodOrderActions = ({
         <div className="mt-3 space-y-2">
             <div className="border-t border-orange-200 pt-3">
                 <p className="text-xs text-orange-700 mb-2 font-medium">Ações do Pedido:</p>
+                
+                {/* Cancellation Requested Banner */}
+                {isCancellationRequested && (
+                    <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                        ⏳ Cancelamento solicitado — aguardando resposta do iFood
+                    </div>
+                )}
                 
                 {/* Retry Status Banner */}
                 {(confirmRetry.isRetrying || dispatchRetry.isRetrying || readyRetry.isRetrying || cancelRetry.isRetrying) && (
