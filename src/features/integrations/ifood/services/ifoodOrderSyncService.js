@@ -4,23 +4,19 @@ import { getIfoodItemMappings } from "./ifoodItemMappingService";
 import { getAll } from "@/services/firebase/firestoreService";
 
 /**
- * Create a virtual table for iFood orders
- * Creates separate tables for DELIVERY and TAKEOUT orders
+ * Create a unified virtual table for all iFood orders
+ * All order types (DELIVERY, TAKEOUT) share a single table
  * @param {string} idRestaurante - Restaurant ID
- * @param {string} orderType - Order type (DELIVERY or TAKEOUT)
+ * @param {string} orderType - Order type (kept for compatibility, not used for table selection)
  * @returns {Promise<string>} - Table ID
  */
 export const getOrCreateIfoodTable = async (idRestaurante, orderType = "DELIVERY") => {
     const { doc, getDoc, setDoc, serverTimestamp } = await import("firebase/firestore");
     const { db } = await import("@/config/firebaseConfig");
     
-    // Determine table ID and name based on order type
-    const isTakeout = orderType === "TAKEOUT";
-    const ifoodTableId = isTakeout ? "ifood-takeout" : "ifood-delivery";
-    const tableName = isTakeout ? "iFood Retirada" : "iFood Delivery";
-    const tableDescription = isTakeout 
-        ? "Mesa virtual para pedidos de retirada do iFood" 
-        : "Mesa virtual para pedidos de delivery do iFood";
+    const ifoodTableId = "ifood";
+    const tableName = "iFood";
+    const tableDescription = "Mesa virtual para pedidos do iFood";
     
     const tableRef = doc(db, "restaurantes", idRestaurante, "mesas", ifoodTableId);
     
@@ -39,9 +35,8 @@ export const getOrCreateIfoodTable = async (idRestaurante, orderType = "DELIVERY
             createdAt: serverTimestamp(),
             isVirtual: true,
             source: "ifood",
-            orderType: orderType,
         });
-        console.log(`Created virtual table for iFood ${orderType} orders:`, ifoodTableId);
+        console.log("Created unified virtual table for iFood orders:", ifoodTableId);
     }
     
     return ifoodTableId;

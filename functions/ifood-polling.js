@@ -345,20 +345,16 @@ async function markEventAsProcessed(idRestaurante, event) {
 }
 
 /**
- * Get or create virtual table for iFood orders
- * Creates separate tables for DELIVERY and TAKEOUT orders
+ * Get or create unified virtual table for all iFood orders
+ * All order types (DELIVERY, TAKEOUT) share a single table
  * @param {string} idRestaurante - Restaurant ID
- * @param {string} orderType - Order type (DELIVERY or TAKEOUT)
+ * @param {string} orderType - Order type (kept for compatibility, not used for table selection)
  * @return {Promise<string>} - Table ID
  */
-async function getOrCreateIfoodTable(idRestaurante, orderType = "DELIVERY") {
-  // Determine table ID and name based on order type
-  const isTakeout = orderType === "TAKEOUT";
-  const tableId = isTakeout ? "ifood-takeout" : "ifood-delivery";
-  const tableName = isTakeout ? "iFood Retirada" : "iFood Delivery";
-  const tableDescription = isTakeout 
-    ? "Mesa virtual para pedidos de retirada do iFood" 
-    : "Mesa virtual para pedidos de delivery do iFood";
+async function getOrCreateIfoodTable(idRestaurante) {
+  const tableId = "ifood";
+  const tableName = "iFood";
+  const tableDescription = "Mesa virtual para pedidos do iFood";
   
   const tableRef = admin.firestore()
     .doc(`restaurantes/${idRestaurante}/mesas/${tableId}`);
@@ -376,12 +372,10 @@ async function getOrCreateIfoodTable(idRestaurante, orderType = "DELIVERY") {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isVirtual: true,
       source: "ifood",
-      orderType: orderType,
     });
-    logger.info("Created virtual table for iFood orders", {
+    logger.info("Created unified virtual table for iFood orders", {
       idRestaurante,
       tableId,
-      orderType,
     });
   }
   
@@ -1027,7 +1021,7 @@ async function processIfoodOrder(idRestaurante, orderData) {
  */
 async function finalizarPedidoIfood(idRestaurante, mesaFacilOrderId, newIfoodStatus) {
   try {
-    const mesaId = "ifood-delivery";
+    const mesaId = "ifood";
     const pedidoDocRef = admin.firestore()
       .doc(`restaurantes/${idRestaurante}/mesas/${mesaId}/pedidos/${mesaFacilOrderId}`);
     
@@ -1183,7 +1177,7 @@ async function syncStatusToMesaFacilOrder(
     
     // For other status changes, update normally
     const orderRef = admin.firestore()
-      .doc(`restaurantes/${idRestaurante}/mesas/ifood-delivery/pedidos/${mesaFacilOrderId}`);
+      .doc(`restaurantes/${idRestaurante}/mesas/ifood/pedidos/${mesaFacilOrderId}`);
     
     const updateData = {
       status: mesaFacilStatus,
@@ -1227,7 +1221,7 @@ async function syncStatusToMesaFacilOrder(
 async function updateVirtualTableStatus(idRestaurante) {
   try {
     const pedidosRef = admin.firestore()
-      .collection(`restaurantes/${idRestaurante}/mesas/ifood-delivery/pedidos`);
+      .collection(`restaurantes/${idRestaurante}/mesas/ifood/pedidos`);
     
     const snapshot = await pedidosRef.get();
     
@@ -1242,7 +1236,7 @@ async function updateVirtualTableStatus(idRestaurante) {
     });
     
     const tableRef = admin.firestore()
-      .doc(`restaurantes/${idRestaurante}/mesas/ifood-delivery`);
+      .doc(`restaurantes/${idRestaurante}/mesas/ifood`);
     
     let tableStatus = "livre";
     if (hasActiveOrders) {

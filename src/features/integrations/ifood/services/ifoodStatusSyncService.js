@@ -27,12 +27,13 @@ export const findIfoodOrderByMesaFacilId = async (idRestaurante, mesaFacilOrderI
 };
 
 /**
- * Check if an order belongs to iFood (is in the ifood-delivery or ifood-takeout virtual table)
+ * Check if an order belongs to iFood virtual table
+ * Supports the unified table ID and legacy IDs for backward compatibility
  * @param {string} mesaId - Table ID
  * @returns {boolean} - True if it's an iFood order
  */
 export const isIfoodOrder = (mesaId) => {
-    return mesaId === 'ifood-delivery' || mesaId === 'ifood-takeout';
+    return mesaId === 'ifood' || mesaId === 'ifood-delivery' || mesaId === 'ifood-takeout';
 };
 
 /**
