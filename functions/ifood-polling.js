@@ -1288,17 +1288,22 @@ async function syncStatusToMesaFacilOrder(
     // This ensures the UI shows the correct iFood status and action buttons.
     const orderRef = admin.firestore()
       .doc(`restaurantes/${idRestaurante}/mesas/ifood/pedidos/${mesaFacilOrderId}`);
-    
+
     const updateData = {
       ifoodStatus: newIfoodStatus,
       lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
+      // The iFood echo is always recorded — it is the authoritative confirmation
+      // that the iFood platform received and processed the action. A prior entry
+      // with source="mesafacil" for the same status is just the outgoing request;
+      // the iFood entry here closes the loop. The UI deduplicates on display,
+      // showing only the iFood (confirmed) entry when both are present.
       ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
         status: newIfoodStatus,
         changedAt: new Date().toISOString(),
         source: "ifood",
       }),
     };
-    
+
     // Only update MesaFacil status if it actually changes
     if (mesaFacilStatusChanged) {
       updateData.status = mesaFacilStatus;
