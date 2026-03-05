@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
+import { useSearchParams } from "react-router-dom";
 import {  
     getIfoodCredentials
 } from "@/features/integrations/ifood/services/ifoodService";
@@ -20,11 +21,14 @@ import {
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { CheckboxCheck, TriangleWarning, ArrowReload02, Link, Settings } from "react-coolicons";
 import IfoodItemMappingModal from "@/features/integrations/ifood/components/IfoodItemMappingModal";
+import IfoodDisputeList from "@/features/integrations/ifood/components/IfoodDisputeList";
 import { useIfoodRetry } from "@/features/integrations/ifood/hooks/useIfoodRetry";
 
 const IfoodIntegrationPage = () => {
     const { idRestaurante } = useAuth();
     const { notify } = useToast();
+    const [searchParams] = useSearchParams();
+    const disputesSectionRef = useRef(null);
     
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
@@ -62,6 +66,15 @@ const IfoodIntegrationPage = () => {
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [idRestaurante]);
+
+    // Auto-scroll to disputes section when navigated via ?tab=disputes
+    useEffect(() => {
+        if (searchParams.get("tab") === "disputes" && disputesSectionRef.current) {
+            setTimeout(() => {
+                disputesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 300);
+        }
+    }, [searchParams]);
 
     const loadCredentials = async () => {
         try {
@@ -605,6 +618,13 @@ const IfoodIntegrationPage = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Handshake Disputes / Negotiations Section */}
+            {integrationStatus.isAuthorized && (
+                <div ref={disputesSectionRef} className="bg-white rounded-lg shadow p-6">
+                    <IfoodDisputeList />
                 </div>
             )}
 

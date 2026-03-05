@@ -380,6 +380,9 @@ const {
   ifoodRequestCancellation,
   ifoodAcceptCancellation,
   ifoodDenyCancellation,
+  ifoodAcceptDispute,
+  ifoodRejectDispute,
+  ifoodSelectDisputeAlternative,
 } = require("./ifood-actions");
 
 exports.ifoodPolling = ifoodPolling;
@@ -397,3 +400,8 @@ exports.ifoodGetCancellationReasons = ifoodGetCancellationReasons;
 exports.ifoodRequestCancellation = ifoodRequestCancellation;
 exports.ifoodAcceptCancellation = ifoodAcceptCancellation;
 exports.ifoodDenyCancellation = ifoodDenyCancellation;
+
+// Export iFood Handshake (Dispute/Negotiation) Actions
+exports.ifoodAcceptDispute = ifoodAcceptDispute;
+exports.ifoodRejectDispute = ifoodRejectDispute;
+exports.ifoodSelectDisputeAlternative = ifoodSelectDisputeAlternative;

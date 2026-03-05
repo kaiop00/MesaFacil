@@ -11,6 +11,7 @@ import promotions from "./promotions.json";
 import kitchen from "./kitchen.json";
 import config from "./config.json";
 import cliente from "./cliente.json";
+import ifoodHandshake from "./ifoodHandshake.json";
 
 export default {
   dashboard,
@@ -26,4 +27,5 @@ export default {
   kitchen,
   config,
   cliente,
+  ifoodHandshake,
 };

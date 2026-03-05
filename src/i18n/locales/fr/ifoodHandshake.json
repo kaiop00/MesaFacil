@@ -1,0 +1,50 @@
+{
+  "title": "Négociations iFood",
+  "subtitle": "Plateforme Handshake",
+  "pending": "En attente",
+  "all": "Toutes",
+  "noPending": "Aucune négociation en attente",
+  "noDisputes": "Aucune négociation trouvée",
+  "loadError": "Erreur lors du chargement des négociations",
+  "disputeTypes": {
+    "CANCELLATION": "Annulation",
+    "PARTIAL_REFUND": "Remboursement Partiel",
+    "FULL_REFUND": "Remboursement Total"
+  },
+  "statuses": {
+    "PENDING": "En attente de réponse",
+    "ACCEPTED": "Acceptée",
+    "REJECTED": "Refusée",
+    "ALTERNATIVE_SELECTED": "Alternative sélectionnée",
+    "SETTLED": "Résolue",
+    "EXPIRED": "Expirée"
+  },
+  "reason": "Motif",
+  "customer": "Client",
+  "receivedAt": "Reçu le",
+  "evidences": "Preuves",
+  "alternatives": "Alternatives disponibles",
+  "resolution": "Résolution",
+  "expired": "Expiré",
+  "expiredNotice": "Délai expiré — en attente de la décision d'iFood",
+  "accept": "Accepter",
+  "reject": "Refuser",
+  "confirmAccept": "Êtes-vous sûr de vouloir ACCEPTER ce litige ? La commande sera annulée/remboursée.",
+  "confirmAlternative": "Confirmer la sélection de cette alternative ?",
+  "rejectionReason": "Motif du refus (optionnel)",
+  "rejectionPlaceholder": "Expliquez pourquoi vous n'êtes pas d'accord avec cette demande...",
+  "confirmReject": "Confirmer le Refus",
+  "cancel": "Annuler",
+  "acceptSuccess": "Litige accepté avec succès",
+  "rejectSuccess": "Litige refusé. iFood arbitrera la décision finale.",
+  "alternativeSuccess": "Alternative sélectionnée avec succès",
+  "acceptError": "Erreur lors de l'acceptation du litige",
+  "rejectError": "Erreur lors du refus du litige",
+  "alternativeError": "Erreur lors de la sélection de l'alternative du litige",
+  "retryMessage": "Tentative {{attempt}}/{{maxAttempts}}. Renvoi dans {{nextAttemptIn}}s...",
+  "notificationBanner": {
+    "single": "1 négociation iFood en attente",
+    "multiple": "{{count}} négociations iFood en attente",
+    "clickToView": "Cliquez pour voir et répondre"
+  }
+}

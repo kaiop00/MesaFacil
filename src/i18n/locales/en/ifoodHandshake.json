@@ -1,0 +1,50 @@
+{
+  "title": "iFood Negotiations",
+  "subtitle": "Handshake Platform",
+  "pending": "Pending",
+  "all": "All",
+  "noPending": "No pending negotiations",
+  "noDisputes": "No negotiations found",
+  "loadError": "Error loading negotiations",
+  "disputeTypes": {
+    "CANCELLATION": "Cancellation",
+    "PARTIAL_REFUND": "Partial Refund",
+    "FULL_REFUND": "Full Refund"
+  },
+  "statuses": {
+    "PENDING": "Awaiting response",
+    "ACCEPTED": "Accepted",
+    "REJECTED": "Rejected",
+    "ALTERNATIVE_SELECTED": "Alternative selected",
+    "SETTLED": "Settled",
+    "EXPIRED": "Expired"
+  },
+  "reason": "Reason",
+  "customer": "Customer",
+  "receivedAt": "Received at",
+  "evidences": "Evidence",
+  "alternatives": "Available alternatives",
+  "resolution": "Resolution",
+  "expired": "Expired",
+  "expiredNotice": "Deadline expired — awaiting iFood decision",
+  "accept": "Accept",
+  "reject": "Reject",
+  "confirmAccept": "Are you sure you want to ACCEPT this dispute? The order will be cancelled/refunded.",
+  "confirmAlternative": "Confirm the selection of this alternative?",
+  "rejectionReason": "Rejection reason (optional)",
+  "rejectionPlaceholder": "Explain why you disagree with this request...",
+  "confirmReject": "Confirm Rejection",
+  "cancel": "Cancel",
+  "acceptSuccess": "Dispute accepted successfully",
+  "rejectSuccess": "Dispute rejected. iFood will mediate the final decision.",
+  "alternativeSuccess": "Alternative selected successfully",
+  "acceptError": "Error accepting dispute",
+  "rejectError": "Error rejecting dispute",
+  "alternativeError": "Error selecting dispute alternative",
+  "retryMessage": "Attempt {{attempt}}/{{maxAttempts}}. Retrying in {{nextAttemptIn}}s...",
+  "notificationBanner": {
+    "single": "1 pending iFood negotiation",
+    "multiple": "{{count}} pending iFood negotiations",
+    "clickToView": "Click to view and respond"
+  }
+}

@@ -10,7 +10,7 @@ function capitalizeFirst(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkOne, onView, loading }) => {
+const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkOne, onView, loading, pendingDisputes = [], onViewDisputes }) => {
   const { t, i18n } = useTranslation();
   
   const formatData = (ts) => {
@@ -69,7 +69,32 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
       icon={Bell}
     >
       <div className="space-y-3 font-inter">
-        {notifications.length === 0 && (
+        {/* Pending iFood Disputes Banner */}
+        {pendingDisputes.length > 0 && (
+          <button
+            onClick={onViewDisputes}
+            className="w-full flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg hover:bg-yellow-100 transition-colors text-left"
+          >
+            <div className="w-9 h-9 rounded bg-yellow-200 flex items-center justify-center text-yellow-700 shrink-0">
+              <span className="text-lg">⚠️</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-yellow-900 text-sm">
+                {pendingDisputes.length === 1
+                  ? "1 negociação iFood pendente"
+                  : `${pendingDisputes.length} negociações iFood pendentes`}
+              </p>
+              <p className="text-xs text-yellow-700 truncate">
+                Clique para ver e responder
+              </p>
+            </div>
+            <span className="min-w-6 h-6 px-1.5 bg-yellow-500 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">
+              {pendingDisputes.length}
+            </span>
+          </button>
+        )}
+
+        {notifications.length === 0 && pendingDisputes.length === 0 && (
           <p className="text-center text-gray-500 py-6">{t("notifications:noNotifications")}</p>
         )}
 

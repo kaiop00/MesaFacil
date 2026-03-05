@@ -1470,6 +1470,84 @@ async function getEnabledIfoodIntegrations() {
 }
 
 /**
+ * Process a Handshake (negotiation) event from iFood
+ * Handles HANDSHAKE_DISPUTE (new dispute) and HANDSHAKE_SETTLEMENT (dispute resolved)
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {object} event - The handshake event from iFood polling
+ */
+async function processHandshakeEvent(idRestaurante, event) {
+  const {fullCode, orderId, metadata} = event;
+
+  if (fullCode === "HANDSHAKE_DISPUTE") {
+    const disputeId = metadata?.disputeId || event.id;
+    const disputeRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/ifoodDisputes/${disputeId}`);
+
+    await disputeRef.set({
+      disputeId,
+      orderId: orderId || null,
+      status: "PENDING",
+      type: metadata?.type || "CANCELLATION",
+      reason: metadata?.reason || null,
+      alternatives: metadata?.alternatives || [],
+      customerName: metadata?.customer?.name || null,
+      expiresAt: metadata?.expiresAt ? new Date(metadata.expiresAt) : null,
+      metadata: metadata || {},
+      eventId: event.id,
+      createdAt: event.createdAt ? new Date(event.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
+      receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    // Mark the related iFood order as having an active dispute
+    if (orderId) {
+      const orderRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+      const orderDoc = await orderRef.get();
+      if (orderDoc.exists) {
+        await orderRef.update({
+          needsManualReview: true,
+          activeDisputeId: disputeId,
+          lastDisputeAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+    logger.info("Handshake dispute saved", {idRestaurante, disputeId, orderId});
+  } else if (fullCode === "HANDSHAKE_SETTLEMENT") {
+    const disputeId = metadata?.disputeId || null;
+
+    if (disputeId) {
+      const disputeRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodDisputes/${disputeId}`);
+      const disputeDoc = await disputeRef.get();
+
+      if (disputeDoc.exists) {
+        await disputeRef.update({
+          status: "SETTLED",
+          settlement: metadata?.settlement || metadata || {},
+          settledAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+    // Clear the dispute flag from the order
+    if (orderId) {
+      const orderRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+      const orderDoc = await orderRef.get();
+      if (orderDoc.exists) {
+        await orderRef.update({
+          needsManualReview: false,
+          activeDisputeId: null,
+        });
+      }
+    }
+
+    logger.info("Handshake settlement processed", {idRestaurante, disputeId, orderId});
+  }
+}
+
+/**
  * Process a batch of events for a restaurant
  * @param {string} idRestaurante - Restaurant ID
  * @param {Array} events - Events to process
@@ -1501,8 +1579,12 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
         continue;
       }
 
+      // Handle Handshake (dispute/negotiation) events
+      if (event.fullCode === "HANDSHAKE_DISPUTE" || event.fullCode === "HANDSHAKE_SETTLEMENT") {
+        await processHandshakeEvent(idRestaurante, event);
+      }
       // For order events, fetch full order details
-      if (event.orderId) {
+      else if (event.orderId) {
         const orderData = await fetchIfoodOrder(event.orderId, accessToken);
         if (orderData) {
           await processIfoodOrder(idRestaurante, orderData);
