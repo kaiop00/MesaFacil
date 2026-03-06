@@ -967,15 +967,20 @@ exports.ifoodAcceptDispute = onCall(
   },
   async (request) => {
     try {
-      const {idRestaurante, disputeId, orderId} = request.data;
+      const {idRestaurante, disputeId, orderId, reason, detailReason} = request.data;
 
       if (!idRestaurante || !disputeId) {
         throw new Error("idRestaurante e disputeId são obrigatórios");
       }
 
-      logger.info("Aceitando disputa Handshake iFood", {idRestaurante, disputeId, orderId});
+      logger.info("Aceitando disputa Handshake iFood", {idRestaurante, disputeId, orderId, reason});
 
       const accessToken = await getValidAccessToken(idRestaurante);
+
+      // Build body — reason/detailReason required when acceptCancellationReasons present
+      const body = {};
+      if (reason) body.reason = reason;
+      if (detailReason) body.detailReason = detailReason;
 
       const response = await fetch(
         `${IFOOD_API_BASE_URL}/order/v1.0/disputes/${disputeId}/accept`,
@@ -985,6 +990,7 @@ exports.ifoodAcceptDispute = onCall(
             ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
           },
+          body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
         }
       );
 
@@ -1273,6 +1279,63 @@ exports.ifoodSelectDisputeAlternative = onCall(
       logger.error("Erro em ifoodSelectDisputeAlternative", {
         error: error.message,
         stack: error.stack,
+      });
+      throw new Error(error.message);
+    }
+  }
+);
+
+/**
+ * Proxy iFood cancellation evidence images (requires iFood auth)
+ * Returns the image as base64 data URI so the frontend can display it.
+ *
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} evidenceUrl - Full evidence URL from iFood
+ * @returns {Promise<{success: boolean, dataUri: string}>}
+ */
+exports.ifoodGetDisputeEvidence = onCall(
+  {
+    secrets: [ifoodClientId, ifoodClientSecret],
+    timeoutSeconds: 30,
+    region: "us-central1",
+    cors: true,
+  },
+  async (request) => {
+    try {
+      const {idRestaurante, evidenceUrl} = request.data;
+
+      if (!idRestaurante || !evidenceUrl) {
+        throw new Error("idRestaurante e evidenceUrl são obrigatórios");
+      }
+
+      // Only allow iFood merchant-api URLs to prevent SSRF
+      if (!evidenceUrl.startsWith("https://merchant-api.ifood.com.br/")) {
+        throw new Error("URL de evidência inválida");
+      }
+
+      const accessToken = await getValidAccessToken(idRestaurante);
+
+      const response = await fetch(evidenceUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "User-Agent": "MesaFacil/1.0 (Firebase Cloud Functions)",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar evidência: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "image/jpeg";
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      const dataUri = `data:${contentType};base64,${base64}`;
+
+      return {success: true, dataUri};
+    } catch (error) {
+      logger.error("Erro em ifoodGetDisputeEvidence", {
+        error: error.message,
       });
       throw new Error(error.message);
     }

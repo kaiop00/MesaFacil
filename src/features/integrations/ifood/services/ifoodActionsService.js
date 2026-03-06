@@ -143,12 +143,15 @@ export async function denyIfoodOrderCancellation(idRestaurante, orderId, reason)
  * @param {string} idRestaurante - Restaurant ID
  * @param {string} disputeId - Dispute ID
  * @param {string} [orderId] - Optional iFood order ID
+ * @param {object} [options] - Optional accept options
+ * @param {string} [options.reason] - Cancellation reason (from acceptCancellationReasons)
+ * @param {string} [options.detailReason] - Optional detail reason text
  * @returns {Promise<{success: boolean, message: string, disputeId: string}>}
  */
-export async function acceptIfoodDispute(idRestaurante, disputeId, orderId) {
+export async function acceptIfoodDispute(idRestaurante, disputeId, orderId, options = {}) {
     try {
         const accept = httpsCallable(functions, "ifoodAcceptDispute");
-        const result = await accept({ idRestaurante, disputeId, orderId });
+        const result = await accept({ idRestaurante, disputeId, orderId, ...options });
         return result.data;
     } catch (error) {
         console.error("Error accepting dispute:", error);
@@ -192,5 +195,22 @@ export async function selectIfoodDisputeAlternative(idRestaurante, disputeId, al
     } catch (error) {
         console.error("Error selecting dispute alternative:", error);
         throw new Error(error.message || "Erro ao selecionar alternativa da disputa");
+    }
+}
+
+/**
+ * Fetch a dispute evidence image via Cloud Function proxy (requires iFood auth)
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} evidenceUrl - Full iFood evidence URL
+ * @returns {Promise<{success: boolean, dataUri: string}>}
+ */
+export async function getIfoodDisputeEvidence(idRestaurante, evidenceUrl) {
+    try {
+        const getEvidence = httpsCallable(functions, "ifoodGetDisputeEvidence");
+        const result = await getEvidence({ idRestaurante, evidenceUrl });
+        return result.data;
+    } catch (error) {
+        console.error("Error fetching dispute evidence:", error);
+        throw new Error(error.message || "Erro ao buscar evidência");
     }
 }

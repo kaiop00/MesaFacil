@@ -405,3 +405,7 @@ exports.ifoodDenyCancellation = ifoodDenyCancellation;
 exports.ifoodAcceptDispute = ifoodAcceptDispute;
 exports.ifoodRejectDispute = ifoodRejectDispute;
 exports.ifoodSelectDisputeAlternative = ifoodSelectDisputeAlternative;
+
+// Export iFood Evidence Proxy
+const {ifoodGetDisputeEvidence} = require("./ifood-actions");
+exports.ifoodGetDisputeEvidence = ifoodGetDisputeEvidence;

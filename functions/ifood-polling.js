@@ -1487,14 +1487,25 @@ async function processHandshakeEvent(idRestaurante, event) {
       disputeId,
       orderId: orderId || null,
       status: "PENDING",
-      type: metadata?.type || "CANCELLATION",
-      reason: metadata?.reason || null,
+      // iFood sends "action" (CANCELLATION, PARTIAL_CANCELLATION, PROPOSED_AMOUNT_REFUND, etc.)
+      action: metadata?.action || "CANCELLATION",
+      // Keep legacy "type" mapped from action for backward compat
+      type: metadata?.action || metadata?.type || "CANCELLATION",
+      // Customer's complaint message
+      message: metadata?.message || null,
+      // Handshake context
+      handshakeType: metadata?.handshakeType || null,
+      handshakeGroup: metadata?.handshakeGroup || null,
+      timeoutAction: metadata?.timeoutAction || null,
+      // Alternatives (REFUND, BENEFIT, ADDITIONAL_TIME)
       alternatives: metadata?.alternatives || [],
-      customerName: metadata?.customer?.name || null,
-      expiresAt: metadata?.expiresAt ? new Date(metadata.expiresAt) : null,
+      // Nested metadata: evidences, items, garnishItems, acceptCancellationReasons
+      disputeMetadata: metadata?.metadata || null,
+      // Full raw metadata for reference
       metadata: metadata || {},
+      expiresAt: metadata?.expiresAt ? new Date(metadata.expiresAt) : null,
       eventId: event.id,
-      createdAt: event.createdAt ? new Date(event.createdAt) : admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: metadata?.createdAt ? new Date(metadata.createdAt) : (event.createdAt ? new Date(event.createdAt) : admin.firestore.FieldValue.serverTimestamp()),
       receivedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, {merge: true});
 
