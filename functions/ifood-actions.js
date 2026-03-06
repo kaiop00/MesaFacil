@@ -1178,10 +1178,14 @@ exports.ifoodSelectDisputeAlternative = onCall(
   },
   async (request) => {
     try {
-      const {idRestaurante, disputeId, alternativeId, orderId} = request.data;
+      const {idRestaurante, disputeId, alternativeId, orderId, alternativeBody} = request.data;
 
       if (!idRestaurante || !disputeId || !alternativeId) {
         throw new Error("idRestaurante, disputeId e alternativeId são obrigatórios");
+      }
+
+      if (!alternativeBody || !alternativeBody.type) {
+        throw new Error("alternativeBody com type é obrigatório");
       }
 
       logger.info("Selecionando alternativa para disputa Handshake iFood", {
@@ -1189,6 +1193,7 @@ exports.ifoodSelectDisputeAlternative = onCall(
         disputeId,
         alternativeId,
         orderId,
+        alternativeType: alternativeBody.type,
       });
 
       const accessToken = await getValidAccessToken(idRestaurante);
@@ -1201,6 +1206,7 @@ exports.ifoodSelectDisputeAlternative = onCall(
             ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
           },
+          body: JSON.stringify(alternativeBody),
         }
       );
 

@@ -181,12 +181,13 @@ export async function rejectIfoodDispute(idRestaurante, disputeId, orderId, reas
  * @param {string} disputeId - Dispute ID
  * @param {string} alternativeId - Alternative ID to select
  * @param {string} [orderId] - Optional iFood order ID
+ * @param {object} alternativeBody - Body per iFood docs: { type, metadata }
  * @returns {Promise<{success: boolean, message: string, disputeId: string, alternativeId: string}>}
  */
-export async function selectIfoodDisputeAlternative(idRestaurante, disputeId, alternativeId, orderId) {
+export async function selectIfoodDisputeAlternative(idRestaurante, disputeId, alternativeId, orderId, alternativeBody) {
     try {
         const selectAlt = httpsCallable(functions, "ifoodSelectDisputeAlternative");
-        const result = await selectAlt({ idRestaurante, disputeId, alternativeId, orderId });
+        const result = await selectAlt({ idRestaurante, disputeId, alternativeId, orderId, alternativeBody });
         return result.data;
     } catch (error) {
         console.error("Error selecting dispute alternative:", error);
