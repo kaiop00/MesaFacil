@@ -66,6 +66,14 @@ const TIMEOUT_ACTION_LABELS = {
     VOID: "Nenhuma ação automática",
 };
 
+const HANDSHAKE_GROUP_LABELS = {
+    CUSTOMER_ORDER_SUPPORT: "Reclamação do cliente sobre o pedido",
+    DELAY: "Atraso na entrega",
+    ITEM_UNAVAILABLE: "Item indisponível",
+    PREPARATION_TIME: "Tempo de preparo",
+    CONSUMER_CANCELLATION: "Cancelamento solicitado pelo cliente",
+};
+
 const ALTERNATIVE_TYPE_LABELS = {
     REFUND: "Propor Reembolso",
     BENEFIT: "Oferecer Benefício (cupom)",
@@ -260,8 +268,10 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
     const garnishItems = nestedMeta.garnishItems || [];
     const acceptCancellationReasons = nestedMeta.acceptCancellationReasons || [];
 
+    const handshakeGroup = dispute.handshakeGroup || dispute.metadata?.handshakeGroup;
     const actionLabel = ACTION_LABELS[action] || action;
     const handshakeLabel = HANDSHAKE_TYPE_LABELS[handshakeType] || handshakeType;
+    const handshakeGroupLabel = HANDSHAKE_GROUP_LABELS[handshakeGroup] || handshakeGroup;
     const timeoutLabel = TIMEOUT_ACTION_LABELS[timeoutAction] || timeoutAction;
     const statusLabel = STATUS_LABELS[dispute.status] || dispute.status;
     const statusColor = STATUS_COLORS[dispute.status] || STATUS_COLORS.PENDING;
@@ -339,6 +349,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
 
     const handleSubmitAlternative = async (alt) => {
         let alternativeBody;
+        const altMaxAmount = alt.maxAmount || alt.metadata?.maxAmount;
 
         if (alt.type === "REFUND" || alt.type === "BENEFIT") {
             const rawValue = refundAmount.replace(/[^0-9]/g, "");
@@ -346,7 +357,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 notify("Informe um valor válido para o reembolso", "error");
                 return;
             }
-            const maxValue = Number(alt.metadata?.maxAmount?.value || 0);
+            const maxValue = Number(altMaxAmount?.value || 0);
             if (maxValue > 0 && Number(rawValue) > maxValue) {
                 notify(`Valor máximo permitido: ${formatIfoodMoney(maxValue)}`, "error");
                 return;
@@ -355,8 +366,8 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 type: alt.type,
                 metadata: {
                     amount: {
-                        value: rawValue,
-                        currency: alt.metadata?.maxAmount?.currency || "BRL",
+                        value: String(rawValue),
+                        currency: altMaxAmount?.currency || "BRL",
                     },
                 },
             };
@@ -432,6 +443,14 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
 
             {/* ─── Body ───────────────────────────────────── */}
             <div className="p-4 space-y-4">
+
+                {/* Problem type / context */}
+                {handshakeGroup && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-xs text-red-600 font-medium uppercase tracking-wide mb-1">Tipo do problema</p>
+                        <p className="text-sm font-medium text-red-900">{handshakeGroupLabel}</p>
+                    </div>
+                )}
 
                 {/* Context badges */}
                 <div className="flex flex-wrap gap-2">
@@ -567,9 +586,9 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                                 <p className="text-xs text-gray-500 mt-0.5">
                                                     {ALTERNATIVE_TYPE_DESCRIPTIONS[alt.type]}
                                                 </p>
-                                                {alt.metadata?.maxAmount && (
+                                                {(alt.maxAmount || alt.metadata?.maxAmount) && (
                                                     <p className="text-xs text-blue-600 font-medium mt-1">
-                                                        Valor máximo: {formatIfoodMoney(alt.metadata.maxAmount.value, alt.metadata.maxAmount.currency)}
+                                                        Valor máximo: {formatIfoodMoney((alt.maxAmount || alt.metadata?.maxAmount).value, (alt.maxAmount || alt.metadata?.maxAmount).currency)}
                                                     </p>
                                                 )}
                                             </div>
@@ -578,7 +597,9 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                     </button>
 
                                     {/* REFUND / BENEFIT form */}
-                                    {showAlternativeForm?.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (
+                                    {showAlternativeForm?.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (() => {
+                                        const formMaxAmount = alt.maxAmount || alt.metadata?.maxAmount;
+                                        return (
                                         <div className="p-3 border-t border-blue-200 bg-blue-50 space-y-3">
                                             <label className="block text-sm font-medium text-gray-700">
                                                 Valor do {alt.type === "REFUND" ? "reembolso" : "benefício"} (R$)
@@ -587,13 +608,13 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                                 type="number"
                                                 min="0.01"
                                                 step="0.01"
-                                                max={alt.metadata?.maxAmount ? Number(alt.metadata.maxAmount.value) / 100 : undefined}
+                                                max={formMaxAmount ? Number(formMaxAmount.value) / 100 : undefined}
                                                 value={refundAmount ? Number(refundAmount) / 100 : ""}
                                                 onChange={(e) => {
                                                     const val = e.target.value;
                                                     setRefundAmount(val ? String(Math.round(Number(val) * 100)) : "");
                                                 }}
-                                                placeholder={alt.metadata?.maxAmount ? `Até ${(Number(alt.metadata.maxAmount.value) / 100).toFixed(2)}` : "0,00"}
+                                                placeholder={formMaxAmount ? `Até ${(Number(formMaxAmount.value) / 100).toFixed(2)}` : "0,00"}
                                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                                                 disabled={loading}
                                             />
@@ -622,14 +643,15 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                                 </button>
                                             </div>
                                         </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     {/* ADDITIONAL_TIME form */}
                                     {showAlternativeForm?.id === alt.id && alt.type === "ADDITIONAL_TIME" && (
                                         <div className="p-3 border-t border-blue-200 bg-blue-50 space-y-3">
                                             <label className="block text-sm font-medium text-gray-700">Quanto tempo adicional você precisa?</label>
                                             <div className="flex gap-2 flex-wrap">
-                                                {(alt.metadata?.allowedsAdditionalTimeInMinutes || []).map((min) => (
+                                                {(alt.allowedsAdditionalTimeInMinutes || alt.metadata?.allowedsAdditionalTimeInMinutes || []).map((min) => (
                                                     <button
                                                         key={min}
                                                         onClick={() => setAdditionalTime(min)}
@@ -652,7 +674,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                                 disabled={loading}
                                             >
                                                 <option value="">Selecione o motivo...</option>
-                                                {(alt.metadata?.allowedsAdditionalTimeReasons || []).map((r) => (
+                                                {(alt.allowedsAdditionalTimeReasons || alt.metadata?.allowedsAdditionalTimeReasons || []).map((r) => (
                                                     <option key={r} value={r}>
                                                         {NEGOTIATION_REASON_LABELS[r] || r}
                                                     </option>

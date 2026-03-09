@@ -1204,6 +1204,20 @@ exports.ifoodSelectDisputeAlternative = onCall(
 
       const accessToken = await getValidAccessToken(idRestaurante);
 
+      // iFood expects {type, metadata: {...}} — ensure numeric fields are numbers, not strings
+      const requestBody = JSON.parse(JSON.stringify(alternativeBody), (key, val) => {
+        if (key === "additionalTimeInMinutes") {
+          return typeof val === "string" ? Number(val) : val;
+        }
+        return val;
+      });
+
+      logger.info("Enviando body para iFood alternatives", {
+        disputeId,
+        alternativeId,
+        requestBody,
+      });
+
       const response = await fetch(
         `${IFOOD_API_BASE_URL}/order/v1.0/disputes/${disputeId}/alternatives/${alternativeId}`,
         {
@@ -1212,7 +1226,7 @@ exports.ifoodSelectDisputeAlternative = onCall(
             ...IFOOD_API_HEADERS,
             "Authorization": `Bearer ${accessToken}`,
           },
-          body: JSON.stringify(alternativeBody),
+          body: JSON.stringify(requestBody),
         }
       );
 
