@@ -55,8 +55,8 @@ const IfoodAdditionalFeesDetails = ({ additionalFees, totalAdditionalFees, rawDa
             {feesList.length > 0 ? (
                 <div className="space-y-2">
                     {feesList.map((fee, index) => {
-                        const typeLabel = FEE_TYPE_LABELS[fee.type] || fee.type || "Taxa";
-                        const description = fee.fullDescription || fee.description || "";
+                        const typeLabel = fee.description || FEE_TYPE_LABELS[fee.type] || fee.type || "Taxa";
+                        const description = fee.fullDescription || "";
                         const liabilities = fee.liabilities || [];
 
                         return (
