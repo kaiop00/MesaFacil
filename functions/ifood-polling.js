@@ -352,8 +352,8 @@ async function markEventAsProcessed(idRestaurante, event) {
   
   await eventRef.set({
     eventId: event.id,
-    code: event.code,
-    fullCode: event.fullCode,
+    code: event.code || event.Code,
+    fullCode: event.fullCode || event.fullcode,
     orderId: event.orderId,
     merchantId: event.merchantId,
     createdAt: event.createdAt || admin.firestore.FieldValue.serverTimestamp(),
@@ -1591,8 +1591,10 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
       }
 
       // Handle Handshake (dispute/negotiation) events
-      if (event.fullCode === "HANDSHAKE_DISPUTE" || event.fullCode === "HANDSHAKE_SETTLEMENT") {
-        await processHandshakeEvent(idRestaurante, event);
+      // Normalize casing: iFood API sends "fullcode" (lowercase) inconsistently
+      const eventFullCode = event.fullCode || event.fullcode;
+      if (eventFullCode === "HANDSHAKE_DISPUTE" || eventFullCode === "HANDSHAKE_SETTLEMENT") {
+        await processHandshakeEvent(idRestaurante, {...event, fullCode: eventFullCode});
       }
       // For order events, fetch full order details
       else if (event.orderId) {

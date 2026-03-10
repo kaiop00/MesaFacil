@@ -78,12 +78,14 @@ const ALTERNATIVE_TYPE_LABELS = {
     REFUND: "Propor Reembolso",
     BENEFIT: "Oferecer Benefício (cupom)",
     ADDITIONAL_TIME: "Negociar Tempo de Entrega",
+    ADDTIONAL_TIME: "Negociar Tempo de Entrega", // typo oficial da API iFood
 };
 
 const ALTERNATIVE_TYPE_DESCRIPTIONS = {
     REFUND: "Ofereça um reembolso parcial ao cliente para evitar o cancelamento do pedido.",
     BENEFIT: "Ofereça um cupom/benefício ao cliente para evitar o cancelamento.",
     ADDITIONAL_TIME: "Proponha um novo prazo de entrega ao cliente.",
+    ADDTIONAL_TIME: "Proponha um novo prazo de entrega ao cliente.", // typo oficial da API iFood
 };
 
 const NEGOTIATION_REASON_LABELS = {
@@ -371,7 +373,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                     },
                 },
             };
-        } else if (alt.type === "ADDITIONAL_TIME") {
+        } else if (alt.type === "ADDITIONAL_TIME" || alt.type === "ADDTIONAL_TIME") {
             if (!additionalTime) {
                 notify("Selecione o tempo adicional", "error");
                 return;
@@ -381,7 +383,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 return;
             }
             alternativeBody = {
-                type: "ADDITIONAL_TIME",
+                type: "ADDITIONAL_TIME", // sempre enviamos o nome correto ao iFood
                 metadata: {
                     additionalTimeInMinutes: Number(additionalTime),
                     additionalTimeReason,
@@ -445,12 +447,12 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
             <div className="p-4 space-y-4">
 
                 {/* Problem type / context */}
-                {handshakeGroup && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                        <p className="text-xs text-red-600 font-medium uppercase tracking-wide mb-1">Tipo do problema</p>
-                        <p className="text-sm font-medium text-red-900">{handshakeGroupLabel}</p>
-                    </div>
-                )}
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-xs text-red-600 font-medium uppercase tracking-wide mb-1">Tipo do problema</p>
+                    <p className="text-sm font-medium text-red-900">
+                        {handshakeGroupLabel || <span className="text-red-400 italic">Não identificado</span>}
+                    </p>
+                </div>
 
                 {/* Context badges */}
                 <div className="flex flex-wrap gap-2">
@@ -467,12 +469,12 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 </div>
 
                 {/* Customer message */}
-                {message && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p className="text-xs text-blue-600 font-medium uppercase tracking-wide mb-1">Mensagem do cliente</p>
-                        <p className="text-sm text-blue-900">{message}</p>
-                    </div>
-                )}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs text-blue-600 font-medium uppercase tracking-wide mb-1">Mensagem do cliente</p>
+                    <p className="text-sm text-blue-900">
+                        {message || <span className="text-blue-400 italic">Sem mensagem</span>}
+                    </p>
+                </div>
 
                 {/* Evidence images */}
                 {evidences.length > 0 && (
@@ -555,6 +557,11 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 <div className="text-xs text-gray-400">Recebido em: {createdAtLabel}</div>
 
                 {/* ─── Alternatives (Counter-proposals) ──── */}
+                {canAct && alternatives.length === 0 && (
+                    <div className="border border-gray-200 rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500 text-center">Nenhuma contraproposta disponível para esta disputa</p>
+                    </div>
+                )}
                 {canAct && alternatives.length > 0 && (
                     <div className="border border-blue-200 rounded-lg bg-blue-50/50 p-3 space-y-2">
                         <p className="text-xs text-blue-700 font-semibold uppercase tracking-wide">
@@ -597,7 +604,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                     </button>
 
                                     {/* REFUND / BENEFIT form */}
-                                    {showAlternativeForm?.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (() => {
+                                    {showAlternativeForm?.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (() => { // eslint-disable-line no-extra-parens
                                         const formMaxAmount = alt.maxAmount || alt.metadata?.maxAmount;
                                         return (
                                         <div className="p-3 border-t border-blue-200 bg-blue-50 space-y-3">
@@ -646,8 +653,8 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                         );
                                     })()}
 
-                                    {/* ADDITIONAL_TIME form */}
-                                    {showAlternativeForm?.id === alt.id && alt.type === "ADDITIONAL_TIME" && (
+                                    {/* ADDITIONAL_TIME form (also handles iFood API typo "ADDTIONAL_TIME") */}
+                                    {showAlternativeForm?.id === alt.id && (alt.type === "ADDITIONAL_TIME" || alt.type === "ADDTIONAL_TIME") && (
                                         <div className="p-3 border-t border-blue-200 bg-blue-50 space-y-3">
                                             <label className="block text-sm font-medium text-gray-700">Quanto tempo adicional você precisa?</label>
                                             <div className="flex gap-2 flex-wrap">
