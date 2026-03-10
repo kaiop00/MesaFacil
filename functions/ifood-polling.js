@@ -20,6 +20,7 @@ const IFOOD_STATUS_PRECEDENCE = {
   "ACCEPTED": 2,
   "CONFIRMED": 3,
   "CANCELLATION_REQUESTED": 3,
+  "CANCELLATION_REQUEST_FAILED": 3,
   "READY_TO_PICKUP": 4,
   "DISPATCHED": 4,
   "CONCLUDED": 5,
@@ -1260,16 +1261,18 @@ async function syncStatusToMesaFacilOrder(
   try {
     // Map iFood status to MesaFacil status
     const statusMap = {
-      "INTEGRATED": "andamento",       // Pedido integrado
-      "PENDING": "andamento",          // Pendente
-      "PLACED": "andamento",           // Pedido recebido
-      "ACCEPTED": "andamento",         // Aceito pelo restaurante
-      "CONFIRMED": "andamento",        // Confirmado pelo restaurante
-      "READY_TO_PICKUP": "andamento",  // Pronto para retirada
-      "DISPATCHED": "andamento",       // Saiu para entrega
-      "CONCLUDED": "entregue",         // Concluído
-      "CANCELLED": "cancelado",        // Cancelado
-      "REJECTED": "cancelado",         // Rejeitado pelo restaurante
+      "INTEGRATED": "andamento",                 // Pedido integrado
+      "PENDING": "andamento",                    // Pendente
+      "PLACED": "andamento",                     // Pedido recebido
+      "ACCEPTED": "andamento",                   // Aceito pelo restaurante
+      "CONFIRMED": "andamento",                  // Confirmado pelo restaurante
+      "READY_TO_PICKUP": "andamento",            // Pronto para retirada
+      "DISPATCHED": "andamento",                 // Saiu para entrega
+      "CANCELLATION_REQUESTED": "andamento",     // Cancelamento em análise
+      "CANCELLATION_REQUEST_FAILED": "andamento",// Cancelamento recusado — pedido continua ativo
+      "CONCLUDED": "entregue",                   // Concluído
+      "CANCELLED": "cancelado",                  // Cancelado
+      "REJECTED": "cancelado",                   // Rejeitado pelo restaurante
     };
     
     const mesaFacilStatus = statusMap[newIfoodStatus] || "andamento";
@@ -1475,6 +1478,85 @@ async function getEnabledIfoodIntegrations() {
  * @param {string} idRestaurante - Restaurant ID
  * @param {object} event - The handshake event from iFood polling
  */
+/**
+ * Handle CANCELLATION_REQUEST_FAILED (CARF) events.
+ *
+ * When the iFood platform rejects a cancellation request the order's
+ * orderStatus stays as CANCELLATION_REQUESTED in the Order Details API.
+ * The generic orderId processing branch therefore sees no status change
+ * and never updates the pedido, leaving the UI stuck on
+ * "aguardando resposta do iFood" indefinitely.
+ *
+ * This function explicitly updates both ifoodOrders and mesas/ifood/pedidos
+ * with ifoodStatus = "CANCELLATION_REQUEST_FAILED" so the UI can reflect
+ * the outcome immediately on the next real-time listener tick.
+ *
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {object} event - Raw CARF event from iFood polling
+ */
+async function processCancellationRequestFailed(idRestaurante, event) {
+  const {orderId, metadata} = event;
+  if (!orderId) return;
+
+  try {
+    const failedReason = metadata?.CANCELLATION_REQUEST_FAILED_REASON || null;
+    const cancelCode = metadata?.CANCEL_CODE || null;
+
+    // Update ifoodOrders document
+    const ifoodOrderRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+
+    const ifoodOrderDoc = await ifoodOrderRef.get();
+    if (!ifoodOrderDoc.exists) {
+      logger.warn("processCancellationRequestFailed: ifoodOrders doc not found", {
+        idRestaurante,
+        orderId,
+      });
+      return;
+    }
+
+    await ifoodOrderRef.update({
+      ifoodStatus: "CANCELLATION_REQUEST_FAILED",
+      cancellationRequestFailed: true,
+      cancellationRequestFailedReason: failedReason,
+      cancellationRequestFailedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Update associated mesa pedido so the UI reflects the change immediately
+    const mesaFacilOrderId = ifoodOrderDoc.data().mesaFacilOrderId;
+    if (mesaFacilOrderId) {
+      const pedidoRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/mesas/ifood/pedidos/${mesaFacilOrderId}`);
+
+      await pedidoRef.update({
+        ifoodStatus: "CANCELLATION_REQUEST_FAILED",
+        lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
+        ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
+          status: "CANCELLATION_REQUEST_FAILED",
+          changedAt: new Date().toISOString(),
+          source: "ifood",
+          reason: failedReason,
+          cancelCode: cancelCode,
+        }),
+      });
+    }
+
+    logger.info("Cancellation request failed event processed", {
+      idRestaurante,
+      orderId,
+      failedReason,
+      mesaFacilOrderId: mesaFacilOrderId || null,
+    });
+  } catch (error) {
+    logger.error("Error processing cancellation request failed event", {
+      idRestaurante,
+      orderId,
+      error: error.message,
+    });
+  }
+}
+
 async function processHandshakeEvent(idRestaurante, event) {
   const {fullCode, orderId, metadata} = event;
 
@@ -1596,10 +1678,46 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
       if (eventFullCode === "HANDSHAKE_DISPUTE" || eventFullCode === "HANDSHAKE_SETTLEMENT") {
         await processHandshakeEvent(idRestaurante, {...event, fullCode: eventFullCode});
       }
+      // Handle cancellation request failed — iFood denied or failed to process
+      // the cancellation. The order's orderStatus from the iFood API still reads
+      // CANCELLATION_REQUESTED at this point, so the generic orderId branch would
+      // detect no status change and leave the pedido stuck with "aguardando" forever.
+      else if (eventFullCode === "CANCELLATION_REQUEST_FAILED") {
+        await processCancellationRequestFailed(idRestaurante, event);
+      }
       // For order events, fetch full order details
       else if (event.orderId) {
         const orderData = await fetchIfoodOrder(event.orderId, accessToken);
         if (orderData) {
+          // The iFood Order Details API may lag behind the Events API, returning
+          // a stale orderStatus (e.g. "PLACED" even after CFM/DSP/CON events).
+          // The event's fullCode is the authoritative status transition — if it
+          // represents a more advanced status than what the API returned, override
+          // orderData.orderStatus so processIfoodOrder detects the change.
+          const EVENT_FULLCODE_TO_STATUS = {
+            "PLACED": "PLACED",
+            "CONFIRMED": "CONFIRMED",
+            "READY_TO_PICKUP": "READY_TO_PICKUP",
+            "DISPATCHED": "DISPATCHED",
+            "CONCLUDED": "CONCLUDED",
+            "CANCELLED": "CANCELLED",
+            "CANCELLATION_REQUESTED": "CANCELLATION_REQUESTED",
+          };
+          const eventStatus = EVENT_FULLCODE_TO_STATUS[eventFullCode];
+          if (eventStatus) {
+            const eventPrecedence = IFOOD_STATUS_PRECEDENCE[eventStatus] || 0;
+            const apiPrecedence = IFOOD_STATUS_PRECEDENCE[orderData.orderStatus] || 0;
+            if (eventPrecedence > apiPrecedence) {
+              logger.info("Event fullCode more advanced than Order Details API status, overriding", {
+                idRestaurante,
+                orderId: event.orderId,
+                eventFullCode,
+                eventStatus,
+                apiOrderStatus: orderData.orderStatus,
+              });
+              orderData.orderStatus = eventStatus;
+            }
+          }
           await processIfoodOrder(idRestaurante, orderData);
         }
       }

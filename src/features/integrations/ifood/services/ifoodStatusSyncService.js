@@ -191,6 +191,7 @@ export const formatIfoodStatus = (status) => {
         'CONCLUDED': 'Concluído',
         'CANCELLED': 'Cancelado',
         'CANCELLATION_REQUESTED': 'Cancelamento Solicitado',
+        'CANCELLATION_REQUEST_FAILED': 'Cancelamento Recusado',
         'INTEGRATED': 'Integrado',
         'PENDING': 'Pendente',
         'ACCEPTED': 'Aceito',
