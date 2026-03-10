@@ -49,8 +49,9 @@ const IfoodOrderActions = ({
     const canConfirm = currentStatus === "PLACED";
     const canDispatch = currentStatus === "CONFIRMED" && orderType === "DELIVERY";
     const canMarkReady = currentStatus === "CONFIRMED" && orderType === "TAKEOUT";
-    const canCancel = ["PLACED", "CONFIRMED"].includes(currentStatus);
+    const canCancel = ["PLACED", "CONFIRMED", "CANCELLATION_REQUEST_FAILED"].includes(currentStatus);
     const isCancellationRequested = currentStatus === "CANCELLATION_REQUESTED";
+    const isCancellationFailed = currentStatus === "CANCELLATION_REQUEST_FAILED";
 
     const handleConfirm = async () => {
         if (!confirm("Confirmar o recebimento deste pedido no iFood?")) return;
@@ -209,7 +210,7 @@ const IfoodOrderActions = ({
     };
 
     // Don't show anything if no actions are available
-    if (!canConfirm && !canDispatch && !canMarkReady && !canCancel && !isCancellationRequested) {
+    if (!canConfirm && !canDispatch && !canMarkReady && !canCancel && !isCancellationRequested && !isCancellationFailed) {
         return null;
     }
 
@@ -218,10 +219,17 @@ const IfoodOrderActions = ({
             <div className="border-t border-orange-200 pt-3">
                 <p className="text-xs text-orange-700 mb-2 font-medium">Ações do Pedido:</p>
                 
-                {/* Cancellation Requested Banner */}
+                {/* Cancellation Requested Banner — waiting for iFood response */}
                 {isCancellationRequested && (
                     <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                        ⏳ Cancelamento solicitado — aguardando resposta do iFood
+                        Cancelamento solicitado
+                    </div>
+                )}
+
+                {/* Cancellation Request Failed Banner — iFood denied the request */}
+                {isCancellationFailed && (
+                    <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800">
+                        ❌ Cancelamento recusado pelo iFood — o pedido continua ativo. Você pode tentar cancelar novamente.
                     </div>
                 )}
                 
