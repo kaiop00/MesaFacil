@@ -10,6 +10,8 @@ import {
 import { useIfoodRetry } from "../hooks/useIfoodRetry";
 import { TriangleWarning, CheckboxCheck, CloseSm, ArrowReload02, TimerAdd } from "react-coolicons";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
 
 // ─── Countdown hook ─────────────────────────────────────────
 function useCountdown(expiresAt) {
@@ -104,6 +106,7 @@ const STATUS_LABELS = {
     ACCEPTED: "Aceita",
     REJECTED: "Rejeitada",
     ALTERNATIVE_SELECTED: "Contraproposta enviada",
+    ALTERNATIVE_REPLIED: "Contraproposta enviada",
     SETTLED: "Resolvida",
     EXPIRED: "Expirada",
 };
@@ -113,6 +116,7 @@ const STATUS_COLORS = {
     ACCEPTED: "bg-green-100 text-green-800 border-green-300",
     REJECTED: "bg-red-100 text-red-800 border-red-300",
     ALTERNATIVE_SELECTED: "bg-blue-100 text-blue-800 border-blue-300",
+    ALTERNATIVE_REPLIED: "bg-blue-100 text-blue-800 border-blue-300",
     SETTLED: "bg-gray-100 text-gray-800 border-gray-300",
     EXPIRED: "bg-gray-100 text-gray-500 border-gray-300",
 };
@@ -255,6 +259,16 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
     const rejectRetry = useIfoodRetry();
     const alternativeRetry = useIfoodRetry();
     const loading = acceptRetry.isExecuting || rejectRetry.isExecuting || alternativeRetry.isExecuting;
+
+    // ─── Order data ───────────────────────────────────────────
+    const [orderData, setOrderData] = useState(null);
+    useEffect(() => {
+        if (!dispute.orderId || !idRestaurante) return;
+        const docRef = doc(db, 'restaurantes', idRestaurante, 'ifoodOrders', dispute.orderId);
+        getDoc(docRef)
+            .then(snap => { if (snap.exists()) setOrderData(snap.data()); })
+            .catch(err => console.error('Error fetching dispute order:', err));
+    }, [dispute.orderId, idRestaurante]);
 
     // ─── Derived data ─────────────────────────────────────────
     const action = dispute.action || dispute.metadata?.action || dispute.type || "CANCELLATION";
@@ -444,34 +458,69 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
             </div>
 
             {/* ─── Body ───────────────────────────────────── */}
-            <div className="p-4 space-y-4">
+            <div className="p-3 space-y-3">
 
-                {/* Problem type / context */}
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-xs text-red-600 font-medium uppercase tracking-wide mb-1">Tipo do problema</p>
-                    <p className="text-sm font-medium text-red-900">
-                        {handshakeGroupLabel || <span className="text-red-400 italic">Não identificado</span>}
-                    </p>
-                </div>
-
-                {/* Context badges */}
-                <div className="flex flex-wrap gap-2">
-                    {handshakeType && (
-                        <span className="inline-flex items-center text-xs font-medium px-2 py-1 rounded-md bg-gray-100 text-gray-700">
-                            {handshakeLabel}
-                        </span>
+                {/* ─── Info grid ─────────────────────────────────────── */}
+                <div className="grid grid-cols-2 gap-1.5">
+                    {handshakeGroupLabel && (
+                        <div className="bg-red-50 border border-red-100 rounded-lg px-2.5 py-2">
+                            <p className="text-[10px] text-red-500 font-medium uppercase tracking-wide">Motivo</p>
+                            <p className="text-xs font-medium text-red-800 mt-0.5 leading-tight">{handshakeGroupLabel}</p>
+                        </div>
+                    )}
+                    {handshakeLabel && (
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2">
+                            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Momento</p>
+                            <p className="text-xs font-medium text-gray-700 mt-0.5 leading-tight">{handshakeLabel}</p>
+                        </div>
                     )}
                     {timeoutAction && isPending && (
-                        <span className="inline-flex items-center text-xs px-2 py-1 rounded-md bg-orange-50 text-orange-700 border border-orange-200">
-                            Se expirar: {timeoutLabel}
-                        </span>
+                        <div className="col-span-2 bg-orange-50 border border-orange-100 rounded-lg px-2.5 py-1.5 flex items-center gap-2">
+                            <p className="text-[10px] text-orange-600 font-medium uppercase tracking-wide flex-shrink-0">Se expirar:</p>
+                            <p className="text-xs font-medium text-orange-700">{timeoutLabel}</p>
+                        </div>
                     )}
                 </div>
 
+                {/* ─── Order summary ──────────────────────────────────── */}
+                {orderData && (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-gray-800 truncate flex-1">
+                                {orderData.customer?.name}
+                            </span>
+                            {orderData.displayId && (
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded flex-shrink-0">
+                                    #{orderData.displayId}
+                                </span>
+                            )}
+                            {orderData.total?.orderAmount != null && (
+                                <span className="text-xs font-semibold text-gray-700 flex-shrink-0">
+                                    {orderData.total.orderAmount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                </span>
+                            )}
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                            {orderData.items?.map((item, i) => (
+                                <div key={item.id || i} className="px-3 py-1 flex items-center gap-2">
+                                    <span className="text-[10px] text-gray-400 w-4 text-right flex-shrink-0">{item.quantity}x</span>
+                                    <span className="text-xs text-gray-700 flex-1 truncate">{item.name}</span>
+                                    {item.options?.length > 0 && (
+                                        <span className="text-[10px] text-gray-400 flex-shrink-0">+{item.options.length} opc.</span>
+                                    )}
+                                    <span className="text-[11px] text-gray-500 flex-shrink-0">
+                                        {item.totalPrice?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Customer message */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-xs text-blue-600 font-medium uppercase tracking-wide mb-1">Mensagem do cliente</p>
-                    <p className="text-sm text-blue-900">
+                <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                    <p className="text-[10px] text-blue-600 font-medium uppercase tracking-wide mb-0.5">Mensagem do cliente</p>
+                    <p className="text-xs text-blue-900">
                         {message || <span className="text-blue-400 italic">Sem mensagem</span>}
                     </p>
                 </div>
@@ -498,28 +547,31 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 {/* Items being cancelled (PARTIAL_CANCELLATION) */}
                 {items.length > 0 && (
                     <div>
-                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
+                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-1.5">
                             Itens contestados
                         </p>
-                        <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
-                            {items.map((item, i) => (
-                                <div key={item.uniqueId || i} className="flex items-center justify-between px-3 py-2">
-                                    <div className="min-w-0">
-                                        <p className="text-sm text-gray-800 font-medium">
-                                            {item.externalCode && <span className="text-gray-400 mr-1">#{item.externalCode}</span>}
-                                            {item.quantity}x Item
-                                        </p>
+                        <div className="border border-amber-200 rounded-lg divide-y divide-amber-100 bg-amber-50/40">
+                            {items.map((item, i) => {
+                                const orderItem = orderData?.items?.find(oi => oi.id === item.id);
+                                const itemName = orderItem?.name || `Item #${item.id?.slice(-4) || i + 1}`;
+                                return (
+                                    <div key={item.uniqueId || i} className="px-3 py-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-medium text-gray-800 flex-1 truncate">
+                                                {item.quantity}x {itemName}
+                                            </span>
+                                            {item.amount && (
+                                                <span className="text-xs font-semibold text-amber-700 flex-shrink-0">
+                                                    {formatIfoodMoney(item.amount.value, item.amount.currency)}
+                                                </span>
+                                            )}
+                                        </div>
                                         {item.reason && (
-                                            <p className="text-xs text-gray-500 mt-0.5 italic">&quot;{item.reason}&quot;</p>
+                                            <p className="text-[10px] text-gray-500 mt-0.5 italic">&#34;{item.reason}&#34;</p>
                                         )}
                                     </div>
-                                    {item.amount && (
-                                        <span className="text-sm font-medium text-gray-700 flex-shrink-0 ml-2">
-                                            {formatIfoodMoney(item.amount.value, item.amount.currency)}
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -527,25 +579,24 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 {/* Garnish items being cancelled */}
                 {garnishItems.length > 0 && (
                     <div>
-                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">
+                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-1.5">
                             Complementos contestados
                         </p>
-                        <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                        <div className="border border-amber-200 rounded-lg divide-y divide-amber-100 bg-amber-50/40">
                             {garnishItems.map((gi, i) => (
-                                <div key={gi.id || i} className="flex items-center justify-between px-3 py-2">
-                                    <div className="min-w-0">
-                                        <p className="text-sm text-gray-800 font-medium">
-                                            {gi.externalCode && <span className="text-gray-400 mr-1">#{gi.externalCode}</span>}
-                                            {gi.quantity}x Complemento
-                                        </p>
-                                        {gi.reason && (
-                                            <p className="text-xs text-gray-500 mt-0.5 italic">&quot;{gi.reason}&quot;</p>
+                                <div key={gi.id || i} className="px-3 py-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs font-medium text-gray-800 flex-1 truncate">
+                                            {gi.quantity}x {gi.name || `Complemento #${gi.id?.slice(-4) || i + 1}`}
+                                        </span>
+                                        {gi.amount && (
+                                            <span className="text-xs font-semibold text-amber-700 flex-shrink-0">
+                                                {formatIfoodMoney(gi.amount.value, gi.amount.currency)}
+                                            </span>
                                         )}
                                     </div>
-                                    {gi.amount && (
-                                        <span className="text-sm font-medium text-gray-700 flex-shrink-0 ml-2">
-                                            {formatIfoodMoney(gi.amount.value, gi.amount.currency)}
-                                        </span>
+                                    {gi.reason && (
+                                        <p className="text-[10px] text-gray-500 mt-0.5 italic">&#34;{gi.reason}&#34;</p>
                                     )}
                                 </div>
                             ))}
@@ -554,7 +605,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                 )}
 
                 {/* Timestamp */}
-                <div className="text-xs text-gray-400">Recebido em: {createdAtLabel}</div>
+                <div className="text-[10px] text-gray-400">Recebido em: {createdAtLabel}</div>
 
                 {/* ─── Alternatives (Counter-proposals) ──── */}
                 {canAct && alternatives.length === 0 && (
