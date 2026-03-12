@@ -13,7 +13,8 @@ import {
   Slider01,
   Building03,
   Lock,
-  Link as LinkIcon,
+  ShoppingBag01,
+  Chat,
 } from "react-coolicons";
 import { usePlan } from "@/contexts/PlanContext";
 import { FEATURE_FLAGS } from "@/constants/planFeatures";
@@ -56,10 +57,16 @@ const Sidebar = () => {
     },
     { 
       name: t("common:sidebar.integrations"), 
-      icon: <LinkIcon size={20} />, 
+      icon: <ShoppingBag01 size={20} />, 
       path: "/home/integracoes/ifood",
       feature: null,
       badge: disputeCount,
+    },
+    {
+      name: 'WhatsApp',
+      icon: <Chat size={20} />,
+      path: '/home/whatsapp',
+      feature: null,
     },
     { 
       name: t("common:sidebar.items"), 

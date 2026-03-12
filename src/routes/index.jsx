@@ -36,6 +36,7 @@ import ItemsPage from "@/features/items/pages/ItemsPage";
 import MovementsPage from "@/features/movements/pages/MovementsPage";
 import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
+import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -194,6 +195,10 @@ const router = createBrowserRouter([
                 <IfoodIntegrationPage />
               </RequirePermission>
             )
+          },
+          {
+            path: "whatsapp",
+            element: <WhatsAppPage />
           },
         ],
       }
