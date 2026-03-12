@@ -2,25 +2,36 @@ import PropTypes from "prop-types";
 import { formatCurrencyBRL } from "@/utils/ifoodPaymentHelpers";
 
 /**
- * Get sponsor label based on sponsorship type
- * @param {string} sponsorshipType - "IFOOD" or "MERCHANT"
+ * Get sponsor label based on sponsorship name/type
+ * @param {string} sponsor - "IFOOD" or "MERCHANT"
  */
-function getSponsorLabel(sponsorshipType) {
+function getSponsorLabel(sponsor) {
     const sponsors = {
         "IFOOD": "iFood",
         "MERCHANT": "Restaurante",
+        "EXTERNAL": "Parceiro externo",
+        "CHAIN": "Rede",
     };
-    return sponsors[sponsorshipType] || sponsorshipType || "Desconto";
+    return sponsors[sponsor] || sponsor || "Desconto";
 }
 
 /**
  * Get sponsor badge style based on who is paying
  */
-function getSponsorBadgeStyle(sponsorshipType) {
-    if (sponsorshipType === "IFOOD") {
+function getSponsorBadgeStyle(sponsor) {
+    if (sponsor === "IFOOD") {
         return "bg-red-100 text-red-700 border-red-200";
     }
-    return "bg-purple-100 text-purple-700 border-purple-200";
+    if (sponsor === "MERCHANT") {
+        return "bg-purple-100 text-purple-700 border-purple-200";
+    }
+    if (sponsor === "EXTERNAL") {
+        return "bg-blue-100 text-blue-700 border-blue-200";
+    }
+    if (sponsor === "CHAIN") {
+        return "bg-indigo-100 text-indigo-700 border-indigo-200";
+    }
+    return "bg-gray-100 text-gray-600 border-gray-200";
 }
 
 /**
@@ -29,13 +40,14 @@ function getSponsorBadgeStyle(sponsorshipType) {
  */
 function getTargetDescription(target) {
     const targets = {
-        "DELIVERY_FEE": "na entrega",
-        "DELIVERY": "na entrega",
-        "ITEM": "em itens",
-        "CART": "no pedido",
-        "ORDER": "no pedido",
+        "DELIVERY_FEE": "Taxa de entrega",
+        "DELIVERY": "Entrega",
+        "ITEM": "Item específico",
+        "CART": "Pedido",
+        "ORDER": "Pedido",
+        "PROGRESSIVE_DISCOUNT_ITEM": "Desconto progressivo",
     };
-    return targets[target] || "";
+    return targets[target] || target || "";
 }
 
 /**
@@ -57,8 +69,23 @@ function extractBenefits(benefits, rawData) {
 }
 
 /**
+ * Resolve the sponsorship breakdown for a benefit.
+ * Prefers the detailed sponsorshipValues array; falls back to flat fields.
+ */
+function resolveSponsorships(benefit) {
+    if (Array.isArray(benefit.sponsorshipValues) && benefit.sponsorshipValues.length > 0) {
+        return benefit.sponsorshipValues;
+    }
+    // Fallback: build single-entry array from legacy flat fields
+    if (benefit.sponsorshipType) {
+        return [{ name: benefit.sponsorshipType, value: benefit.sponsorshipValue ?? benefit.value ?? 0 }];
+    }
+    return [];
+}
+
+/**
  * Component to display iFood discount/coupon details
- * Required for iFood homologation - shows discount value and sponsor (iFood/Merchant)
+ * Required for iFood homologation - shows discount value, sponsors and campaign info
  */
 const IfoodBenefitsDetails = ({ benefits, totalBenefits, rawData }) => {
     // Extract benefits from various possible structures
@@ -81,27 +108,35 @@ const IfoodBenefitsDetails = ({ benefits, totalBenefits, rawData }) => {
             {benefitsList.length > 0 ? (
                 <div className="space-y-2">
                     {benefitsList.map((benefit, index) => {
-                        const sponsor = getSponsorLabel(benefit.sponsorshipType);
                         const targetDesc = getTargetDescription(benefit.target);
-                        const badgeStyle = getSponsorBadgeStyle(benefit.sponsorshipType);
+                        const sponsorships = resolveSponsorships(benefit);
+                        const campaignName = benefit.campaign?.name || benefit.campaign?.description || "";
                         
                         return (
                             <div 
                                 key={index} 
                                 className="bg-green-50 rounded-md p-2 border border-green-200"
                             >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-lg">🏷️</span>
-                                        <div className="flex flex-wrap items-center gap-1">
-                                            {/* Benefit description */}
-                                            {benefit.description && (
+                                {/* Header: description + value */}
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-lg shrink-0">🏷️</span>
+                                        <div className="flex flex-wrap items-center gap-1 min-w-0">
+                                            {benefit.description ? (
                                                 <span className="text-sm text-gray-700">
                                                     {benefit.description}
                                                 </span>
+                                            ) : targetDesc ? (
+                                                <span className="text-sm text-gray-700">
+                                                    Desconto {targetDesc.toLowerCase()}
+                                                </span>
+                                            ) : (
+                                                <span className="text-sm text-gray-700">
+                                                    Desconto aplicado
+                                                </span>
                                             )}
                                             
-                                            {/* Target badge (what the discount applies to) */}
+                                            {/* Target badge */}
                                             {targetDesc && (
                                                 <span className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
                                                     {targetDesc}
@@ -111,24 +146,47 @@ const IfoodBenefitsDetails = ({ benefits, totalBenefits, rawData }) => {
                                     </div>
                                     
                                     {/* Discount value */}
-                                    <span className="text-sm font-semibold text-green-700">
+                                    <span className="text-sm font-semibold text-green-700 whitespace-nowrap">
                                         -{formatCurrencyBRL(benefit.value || 0)}
                                     </span>
                                 </div>
-                                
-                                {/* Sponsor badge and sponsorship value */}
-                                <div className="mt-1.5 flex items-center justify-between">
-                                    <span className={`px-2 py-0.5 text-xs rounded border ${badgeStyle}`}>
-                                        Pago por: {sponsor}
-                                    </span>
-                                    
-                                    {benefit.sponsorshipValue !== undefined && 
-                                     benefit.sponsorshipValue !== benefit.value && (
-                                        <span className="text-xs text-gray-500">
-                                            (Subsídio: {formatCurrencyBRL(benefit.sponsorshipValue)})
+
+                                {/* Campaign name */}
+                                {campaignName && (
+                                    <div className="mt-1 ml-8">
+                                        <span className="text-xs text-gray-500 italic">
+                                            Campanha: {campaignName}
                                         </span>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
+                                
+                                {/* Sponsorship breakdown */}
+                                {sponsorships.length > 0 && (
+                                    <div className="mt-1.5 ml-8 flex flex-wrap items-center gap-1.5">
+                                        {sponsorships.map((sv, svIdx) => {
+                                            const badgeStyle = getSponsorBadgeStyle(sv.name);
+                                            return (
+                                                <div key={svIdx} className="flex flex-col">
+                                                    <span
+                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded border ${badgeStyle}`}
+                                                    >
+                                                        {getSponsorLabel(sv.name)}
+                                                        {sv.value != null && (
+                                                            <span className="font-medium">
+                                                                {formatCurrencyBRL(sv.value)}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                    {sv.description && (
+                                                        <span className="text-[10px] text-gray-400 mt-0.5 ml-1">
+                                                            {sv.description}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
@@ -165,10 +223,24 @@ IfoodBenefitsDetails.propTypes = {
     benefits: PropTypes.arrayOf(
         PropTypes.shape({
             value: PropTypes.number,
-            sponsorshipValue: PropTypes.number,
             target: PropTypes.string,
-            sponsorshipType: PropTypes.string,
             description: PropTypes.string,
+            campaign: PropTypes.shape({
+                id: PropTypes.string,
+                name: PropTypes.string,
+                description: PropTypes.string,
+            }),
+            targetId: PropTypes.string,
+            sponsorshipValues: PropTypes.arrayOf(
+                PropTypes.shape({
+                    name: PropTypes.string,
+                    value: PropTypes.number,
+                    description: PropTypes.string,
+                })
+            ),
+            // Legacy flat fields
+            sponsorshipValue: PropTypes.number,
+            sponsorshipType: PropTypes.string,
         })
     ),
     totalBenefits: PropTypes.number,

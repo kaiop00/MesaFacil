@@ -27,12 +27,13 @@ export const findIfoodOrderByMesaFacilId = async (idRestaurante, mesaFacilOrderI
 };
 
 /**
- * Check if an order belongs to iFood (is in the ifood-delivery virtual table)
+ * Check if an order belongs to iFood virtual table
+ * Supports the unified table ID and legacy IDs for backward compatibility
  * @param {string} mesaId - Table ID
  * @returns {boolean} - True if it's an iFood order
  */
 export const isIfoodOrder = (mesaId) => {
-    return mesaId === 'ifood-delivery';
+    return mesaId === 'ifood' || mesaId === 'ifood-delivery' || mesaId === 'ifood-takeout';
 };
 
 /**
@@ -115,21 +116,64 @@ export const getIfoodOrderForMesaFacilOrder = async (idRestaurante, mesaFacilOrd
 
 /**
  * Extract iFood customer information from order
- * @param {object} ifoodOrder - iFood order object
+ * Includes all fields from the iFood Order Details API (customer section)
+ * Handles both old format (pre-update) and new format data in Firestore
+ * @param {object} ifoodOrder - iFood order object from Firestore (ifoodOrders collection)
  * @returns {object} - Customer information
  */
 export const extractIfoodCustomerInfo = (ifoodOrder) => {
     if (!ifoodOrder) return null;
     
+    // Customer data: try stored customer, then rawData.customer
+    const customer = ifoodOrder.customer || ifoodOrder.rawData?.customer || {};
+    const rawCustomer = ifoodOrder.rawData?.customer || {};
+    const phone = customer.phone || {};
+    
+    // Delivery data: try stored delivery, then rawData.delivery
+    const delivery = ifoodOrder.delivery || {};
+    const rawDelivery = ifoodOrder.rawData?.delivery || {};
+    
+    // Address: stored as delivery.address in Firestore, or rawData.delivery.deliveryAddress
+    const deliveryAddress = delivery.address || rawDelivery.deliveryAddress || null;
+    
     return {
-        name: ifoodOrder.customer?.name || 'Cliente iFood',
-        phone: ifoodOrder.customer?.phone || '',
+        // Basic customer info
+        name: customer.name || rawCustomer.name || 'Cliente iFood',
+        phone: typeof phone === 'string' ? phone : (phone.number || rawCustomer.phone?.number || ''),
+        phoneLocalizer: phone.localizer || customer.phoneLocalizer || rawCustomer.phone?.localizer || '',
+        phoneLocalizerExpiration: phone.localizerExpiration || customer.phoneLocalizerExpiration || rawCustomer.phone?.localizerExpiration || '',
+        
+        // Document info
+        documentNumber: customer.documentNumber || rawCustomer.documentNumber || '',
+        documentType: customer.documentType || rawCustomer.documentType || '',
+        
+        // Customer history & segmentation
+        ordersCountOnMerchant: customer.ordersCountOnMerchant ?? rawCustomer.ordersCountOnMerchant ?? null,
+        segmentation: customer.segmentation || rawCustomer.segmentation || '',
+        
+        // Order display info
         displayId: ifoodOrder.displayId || ifoodOrder.ifoodOrderId,
         orderType: ifoodOrder.orderType || 'DELIVERY',
-        address: ifoodOrder.delivery?.address?.formattedAddress || 
-                 ifoodOrder.delivery?.address?.streetName || '',
-        observations: ifoodOrder.delivery?.observations || '',
+        
+        // Delivery address (structured)
+        address: deliveryAddress?.formattedAddress || deliveryAddress?.streetName || '',
+        deliveryAddress: deliveryAddress,
+        deliveredBy: delivery.deliveredBy || rawDelivery.deliveredBy || '',
+        deliveryMode: delivery.mode || rawDelivery.mode || '',
+        deliveryDescription: delivery.description || rawDelivery.description || '',
+        pickupCode: delivery.pickupCode || rawDelivery.pickupCode || '',
+        observations: delivery.observations || rawDelivery.observations || '',
+        
+        // Takeout info
+        takeout: ifoodOrder.takeout || ifoodOrder.rawData?.takeout || null,
+        
+        // Status
         ifoodStatus: ifoodOrder.ifoodStatus || ifoodOrder.status,
+        
+        // General order info
+        salesChannel: ifoodOrder.rawData?.salesChannel || '',
+        createdAt: ifoodOrder.rawData?.createdAt || ifoodOrder.createdAt || '',
+        extraInfo: ifoodOrder.rawData?.extraInfo || '',
     };
 };
 
@@ -146,6 +190,12 @@ export const formatIfoodStatus = (status) => {
         'DISPATCHED': 'Saiu para Entrega',
         'CONCLUDED': 'Concluído',
         'CANCELLED': 'Cancelado',
+        'CANCELLATION_REQUESTED': 'Cancelamento Solicitado',
+        'CANCELLATION_REQUEST_FAILED': 'Cancelamento Recusado',
+        'INTEGRATED': 'Integrado',
+        'PENDING': 'Pendente',
+        'ACCEPTED': 'Aceito',
+        'REJECTED': 'Rejeitado',
     };
     
     return statusMap[status] || status;

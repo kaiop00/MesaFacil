@@ -79,12 +79,32 @@ const OrderItemsList = ({ items, updateItemQuantity, removeItem, readOnly = fals
                             )}
                         </div>
 
+                        {/* Item observations - always visible (important for iFood orders) */}
+                        {item.descricao && (
+                            <p className="mt-2 text-xs text-gray-600 font-bold bg-gray-50 px-3 py-1.5 rounded-md">
+                                📝 Observações: {item.descricao}
+                            </p>
+                        )}
+
+                        {/* iFood item options (complementos) - always visible */}
+                        {item.ifoodData?.options && item.ifoodData.options.length > 0 && (
+                            <div className="mt-1.5 pl-3 border-l-2 border-orange-200">
+                                {item.ifoodData.options.map((option, idx) => (
+                                    <p key={idx} className="text-xs text-gray-600">
+                                        + {option.quantity || 1}x {option.name}
+                                        {option.price > 0 && (
+                                            <span className="text-gray-400 ml-1">
+                                                (R$ {Number(option.price).toFixed(2)})
+                                            </span>
+                                        )}
+                                    </p>
+                                ))}
+                            </div>
+                        )}
+
                         {/* Bloco expandido */}
                         {isExpanded && (
                             <div className="mt-4 text-gray-700">
-                                {item.descricao && (
-                                    <p className="mb-2 text-xs">{item.descricao}</p>
-                                )}
 
                                 {item.alergias?.length > 0 && (
                                     <>

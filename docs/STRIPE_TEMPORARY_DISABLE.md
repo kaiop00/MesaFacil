@@ -81,6 +81,7 @@ Toda a funcionalidade do Stripe está preservada e pode ser reativada simplesmen
 2. `/src/hooks/usePlanManagement.js` - Gerenciamento de planos
 3. `/src/features/auth/pages/planSelection/PlanSelectionPage.jsx` - Página de seleção de planos
 4. `/src/layouts/Header.jsx` - Cabeçalho com aviso visual
+5. `/src/contexts/AuthContext.jsx` - Contexto de autenticação (garante acesso premium para novas contas)
 
 ## 🔍 Como Identificar se o Stripe está Desativado
 

@@ -13,6 +13,7 @@ import CategoriaConfigModal from "@/features/config/components/modals/Categorias
 import WhatsAppConfigModal from "@/features/config/components/modals/WhatsAppConfigModal";
 import NotificationsModal from "@/features/notifications/components/NotificationsModal";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
+import { useIfoodDisputes } from "@/features/integrations/ifood/hooks/useIfoodDisputes";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import PlanInfo from "@/components/PlanInfo";
@@ -39,6 +40,8 @@ const Header = () => {
   const { hasPermission, isAdmin } = usePermissions();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
+  const { disputes: pendingDisputes, pendingCount: disputeCount } = useIfoodDisputes(idRestaurante);
+  const totalBadgeCount = unreadCount + disputeCount;
   const { notify } = useToast();
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
@@ -194,9 +197,9 @@ const Header = () => {
           onClick={() => setIsNotificationsOpen(true)}
         >
           <Bell size={20} className="text-gray-600" />
-          {unreadCount > 0 && (
+          {totalBadgeCount > 0 && (
             <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-primary-dynamic text-white text-[10px] leading-4 rounded-full flex items-center justify-center">
-              {unreadCount}
+              {totalBadgeCount}
             </span>
           )}
         </button>
@@ -374,6 +377,11 @@ const Header = () => {
           navigate(`/home/pedidos?mesaId=${encodeURIComponent(mesaId)}`);
         }}
         loading={loading}
+        pendingDisputes={pendingDisputes}
+        onViewDisputes={() => {
+          setIsNotificationsOpen(false);
+          navigate("/home/integracoes/ifood?tab=disputes");
+        }}
       />
     </header>
   );

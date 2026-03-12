@@ -133,3 +133,84 @@ export async function denyIfoodOrderCancellation(idRestaurante, orderId, reason)
         throw new Error(error.message || "Erro ao negar cancelamento");
     }
 }
+
+// ===================================================================
+// Handshake (Negotiation Platform) Service Calls
+// ===================================================================
+
+/**
+ * Accept a Handshake dispute (agree with customer's request)
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} disputeId - Dispute ID
+ * @param {string} [orderId] - Optional iFood order ID
+ * @param {object} [options] - Optional accept options
+ * @param {string} [options.reason] - Cancellation reason (from acceptCancellationReasons)
+ * @param {string} [options.detailReason] - Optional detail reason text
+ * @returns {Promise<{success: boolean, message: string, disputeId: string}>}
+ */
+export async function acceptIfoodDispute(idRestaurante, disputeId, orderId, options = {}) {
+    try {
+        const accept = httpsCallable(functions, "ifoodAcceptDispute");
+        const result = await accept({ idRestaurante, disputeId, orderId, ...options });
+        return result.data;
+    } catch (error) {
+        console.error("Error accepting dispute:", error);
+        throw new Error(error.message || "Erro ao aceitar disputa");
+    }
+}
+
+/**
+ * Reject a Handshake dispute (disagree with customer's request)
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} disputeId - Dispute ID
+ * @param {string} [orderId] - Optional iFood order ID
+ * @param {string} [reason] - Optional rejection reason
+ * @returns {Promise<{success: boolean, message: string, disputeId: string}>}
+ */
+export async function rejectIfoodDispute(idRestaurante, disputeId, orderId, reason) {
+    try {
+        const reject = httpsCallable(functions, "ifoodRejectDispute");
+        const result = await reject({ idRestaurante, disputeId, orderId, reason });
+        return result.data;
+    } catch (error) {
+        console.error("Error rejecting dispute:", error);
+        throw new Error(error.message || "Erro ao rejeitar disputa");
+    }
+}
+
+/**
+ * Select an alternative for a Handshake dispute (counter-offer/partial refund)
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} disputeId - Dispute ID
+ * @param {string} alternativeId - Alternative ID to select
+ * @param {string} [orderId] - Optional iFood order ID
+ * @param {object} alternativeBody - Body per iFood docs: { type, metadata }
+ * @returns {Promise<{success: boolean, message: string, disputeId: string, alternativeId: string}>}
+ */
+export async function selectIfoodDisputeAlternative(idRestaurante, disputeId, alternativeId, orderId, alternativeBody) {
+    try {
+        const selectAlt = httpsCallable(functions, "ifoodSelectDisputeAlternative");
+        const result = await selectAlt({ idRestaurante, disputeId, alternativeId, orderId, alternativeBody });
+        return result.data;
+    } catch (error) {
+        console.error("Error selecting dispute alternative:", error);
+        throw new Error(error.message || "Erro ao selecionar alternativa da disputa");
+    }
+}
+
+/**
+ * Fetch a dispute evidence image via Cloud Function proxy (requires iFood auth)
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} evidenceUrl - Full iFood evidence URL
+ * @returns {Promise<{success: boolean, dataUri: string}>}
+ */
+export async function getIfoodDisputeEvidence(idRestaurante, evidenceUrl) {
+    try {
+        const getEvidence = httpsCallable(functions, "ifoodGetDisputeEvidence");
+        const result = await getEvidence({ idRestaurante, evidenceUrl });
+        return result.data;
+    } catch (error) {
+        console.error("Error fetching dispute evidence:", error);
+        throw new Error(error.message || "Erro ao buscar evidência");
+    }
+}
