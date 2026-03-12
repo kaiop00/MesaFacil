@@ -9,6 +9,25 @@ const admin = require("firebase-admin");
 // iFood API configuration
 const IFOOD_API_BASE_URL = "https://merchant-api.ifood.com.br";
 
+/**
+ * iFood status precedence map (higher = more advanced in lifecycle)
+ * Used to prevent status regression when polling returns stale events
+ */
+const IFOOD_STATUS_PRECEDENCE = {
+  "PLACED": 1,
+  "INTEGRATED": 1,
+  "PENDING": 1,
+  "ACCEPTED": 2,
+  "CONFIRMED": 3,
+  "CANCELLATION_REQUESTED": 3,
+  "CANCELLATION_REQUEST_FAILED": 3,
+  "READY_TO_PICKUP": 4,
+  "DISPATCHED": 4,
+  "CONCLUDED": 5,
+  "CANCELLED": 5,
+  "REJECTED": 5,
+};
+
 // Define secrets for distributed app credentials
 const ifoodClientId = defineSecret("IFOOD_CLIENT_ID");
 const ifoodClientSecret = defineSecret("IFOOD_CLIENT_SECRET");
@@ -334,8 +353,8 @@ async function markEventAsProcessed(idRestaurante, event) {
   
   await eventRef.set({
     eventId: event.id,
-    code: event.code,
-    fullCode: event.fullCode,
+    code: event.code || event.Code,
+    fullCode: event.fullCode || event.fullcode,
     orderId: event.orderId,
     merchantId: event.merchantId,
     createdAt: event.createdAt || admin.firestore.FieldValue.serverTimestamp(),
@@ -345,20 +364,16 @@ async function markEventAsProcessed(idRestaurante, event) {
 }
 
 /**
- * Get or create virtual table for iFood orders
- * Creates separate tables for DELIVERY and TAKEOUT orders
+ * Get or create unified virtual table for all iFood orders
+ * All order types (DELIVERY, TAKEOUT) share a single table
  * @param {string} idRestaurante - Restaurant ID
- * @param {string} orderType - Order type (DELIVERY or TAKEOUT)
+ * @param {string} orderType - Order type (kept for compatibility, not used for table selection)
  * @return {Promise<string>} - Table ID
  */
-async function getOrCreateIfoodTable(idRestaurante, orderType = "DELIVERY") {
-  // Determine table ID and name based on order type
-  const isTakeout = orderType === "TAKEOUT";
-  const tableId = isTakeout ? "ifood-takeout" : "ifood-delivery";
-  const tableName = isTakeout ? "iFood Retirada" : "iFood Delivery";
-  const tableDescription = isTakeout 
-    ? "Mesa virtual para pedidos de retirada do iFood" 
-    : "Mesa virtual para pedidos de delivery do iFood";
+async function getOrCreateIfoodTable(idRestaurante) {
+  const tableId = "ifood";
+  const tableName = "iFood";
+  const tableDescription = "Mesa virtual para pedidos do iFood";
   
   const tableRef = admin.firestore()
     .doc(`restaurantes/${idRestaurante}/mesas/${tableId}`);
@@ -376,12 +391,10 @@ async function getOrCreateIfoodTable(idRestaurante, orderType = "DELIVERY") {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isVirtual: true,
       source: "ifood",
-      orderType: orderType,
     });
-    logger.info("Created virtual table for iFood orders", {
+    logger.info("Created unified virtual table for iFood orders", {
       idRestaurante,
       tableId,
-      orderType,
     });
   }
   
@@ -687,6 +700,8 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
     
     const newPedidoRef = pedidosRef.doc();
     
+    const initialIfoodStatus = orderData.orderStatus || "PLACED";
+
     const orderPayload = {
       items,
       total,
@@ -695,6 +710,14 @@ async function createMesaFacilOrderFromIfood(idRestaurante, mesaId, orderData) {
       criadoEm: admin.firestore.FieldValue.serverTimestamp(),
       source: "ifood",
       orderOrigin: "ifood",
+      
+      // iFood status tracking — persisted on the mesa pedido for real-time UI
+      ifoodStatus: initialIfoodStatus,
+      ifoodStatusHistory: [{
+        status: initialIfoodStatus,
+        changedAt: new Date().toISOString(),
+        source: "ifood",
+      }],
       
       // Order type fields for TAKEOUT/DELIVERY support
       orderType: orderType,
@@ -789,6 +812,29 @@ async function processIfoodOrder(idRestaurante, orderData) {
     // Check if status changed
     const statusChanged = existingData && 
       existingData.ifoodStatus !== orderData.orderStatus;
+    
+    // Prevent status regression: don't overwrite a more advanced status
+    // with a stale event (e.g. don't go from CONFIRMED back to PLACED)
+    // Exception: terminal statuses (CONCLUDED, CANCELLED) from iFood always win
+    const incomingPrecedence = IFOOD_STATUS_PRECEDENCE[orderData.orderStatus] || 0;
+    const existingPrecedence = IFOOD_STATUS_PRECEDENCE[existingData?.ifoodStatus] || 0;
+    const isTerminalStatus = ["CONCLUDED", "CANCELLED", "REJECTED"].includes(orderData.orderStatus);
+    const shouldSkipStatusUpdate = !isNewOrder && existingData && 
+      incomingPrecedence < existingPrecedence && !isTerminalStatus;
+    
+    if (shouldSkipStatusUpdate) {
+      logger.info("Skipping status regression", {
+        idRestaurante,
+        orderId,
+        existingStatus: existingData.ifoodStatus,
+        incomingStatus: orderData.orderStatus,
+        existingPrecedence,
+        incomingPrecedence,
+      });
+      // Still mark event as processed and ACK, but don't overwrite status
+      // We override orderStatus to keep existing so the merge doesn't regress
+      orderData = { ...orderData, orderStatus: existingData.ifoodStatus };
+    }
 
     // Determine order timing
     const orderTiming = orderData.orderTiming || "IMMEDIATE";
@@ -822,19 +868,32 @@ async function processIfoodOrder(idRestaurante, orderData) {
         : null,
       schedule: orderData.schedule || null,
       
-      // Customer info
+      // Customer info (all fields from iFood Order Details API)
       customer: {
+        id: orderData.customer?.id || "",
         name: orderData.customer?.name || "Cliente iFood",
         phone: orderData.customer?.phone?.number || "",
+        phoneLocalizer: orderData.customer?.phone?.localizer || "",
+        phoneLocalizerExpiration: orderData.customer?.phone?.localizerExpiration || "",
         documentNumber: orderData.customer?.documentNumber || "",
+        documentType: orderData.customer?.documentType || "",
+        ordersCountOnMerchant: orderData.customer?.ordersCountOnMerchant ?? null,
+        segmentation: orderData.customer?.segmentation || "",
       },
       
-      // Delivery info
+      // Delivery info (all fields from iFood Order Details API)
       delivery: orderData.delivery ? {
         address: orderData.delivery.deliveryAddress || {},
         deliveredBy: orderData.delivery.deliveredBy || "IFOOD",
         observations: orderData.delivery.observations || "",
+        mode: orderData.delivery.mode || "",
+        description: orderData.delivery.description || "",
+        pickupCode: orderData.delivery.pickupCode || "",
+        deliveryDateTime: orderData.delivery.deliveryDateTime || "",
       } : null,
+      
+      // Takeout info
+      takeout: orderData.takeout || null,
       
       // Items
       items: (orderData.items || []).map((item) => ({
@@ -860,13 +919,44 @@ async function processIfoodOrder(idRestaurante, orderData) {
       },
 
       // Benefits/Coupons details (for iFood homologation)
-      // Shows discount value and sponsor (iFood/Merchant)
+      // Shows discount value, sponsor breakdown and campaign info
       benefits: (orderData.benefits || []).map(benefit => ({
         value: benefit.value || 0,
-        sponsorshipValue: benefit.sponsorshipValue || benefit.value || 0,
-        target: benefit.target || "",            // "DELIVERY_FEE", "ITEM", "CART"
-        sponsorshipType: benefit.sponsorshipType || "", // "IFOOD", "MERCHANT"
+        target: benefit.target || "",            // "DELIVERY_FEE", "ITEM", "CART", "PROGRESSIVE_DISCOUNT_ITEM"
+        targetId: benefit.targetId || null,       // ID of the target item (when target is ITEM)
         description: benefit.description || "",
+        // Campaign info
+        campaign: benefit.campaign ? {
+          id: benefit.campaign.id || "",
+          name: benefit.campaign.name || "",
+          description: benefit.campaign.description || "",
+        } : null,
+        // Detailed sponsorship breakdown per sponsor
+        sponsorshipValues: Array.isArray(benefit.sponsorshipValues)
+          ? benefit.sponsorshipValues.map(sv => ({
+              name: sv.name || "",    // "IFOOD", "MERCHANT", "EXTERNAL", "CHAIN"
+              value: sv.value || 0,
+              description: sv.description || "",
+            }))
+          : [],
+        // Legacy flat fields (kept for backward compat)
+        sponsorshipValue: benefit.sponsorshipValue || benefit.value || 0,
+        sponsorshipType: benefit.sponsorshipType || "", // "IFOOD", "MERCHANT"
+      })),
+
+      // Additional fees (e.g. taxa de serviço do restaurante)
+      additionalFees: (orderData.additionalFees || []).map(fee => ({
+        type: fee.type || "",
+        description: fee.description || fee.fullDescription || "",
+        fullDescription: fee.fullDescription || fee.description || "",
+        value: fee.value || 0,
+        // Liability breakdown (who pays what)
+        liabilities: Array.isArray(fee.liabilities)
+          ? fee.liabilities.map(l => ({
+              name: l.name || "",
+              percentage: l.percentage || 0,
+            }))
+          : [],
       })),
       
       // Payments with detailed information
@@ -968,9 +1058,10 @@ async function processIfoodOrder(idRestaurante, orderData) {
       }
     }
     
-    // If status changed and order is synced to MesaFacil, update MesaFacil order
+    // If status changed and order is synced to MesaFacil, update MesaFacil order.
+    // Also check if the mesa pedido's ifoodStatus is out of sync (e.g., not yet propagated)
     const currentMesaFacilOrderId = transformedOrder.mesaFacilOrderId || existingData?.mesaFacilOrderId;
-    if (statusChanged && currentMesaFacilOrderId) {
+    if (currentMesaFacilOrderId && statusChanged) {
       await syncStatusToMesaFacilOrder(
         idRestaurante,
         currentMesaFacilOrderId,
@@ -985,6 +1076,38 @@ async function processIfoodOrder(idRestaurante, orderData) {
         oldStatus: existingData.ifoodStatus,
         newStatus: orderData.orderStatus,
       });
+    } else if (currentMesaFacilOrderId && !isNewOrder && !statusChanged) {
+      // Even if ifoodOrders status hasn't changed, the mesa pedido may be out of sync
+      // (e.g., action was taken but mesa pedido wasn't updated due to earlier bug)
+      // Do a lightweight check and repair if needed
+      try {
+        const pedidoRef = admin.firestore()
+          .doc(`restaurantes/${idRestaurante}/mesas/ifood/pedidos/${currentMesaFacilOrderId}`);
+        const pedidoDoc = await pedidoRef.get();
+        if (pedidoDoc.exists) {
+          const pedidoData = pedidoDoc.data();
+          if (pedidoData.ifoodStatus !== orderData.orderStatus) {
+            logger.info("Repairing out-of-sync mesa pedido ifoodStatus", {
+              idRestaurante,
+              mesaFacilOrderId: currentMesaFacilOrderId,
+              mesaPedidoStatus: pedidoData.ifoodStatus,
+              ifoodOrdersStatus: orderData.orderStatus,
+            });
+            await syncStatusToMesaFacilOrder(
+              idRestaurante,
+              currentMesaFacilOrderId,
+              orderData.orderStatus,
+              pedidoData.ifoodStatus || "PLACED"
+            );
+          }
+        }
+      } catch (repairError) {
+        logger.error("Error during mesa pedido status repair", {
+          idRestaurante,
+          mesaFacilOrderId: currentMesaFacilOrderId,
+          error: repairError.message,
+        });
+      }
     }
 
     logger.info("iFood order processed and saved", {
@@ -1014,7 +1137,7 @@ async function processIfoodOrder(idRestaurante, orderData) {
  */
 async function finalizarPedidoIfood(idRestaurante, mesaFacilOrderId, newIfoodStatus) {
   try {
-    const mesaId = "ifood-delivery";
+    const mesaId = "ifood";
     const pedidoDocRef = admin.firestore()
       .doc(`restaurantes/${idRestaurante}/mesas/${mesaId}/pedidos/${mesaFacilOrderId}`);
     
@@ -1031,11 +1154,13 @@ async function finalizarPedidoIfood(idRestaurante, mesaFacilOrderId, newIfoodSta
     
     await pedidoDocRef.update({
       status: "entregue",
+      ifoodStatus: newIfoodStatus,
       finalizadoEm: finalizadoEm,
       lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
       ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
         status: newIfoodStatus,
-        changedAt: admin.firestore.FieldValue.serverTimestamp(),
+        changedAt: new Date().toISOString(),
+        source: "ifood",
       }),
     });
     
@@ -1136,30 +1261,23 @@ async function syncStatusToMesaFacilOrder(
   try {
     // Map iFood status to MesaFacil status
     const statusMap = {
-      "INTEGRATED": "andamento",       // Pedido integrado
-      "PENDING": "andamento",          // Pendente
-      "PLACED": "andamento",           // Pedido recebido
-      "ACCEPTED": "andamento",         // Aceito pelo restaurante
-      "CONFIRMED": "andamento",        // Confirmado pelo restaurante
-      "READY_TO_PICKUP": "andamento",  // Pronto para retirada
-      "DISPATCHED": "andamento",       // Saiu para entrega
-      "CONCLUDED": "entregue",         // Concluído
-      "CANCELLED": "cancelado",        // Cancelado
-      "REJECTED": "cancelado",         // Rejeitado pelo restaurante
+      "INTEGRATED": "andamento",                 // Pedido integrado
+      "PENDING": "andamento",                    // Pendente
+      "PLACED": "andamento",                     // Pedido recebido
+      "ACCEPTED": "andamento",                   // Aceito pelo restaurante
+      "CONFIRMED": "andamento",                  // Confirmado pelo restaurante
+      "READY_TO_PICKUP": "andamento",            // Pronto para retirada
+      "DISPATCHED": "andamento",                 // Saiu para entrega
+      "CANCELLATION_REQUESTED": "andamento",     // Cancelamento em análise
+      "CANCELLATION_REQUEST_FAILED": "andamento",// Cancelamento recusado — pedido continua ativo
+      "CONCLUDED": "entregue",                   // Concluído
+      "CANCELLED": "cancelado",                  // Cancelado
+      "REJECTED": "cancelado",                   // Rejeitado pelo restaurante
     };
     
     const mesaFacilStatus = statusMap[newIfoodStatus] || "andamento";
     const previousMesaFacilStatus = statusMap[oldIfoodStatus] || "andamento";
-    
-    // Only update if MesaFacil status actually changes
-    if (mesaFacilStatus === previousMesaFacilStatus) {
-      logger.info("MesaFacil status unchanged, skipping update", {
-        newIfoodStatus,
-        oldIfoodStatus,
-        mesaFacilStatus,
-      });
-      return;
-    }
+    const mesaFacilStatusChanged = mesaFacilStatus !== previousMesaFacilStatus;
     
     // If order is concluded, use finalizarPedidoIfood logic
     // This will handle the full finalization flow including history and table status
@@ -1168,18 +1286,31 @@ async function syncStatusToMesaFacilOrder(
       return;
     }
     
-    // For other status changes, update normally
+    // Always update ifoodStatus on the mesa pedido, even if MesaFacil status
+    // doesn't change (e.g. PLACED→CONFIRMED both map to "andamento").
+    // This ensures the UI shows the correct iFood status and action buttons.
     const orderRef = admin.firestore()
-      .doc(`restaurantes/${idRestaurante}/mesas/ifood-delivery/pedidos/${mesaFacilOrderId}`);
-    
+      .doc(`restaurantes/${idRestaurante}/mesas/ifood/pedidos/${mesaFacilOrderId}`);
+
     const updateData = {
-      status: mesaFacilStatus,
+      ifoodStatus: newIfoodStatus,
       lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
+      // The iFood echo is always recorded — it is the authoritative confirmation
+      // that the iFood platform received and processed the action. A prior entry
+      // with source="mesafacil" for the same status is just the outgoing request;
+      // the iFood entry here closes the loop. The UI deduplicates on display,
+      // showing only the iFood (confirmed) entry when both are present.
       ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
         status: newIfoodStatus,
-        changedAt: admin.firestore.FieldValue.serverTimestamp(),
+        changedAt: new Date().toISOString(),
+        source: "ifood",
       }),
     };
+
+    // Only update MesaFacil status if it actually changes
+    if (mesaFacilStatusChanged) {
+      updateData.status = mesaFacilStatus;
+    }
     
     // If order is cancelled, add cancellation timestamp
     if (mesaFacilStatus === "cancelado") {
@@ -1189,13 +1320,16 @@ async function syncStatusToMesaFacilOrder(
     await orderRef.update(updateData);
     
     // Update table status if needed
-    await updateVirtualTableStatus(idRestaurante);
+    if (mesaFacilStatusChanged) {
+      await updateVirtualTableStatus(idRestaurante);
+    }
     
     logger.info("MesaFacil order status updated from iFood", {
       idRestaurante,
       mesaFacilOrderId,
       newStatus: mesaFacilStatus,
       ifoodStatus: newIfoodStatus,
+      mesaFacilStatusChanged,
     });
   } catch (error) {
     logger.error("Error syncing status to MesaFacil order", {
@@ -1214,7 +1348,7 @@ async function syncStatusToMesaFacilOrder(
 async function updateVirtualTableStatus(idRestaurante) {
   try {
     const pedidosRef = admin.firestore()
-      .collection(`restaurantes/${idRestaurante}/mesas/ifood-delivery/pedidos`);
+      .collection(`restaurantes/${idRestaurante}/mesas/ifood/pedidos`);
     
     const snapshot = await pedidosRef.get();
     
@@ -1229,7 +1363,7 @@ async function updateVirtualTableStatus(idRestaurante) {
     });
     
     const tableRef = admin.firestore()
-      .doc(`restaurantes/${idRestaurante}/mesas/ifood-delivery`);
+      .doc(`restaurantes/${idRestaurante}/mesas/ifood`);
     
     let tableStatus = "livre";
     if (hasActiveOrders) {
@@ -1339,6 +1473,174 @@ async function getEnabledIfoodIntegrations() {
 }
 
 /**
+ * Process a Handshake (negotiation) event from iFood
+ * Handles HANDSHAKE_DISPUTE (new dispute) and HANDSHAKE_SETTLEMENT (dispute resolved)
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {object} event - The handshake event from iFood polling
+ */
+/**
+ * Handle CANCELLATION_REQUEST_FAILED (CARF) events.
+ *
+ * When the iFood platform rejects a cancellation request the order's
+ * orderStatus stays as CANCELLATION_REQUESTED in the Order Details API.
+ * The generic orderId processing branch therefore sees no status change
+ * and never updates the pedido, leaving the UI stuck on
+ * "aguardando resposta do iFood" indefinitely.
+ *
+ * This function explicitly updates both ifoodOrders and mesas/ifood/pedidos
+ * with ifoodStatus = "CANCELLATION_REQUEST_FAILED" so the UI can reflect
+ * the outcome immediately on the next real-time listener tick.
+ *
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {object} event - Raw CARF event from iFood polling
+ */
+async function processCancellationRequestFailed(idRestaurante, event) {
+  const {orderId, metadata} = event;
+  if (!orderId) return;
+
+  try {
+    const failedReason = metadata?.CANCELLATION_REQUEST_FAILED_REASON || null;
+    const cancelCode = metadata?.CANCEL_CODE || null;
+
+    // Update ifoodOrders document
+    const ifoodOrderRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+
+    const ifoodOrderDoc = await ifoodOrderRef.get();
+    if (!ifoodOrderDoc.exists) {
+      logger.warn("processCancellationRequestFailed: ifoodOrders doc not found", {
+        idRestaurante,
+        orderId,
+      });
+      return;
+    }
+
+    await ifoodOrderRef.update({
+      ifoodStatus: "CANCELLATION_REQUEST_FAILED",
+      cancellationRequestFailed: true,
+      cancellationRequestFailedReason: failedReason,
+      cancellationRequestFailedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Update associated mesa pedido so the UI reflects the change immediately
+    const mesaFacilOrderId = ifoodOrderDoc.data().mesaFacilOrderId;
+    if (mesaFacilOrderId) {
+      const pedidoRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/mesas/ifood/pedidos/${mesaFacilOrderId}`);
+
+      await pedidoRef.update({
+        ifoodStatus: "CANCELLATION_REQUEST_FAILED",
+        lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
+        ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
+          status: "CANCELLATION_REQUEST_FAILED",
+          changedAt: new Date().toISOString(),
+          source: "ifood",
+          reason: failedReason,
+          cancelCode: cancelCode,
+        }),
+      });
+    }
+
+    logger.info("Cancellation request failed event processed", {
+      idRestaurante,
+      orderId,
+      failedReason,
+      mesaFacilOrderId: mesaFacilOrderId || null,
+    });
+  } catch (error) {
+    logger.error("Error processing cancellation request failed event", {
+      idRestaurante,
+      orderId,
+      error: error.message,
+    });
+  }
+}
+
+async function processHandshakeEvent(idRestaurante, event) {
+  const {fullCode, orderId, metadata} = event;
+
+  if (fullCode === "HANDSHAKE_DISPUTE") {
+    const disputeId = metadata?.disputeId || event.id;
+    const disputeRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/ifoodDisputes/${disputeId}`);
+
+    await disputeRef.set({
+      disputeId,
+      orderId: orderId || null,
+      status: "PENDING",
+      // iFood sends "action" (CANCELLATION, PARTIAL_CANCELLATION, PROPOSED_AMOUNT_REFUND, etc.)
+      action: metadata?.action || "CANCELLATION",
+      // Keep legacy "type" mapped from action for backward compat
+      type: metadata?.action || metadata?.type || "CANCELLATION",
+      // Customer's complaint message
+      message: metadata?.message || null,
+      // Handshake context
+      handshakeType: metadata?.handshakeType || null,
+      handshakeGroup: metadata?.handshakeGroup || null,
+      timeoutAction: metadata?.timeoutAction || null,
+      // Alternatives (REFUND, BENEFIT, ADDITIONAL_TIME)
+      alternatives: metadata?.alternatives || [],
+      // Nested metadata: evidences, items, garnishItems, acceptCancellationReasons
+      disputeMetadata: metadata?.metadata || null,
+      // Full raw metadata for reference
+      metadata: metadata || {},
+      expiresAt: metadata?.expiresAt ? new Date(metadata.expiresAt) : null,
+      eventId: event.id,
+      createdAt: metadata?.createdAt ? new Date(metadata.createdAt) : (event.createdAt ? new Date(event.createdAt) : admin.firestore.FieldValue.serverTimestamp()),
+      receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    // Mark the related iFood order as having an active dispute
+    if (orderId) {
+      const orderRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+      const orderDoc = await orderRef.get();
+      if (orderDoc.exists) {
+        await orderRef.update({
+          needsManualReview: true,
+          activeDisputeId: disputeId,
+          lastDisputeAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+    logger.info("Handshake dispute saved", {idRestaurante, disputeId, orderId});
+  } else if (fullCode === "HANDSHAKE_SETTLEMENT") {
+    const disputeId = metadata?.disputeId || null;
+
+    if (disputeId) {
+      const disputeRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodDisputes/${disputeId}`);
+      const disputeDoc = await disputeRef.get();
+
+      if (disputeDoc.exists) {
+        await disputeRef.update({
+          status: "SETTLED",
+          settlement: metadata?.settlement || metadata || {},
+          settledAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+    // Clear the dispute flag from the order
+    if (orderId) {
+      const orderRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+      const orderDoc = await orderRef.get();
+      if (orderDoc.exists) {
+        await orderRef.update({
+          needsManualReview: false,
+          activeDisputeId: null,
+        });
+      }
+    }
+
+    logger.info("Handshake settlement processed", {idRestaurante, disputeId, orderId});
+  }
+}
+
+/**
  * Process a batch of events for a restaurant
  * @param {string} idRestaurante - Restaurant ID
  * @param {Array} events - Events to process
@@ -1347,7 +1649,16 @@ async function getEnabledIfoodIntegrations() {
 async function processEventsForRestaurant(idRestaurante, events, accessToken) {
   const processedEvents = [];
   
-  for (const event of events) {
+  // Sort events by createdAt ascending to process in chronological order.
+  // iFood docs: "A API pode entregar eventos fora de ordem.
+  // Ordene os eventos pelo campo createdAt após recebe-los."
+  const sortedEvents = [...events].sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeA - timeB;
+  });
+  
+  for (const event of sortedEvents) {
     try {
       // Check for duplicates
       const alreadyProcessed = await isEventProcessed(idRestaurante, event.id);
@@ -1361,10 +1672,52 @@ async function processEventsForRestaurant(idRestaurante, events, accessToken) {
         continue;
       }
 
+      // Handle Handshake (dispute/negotiation) events
+      // Normalize casing: iFood API sends "fullcode" (lowercase) inconsistently
+      const eventFullCode = event.fullCode || event.fullcode;
+      if (eventFullCode === "HANDSHAKE_DISPUTE" || eventFullCode === "HANDSHAKE_SETTLEMENT") {
+        await processHandshakeEvent(idRestaurante, {...event, fullCode: eventFullCode});
+      }
+      // Handle cancellation request failed — iFood denied or failed to process
+      // the cancellation. The order's orderStatus from the iFood API still reads
+      // CANCELLATION_REQUESTED at this point, so the generic orderId branch would
+      // detect no status change and leave the pedido stuck with "aguardando" forever.
+      else if (eventFullCode === "CANCELLATION_REQUEST_FAILED") {
+        await processCancellationRequestFailed(idRestaurante, event);
+      }
       // For order events, fetch full order details
-      if (event.orderId) {
+      else if (event.orderId) {
         const orderData = await fetchIfoodOrder(event.orderId, accessToken);
         if (orderData) {
+          // The iFood Order Details API may lag behind the Events API, returning
+          // a stale orderStatus (e.g. "PLACED" even after CFM/DSP/CON events).
+          // The event's fullCode is the authoritative status transition — if it
+          // represents a more advanced status than what the API returned, override
+          // orderData.orderStatus so processIfoodOrder detects the change.
+          const EVENT_FULLCODE_TO_STATUS = {
+            "PLACED": "PLACED",
+            "CONFIRMED": "CONFIRMED",
+            "READY_TO_PICKUP": "READY_TO_PICKUP",
+            "DISPATCHED": "DISPATCHED",
+            "CONCLUDED": "CONCLUDED",
+            "CANCELLED": "CANCELLED",
+            "CANCELLATION_REQUESTED": "CANCELLATION_REQUESTED",
+          };
+          const eventStatus = EVENT_FULLCODE_TO_STATUS[eventFullCode];
+          if (eventStatus) {
+            const eventPrecedence = IFOOD_STATUS_PRECEDENCE[eventStatus] || 0;
+            const apiPrecedence = IFOOD_STATUS_PRECEDENCE[orderData.orderStatus] || 0;
+            if (eventPrecedence > apiPrecedence) {
+              logger.info("Event fullCode more advanced than Order Details API status, overriding", {
+                idRestaurante,
+                orderId: event.orderId,
+                eventFullCode,
+                eventStatus,
+                apiOrderStatus: orderData.orderStatus,
+              });
+              orderData.orderStatus = eventStatus;
+            }
+          }
           await processIfoodOrder(idRestaurante, orderData);
         }
       }

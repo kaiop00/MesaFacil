@@ -1,0 +1,50 @@
+{
+  "title": "Negoziazioni iFood",
+  "subtitle": "Piattaforma Handshake",
+  "pending": "In attesa",
+  "all": "Tutte",
+  "noPending": "Nessuna negoziazione in attesa",
+  "noDisputes": "Nessuna negoziazione trovata",
+  "loadError": "Errore nel caricamento delle negoziazioni",
+  "disputeTypes": {
+    "CANCELLATION": "Cancellazione",
+    "PARTIAL_REFUND": "Rimborso Parziale",
+    "FULL_REFUND": "Rimborso Totale"
+  },
+  "statuses": {
+    "PENDING": "In attesa di risposta",
+    "ACCEPTED": "Accettata",
+    "REJECTED": "Rifiutata",
+    "ALTERNATIVE_SELECTED": "Alternativa selezionata",
+    "SETTLED": "Risolta",
+    "EXPIRED": "Scaduta"
+  },
+  "reason": "Motivo",
+  "customer": "Cliente",
+  "receivedAt": "Ricevuto il",
+  "evidences": "Prove",
+  "alternatives": "Alternative disponibili",
+  "resolution": "Risoluzione",
+  "expired": "Scaduto",
+  "expiredNotice": "Scadenza superata — in attesa della decisione di iFood",
+  "accept": "Accetta",
+  "reject": "Rifiuta",
+  "confirmAccept": "Sei sicuro di voler ACCETTARE questa disputa? L'ordine verrà cancellato/rimborsato.",
+  "confirmAlternative": "Confermare la selezione di questa alternativa?",
+  "rejectionReason": "Motivo del rifiuto (opzionale)",
+  "rejectionPlaceholder": "Spiega perché non sei d'accordo con questa richiesta...",
+  "confirmReject": "Conferma Rifiuto",
+  "cancel": "Annulla",
+  "acceptSuccess": "Disputa accettata con successo",
+  "rejectSuccess": "Disputa rifiutata. iFood medierà la decisione finale.",
+  "alternativeSuccess": "Alternativa selezionata con successo",
+  "acceptError": "Errore nell'accettare la disputa",
+  "rejectError": "Errore nel rifiutare la disputa",
+  "alternativeError": "Errore nella selezione dell'alternativa della disputa",
+  "retryMessage": "Tentativo {{attempt}}/{{maxAttempts}}. Reinvio tra {{nextAttemptIn}}s...",
+  "notificationBanner": {
+    "single": "1 negoziazione iFood in attesa",
+    "multiple": "{{count}} negoziazioni iFood in attesa",
+    "clickToView": "Clicca per visualizzare e rispondere"
+  }
+}

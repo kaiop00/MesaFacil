@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
@@ -7,7 +7,7 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
 import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import {
     computeTotalPedidos,
@@ -19,9 +19,7 @@ import {
     formatCurrency,
 } from "@/features/cliente/utils/pedidos";
 import { 
-    getIfoodOrderForMesaFacilOrder, 
     extractIfoodCustomerInfo,
-    formatIfoodStatus,
     isIfoodOrder
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
 import { User01, Phone, MapPin, ShoppingBag02, Printer } from "react-coolicons";
@@ -30,6 +28,8 @@ import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrd
 import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
 import IfoodPaymentDetails from "@/features/integrations/ifood/components/IfoodPaymentDetails";
 import IfoodBenefitsDetails from "@/features/integrations/ifood/components/IfoodBenefitsDetails";
+import IfoodAdditionalFeesDetails from "@/features/integrations/ifood/components/IfoodAdditionalFeesDetails";
+import IfoodCustomerDetails from "@/features/integrations/ifood/components/IfoodCustomerDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import NfceModal from "@/features/order/components/modals/NfceModal";
 import { buscarConfigFiscal } from "@/features/fiscal/services/configFiscalService";
@@ -119,53 +119,117 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         }
     }, [idRestaurante, mesaSelecionada, onMesaUpdate, notify]);
 
-    useEffect(() => {
-        const fetchPedidos = async () => {
-            if (isOpen && mesaSelecionada?.id && idRestaurante) {
-                setLoading(true);
-                try {
-                    const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
-                    setPedidos(dados || []);
-                    
-                    // If this is an iFood table, fetch iFood order information
-                    if (isIfoodOrder(mesaSelecionada.id) && dados && dados.length > 0) {
-                        const ifoodInfoMap = {};
-                        
-                        for (const pedido of dados) {
-                            try {
-                                const ifoodOrder = await getIfoodOrderForMesaFacilOrder(idRestaurante, pedido.id);
-                                if (ifoodOrder) {
-                                    // Store both customer info and full order data for history
-                                    ifoodInfoMap[pedido.id] = {
-                                        ...extractIfoodCustomerInfo(ifoodOrder),
-                                        statusHistory: pedido.ifoodStatusHistory || [],
-                                        fullOrder: ifoodOrder
-                                    };
-                                }
-                            } catch (error) {
-                                console.error('Error fetching iFood order info:', error);
-                            }
-                        }
-                        
-                        setIfoodOrdersInfo(ifoodInfoMap);
-                    } else {
-                        setIfoodOrdersInfo({});
-                    }
-                } catch (error) {
-                    console.error("❌ Erro ao buscar pedidos:", error);
-                    setPedidos([]);
-                    setIfoodOrdersInfo({});
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setPedidos([]);
-                setIfoodOrdersInfo({});
-            }
-        };
+    // Ref to track active onSnapshot unsubscribers for iFood order docs
+    const ifoodUnsubscribersRef = useRef([]);
+    
+    // Cleanup iFood listeners helper
+    const cleanupIfoodListeners = useCallback(() => {
+        ifoodUnsubscribersRef.current.forEach(unsub => unsub());
+        ifoodUnsubscribersRef.current = [];
+    }, []);
 
-        fetchPedidos();
-    }, [isOpen, mesaSelecionada, idRestaurante]);
+    // Real-time listener for mesa pedidos + iFood order data
+    useEffect(() => {
+        if (!isOpen || !mesaSelecionada?.id || !idRestaurante) {
+            setPedidos([]);
+            setIfoodOrdersInfo({});
+            cleanupIfoodListeners();
+            return;
+        }
+
+        setLoading(true);
+        cleanupIfoodListeners();
+
+        const isIfood = isIfoodOrder(mesaSelecionada.id);
+
+        // Listen to mesa pedidos in real-time
+        const pedidosRef = collection(
+            db, "restaurantes", idRestaurante, "mesas", mesaSelecionada.id, "pedidos"
+        );
+        const pedidosQuery = query(pedidosRef);
+        
+        const unsubPedidos = onSnapshot(pedidosQuery, (snapshot) => {
+            const dados = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            setPedidos(dados);
+            setLoading(false);
+
+            if (!isIfood || dados.length === 0) {
+                setIfoodOrdersInfo({});
+                cleanupIfoodListeners();
+                return;
+            }
+
+            // For each pedido that has an ifoodOrderId, set up a real-time listener
+            // on the corresponding ifoodOrders/{ifoodOrderId} doc.
+            // Only add listeners for NEW pedidos that don't have one yet.
+            const currentPedidoIds = new Set(dados.map(p => p.ifoodOrderId).filter(Boolean));
+            
+            // Build listeners for pedidos we haven't subscribed to yet
+            const existingListenerIds = new Set(
+                ifoodUnsubscribersRef.current.map(u => u._ifoodOrderId)
+            );
+
+            for (const pedido of dados) {
+                const ifoodOrderId = pedido.ifoodOrderId;
+                if (!ifoodOrderId || existingListenerIds.has(ifoodOrderId)) continue;
+                
+                const ifoodOrderRef = doc(
+                    db, "restaurantes", idRestaurante, "ifoodOrders", ifoodOrderId
+                );
+                
+                const unsub = onSnapshot(ifoodOrderRef, (ifoodSnap) => {
+                    if (!ifoodSnap.exists()) return;
+                    
+                    const ifoodOrder = { id: ifoodSnap.id, ...ifoodSnap.data() };
+                    
+                    setIfoodOrdersInfo(prev => ({
+                        ...prev,
+                        [pedido.id]: {
+                            ...extractIfoodCustomerInfo(ifoodOrder),
+                            statusHistory: pedido.ifoodStatusHistory || ifoodOrder.ifoodStatusHistory || [],
+                            fullOrder: ifoodOrder,
+                            // Use the most authoritative ifoodStatus:
+                            // prefer the ifoodOrders doc (updated by actions + polling) 
+                            ifoodStatus: ifoodOrder.ifoodStatus || ifoodOrder.status || pedido.ifoodStatus,
+                        }
+                    }));
+                });
+                
+                // Tag the unsubscriber so we can track which orders we're listening to
+                unsub._ifoodOrderId = ifoodOrderId;
+                ifoodUnsubscribersRef.current.push(unsub);
+            }
+
+            // Also update ifoodOrdersInfo from mesa pedido data (ifoodStatus, statusHistory)
+            // This ensures the UI reflects mesa pedido changes even before ifoodOrders listener fires
+            setIfoodOrdersInfo(prev => {
+                const updated = { ...prev };
+                for (const pedido of dados) {
+                    if (updated[pedido.id]) {
+                        // Merge fresh statusHistory and ifoodStatus from mesa pedido
+                        updated[pedido.id] = {
+                            ...updated[pedido.id],
+                            statusHistory: pedido.ifoodStatusHistory || updated[pedido.id].statusHistory || [],
+                            ifoodStatus: updated[pedido.id].fullOrder?.ifoodStatus 
+                                || pedido.ifoodStatus 
+                                || updated[pedido.id].ifoodStatus,
+                        };
+                    }
+                }
+                return updated;
+            });
+        }, (err) => {
+            console.error("❌ Erro ao escutar pedidos:", err);
+            setPedidos([]);
+            setIfoodOrdersInfo({});
+            setLoading(false);
+        });
+
+        return () => {
+            unsubPedidos();
+            cleanupIfoodListeners();
+        };
+    }, [isOpen, mesaSelecionada?.id, idRestaurante, cleanupIfoodListeners]);
 
     const handleOpenPaymentModal = (pedidoId) => {
         setPedidoParaFinalizar(pedidoId);
@@ -515,51 +579,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                 )}
                                 
                                 <div className="grid grid-cols-1 gap-2 text-sm">
-                                    {ifoodOrdersInfo[pedido.id].name && (
-                                        <div className="flex items-start gap-2">
-                                            <User01 className="text-orange-600 mt-0.5" size={16} />
-                                            <div>
-                                                <span className="text-gray-600">Cliente: </span>
-                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].name}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].phone && (
-                                        <div className="flex items-start gap-2">
-                                            <Phone className="text-orange-600 mt-0.5" size={16} />
-                                            <div>
-                                                <span className="text-gray-600">Telefone: </span>
-                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].phone}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].address && (
-                                        <div className="flex items-start gap-2">
-                                            <MapPin className="text-orange-600 mt-0.5" size={16} />
-                                            <div>
-                                                <span className="text-gray-600">Endereço: </span>
-                                                <span className="font-medium">{ifoodOrdersInfo[pedido.id].address}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].ifoodStatus && (
-                                        <div className="mt-1 pt-2 border-t border-orange-200">
-                                            <span className="text-gray-600">Status iFood: </span>
-                                            <span className="font-semibold text-orange-700">
-                                                {formatIfoodStatus(ifoodOrdersInfo[pedido.id].ifoodStatus)}
-                                            </span>
-                                        </div>
-                                    )}
-                                    
-                                    {ifoodOrdersInfo[pedido.id].observations && (
-                                        <div className="mt-1 pt-2 border-t border-orange-200">
-                                            <span className="text-gray-600">Observações: </span>
-                                            <span className="text-gray-800 italic">{ifoodOrdersInfo[pedido.id].observations}</span>
-                                        </div>
-                                    )}
+                                    {/* Complete Customer Details (all iFood consumer data) */}
+                                    <IfoodCustomerDetails
+                                        customerInfo={ifoodOrdersInfo[pedido.id]}
+                                        orderType={ifoodOrdersInfo[pedido.id].fullOrder?.orderType || "DELIVERY"}
+                                    />
                                 </div>
                                 
                                 {/* iFood Payment Details */}
@@ -576,6 +600,15 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     <IfoodBenefitsDetails
                                         benefits={ifoodOrdersInfo[pedido.id].fullOrder.benefits}
                                         totalBenefits={ifoodOrdersInfo[pedido.id].fullOrder.total?.benefits || 0}
+                                        rawData={ifoodOrdersInfo[pedido.id].fullOrder.rawData}
+                                    />
+                                )}
+
+                                {/* iFood Additional Fees Details */}
+                                {ifoodOrdersInfo[pedido.id].fullOrder && (
+                                    <IfoodAdditionalFeesDetails
+                                        additionalFees={ifoodOrdersInfo[pedido.id].fullOrder.additionalFees}
+                                        totalAdditionalFees={ifoodOrdersInfo[pedido.id].fullOrder.total?.additionalFees || 0}
                                         rawData={ifoodOrdersInfo[pedido.id].fullOrder.rawData}
                                     />
                                 )}
@@ -596,30 +629,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                         ifoodOrderId={ifoodOrdersInfo[pedido.id].fullOrder.ifoodOrderId}
                                         currentStatus={ifoodOrdersInfo[pedido.id].ifoodStatus}
                                         orderType={ifoodOrdersInfo[pedido.id].fullOrder.orderType || "DELIVERY"}
-                                        onActionComplete={async () => {
-                                            // Reload orders after action
-                                            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
-                                            setPedidos(dados || []);
-                                            
-                                            // Reload iFood info
-                                            if (dados && dados.length > 0) {
-                                                const ifoodInfoMap = {};
-                                                for (const ped of dados) {
-                                                    try {
-                                                        const ifoodOrder = await getIfoodOrderForMesaFacilOrder(idRestaurante, ped.id);
-                                                        if (ifoodOrder) {
-                                                            ifoodInfoMap[ped.id] = {
-                                                                ...extractIfoodCustomerInfo(ifoodOrder),
-                                                                statusHistory: ped.ifoodStatusHistory || [],
-                                                                fullOrder: ifoodOrder
-                                                            };
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('Error reloading iFood order info:', error);
-                                                    }
-                                                }
-                                                setIfoodOrdersInfo(ifoodInfoMap);
-                                            }
+                                        onActionComplete={() => {
+                                            // No manual reload needed — real-time listeners on
+                                            // ifoodOrders and mesa pedidos auto-update the UI.
+                                            // The action Cloud Function updates both collections,
+                                            // and our onSnapshot listeners pick up the changes.
                                         }}
                                     />
                                 )}
@@ -672,7 +686,10 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                 </div>
                             )}
                         </div>
-                        <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
+                        {/* Observations - hide for iFood orders since IfoodCustomerDetails already shows all info */}
+                        {pedido.observacoes && !ifoodOrdersInfo[pedido.id] && (
+                            <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
+                        )}
 
                         {(pedido.status === 'andamento' || pedido.status === 'entregue') && (
                             <div className="flex justify-end">

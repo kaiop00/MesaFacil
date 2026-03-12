@@ -104,7 +104,9 @@ async function getValidAccessToken(idRestaurante) {
 
   // Check if token needs refresh (expires in less than 5 minutes)
   const now = Date.now();
-  const tokenExpiresAt = integrationData.tokenExpiresAt?.toMillis() || 0;
+  // Support both field names: accessTokenExpiry (used by ifood-polling/auth) and tokenExpiresAt (legacy)
+  const expiryField = integrationData.accessTokenExpiry || integrationData.tokenExpiresAt;
+  const tokenExpiresAt = expiryField?.toMillis?.() || (expiryField?.toDate ? expiryField.toDate().getTime() : 0);
   const fiveMinutes = 5 * 60 * 1000;
 
   if (integrationData.accessToken && tokenExpiresAt > now + fiveMinutes) {
@@ -120,15 +122,128 @@ async function getValidAccessToken(idRestaurante) {
     refreshToken: integrationData.refreshToken,
   });
 
-  // Update stored token
+  // Update stored token - use accessTokenExpiry to match ifood-polling.js convention
   const expiresAt = new Date(now + (tokenData.expiresIn * 1000));
   await integrationRef.update({
     accessToken: tokenData.accessToken,
-    tokenExpiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+    accessTokenExpiry: admin.firestore.Timestamp.fromDate(expiresAt),
+    refreshToken: tokenData.refreshToken || integrationData.refreshToken,
     lastTokenRefresh: admin.firestore.FieldValue.serverTimestamp(),
+    needsReauthorization: false,
+    lastError: null,
   });
 
   return tokenData.accessToken;
+}
+
+/**
+ * iFood status precedence map (higher = more advanced in lifecycle)
+ */
+const IFOOD_STATUS_PRECEDENCE = {
+  "PLACED": 1,
+  "INTEGRATED": 1,
+  "PENDING": 1,
+  "ACCEPTED": 2,
+  "CONFIRMED": 3,
+  "READY_TO_PICKUP": 4,
+  "DISPATCHED": 4,
+  "CONCLUDED": 5,
+  "CANCELLED": 5,
+  "CANCELLATION_REQUESTED": 3,
+  "REJECTED": 5,
+};
+
+/**
+ * Map iFood status to MesaFacil status
+ */
+const IFOOD_TO_MESAFACIL_STATUS = {
+  "INTEGRATED": "andamento",
+  "PENDING": "andamento",
+  "PLACED": "andamento",
+  "ACCEPTED": "andamento",
+  "CONFIRMED": "andamento",
+  "READY_TO_PICKUP": "andamento",
+  "DISPATCHED": "andamento",
+  "CONCLUDED": "entregue",
+  "CANCELLED": "cancelado",
+  "CANCELLATION_REQUESTED": "andamento",
+  "REJECTED": "cancelado",
+};
+
+/**
+ * Sync iFood action status change to the MesaFacil order in mesas/ifood/pedidos.
+ * This ensures that when an action (confirm, dispatch, etc.) is performed via MesaFacil,
+ * the mesa pedido document is immediately updated — not just ifoodOrders.
+ * 
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} ifoodOrderId - iFood order ID (doc ID in ifoodOrders collection)
+ * @param {string} newIfoodStatus - The new iFood status after the action
+ * @param {string} actionBy - Who performed the action (uid or "system")
+ */
+async function syncActionToMesaFacilOrder(idRestaurante, ifoodOrderId, newIfoodStatus, actionBy) {
+  try {
+    // Get the ifoodOrders doc to find the linked mesaFacilOrderId
+    const ifoodOrderRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/ifoodOrders/${ifoodOrderId}`);
+    const ifoodOrderDoc = await ifoodOrderRef.get();
+
+    if (!ifoodOrderDoc.exists) {
+      logger.warn("syncActionToMesaFacilOrder: ifoodOrders doc not found", {
+        idRestaurante, ifoodOrderId,
+      });
+      return;
+    }
+
+    const mesaFacilOrderId = ifoodOrderDoc.data().mesaFacilOrderId;
+    if (!mesaFacilOrderId) {
+      logger.warn("syncActionToMesaFacilOrder: no mesaFacilOrderId linked", {
+        idRestaurante, ifoodOrderId,
+      });
+      return;
+    }
+
+    const mesaFacilStatus = IFOOD_TO_MESAFACIL_STATUS[newIfoodStatus] || "andamento";
+
+    const pedidoRef = admin.firestore()
+      .doc(`restaurantes/${idRestaurante}/mesas/ifood/pedidos/${mesaFacilOrderId}`);
+
+    const updateData = {
+      ifoodStatus: newIfoodStatus,
+      status: mesaFacilStatus,
+      lastSyncedFromIfood: admin.firestore.FieldValue.serverTimestamp(),
+      ifoodStatusHistory: admin.firestore.FieldValue.arrayUnion({
+        status: newIfoodStatus,
+        changedAt: new Date().toISOString(),
+        source: "mesafacil",
+        actionBy: actionBy || "system",
+      }),
+    };
+
+    if (mesaFacilStatus === "cancelado") {
+      updateData.canceladoEm = admin.firestore.FieldValue.serverTimestamp();
+    }
+    if (mesaFacilStatus === "entregue") {
+      updateData.finalizadoEm = admin.firestore.FieldValue.serverTimestamp();
+    }
+
+    await pedidoRef.update(updateData);
+
+    logger.info("syncActionToMesaFacilOrder: mesa pedido updated", {
+      idRestaurante,
+      ifoodOrderId,
+      mesaFacilOrderId,
+      newIfoodStatus,
+      mesaFacilStatus,
+    });
+  } catch (error) {
+    logger.error("syncActionToMesaFacilOrder: error", {
+      idRestaurante,
+      ifoodOrderId,
+      newIfoodStatus,
+      error: error.message,
+    });
+    // Don't throw — the iFood action itself succeeded; this is best-effort sync
+  }
 }
 
 /**
@@ -191,7 +306,7 @@ exports.ifoodConfirmOrder = onCall(
 
       logger.info("Pedido confirmado com sucesso no iFood", {orderId});
 
-      // Update local order status
+      // Update local order status in ifoodOrders collection
       const orderRef = admin.firestore()
         .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
       
@@ -199,11 +314,17 @@ exports.ifoodConfirmOrder = onCall(
       if (orderDoc.exists) {
         await orderRef.update({
           ifoodStatus: "CONFIRMED",
+          status: "CONFIRMED",
           confirmedAt: admin.firestore.FieldValue.serverTimestamp(),
           lastActionAt: admin.firestore.FieldValue.serverTimestamp(),
           lastActionBy: request.auth?.uid || "system",
         });
       }
+
+      // Sync status to mesas/ifood/pedidos so UI reflects the change immediately
+      await syncActionToMesaFacilOrder(
+        idRestaurante, orderId, "CONFIRMED", request.auth?.uid || "system"
+      );
 
       return {
         success: true,
@@ -280,7 +401,7 @@ exports.ifoodDispatchOrder = onCall(
 
       logger.info("Pedido despachado com sucesso no iFood", {orderId});
 
-      // Update local order status
+      // Update local order status in ifoodOrders collection
       const orderRef = admin.firestore()
         .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
       
@@ -288,11 +409,17 @@ exports.ifoodDispatchOrder = onCall(
       if (orderDoc.exists) {
         await orderRef.update({
           ifoodStatus: "DISPATCHED",
+          status: "DISPATCHED",
           dispatchedAt: admin.firestore.FieldValue.serverTimestamp(),
           lastActionAt: admin.firestore.FieldValue.serverTimestamp(),
           lastActionBy: request.auth?.uid || "system",
         });
       }
+
+      // Sync status to mesas/ifood/pedidos so UI reflects the change immediately
+      await syncActionToMesaFacilOrder(
+        idRestaurante, orderId, "DISPATCHED", request.auth?.uid || "system"
+      );
 
       return {
         success: true,
@@ -369,7 +496,7 @@ exports.ifoodMarkReadyToPickup = onCall(
 
       logger.info("Pedido marcado como pronto para retirada", {orderId});
 
-      // Update local order status
+      // Update local order status in ifoodOrders collection
       const orderRef = admin.firestore()
         .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
       
@@ -377,11 +504,17 @@ exports.ifoodMarkReadyToPickup = onCall(
       if (orderDoc.exists) {
         await orderRef.update({
           ifoodStatus: "READY_TO_PICKUP",
+          status: "READY_TO_PICKUP",
           readyToPickupAt: admin.firestore.FieldValue.serverTimestamp(),
           lastActionAt: admin.firestore.FieldValue.serverTimestamp(),
           lastActionBy: request.auth?.uid || "system",
         });
       }
+
+      // Sync status to mesas/ifood/pedidos so UI reflects the change immediately
+      await syncActionToMesaFacilOrder(
+        idRestaurante, orderId, "READY_TO_PICKUP", request.auth?.uid || "system"
+      );
 
       return {
         success: true,
@@ -578,7 +711,7 @@ exports.ifoodRequestCancellation = onCall(
         cancellationCode,
       });
 
-      // Update local order status
+      // Update local order status in ifoodOrders collection
       const orderRef = admin.firestore()
         .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
       
@@ -586,6 +719,7 @@ exports.ifoodRequestCancellation = onCall(
       if (orderDoc.exists) {
         await orderRef.update({
           ifoodStatus: "CANCELLATION_REQUESTED",
+          status: "CANCELLATION_REQUESTED",
           cancellationRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
           cancellationCode: cancellationCode,
           cancellationReason: reason || null,
@@ -593,6 +727,11 @@ exports.ifoodRequestCancellation = onCall(
           lastActionBy: request.auth?.uid || "system",
         });
       }
+
+      // Sync status to mesas/ifood/pedidos so UI reflects the change immediately
+      await syncActionToMesaFacilOrder(
+        idRestaurante, orderId, "CANCELLATION_REQUESTED", request.auth?.uid || "system"
+      );
 
       return {
         success: true,
@@ -670,7 +809,7 @@ exports.ifoodAcceptCancellation = onCall(
 
       logger.info("Cancelamento aceito com sucesso", {orderId});
 
-      // Update local order status
+      // Update local order status in ifoodOrders collection
       const orderRef = admin.firestore()
         .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
       
@@ -678,12 +817,18 @@ exports.ifoodAcceptCancellation = onCall(
       if (orderDoc.exists) {
         await orderRef.update({
           ifoodStatus: "CANCELLED",
+          status: "CANCELLED",
           cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
           cancellationAccepted: true,
           lastActionAt: admin.firestore.FieldValue.serverTimestamp(),
           lastActionBy: request.auth?.uid || "system",
         });
       }
+
+      // Sync status to mesas/ifood/pedidos so UI reflects the change immediately
+      await syncActionToMesaFacilOrder(
+        idRestaurante, orderId, "CANCELLED", request.auth?.uid || "system"
+      );
 
       return {
         success: true,
@@ -768,13 +913,18 @@ exports.ifoodDenyCancellation = onCall(
 
       logger.info("Cancelamento negado com sucesso", {orderId});
 
-      // Update local order status
+      // Update local order status in ifoodOrders collection
       const orderRef = admin.firestore()
         .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
       
       const orderDoc = await orderRef.get();
       if (orderDoc.exists) {
+        const currentData = orderDoc.data();
+        // Restore previous status since cancellation was denied
+        const restoredStatus = currentData.previousIfoodStatus || currentData.ifoodStatus || "CONFIRMED";
         await orderRef.update({
+          ifoodStatus: restoredStatus,
+          status: restoredStatus,
           cancellationDenied: true,
           cancellationDeniedAt: admin.firestore.FieldValue.serverTimestamp(),
           cancellationDeniedReason: reason || null,
@@ -792,6 +942,414 @@ exports.ifoodDenyCancellation = onCall(
       logger.error("Erro em ifoodDenyCancellation", {
         error: error.message,
         stack: error.stack,
+      });
+      throw new Error(error.message);
+    }
+  }
+);
+
+// ===================================================================
+// Handshake (Negotiation Platform) Functions
+// ===================================================================
+
+/**
+ * Accept a Handshake dispute (agree with customer's cancellation request)
+ * POST /order/v1.0/disputes/{disputeId}/accept
+ *
+ * @description Accepts the customer's dispute, agreeing to the cancellation/refund
+ */
+exports.ifoodAcceptDispute = onCall(
+  {
+    secrets: [ifoodClientId, ifoodClientSecret],
+    timeoutSeconds: 60,
+    region: "us-central1",
+    cors: true,
+  },
+  async (request) => {
+    try {
+      const {idRestaurante, disputeId, orderId, reason, detailReason} = request.data;
+
+      if (!idRestaurante || !disputeId) {
+        throw new Error("idRestaurante e disputeId são obrigatórios");
+      }
+
+      logger.info("Aceitando disputa Handshake iFood", {idRestaurante, disputeId, orderId, reason});
+
+      const accessToken = await getValidAccessToken(idRestaurante);
+
+      // Build body — reason/detailReason required when acceptCancellationReasons present
+      const body = {};
+      if (reason) body.reason = reason;
+      if (detailReason) body.detailReason = detailReason;
+
+      const response = await fetch(
+        `${IFOOD_API_BASE_URL}/order/v1.0/disputes/${disputeId}/accept`,
+        {
+          method: "POST",
+          headers: {
+            ...IFOOD_API_HEADERS,
+            "Authorization": `Bearer ${accessToken}`,
+          },
+          body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = {message: errorText};
+        }
+
+        logger.error("Erro ao aceitar disputa Handshake", {
+          disputeId,
+          status: response.status,
+          error: errorData,
+        });
+
+        throw new Error(
+          errorData.message || `Erro ao aceitar disputa: ${response.status}`
+        );
+      }
+
+      logger.info("Disputa aceita com sucesso", {disputeId});
+
+      // Update dispute in Firestore
+      const disputeRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodDisputes/${disputeId}`);
+      const disputeDoc = await disputeRef.get();
+      if (disputeDoc.exists) {
+        await disputeRef.update({
+          status: "ACCEPTED",
+          respondedAt: admin.firestore.FieldValue.serverTimestamp(),
+          respondedBy: request.auth?.uid || "system",
+          responseType: "ACCEPTED",
+        });
+      }
+
+      // Clear dispute flag from order
+      if (orderId) {
+        const orderRef = admin.firestore()
+          .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+        const orderDoc = await orderRef.get();
+        if (orderDoc.exists) {
+          await orderRef.update({
+            needsManualReview: false,
+            activeDisputeId: null,
+            lastActionAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastActionBy: request.auth?.uid || "system",
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: "Disputa aceita com sucesso",
+        disputeId,
+        orderId,
+      };
+    } catch (error) {
+      logger.error("Erro em ifoodAcceptDispute", {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw new Error(error.message);
+    }
+  }
+);
+
+/**
+ * Reject a Handshake dispute (disagree with customer's cancellation request)
+ * POST /order/v1.0/disputes/{disputeId}/reject
+ *
+ * @description Rejects the customer's dispute. iFood mediates the final decision.
+ */
+exports.ifoodRejectDispute = onCall(
+  {
+    secrets: [ifoodClientId, ifoodClientSecret],
+    timeoutSeconds: 60,
+    region: "us-central1",
+    cors: true,
+  },
+  async (request) => {
+    try {
+      const {idRestaurante, disputeId, orderId, reason} = request.data;
+
+      if (!idRestaurante || !disputeId) {
+        throw new Error("idRestaurante e disputeId são obrigatórios");
+      }
+
+      logger.info("Rejeitando disputa Handshake iFood", {
+        idRestaurante,
+        disputeId,
+        orderId,
+        hasReason: !!reason,
+      });
+
+      const accessToken = await getValidAccessToken(idRestaurante);
+
+      const body = reason ? {reason} : {};
+
+      const response = await fetch(
+        `${IFOOD_API_BASE_URL}/order/v1.0/disputes/${disputeId}/reject`,
+        {
+          method: "POST",
+          headers: {
+            ...IFOOD_API_HEADERS,
+            "Authorization": `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = {message: errorText};
+        }
+
+        logger.error("Erro ao rejeitar disputa Handshake", {
+          disputeId,
+          status: response.status,
+          error: errorData,
+        });
+
+        throw new Error(
+          errorData.message || `Erro ao rejeitar disputa: ${response.status}`
+        );
+      }
+
+      logger.info("Disputa rejeitada com sucesso", {disputeId});
+
+      // Update dispute in Firestore
+      const disputeRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodDisputes/${disputeId}`);
+      const disputeDoc = await disputeRef.get();
+      if (disputeDoc.exists) {
+        await disputeRef.update({
+          status: "REJECTED",
+          respondedAt: admin.firestore.FieldValue.serverTimestamp(),
+          respondedBy: request.auth?.uid || "system",
+          responseType: "REJECTED",
+          rejectionReason: reason || null,
+        });
+      }
+
+      // Update order — dispute still pending iFood mediation, keep flag
+      if (orderId) {
+        const orderRef = admin.firestore()
+          .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+        const orderDoc = await orderRef.get();
+        if (orderDoc.exists) {
+          await orderRef.update({
+            lastActionAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastActionBy: request.auth?.uid || "system",
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: "Disputa rejeitada com sucesso. O iFood irá mediar a decisão final.",
+        disputeId,
+        orderId,
+      };
+    } catch (error) {
+      logger.error("Erro em ifoodRejectDispute", {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw new Error(error.message);
+    }
+  }
+);
+
+/**
+ * Select an alternative for a Handshake dispute (counter-offer/partial refund)
+ * POST /order/v1.0/disputes/{disputeId}/alternatives/{alternativeId}
+ *
+ * @description Selects one of the available alternatives proposed in the dispute
+ */
+exports.ifoodSelectDisputeAlternative = onCall(
+  {
+    secrets: [ifoodClientId, ifoodClientSecret],
+    timeoutSeconds: 60,
+    region: "us-central1",
+    cors: true,
+  },
+  async (request) => {
+    try {
+      const {idRestaurante, disputeId, alternativeId, orderId, alternativeBody} = request.data;
+
+      if (!idRestaurante || !disputeId || !alternativeId) {
+        throw new Error("idRestaurante, disputeId e alternativeId são obrigatórios");
+      }
+
+      if (!alternativeBody || !alternativeBody.type) {
+        throw new Error("alternativeBody com type é obrigatório");
+      }
+
+      logger.info("Selecionando alternativa para disputa Handshake iFood", {
+        idRestaurante,
+        disputeId,
+        alternativeId,
+        orderId,
+        alternativeType: alternativeBody.type,
+      });
+
+      const accessToken = await getValidAccessToken(idRestaurante);
+
+      // iFood expects {type, metadata: {...}} — ensure numeric fields are numbers, not strings
+      const requestBody = JSON.parse(JSON.stringify(alternativeBody), (key, val) => {
+        if (key === "additionalTimeInMinutes") {
+          return typeof val === "string" ? Number(val) : val;
+        }
+        return val;
+      });
+
+      logger.info("Enviando body para iFood alternatives", {
+        disputeId,
+        alternativeId,
+        requestBody,
+      });
+
+      const response = await fetch(
+        `${IFOOD_API_BASE_URL}/order/v1.0/disputes/${disputeId}/alternatives/${alternativeId}`,
+        {
+          method: "POST",
+          headers: {
+            ...IFOOD_API_HEADERS,
+            "Authorization": `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = {message: errorText};
+        }
+
+        logger.error("Erro ao selecionar alternativa da disputa", {
+          disputeId,
+          alternativeId,
+          status: response.status,
+          error: errorData,
+        });
+
+        throw new Error(
+          errorData.message || `Erro ao selecionar alternativa: ${response.status}`
+        );
+      }
+
+      logger.info("Alternativa selecionada com sucesso", {disputeId, alternativeId});
+
+      // Update dispute in Firestore
+      const disputeRef = admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/ifoodDisputes/${disputeId}`);
+      const disputeDoc = await disputeRef.get();
+      if (disputeDoc.exists) {
+        await disputeRef.update({
+          status: "ALTERNATIVE_SELECTED",
+          respondedAt: admin.firestore.FieldValue.serverTimestamp(),
+          respondedBy: request.auth?.uid || "system",
+          responseType: "ALTERNATIVE",
+          selectedAlternativeId: alternativeId,
+        });
+      }
+
+      // Clear dispute flag from order
+      if (orderId) {
+        const orderRef = admin.firestore()
+          .doc(`restaurantes/${idRestaurante}/ifoodOrders/${orderId}`);
+        const orderDoc = await orderRef.get();
+        if (orderDoc.exists) {
+          await orderRef.update({
+            needsManualReview: false,
+            activeDisputeId: null,
+            lastActionAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastActionBy: request.auth?.uid || "system",
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: "Alternativa selecionada com sucesso",
+        disputeId,
+        alternativeId,
+        orderId,
+      };
+    } catch (error) {
+      logger.error("Erro em ifoodSelectDisputeAlternative", {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw new Error(error.message);
+    }
+  }
+);
+
+/**
+ * Proxy iFood cancellation evidence images (requires iFood auth)
+ * Returns the image as base64 data URI so the frontend can display it.
+ *
+ * @param {string} idRestaurante - Restaurant ID
+ * @param {string} evidenceUrl - Full evidence URL from iFood
+ * @returns {Promise<{success: boolean, dataUri: string}>}
+ */
+exports.ifoodGetDisputeEvidence = onCall(
+  {
+    secrets: [ifoodClientId, ifoodClientSecret],
+    timeoutSeconds: 30,
+    region: "us-central1",
+    cors: true,
+  },
+  async (request) => {
+    try {
+      const {idRestaurante, evidenceUrl} = request.data;
+
+      if (!idRestaurante || !evidenceUrl) {
+        throw new Error("idRestaurante e evidenceUrl são obrigatórios");
+      }
+
+      // Only allow iFood merchant-api URLs to prevent SSRF
+      if (!evidenceUrl.startsWith("https://merchant-api.ifood.com.br/")) {
+        throw new Error("URL de evidência inválida");
+      }
+
+      const accessToken = await getValidAccessToken(idRestaurante);
+
+      const response = await fetch(evidenceUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "User-Agent": "MesaFacil/1.0 (Firebase Cloud Functions)",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar evidência: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "image/jpeg";
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      const dataUri = `data:${contentType};base64,${base64}`;
+
+      return {success: true, dataUri};
+    } catch (error) {
+      logger.error("Erro em ifoodGetDisputeEvidence", {
+        error: error.message,
       });
       throw new Error(error.message);
     }

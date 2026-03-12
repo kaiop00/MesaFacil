@@ -36,6 +36,7 @@ import ItemsPage from "@/features/items/pages/ItemsPage";
 import MovementsPage from "@/features/movements/pages/MovementsPage";
 import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
+import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
 import ConfigFiscalPage from "@/features/fiscal/pages/ConfigFiscalPage";
 
 //providers
@@ -195,6 +196,10 @@ const router = createBrowserRouter([
                 <IfoodIntegrationPage />
               </RequirePermission>
             )
+          },
+          {
+            path: "whatsapp",
+            element: <WhatsAppPage />
           },
           {
             path: "fiscal",

@@ -13,15 +13,20 @@ import {
   Slider01,
   Building03,
   Lock,
-  Link as LinkIcon,
+  ShoppingBag01,
+  Chat,
 } from "react-coolicons";
 import { usePlan } from "@/contexts/PlanContext";
 import { FEATURE_FLAGS } from "@/constants/planFeatures";
+import { useAuth } from "@/contexts/AuthContext";
+import { useIfoodDisputes } from "@/features/integrations/ifood/hooks/useIfoodDisputes";
 import mesafacil from "@/assets/mesafacil.png";
 
 const Sidebar = () => {
   const { t } = useTranslation();
   const { hasFeatureAccess } = usePlan();
+  const { idRestaurante } = useAuth();
+  const { pendingCount: disputeCount } = useIfoodDisputes(idRestaurante);
   const [isOpen, setIsOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -52,9 +57,16 @@ const Sidebar = () => {
     },
     { 
       name: t("common:sidebar.integrations"), 
-      icon: <LinkIcon size={20} />, 
+      icon: <ShoppingBag01 size={20} />, 
       path: "/home/integracoes/ifood",
-      feature: null
+      feature: null,
+      badge: disputeCount,
+    },
+    {
+      name: 'WhatsApp',
+      icon: <Chat size={20} />,
+      path: '/home/whatsapp',
+      feature: null,
     },
     { 
       name: t("common:sidebar.items"), 
@@ -142,6 +154,11 @@ const Sidebar = () => {
                     </span>
                     {isLocked && (
                       <Lock size={16} className="ml-2 text-gray-400" />
+                    )}
+                    {link.badge > 0 && (
+                      <span className="ml-2 min-w-5 h-5 px-1 bg-yellow-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {link.badge}
+                      </span>
                     )}
                   </NavLink>
                 </li>
