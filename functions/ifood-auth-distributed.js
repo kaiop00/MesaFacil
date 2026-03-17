@@ -275,6 +275,7 @@ exports.ifoodExchangeCode = onCall(
  */
 exports.ifoodRevokeAuth = onCall(
   {
+    secrets: [ifoodClientId, ifoodClientSecret],
     timeoutSeconds: 30,
     cors: true,
   },
@@ -288,16 +289,25 @@ exports.ifoodRevokeAuth = onCall(
 
       logger.info("Revoking iFood authorization", {idRestaurante});
 
-      // Clear tokens from Firestore
+      // Clear auth/session fields from Firestore. Use set+merge to avoid
+      // failures when the integration doc does not exist yet.
       const docRef = admin.firestore().doc(`restaurantes/${idRestaurante}/integrations/ifood`);
-      await docRef.update({
+      await docRef.set({
         accessToken: admin.firestore.FieldValue.delete(),
         refreshToken: admin.firestore.FieldValue.delete(),
         accessTokenExpiry: admin.firestore.FieldValue.delete(),
+        authorizationCodeVerifier: admin.firestore.FieldValue.delete(),
+        userCode: admin.firestore.FieldValue.delete(),
+        userCodeExpiresAt: admin.firestore.FieldValue.delete(),
+        verificationUrl: admin.firestore.FieldValue.delete(),
+        verificationUrlComplete: admin.firestore.FieldValue.delete(),
+        needsReauthorization: false,
+        lastError: admin.firestore.FieldValue.delete(),
+        lastErrorAt: admin.firestore.FieldValue.delete(),
         enabled: false,
         revokedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      }, {merge: true});
 
       logger.info("iFood authorization revoked", {idRestaurante});
 
