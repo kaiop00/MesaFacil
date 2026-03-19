@@ -205,7 +205,12 @@ const IfoodIntegrationPage = () => {
                     actionName: "revogação da autorização",
                     onSuccess: async () => {
                         notify("Autorização revogada com sucesso", "success");
+                        setUserCode("");
+                        setVerificationUrlComplete("");
+                        setAuthorizationCode("");
                         await loadIntegrationStatus();
+                        await loadCredentials();
+                        await loadStats();
                     },
                     onRetry: ({ attempt, maxAttempts, nextAttemptIn }) => {
                         notify(
