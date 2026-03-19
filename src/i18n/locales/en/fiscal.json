@@ -84,5 +84,55 @@
     "item2": "Obtain the CSC and CSC ID from your state's SEFAZ portal.",
     "item3": "After saving, click \"Register Company\" to sync with Nuvem Fiscal.",
     "item4": "NFC-e issuance will be automatically available after registration and activation."
+  },
+
+  "nfceList": {
+    "page": {
+      "title": "Issued NFC-es",
+      "subtitle": "List of all electronic invoices issued by your company"
+    },
+    "table": {
+      "noData": "No NFC-e found",
+      "columns": {
+        "id": "ID",
+        "numero": "Number",
+        "chave": "Access Key",
+        "valor": "Amount",
+        "data": "Date",
+        "status": "Status",
+        "acoes": "Actions"
+      },
+      "status": {
+        "authorized": "Authorized",
+        "rejected": "Rejected",
+        "pending": "Pending"
+      },
+      "viewDetails": "View details"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "to": "to",
+      "of": "of",
+      "noItems": "No NFC-e found",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page"
+    },
+    "modal": {
+      "title": "NFC-e Details",
+      "id": "ID",
+      "numero": "Number",
+      "chave": "Access Key",
+      "status": "Status",
+      "valor": "Amount (R$)",
+      "referencia": "Order Reference",
+      "close": "Close"
+    },
+    "actions": {
+      "view": "View"
+    },
+    "errors": {
+      "loadFailed": "Error loading NFC-es"
+    }
   }
 }

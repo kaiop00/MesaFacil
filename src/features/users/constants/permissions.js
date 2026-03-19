@@ -38,6 +38,7 @@ export const getPermissions = (t) => ({
   ],
   [t('users:permissionCategories.config')]: [
     { id: 'view_config', label: t('users:permissionLabels.view_config') },
+    { id: 'view_fiscal', label: t('users:permissionLabels.view_fiscal') },
     { id: 'edit_config', label: t('users:permissionLabels.edit_config') },
     { id: 'manage_tables', label: t('users:permissionLabels.manage_tables') },
     { id: 'manage_colors', label: t('users:permissionLabels.manage_colors') },
@@ -92,6 +93,7 @@ export const PERMISSIONS = {
   ],
   'Configurações': [
     { id: 'view_config', label: 'Visualizar Configurações' },
+    { id: 'view_fiscal', label: 'Visualizar NFC-e Emitidas' },
     { id: 'edit_config', label: 'Editar Configurações' },
     { id: 'manage_tables', label: 'Gerenciar Mesas' },
     { id: 'manage_colors', label: 'Gerenciar Cores' },

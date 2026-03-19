@@ -92,6 +92,12 @@ const Sidebar = () => {
       path: "/home/fiscal",
       feature: null
     },
+    { 
+      name: t("common:sidebar.nfceList") || "NFC-e Emitidas", 
+      icon: <FileDocument size={20} />, 
+      path: "/home/nfce-emitidas",
+      feature: null
+    },
   ];
 
   return (

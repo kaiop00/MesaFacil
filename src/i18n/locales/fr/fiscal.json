@@ -83,6 +83,54 @@
     "item1": "L'environnement est configuré pour l'HOMOLOGATION (tests). Les notes n'auront aucune valeur fiscale.",
     "item2": "Obtenez le CSC et l'ID du CSC sur le portail SEFAZ de votre état.",
     "item3": "Après l'enregistrement, cliquez sur « Enregistrer l'Entreprise » pour synchroniser avec Nuvem Fiscal.",
-    "item4": "L'émission de NFC-e sera automatiquement disponible après l'enregistrement et l'activation."
-  }
+    "item4": "L'émission de NFC-e sera automatiquement disponible après l'enregistrement et l'activation."  },
+
+  "nfceList": {
+    "page": {
+      "title": "NFC-e Émises",
+      "subtitle": "Liste de toutes les factures électroniques émises par votre entreprise"
+    },
+    "table": {
+      "noData": "Aucun NFC-e trouvé",
+      "columns": {
+        "id": "ID",
+        "numero": "Numéro",
+        "chave": "Clé d'Accès",
+        "valor": "Montant",
+        "data": "Date",
+        "status": "Statut",
+        "acoes": "Actions"
+      },
+      "status": {
+        "authorized": "Autorisé",
+        "rejected": "Rejeté",
+        "pending": "En Attente"
+      },
+      "viewDetails": "Afficher les détails"
+    },
+    "pagination": {
+      "showing": "Affichage",
+      "to": "à",
+      "of": "de",
+      "noItems": "Aucun NFC-e trouvé",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "page": "Page"
+    },
+    "modal": {
+      "title": "Détails du NFC-e",
+      "id": "ID",
+      "numero": "Numéro",
+      "chave": "Clé d'Accès",
+      "status": "Statut",
+      "valor": "Montant (R$)",
+      "referencia": "Référence de la Commande",
+      "close": "Fermer"
+    },
+    "actions": {
+      "view": "Afficher"
+    },
+    "errors": {
+      "loadFailed": "Erreur lors du chargement des NFC-e"
+    }  }
 }

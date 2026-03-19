@@ -32,7 +32,8 @@
     "items": "Itens",
     "movements": "Entradas e Saídas",
     "users": "Usuários",
-    "fiscal": "NFC-e"
+    "fiscal": "NFC-e",
+    "nfceList": "NFC-e Emitidas"
   },
   "stock": {
     "impact": "Impacto no Estoque",

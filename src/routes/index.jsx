@@ -38,6 +38,7 @@ import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
 import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
 import ConfigFiscalPage from "@/features/fiscal/pages/ConfigFiscalPage";
+import NfceListPage from "@/features/fiscal/pages/NfceListPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -204,6 +205,10 @@ const router = createBrowserRouter([
           {
             path: "fiscal",
             element: <ConfigFiscalPage />,
+          },
+          {
+            path: "nfce-emitidas",
+            element: <NfceListPage />,
           },
         ],
       }

@@ -83,6 +83,54 @@
     "item1": "El entorno está configurado para HOMOLOGACIÓN (pruebas). Las notas no tendrán valor fiscal.",
     "item2": "Obtenga el CSC y el ID del CSC en el portal de la SEFAZ de su estado.",
     "item3": "Después de guardar, haga clic en \"Registrar Empresa\" para sincronizar con Nuvem Fiscal.",
-    "item4": "La emisión de NFC-e estará disponible automáticamente después del registro y la activación."
-  }
+    "item4": "La emisión de NFC-e estará disponible automáticamente después del registro y la activación."  },
+
+  "nfceList": {
+    "page": {
+      "title": "NFC-es Emitidas",
+      "subtitle": "Listado de todas las facturas electrónicas emitidas por su empresa"
+    },
+    "table": {
+      "noData": "No se encontró NFC-e",
+      "columns": {
+        "id": "ID",
+        "numero": "Número",
+        "chave": "Clave de Acceso",
+        "valor": "Monto",
+        "data": "Fecha",
+        "status": "Estado",
+        "acoes": "Acciones"
+      },
+      "status": {
+        "authorized": "Autorizado",
+        "rejected": "Rechazado",
+        "pending": "Pendiente"
+      },
+      "viewDetails": "Ver detalles"
+    },
+    "pagination": {
+      "showing": "Mostrando",
+      "to": "a",
+      "of": "de",
+      "noItems": "No se encontró NFC-e",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "page": "Página"
+    },
+    "modal": {
+      "title": "Detalles de NFC-e",
+      "id": "ID",
+      "numero": "Número",
+      "chave": "Clave de Acceso",
+      "status": "Estado",
+      "valor": "Monto (R$)",
+      "referencia": "Referencia del Pedido",
+      "close": "Cerrar"
+    },
+    "actions": {
+      "view": "Ver"
+    },
+    "errors": {
+      "loadFailed": "Error al cargar NFC-es"
+    }  }
 }

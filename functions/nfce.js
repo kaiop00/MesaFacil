@@ -648,6 +648,84 @@ exports.nfceConsultar = onCall(
 );
 
 // ============================================================================
+// FUNCTION: nfceListar
+// Lists all NFC-es emitted for a restaurant with pagination
+// ============================================================================
+exports.nfceListar = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, top = 50, skip = 0} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    logger.info("Listing NFC-es", {idRestaurante, top, skip});
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      if (!configFiscal?.cnpj) {
+        throw new HttpsError("failed-precondition", "Restaurant has no fiscal configuration");
+      }
+
+      const cnpj = configFiscal.cnpj.replace(/\D/g, "");
+      const token = await getAccessToken("nfce");
+
+      // Query the Nuvem Fiscal API for NFC-es by CNPJ
+      // Uses OData query syntax: $skip and $top for pagination
+      const params = new URLSearchParams();
+      params.append("cpf_cnpj", cnpj);
+      params.append("ambiente", "homologacao"); // homologacao or producao
+      params.append("$top", String(Math.min(top, 100))); // OData: limit 1-100
+      params.append("$skip", String(Math.max(skip, 0))); // OData: offset
+      params.append("$inlinecount", "true"); // Include total count
+
+      const url = `${API_BASE_URL}/nfce?${params.toString()}`;
+      logger.info("Calling Nuvem Fiscal API", {url: url.replace(cnpj, "***")});
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        logger.error("Nuvem Fiscal list error", {
+          url: url.replace(cnpj, "***"),
+          status: response.status,
+          error: errorBody,
+        });
+        throw new Error(`Nuvem Fiscal API error ${response.status}: ${errorBody}`);
+      }
+
+      const data = await response.json();
+
+      // Parse response: data.data contains NFC-es array, @count is total
+      return {
+        success: true,
+        data: {
+          nfces: data.data || [],
+          total: data["@count"] || data.total || (data.data?.length || 0),
+          top,
+          skip,
+        },
+      };
+    } catch (err) {
+      logger.error("Error listing NFC-es", {error: err.message, idRestaurante});
+      throw new HttpsError("internal", `Erro ao listar NFC-es: ${err.message}`);
+    }
+  },
+);
+
+// ============================================================================
 // HELPER: Build imposto object based on CRT
 // ============================================================================
 function buildImposto(crt, vProd) {

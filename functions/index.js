@@ -391,6 +391,7 @@ const {
   nfceConfigurarEmpresa,
   nfceEmitir,
   nfceConsultar,
+  nfceListar,
 } = require("./nfce");
 
 exports.ifoodPolling = ifoodPolling;
@@ -423,3 +424,4 @@ exports.nfceRegistrarEmpresa = nfceRegistrarEmpresa;
 exports.nfceConfigurarEmpresa = nfceConfigurarEmpresa;
 exports.nfceEmitir = nfceEmitir;
 exports.nfceConsultar = nfceConsultar;
+exports.nfceListar = nfceListar;

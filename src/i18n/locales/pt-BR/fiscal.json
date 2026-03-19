@@ -92,5 +92,55 @@
     "item2": "Obtenha o CSC e ID do CSC no portal da SEFAZ do seu estado.",
     "item3": "Após salvar, clique em \"Registrar Empresa\" para sincronizar com a Nuvem Fiscal.",
     "item4": "A emissão de NFC-e ficará disponível automaticamente após o registro e ativação."
+  },
+
+  "nfceList": {
+    "page": {
+      "title": "NFC-e Emitidas",
+      "subtitle": "Listagem de todas as notas fiscais eletrônicas emitidas pela sua empresa"
+    },
+    "table": {
+      "noData": "Nenhuma NFC-e encontrada",
+      "columns": {
+        "id": "ID",
+        "numero": "Número",
+        "chave": "Chave de Acesso",
+        "valor": "Valor",
+        "data": "Data",
+        "status": "Status",
+        "acoes": "Ações"
+      },
+      "status": {
+        "authorized": "Autorizado",
+        "rejected": "Rejeitado",
+        "pending": "Pendente"
+      },
+      "viewDetails": "Ver detalhes"
+    },
+    "pagination": {
+      "showing": "Mostrando",
+      "to": "a",
+      "of": "de",
+      "noItems": "Nenhuma NFC-e encontrada",
+      "previous": "Anterior",
+      "next": "Próxima",
+      "page": "Página"
+    },
+    "modal": {
+      "title": "Detalhes da NFC-e",
+      "id": "ID",
+      "numero": "Número",
+      "chave": "Chave de Acesso",
+      "status": "Status",
+      "valor": "Valor (R$)",
+      "referencia": "Referência do Pedido",
+      "close": "Fechar"
+    },
+    "actions": {
+      "view": "Ver"
+    },
+    "errors": {
+      "loadFailed": "Erro ao carregar NFC-es"
+    }
   }
 }
