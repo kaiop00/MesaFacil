@@ -355,18 +355,24 @@ exports.nfceEmitir = onCall(
 
     logger.info("Emitting NFC-e", {idRestaurante, mesaId, pedidoId});
 
-    // 1. Read restaurant config and order data
-    const [restSnap, pedidoSnap] = await Promise.all([
+    // 1. Read restaurant config and order data.
+    // Orders may have already moved to historicoPedidos after checkout.
+    const pedidoMesaRef = db.collection("restaurantes").doc(idRestaurante)
+      .collection("mesas").doc(mesaId)
+      .collection("pedidos").doc(pedidoId);
+    const pedidoHistoricoRef = db.collection("restaurantes").doc(idRestaurante)
+      .collection("historicoPedidos").doc(pedidoId);
+
+    const [restSnap, pedidoMesaSnap, pedidoHistoricoSnap] = await Promise.all([
       db.collection("restaurantes").doc(idRestaurante).get(),
-      db.collection("restaurantes").doc(idRestaurante)
-        .collection("mesas").doc(mesaId)
-        .collection("pedidos").doc(pedidoId).get(),
+      pedidoMesaRef.get(),
+      pedidoHistoricoRef.get(),
     ]);
 
     if (!restSnap.exists) {
       throw new HttpsError("not-found", "Restaurant not found");
     }
-    if (!pedidoSnap.exists) {
+    if (!pedidoMesaSnap.exists && !pedidoHistoricoSnap.exists) {
       throw new HttpsError("not-found", "Pedido not found");
     }
 
@@ -375,7 +381,10 @@ exports.nfceEmitir = onCall(
       throw new HttpsError("failed-precondition", "Configuração fiscal não ativa");
     }
 
+    const pedidoSnap = pedidoMesaSnap.exists ? pedidoMesaSnap : pedidoHistoricoSnap;
+    const pedidoOrigem = pedidoMesaSnap.exists ? "mesa" : "historico";
     const pedido = {id: pedidoSnap.id, ...pedidoSnap.data()};
+    logger.info("Pedido loaded for NFC-e", {pedidoId, pedidoOrigem});
     if (!pedido.items || pedido.items.length === 0) {
       throw new HttpsError("failed-precondition", "Pedido sem itens");
     }
@@ -565,33 +574,17 @@ exports.nfceEmitir = onCall(
       };
 
       if (nfce.status === "autorizado") {
-        // Save to pedido document
-        const pedidoRef = db.collection("restaurantes").doc(idRestaurante)
-          .collection("mesas").doc(mesaId)
-          .collection("pedidos").doc(pedidoId);
-        await pedidoRef.update({
+        // Persist NFC-e result in whichever order document still exists.
+        const updatePayload = {
           nfceId: nfceResult.nfceId,
           chaveAcesso: nfceResult.chaveAcesso,
           nfceStatus: "autorizado",
           nfceNumero: nNF,
-        });
-
-        // Also try to update historicoPedidos if it exists
-        try {
-          const histRef = db.collection("restaurantes").doc(idRestaurante)
-            .collection("historicoPedidos").doc(pedidoId);
-          const histSnap = await histRef.get();
-          if (histSnap.exists) {
-            await histRef.update({
-              nfceId: nfceResult.nfceId,
-              chaveAcesso: nfceResult.chaveAcesso,
-              nfceStatus: "autorizado",
-              nfceNumero: nNF,
-            });
-          }
-        } catch (histErr) {
-          logger.warn("Could not update historicoPedidos", {error: histErr.message});
-        }
+        };
+        const updatePromises = [];
+        if (pedidoMesaSnap.exists) updatePromises.push(pedidoMesaRef.update(updatePayload));
+        if (pedidoHistoricoSnap.exists) updatePromises.push(pedidoHistoricoRef.update(updatePayload));
+        await Promise.all(updatePromises);
 
         logger.info("NFC-e authorized successfully", {nfceId: nfce.id, chave: nfce.chave});
         return {success: true, ...nfceResult};
@@ -603,14 +596,15 @@ exports.nfceEmitir = onCall(
 
         logger.error("NFC-e rejected", {nfceId: nfce.id, mensagens});
 
-        // Save error status on pedido
-        const pedidoRef = db.collection("restaurantes").doc(idRestaurante)
-          .collection("mesas").doc(mesaId)
-          .collection("pedidos").doc(pedidoId);
-        await pedidoRef.update({
+        // Persist rejection status in whichever order document still exists.
+        const updatePayload = {
           nfceStatus: "rejeitado",
           nfceErro: descricao,
-        });
+        };
+        const updatePromises = [];
+        if (pedidoMesaSnap.exists) updatePromises.push(pedidoMesaRef.update(updatePayload));
+        if (pedidoHistoricoSnap.exists) updatePromises.push(pedidoHistoricoRef.update(updatePayload));
+        await Promise.all(updatePromises);
 
         return {success: false, ...nfceResult, error: descricao};
       } else {

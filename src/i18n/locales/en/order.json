@@ -204,6 +204,11 @@
     }
   },
   "nfce": {
+    "hints": {
+      "availableAfterFinish": "After finishing, you will be able to issue NFC-e for this order.",
+      "configRequiredAfterFinish": "NFC-e is not active for this restaurant. Configure it in the Fiscal module before issuing invoices.",
+      "checkConfigError": "Could not verify fiscal configuration right now."
+    },
     "modal": {
       "title": "Issue NFC-e",
       "subtitle": "Electronic Consumer Invoice",

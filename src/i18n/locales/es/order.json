@@ -187,6 +187,11 @@
     }
   },
   "nfce": {
+    "hints": {
+      "availableAfterFinish": "Al finalizar, podrá emitir la NFC-e de este pedido.",
+      "configRequiredAfterFinish": "La NFC-e no está activa para este restaurante. Configúrela en el módulo Fiscal antes de emitir notas.",
+      "checkConfigError": "No se pudo verificar la configuración fiscal en este momento."
+    },
     "modal": {
       "title": "Emitir NFC-e",
       "subtitle": "Nota Fiscal de Consumidor Electrónica",
