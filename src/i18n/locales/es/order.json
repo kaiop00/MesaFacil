@@ -87,9 +87,11 @@
       "orderItems": "Artículos del Pedido",
       "noItems": "No hay artículos en el pedido",
       "total": "Total:",
-      "buttons": {
-        "addItems": "Agregar Artículos",
-        "finishOrder": "Finalizar Pedido", 
+        "buttons": {
+          "addItems": "Agregar Artículos",
+          "finishOrder": "Finalizar Pedido",
+          "emitNfce": "Emitir NFC-e",
+          "retryNfce": "Reemitir NFC-e",
         "close": "Cerrar"
       }
     }

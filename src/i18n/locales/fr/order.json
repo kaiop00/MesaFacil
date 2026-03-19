@@ -89,7 +89,9 @@
       "total": "Total :",
       "buttons": {
         "addItems": "Ajouter des articles",
-        "finishOrder": "Terminer la commande", 
+        "finishOrder": "Terminer la commande",
+        "emitNfce": "Émettre NFC-e",
+        "retryNfce": "Réémettre NFC-e",
         "close": "Fermer"
       }
     }

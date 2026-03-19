@@ -90,7 +90,9 @@
       "buttons": {
         "addItems": "Aggiungi Articoli",
         "finishOrder": "Completa Ordine", 
-        "close": "Chiudi"
+          "close": "Chiudi",
+          "emitNfce": "Emetti NFC-e",
+          "retryNfce": "Riemetti NFC-e"
       }
     }
   },

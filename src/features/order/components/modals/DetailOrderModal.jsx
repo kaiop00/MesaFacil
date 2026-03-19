@@ -46,6 +46,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
     const [showNfceModal, setShowNfceModal] = useState(false);
     const [nfcePedidoInfo, setNfcePedidoInfo] = useState(null);
+    const [nfceDisponivel, setNfceDisponivel] = useState(false);
     const [numeroPessoas, setNumeroPessoas] = useState(1);
     const { notify } = useToast();
     const { printDetailOrder } = useDetailOrderPrint();
@@ -97,6 +98,26 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
 
     // Verifica se é delivery (WhatsApp ou iFood)
     const isDelivery = orderOrigin === 'whatsapp' || orderOrigin === 'ifood';
+
+    // Carrega disponibilidade de NFC-e para mostrar ação manual em pedidos entregues.
+    useEffect(() => {
+        if (!isOpen || !idRestaurante) {
+            setNfceDisponivel(false);
+            return;
+        }
+
+        const carregarConfigFiscal = async () => {
+            try {
+                const configFiscal = await buscarConfigFiscal(idRestaurante);
+                setNfceDisponivel(Boolean(configFiscal?.ativo && configFiscal?.empresaRegistrada));
+            } catch (error) {
+                console.warn("Erro ao carregar configuração fiscal:", error);
+                setNfceDisponivel(false);
+            }
+        };
+
+        carregarConfigFiscal();
+    }, [isOpen, idRestaurante]);
 
     // Função para atualizar número de pessoas na mesa
     const handleNumeroPessoasChange = useCallback(async (novoNumero) => {
@@ -240,6 +261,16 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         setShowPaymentModal(false);
         setPedidoParaFinalizar(null);
     };
+
+    const handleOpenNfceModal = useCallback((pedidoId) => {
+        if (!mesaSelecionada?.id) return;
+
+        setNfcePedidoInfo({
+            mesaId: mesaSelecionada.id,
+            pedidoId,
+        });
+        setShowNfceModal(true);
+    }, [mesaSelecionada?.id]);
 
     const handleConfirmPayment = async (dadosPagamento) => {
         if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;
@@ -691,7 +722,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                             <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
                         )}
 
-                        {(pedido.status === 'andamento' || pedido.status === 'entregue') && (
+                        {pedido.status === 'andamento' && (
                             <div className="flex justify-end">
                                 <button
                                     onClick={() => handleOpenPaymentModal(pedido.id)}
@@ -699,6 +730,19 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
                                 >
                                     {finalizando[pedido.id] ? t('page.loading') : t('modals.orderDetail.buttons.finishOrder')}
+                                </button>
+                            </div>
+                        )}
+
+                        {pedido.status === 'entregue' && nfceDisponivel && pedido.nfceStatus !== "autorizado" && (
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={() => handleOpenNfceModal(pedido.id)}
+                                    className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 cursor-pointer"
+                                >
+                                    {pedido.nfceStatus === "rejeitado"
+                                        ? t('modals.orderDetail.buttons.retryNfce')
+                                        : t('modals.orderDetail.buttons.emitNfce')}
                                 </button>
                             </div>
                         )}

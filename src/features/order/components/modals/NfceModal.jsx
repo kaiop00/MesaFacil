@@ -70,15 +70,18 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
         cpfConsumidor: cpfLimpo,
       });
 
-      if (result.status === "autorizado" || result.status === "autorizada") {
+      if (result?.success && (result?.nfceStatus === "autorizado" || result?.nfceStatus === "autorizada")) {
         setResultado(result);
         setStep(STEPS.SUCCESS);
-      } else if (result.status === "rejeitado" || result.status === "rejeitada" || result.status === "erro") {
-        setErro(result.motivo || result.mensagem || t("nfce.modal.errors.rejected"));
+      } else if (result?.nfceStatus === "rejeitado" || result?.nfceStatus === "rejeitada" || result?.nfceStatus === "erro") {
+        setErro(result?.error || result?.motivo || result?.mensagem || t("nfce.modal.errors.rejected"));
         setStep(STEPS.ERROR);
-      } else {
+      } else if (result?.nfceId) {
         // Pending — poll
         await pollStatus(result.nfceId || result.id);
+      } else {
+        setErro(result?.error || t("nfce.modal.errors.generic"));
+        setStep(STEPS.ERROR);
       }
     } catch (error) {
       console.error("Erro ao emitir NFC-e:", error);

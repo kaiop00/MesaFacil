@@ -92,6 +92,8 @@
       "buttons": {
         "addItems": "Add Items",
         "finishOrder": "Finish Order", 
+         "emitNfce": "Issue NFC-e",
+         "retryNfce": "Reissue NFC-e",
         "close": "Close"
       }
     }
