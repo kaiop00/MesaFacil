@@ -388,6 +388,7 @@ const {
 // NFC-e (Nota Fiscal de Consumidor Eletrônica) via Nuvem Fiscal
 const {
   nfceRegistrarEmpresa,
+  nfceConfigurarEmpresa,
   nfceEmitir,
   nfceConsultar,
 } = require("./nfce");
@@ -419,5 +420,6 @@ exports.ifoodGetDisputeEvidence = ifoodGetDisputeEvidence;
 
 // NFC-e
 exports.nfceRegistrarEmpresa = nfceRegistrarEmpresa;
+exports.nfceConfigurarEmpresa = nfceConfigurarEmpresa;
 exports.nfceEmitir = nfceEmitir;
 exports.nfceConsultar = nfceConsultar;

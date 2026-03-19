@@ -50,20 +50,30 @@
   "buttons": {
     "save": "Guardar Configuración",
     "saving": "Guardando...",
-    "registerCompany": "Registrar Empresa en Nuvem Fiscal",
-    "updateCompany": "Actualizar Empresa en Nuvem Fiscal",
-    "registering": "Registrando..."
+    "registerCompany": "Registrar Empresa",
+    "updateCompany": "Actualizar Empresa",
+    "registering": "Registrando...",
+    "configureNfce": "Configurar NFC-e",
+    "configuringNfce": "Configurando NFC-e..."
   },
   "messages": {
     "saved": "¡Configuración fiscal guardada con éxito!",
     "errorSaving": "Error al guardar la configuración fiscal.",
     "errorLoading": "Error al cargar la configuración fiscal.",
     "empresaRegistrada": "¡Empresa registrada/actualizada con éxito en Nuvem Fiscal!",
+    "empresaDadosRegistrados": "¡Datos de la empresa registrados/actualizados con éxito en Nuvem Fiscal!",
     "errorRegistrando": "Error al registrar la empresa en Nuvem Fiscal.",
+    "nfceConfigurada": "¡Configuración de NFC-e guardada con éxito en Nuvem Fiscal!",
+    "errorConfigurandoNfce": "Error al configurar NFC-e en Nuvem Fiscal.",
+    "registerCompanyFirst": "Registre la empresa en Nuvem Fiscal antes de configurar NFC-e.",
     "invalidCnpj": "CNPJ inválido. Ingrese los 14 dígitos.",
     "requiredRazaoSocial": "La Razón Social es obligatoria.",
     "requiredIE": "La Inscripción Estadual es obligatoria.",
     "invalidCep": "CEP inválido. Ingrese los 8 dígitos.",
+    "requiredLogradouro": "La dirección es obligatoria.",
+    "requiredNumero": "El número es obligatorio.",
+    "requiredBairro": "El barrio es obligatorio.",
+    "requiredUf": "La UF es obligatoria.",
     "requiredCodigoMunicipio": "El código del municipio (IBGE) es obligatorio.",
     "requiredEmail": "El correo electrónico es obligatorio.",
     "requiredCsc": "El CSC y el ID del CSC son obligatorios para NFC-e."

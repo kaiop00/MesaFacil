@@ -9,7 +9,7 @@ import {
   getConfigFiscalPadrao,
   buscarEnderecoPorCep,
 } from "@/features/fiscal/services/configFiscalService";
-import { registrarEmpresa } from "@/features/fiscal/services/nfceService";
+import { configurarEmpresaNfce, registrarEmpresa } from "@/features/fiscal/services/nfceService";
 
 const CRT_OPTIONS = [
   { value: 1, label: "1 – Simples Nacional" },
@@ -70,8 +70,8 @@ const ConfigFiscalPage = () => {
 
   const [config, setConfig] = useState(getConfigFiscalPadrao());
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [registrando, setRegistrando] = useState(false);
+  const [configurandoNfce, setConfigurandoNfce] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
 
   useEffect(() => {
@@ -135,52 +135,71 @@ const ConfigFiscalPage = () => {
     }
   }, [handleChange]);
 
-  const handleSave = async () => {
-    // Basic validation
+  const validarDadosEmpresa = useCallback(() => {
     const cnpjDigits = config.cnpj.replace(/\D/g, "");
+    const cepDigits = config.endereco.cep?.replace(/\D/g, "") || "";
+
     if (cnpjDigits.length !== 14) {
       notify(t("messages.invalidCnpj"), "error");
-      return;
+      return false;
     }
     if (!config.razaoSocial.trim()) {
       notify(t("messages.requiredRazaoSocial"), "error");
-      return;
-    }
-    if (!config.endereco.cep || config.endereco.cep.replace(/\D/g, "").length !== 8) {
-      notify(t("messages.invalidCep"), "error");
-      return;
-    }
-    if (!config.endereco.codigoMunicipio) {
-      notify(t("messages.requiredCodigoMunicipio"), "error");
-      return;
+      return false;
     }
     if (!config.email.trim()) {
       notify(t("messages.requiredEmail"), "error");
-      return;
+      return false;
+    }
+    if (cepDigits.length !== 8) {
+      notify(t("messages.invalidCep"), "error");
+      return false;
+    }
+    if (!config.endereco.logradouro?.trim()) {
+      notify(t("messages.requiredLogradouro"), "error");
+      return false;
+    }
+    if (!config.endereco.numero?.trim()) {
+      notify(t("messages.requiredNumero"), "error");
+      return false;
+    }
+    if (!config.endereco.bairro?.trim()) {
+      notify(t("messages.requiredBairro"), "error");
+      return false;
+    }
+    if (!config.endereco.codigoMunicipio) {
+      notify(t("messages.requiredCodigoMunicipio"), "error");
+      return false;
+    }
+    if (!config.endereco.uf) {
+      notify(t("messages.requiredUf"), "error");
+      return false;
     }
 
-    setSaving(true);
-    try {
-      await salvarConfigFiscal(idRestaurante, config);
-      notify(t("messages.saved"), "success");
-    } catch (err) {
-      console.error("Erro ao salvar config fiscal:", err);
-      notify(t("messages.errorSaving"), "error");
-    } finally {
-      setSaving(false);
+    return true;
+  }, [config, notify, t]);
+
+  const validarConfiguracaoNfce = useCallback(() => {
+    if (!config.nfce?.csc?.trim() || !config.nfce?.idCsc?.trim()) {
+      notify(t("messages.requiredCsc"), "error");
+      return false;
     }
-  };
+    return true;
+  }, [config.nfce, notify, t]);
 
   const handleRegistrarEmpresa = async () => {
+    if (!validarDadosEmpresa()) return;
+
     setRegistrando(true);
     try {
       // Save first
       await salvarConfigFiscal(idRestaurante, config);
-      // Then register
+
+      // Register/update company only
       const result = await registrarEmpresa({ idRestaurante });
       if (result.success) {
-        setConfig((prev) => ({ ...prev, empresaRegistrada: true, ativo: true }));
-        notify(t("messages.empresaRegistrada"), "success");
+        setConfig((prev) => ({ ...prev, empresaRegistrada: true }));
+        notify(t("messages.empresaDadosRegistrados"), "success");
       } else {
         notify(result.error || t("messages.errorRegistrando"), "error");
       }
@@ -190,6 +209,34 @@ const ConfigFiscalPage = () => {
       notify(msg, "error");
     } finally {
       setRegistrando(false);
+    }
+  };
+
+  const handleConfigurarNfce = async () => {
+    if (!config.empresaRegistrada) {
+      notify(t("messages.registerCompanyFirst"), "error");
+      return;
+    }
+    if (!validarDadosEmpresa()) return;
+    if (!validarConfiguracaoNfce()) return;
+
+    setConfigurandoNfce(true);
+    try {
+      await salvarConfigFiscal(idRestaurante, config);
+      const result = await configurarEmpresaNfce({ idRestaurante });
+
+      if (result.success) {
+        setConfig((prev) => ({ ...prev, ativo: true }));
+        notify(t("messages.nfceConfigurada"), "success");
+      } else {
+        notify(result.error || t("messages.errorConfigurandoNfce"), "error");
+      }
+    } catch (err) {
+      console.error("Erro ao configurar NFC-e:", err);
+      const msg = err?.message || t("messages.errorConfigurandoNfce");
+      notify(msg, "error");
+    } finally {
+      setConfigurandoNfce(false);
     }
   };
 
@@ -400,6 +447,16 @@ const ConfigFiscalPage = () => {
               </select>
             </InputField>
           </div>
+
+          <div className="pt-4 mt-4 border-t border-gray-200">
+            <button
+              onClick={handleRegistrarEmpresa}
+              disabled={registrando || configurandoNfce}
+              className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium text-sm hover:bg-green-700 transition disabled:opacity-50"
+            >
+              {registrando ? t("buttons.registering") : config.empresaRegistrada ? t("buttons.updateCompany") : t("buttons.registerCompany")}
+            </button>
+          </div>
         </section>
 
         {/* Seção 3: Configuração NFC-e */}
@@ -456,26 +513,17 @@ const ConfigFiscalPage = () => {
               />
             </InputField>
           </div>
+
+          <div className="pt-4 mt-4 border-t border-gray-200">
+            <button
+              onClick={handleConfigurarNfce}
+              disabled={configurandoNfce || registrando}
+              className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {configurandoNfce ? t("buttons.configuringNfce") : t("buttons.configureNfce")}
+            </button>
+          </div>
         </section>
-
-        {/* Ações */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 px-4 py-2.5 bg-primary-dynamic text-white rounded-lg font-medium text-sm hover:opacity-90 transition disabled:opacity-50"
-          >
-            {saving ? t("buttons.saving") : t("buttons.save")}
-          </button>
-
-          <button
-            onClick={handleRegistrarEmpresa}
-            disabled={registrando || saving}
-            className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium text-sm hover:bg-green-700 transition disabled:opacity-50"
-          >
-            {registrando ? t("buttons.registering") : config.empresaRegistrada ? t("buttons.updateCompany") : t("buttons.registerCompany")}
-          </button>
-        </div>
 
         {/* Info box */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">

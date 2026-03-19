@@ -143,6 +143,60 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Validates company fields required by POST/PUT /empresas.
+ * @param {object} configFiscal
+ * @returns {{cnpjDigits: string, endereco: object}}
+ */
+function validateEmpresaConfig(configFiscal) {
+  const endereco = configFiscal?.endereco || {};
+  const cnpjDigits = (configFiscal?.cnpj || "").replace(/\D/g, "");
+  const cepDigits = (endereco.cep || "").replace(/\D/g, "");
+
+  const missingFields = [];
+  if (cnpjDigits.length !== 14) missingFields.push("cnpj");
+  if (!configFiscal?.razaoSocial) missingFields.push("razaoSocial");
+  if (!configFiscal?.email) missingFields.push("email");
+  if (!endereco.logradouro) missingFields.push("endereco.logradouro");
+  if (!endereco.numero) missingFields.push("endereco.numero");
+  if (!endereco.bairro) missingFields.push("endereco.bairro");
+  if (!endereco.codigoMunicipio) missingFields.push("endereco.codigoMunicipio");
+  if (!endereco.uf) missingFields.push("endereco.uf");
+  if (cepDigits.length !== 8) missingFields.push("endereco.cep");
+
+  if (missingFields.length > 0) {
+    throw new HttpsError(
+      "failed-precondition",
+      `Dados da empresa incompletos para cadastro na Nuvem Fiscal: ${missingFields.join(", ")}`,
+    );
+  }
+
+  return {cnpjDigits, endereco};
+}
+
+/**
+ * Validates fields required by PUT /empresas/{cpf_cnpj}/nfce.
+ * @param {object} configFiscal
+ * @returns {{idCsc: number, csc: string}}
+ */
+function validateNfceConfig(configFiscal) {
+  const idCsc = parseInt(configFiscal?.nfce?.idCsc, 10);
+  const csc = configFiscal?.nfce?.csc || "";
+
+  const missingFields = [];
+  if (!Number.isInteger(idCsc) || idCsc <= 0) missingFields.push("nfce.idCsc");
+  if (!csc.trim()) missingFields.push("nfce.csc");
+
+  if (missingFields.length > 0) {
+    throw new HttpsError(
+      "failed-precondition",
+      `Configuração de NFC-e incompleta: ${missingFields.join(", ")}`,
+    );
+  }
+
+  return {idCsc, csc: csc.trim()};
+}
+
 // ============================================================================
 // FUNCTION: nfceRegistrarEmpresa
 // Registers/updates the restaurant as an "empresa" in Nuvem Fiscal
@@ -168,14 +222,9 @@ exports.nfceRegistrarEmpresa = onCall(
       throw new HttpsError("failed-precondition", "Configuração fiscal não encontrada");
     }
 
-    const cnpjDigits = configFiscal.cnpj.replace(/\D/g, "");
-    if (cnpjDigits.length !== 14) {
-      throw new HttpsError("invalid-argument", "CNPJ inválido");
-    }
-
     try {
-      const token = await getAccessToken("empresa nfce");
-      const endereco = configFiscal.endereco || {};
+      const {cnpjDigits, endereco} = validateEmpresaConfig(configFiscal);
+      const token = await getAccessToken("empresa");
 
       // Build empresa payload
       const empresaPayload = {
@@ -214,29 +263,79 @@ exports.nfceRegistrarEmpresa = onCall(
         }
       }
 
-      // Configure NFC-e settings for the empresa
-      const nfceConfig = {
-        ambiente: "homologacao",
-        sefaz: {
-          id_csc: parseInt(configFiscal.nfce.idCsc),
-          csc: configFiscal.nfce.csc,
-        },
-      };
-      await nuvemFiscalRequest("PUT", `/empresas/${cnpjDigits}/nfce`, token, nfceConfig);
-      logger.info("NFC-e config set for empresa", {cnpj: cnpjDigits});
-
       // Update Firestore
       await db.collection("restaurantes").doc(idRestaurante).set({
         configFiscal: {
           empresaRegistrada: true,
+        },
+      }, {merge: true});
+
+      return {success: true, message: "Empresa registrada/atualizada com sucesso"};
+    } catch (err) {
+      logger.error("Error registering empresa", {error: err.message, idRestaurante});
+      throw new HttpsError("internal", `Erro ao registrar empresa: ${err.message}`);
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceConfigurarEmpresa
+// Configures NFC-e settings for an already registered company
+// ============================================================================
+exports.nfceConfigurarEmpresa = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    logger.info("Configuring NFC-e for restaurant", {idRestaurante});
+
+    const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+    if (!restDoc.exists) {
+      throw new HttpsError("not-found", "Restaurant not found");
+    }
+
+    const configFiscal = restDoc.data()?.configFiscal;
+    if (!configFiscal) {
+      throw new HttpsError("failed-precondition", "Configuração fiscal não encontrada");
+    }
+
+    if (!configFiscal.empresaRegistrada && !configFiscal.ativo) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Cadastre a empresa na Nuvem Fiscal antes de configurar NFC-e",
+      );
+    }
+
+    try {
+      const {cnpjDigits} = validateEmpresaConfig(configFiscal);
+      const {idCsc, csc} = validateNfceConfig(configFiscal);
+      const token = await getAccessToken("empresa nfce");
+
+      const nfceConfig = {
+        ambiente: "homologacao",
+        sefaz: {
+          id_csc: idCsc,
+          csc,
+        },
+      };
+
+      await nuvemFiscalRequest("PUT", `/empresas/${cnpjDigits}/nfce`, token, nfceConfig);
+      logger.info("NFC-e config set for empresa", {cnpj: cnpjDigits});
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
           ativo: true,
         },
       }, {merge: true});
 
-      return {success: true, message: "Empresa registrada e configurada com sucesso"};
+      return {success: true, message: "Configuração de NFC-e salva com sucesso"};
     } catch (err) {
-      logger.error("Error registering empresa", {error: err.message, idRestaurante});
-      throw new HttpsError("internal", `Erro ao registrar empresa: ${err.message}`);
+      logger.error("Error configuring NFC-e", {error: err.message, idRestaurante});
+      throw new HttpsError("internal", `Erro ao configurar NFC-e: ${err.message}`);
     }
   },
 );

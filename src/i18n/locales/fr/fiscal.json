@@ -50,20 +50,30 @@
   "buttons": {
     "save": "Enregistrer la Configuration",
     "saving": "Enregistrement...",
-    "registerCompany": "Enregistrer l'Entreprise sur Nuvem Fiscal",
-    "updateCompany": "Mettre à jour l'Entreprise sur Nuvem Fiscal",
-    "registering": "Enregistrement..."
+    "registerCompany": "Enregistrer l'Entreprise",
+    "updateCompany": "Mettre à jour l'Entreprise",
+    "registering": "Enregistrement...",
+    "configureNfce": "Configurer la NFC-e",
+    "configuringNfce": "Configuration NFC-e..."
   },
   "messages": {
     "saved": "Configuration fiscale enregistrée avec succès !",
     "errorSaving": "Erreur lors de l'enregistrement de la configuration fiscale.",
     "errorLoading": "Erreur lors du chargement de la configuration fiscale.",
     "empresaRegistrada": "Entreprise enregistrée/mise à jour avec succès sur Nuvem Fiscal !",
+    "empresaDadosRegistrados": "Données de l'entreprise enregistrées/mises à jour avec succès sur Nuvem Fiscal !",
     "errorRegistrando": "Erreur lors de l'enregistrement de l'entreprise sur Nuvem Fiscal.",
+    "nfceConfigurada": "Configuration NFC-e enregistrée avec succès sur Nuvem Fiscal !",
+    "errorConfigurandoNfce": "Erreur lors de la configuration NFC-e sur Nuvem Fiscal.",
+    "registerCompanyFirst": "Enregistrez l'entreprise sur Nuvem Fiscal avant de configurer la NFC-e.",
     "invalidCnpj": "CNPJ invalide. Saisissez les 14 chiffres.",
     "requiredRazaoSocial": "La Raison Sociale est obligatoire.",
     "requiredIE": "L'Inscription d'État est obligatoire.",
     "invalidCep": "CEP invalide. Saisissez les 8 chiffres.",
+    "requiredLogradouro": "L'adresse est obligatoire.",
+    "requiredNumero": "Le numéro est obligatoire.",
+    "requiredBairro": "Le quartier est obligatoire.",
+    "requiredUf": "L'UF est obligatoire.",
     "requiredCodigoMunicipio": "Le code de la commune (IBGE) est obligatoire.",
     "requiredEmail": "L'e-mail est obligatoire.",
     "requiredCsc": "Le CSC et l'ID du CSC sont obligatoires pour NFC-e."

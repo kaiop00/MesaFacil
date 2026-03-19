@@ -14,6 +14,18 @@ export async function registrarEmpresa({ idRestaurante }) {
 }
 
 /**
+ * Configura os parâmetros de NFC-e da empresa já registrada na Nuvem Fiscal.
+ * Chama a Firebase Function `nfceConfigurarEmpresa`.
+ * @param {{ idRestaurante: string }} params
+ * @returns {Promise<object>}
+ */
+export async function configurarEmpresaNfce({ idRestaurante }) {
+  const fn = httpsCallable(functions, "nfceConfigurarEmpresa");
+  const result = await fn({ idRestaurante });
+  return result.data;
+}
+
+/**
  * Emite uma NFC-e para um pedido.
  * Chama a Firebase Function `nfceEmitir`.
  * @param {{ idRestaurante: string, mesaId: string, pedidoId: string, cpfConsumidor?: string }} params
