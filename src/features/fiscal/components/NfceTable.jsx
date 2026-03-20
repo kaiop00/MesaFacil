@@ -28,6 +28,14 @@ const NfceTable = ({ nfces = [], loading = false, onViewDetails }) => {
             <span>{t("nfceList.table.status.pending") || "Pendente"}</span>
           </div>
         );
+      case "cancelado":
+      case "cancelada":
+        return (
+          <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
+            <CircleWarning size={14} />
+            <span>{t("nfceList.table.status.canceled") || "Cancelado"}</span>
+          </div>
+        );
       default:
         return (
           <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
