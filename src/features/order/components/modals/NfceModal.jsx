@@ -17,12 +17,14 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState(null);
+  const [pendingNfceId, setPendingNfceId] = useState(null);
 
   const resetState = useCallback(() => {
     setStep(STEPS.FORM);
     setCpfCnpj("");
     setResultado(null);
     setErro(null);
+    setPendingNfceId(null);
   }, []);
 
   const handleClose = () => {
@@ -58,6 +60,8 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
   };
 
   const handleEmitir = async () => {
+    if (step === STEPS.LOADING) return;
+
     setStep(STEPS.LOADING);
     setErro(null);
 
@@ -71,16 +75,20 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
       });
 
       if (result?.success && (result?.nfceStatus === "autorizado" || result?.nfceStatus === "autorizada")) {
+        setPendingNfceId(null);
         setResultado(result);
         setStep(STEPS.SUCCESS);
       } else if (result?.nfceStatus === "rejeitado" || result?.nfceStatus === "rejeitada" || result?.nfceStatus === "erro") {
         setErro(result?.error || result?.motivo || result?.mensagem || t("nfce.modal.errors.rejected"));
+        setPendingNfceId(result?.nfceId || null);
         setStep(STEPS.ERROR);
       } else if (result?.nfceId) {
-        // Pending — poll
+        setPendingNfceId(result.nfceId || result.id);
+        // Pending — poll once and allow manual consult if still pending
         await pollStatus(result.nfceId || result.id);
       } else {
         setErro(result?.error || t("nfce.modal.errors.generic"));
+        setPendingNfceId(null);
         setStep(STEPS.ERROR);
       }
     } catch (error) {
@@ -95,13 +103,14 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
     try {
       const result = await consultarNfce({ idRestaurante, nfceId });
       if (result.status === "autorizado" || result.status === "autorizada") {
+        setPendingNfceId(null);
         setResultado(result);
         setStep(STEPS.SUCCESS);
       } else if (result.status === "rejeitado" || result.status === "rejeitada" || result.status === "erro") {
         setErro(result.motivo || result.mensagem || t("nfce.modal.errors.rejected"));
         setStep(STEPS.ERROR);
       } else {
-        // Still pending — the backend already polls 10x, so show error
+        setPendingNfceId(nfceId);
         setErro(t("nfce.modal.errors.timeout"));
         setStep(STEPS.ERROR);
       }
@@ -111,9 +120,17 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
     }
   };
 
+  const handleCheckStatus = async () => {
+    if (!pendingNfceId || step === STEPS.LOADING) return;
+    setStep(STEPS.LOADING);
+    setErro(null);
+    await pollStatus(pendingNfceId);
+  };
+
   const handleRetry = () => {
     setStep(STEPS.FORM);
     setErro(null);
+    setPendingNfceId(null);
   };
 
   return (
@@ -158,6 +175,7 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
               <button
                 type="button"
                 onClick={handleSkip}
+                disabled={step === STEPS.LOADING}
                 className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors cursor-pointer"
               >
                 {t("nfce.modal.buttons.skip")}
@@ -165,6 +183,7 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
               <button
                 type="button"
                 onClick={handleEmitir}
+                disabled={step === STEPS.LOADING}
                 className="flex-1 px-4 py-3 bg-primary-dynamic text-white rounded-lg hover:opacity-90 font-medium transition-colors cursor-pointer"
               >
                 {t("nfce.modal.buttons.emit")}
@@ -256,6 +275,15 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
               >
                 {t("nfce.modal.buttons.close")}
               </button>
+              {pendingNfceId && (
+                <button
+                  type="button"
+                  onClick={handleCheckStatus}
+                  className="flex-1 px-4 py-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 font-medium transition-colors cursor-pointer"
+                >
+                  {t("nfce.modal.buttons.checkStatus", "Consultar status")}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleRetry}

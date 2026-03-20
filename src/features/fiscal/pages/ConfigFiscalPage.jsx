@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import {
   buscarConfigFiscal,
   salvarConfigFiscal,
@@ -66,6 +68,7 @@ const inputClass = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm f
 const ConfigFiscalPage = () => {
   const { t } = useTranslation("fiscal");
   const { idRestaurante } = useAuth();
+  const { hasPermission } = usePermissions();
   const { notify } = useToast();
 
   const [config, setConfig] = useState(getConfigFiscalPadrao());
@@ -90,7 +93,7 @@ const ConfigFiscalPage = () => {
         setLoading(false);
       }
     })();
-  }, [idRestaurante]);
+  }, [idRestaurante, notify, t]);
 
   const handleChange = useCallback((path, value) => {
     setConfig((prev) => {
@@ -241,6 +244,15 @@ const ConfigFiscalPage = () => {
   };
 
   if (loading) return <LoadingSpinner />;
+
+  if (!hasPermission("edit_config") && !hasPermission("view_fiscal")) {
+    return (
+      <PermissionDeniedPage
+        message={t("page.noPermissionMessage") || "You do not have permission to access fiscal configuration."}
+        description={t("page.contactAdmin") || "Please contact your system administrator."}
+      />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -6,7 +6,11 @@ import { useToast } from "@/hooks/useToast";
 import CardHeader from "@/components/CardHeader";
 import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import NfceTable from "@/features/fiscal/components/NfceTable";
-import { listarNfces } from "@/features/fiscal/services/nfceListService";
+import {
+  cancelarNfce,
+  listarNfces,
+  sincronizarDocumentosNfce,
+} from "@/features/fiscal/services/nfceListService";
 import { ChevronLeft, ChevronRight } from "react-coolicons";
 
 const ITEMS_PER_PAGE = 50;
@@ -16,6 +20,7 @@ const NfceListPage = () => {
   const { idRestaurante } = useAuth();
   const { hasPermission } = usePermissions();
   const { notify } = useToast();
+  const canViewFiscal = hasPermission("view_fiscal");
 
   const [nfces, setNfces] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,10 +28,19 @@ const NfceListPage = () => {
   const [total, setTotal] = useState(0);
   const [selectedNfce, setSelectedNfce] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const notifyRef = useRef(notify);
+  const lastLoadErrorRef = useRef("");
+
+  useEffect(() => {
+    notifyRef.current = notify;
+  }, [notify]);
 
   // Load NFC-es when component mounts or page changes
   useEffect(() => {
-    if (!idRestaurante || !hasPermission("view_fiscal")) return;
+    if (!idRestaurante || !canViewFiscal) return;
+
+    const loadFailedMessage = t("nfceList.errors.loadFailed") || "Erro ao carregar NFC-es";
 
     const carregarNfces = async () => {
       setLoading(true);
@@ -36,27 +50,95 @@ const NfceListPage = () => {
 
         setNfces(result.nfces || []);
         setTotal(result.total || 0);
+        lastLoadErrorRef.current = "";
       } catch (error) {
         console.error("Erro ao carregar NFC-es:", error);
-        notify(t("nfceList.errors.loadFailed") || "Erro ao carregar NFC-es", "error");
+        const errorMessage = error?.message || loadFailedMessage;
+
+        // Avoid firing the same toast repeatedly when backend is failing.
+        if (errorMessage !== lastLoadErrorRef.current) {
+          lastLoadErrorRef.current = errorMessage;
+          notifyRef.current(errorMessage, "error");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     carregarNfces();
-  }, [idRestaurante, currentPage]);
+  }, [idRestaurante, currentPage, canViewFiscal, t]);
 
   const handleViewDetails = (nfce) => {
     setSelectedNfce(nfce);
     setShowDetailsModal(true);
   };
 
+  const refreshList = async () => {
+    const skip = currentPage * ITEMS_PER_PAGE;
+    const result = await listarNfces(idRestaurante, ITEMS_PER_PAGE, skip);
+    setNfces(result.nfces || []);
+    setTotal(result.total || 0);
+  };
+
+  const handleSyncDocuments = async () => {
+    if (!selectedNfce?.id || !idRestaurante || actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      const result = await sincronizarDocumentosNfce(idRestaurante, selectedNfce.id);
+      setSelectedNfce((prev) => ({
+        ...prev,
+        status: result?.documentos?.status || prev.status,
+        chave: result?.documentos?.chaveAcesso || prev.chave,
+        url_danfce: result?.documentos?.danfceUrl || prev.url_danfce,
+        url_xml: result?.documentos?.xmlUrl || prev.url_xml,
+        url_pdf: result?.documentos?.pdfUrl || prev.url_pdf,
+      }));
+      notify(t("nfceList.actions.syncSuccess") || "Documentos sincronizados com sucesso", "success");
+      await refreshList();
+    } catch (error) {
+      console.error("Erro ao sincronizar documentos NFC-e:", error);
+      notify(
+        error?.message || t("nfceList.actions.syncError") || "Erro ao sincronizar documentos",
+        "error",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelNfce = async () => {
+    if (!selectedNfce?.id || !idRestaurante || actionLoading) return;
+
+    const justificativa = window.prompt(
+      t("nfceList.actions.cancelPrompt") ||
+        "Informe a justificativa do cancelamento da NFC-e:",
+    );
+
+    if (!justificativa || !justificativa.trim()) return;
+
+    setActionLoading(true);
+    try {
+      await cancelarNfce(idRestaurante, selectedNfce.id, justificativa.trim());
+      setSelectedNfce((prev) => ({...prev, status: "cancelado"}));
+      notify(t("nfceList.actions.cancelSuccess") || "NFC-e cancelada com sucesso", "success");
+      await refreshList();
+    } catch (error) {
+      console.error("Erro ao cancelar NFC-e:", error);
+      notify(
+        error?.message || t("nfceList.actions.cancelError") || "Erro ao cancelar NFC-e",
+        "error",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
   const canGoPrevious = currentPage > 0;
   const canGoNext = currentPage < totalPages - 1;
 
-  if (!hasPermission("view_fiscal")) {
+  if (!canViewFiscal) {
     return (
       <PermissionDeniedPage
         message={t("page.noPermissionMessage") || "Voce nao tem permissao para acessar notas fiscais."}
@@ -173,6 +255,48 @@ const NfceListPage = () => {
                     <span className="font-mono">{selectedNfce.referencia}</span>
                   </div>
                 )}
+
+                <div className="pt-2 flex flex-wrap gap-2">
+                  <button
+                    onClick={handleSyncDocuments}
+                    disabled={actionLoading}
+                    className="px-3 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {t("nfceList.actions.sync") || "Sincronizar documentos"}
+                  </button>
+
+                  {(selectedNfce.url_danfce || selectedNfce.url) && (
+                    <a
+                      href={selectedNfce.url_danfce || selectedNfce.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md hover:bg-emerald-100"
+                    >
+                      {t("nfceList.actions.openDanfce") || "Abrir DANFC-e"}
+                    </a>
+                  )}
+
+                  {selectedNfce.url_xml && (
+                    <a
+                      href={selectedNfce.url_xml}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 text-xs bg-violet-50 text-violet-700 border border-violet-200 rounded-md hover:bg-violet-100"
+                    >
+                      {t("nfceList.actions.openXml") || "Abrir XML"}
+                    </a>
+                  )}
+
+                  {selectedNfce.status === "autorizado" && (
+                    <button
+                      onClick={handleCancelNfce}
+                      disabled={actionLoading}
+                      className="px-3 py-2 text-xs bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t("nfceList.actions.cancel") || "Cancelar NFC-e"}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="mt-6">
