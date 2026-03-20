@@ -15,10 +15,12 @@ const db = admin.firestore();
 // Define secrets for Nuvem Fiscal credentials (global MesaFácil account)
 const nuvemFiscalClientId = defineSecret("NUVEM_FISCAL_CLIENT_ID");
 const nuvemFiscalClientSecret = defineSecret("NUVEM_FISCAL_CLIENT_SECRET");
+const nuvemFiscalEnvironment = defineSecret("NUVEM_FISCAL_ENVIRONMENT");
 
 // Nuvem Fiscal API endpoints
 const AUTH_URL = "https://auth.nuvemfiscal.com.br/oauth/token";
-const API_BASE_URL = "https://api.sandbox.nuvemfiscal.com.br";
+const DEFAULT_API_BASE_HOMOLOGACAO = "https://api.sandbox.nuvemfiscal.com.br";
+const DEFAULT_API_BASE_PRODUCAO = "https://api.nuvemfiscal.com.br";
 
 // Map of UF to cUF (IBGE code)
 const UF_TO_CUF = {
@@ -37,6 +39,72 @@ const FORMA_PAGAMENTO_MAP = {
   voucher: "15",
   ifood: "99",
 };
+
+const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 30 * 1000;
+const tokenCache = new Map();
+
+const NFCE_ALLOWED_ENVIRONMENTS = ["homologacao", "producao"];
+
+function getNuvemFiscalEnvironment() {
+  const rawEnv = (
+    process.env.NUVEM_FISCAL_ENVIRONMENT ||
+    nuvemFiscalEnvironment.value() ||
+    "homologacao"
+  );
+  const env = String(rawEnv).trim().toLowerCase();
+  if (!NFCE_ALLOWED_ENVIRONMENTS.includes(env)) {
+    throw new Error(
+      `Invalid NUVEM_FISCAL_ENVIRONMENT '${env}'. Use 'homologacao' or 'producao'.`,
+    );
+  }
+  return env;
+}
+
+function getNuvemFiscalApiBaseUrl() {
+  const customBaseUrl = process.env.NUVEM_FISCAL_API_BASE_URL;
+  if (customBaseUrl) {
+    return customBaseUrl.replace(/\/+$/, "");
+  }
+
+  return getNuvemFiscalEnvironment() === "producao"
+    ? DEFAULT_API_BASE_PRODUCAO
+    : DEFAULT_API_BASE_HOMOLOGACAO;
+}
+
+async function validateRestaurantAccess(request, idRestaurante, requiredPermissions = []) {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication is required");
+  }
+
+  const userDoc = await db.collection("users").doc(uid).get();
+  if (!userDoc.exists) {
+    throw new HttpsError("permission-denied", "User profile not found");
+  }
+
+  const userData = userDoc.data() || {};
+  if (userData.idRestaurante !== idRestaurante) {
+    throw new HttpsError("permission-denied", "User does not belong to this restaurant");
+  }
+
+  const role = userData.role;
+  if (role === "admin") {
+    return {uid, role};
+  }
+
+  if (!role || typeof role !== "object") {
+    throw new HttpsError("permission-denied", "Insufficient permissions");
+  }
+
+  if (requiredPermissions.length > 0) {
+    const hasAnyPermission = requiredPermissions.some((permission) => role[permission] === true);
+    if (!hasAnyPermission) {
+      throw new HttpsError("permission-denied", "Insufficient permissions for NFC-e operation");
+    }
+  }
+
+  return {uid, role};
+}
 
 /**
  * Helper to get Nuvem Fiscal credentials
@@ -58,6 +126,11 @@ function getNuvemFiscalCredentials() {
  * @returns {Promise<string>} access_token
  */
 async function getAccessToken(scope = "empresa nfce cep") {
+  const cached = tokenCache.get(scope);
+  if (cached && cached.expiresAt > (Date.now() + TOKEN_EXPIRY_SAFETY_WINDOW_MS)) {
+    return cached.token;
+  }
+
   const {clientId, clientSecret} = getNuvemFiscalCredentials();
 
   const params = new URLSearchParams();
@@ -65,37 +138,76 @@ async function getAccessToken(scope = "empresa nfce cep") {
   params.append("client_id", clientId);
   params.append("client_secret", clientSecret);
   params.append("scope", scope);
-  console.log(params.toString());
 
-  const response = await fetch(AUTH_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params.toString(),
-  });
+  const maxAttempts = 3;
+  let lastStatus = null;
 
-  if (!response.ok) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const response = await fetch(AUTH_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const expiresInSec = Number(data.expires_in || 3600);
+      tokenCache.set(scope, {
+        token: data.access_token,
+        expiresAt: Date.now() + (expiresInSec * 1000),
+      });
+      return data.access_token;
+    }
+
+    lastStatus = response.status;
     const errorBody = await response.text();
     logger.error("Nuvem Fiscal auth error", {
       url: AUTH_URL,
       method: "POST",
       scope,
       status: response.status,
+      attempt,
       responseDetail: errorBody,
     });
-    throw new Error(`Nuvem Fiscal authentication failed: ${response.status}`);
+
+    const isRetriable = response.status === 429 || response.status >= 500;
+    if (!isRetriable || attempt === maxAttempts) {
+      break;
+    }
+
+    await sleep(attempt * 1000);
   }
 
-  const data = await response.json();
-  return data.access_token;
+  throw new Error(`Nuvem Fiscal authentication failed: ${lastStatus || "unknown"}`);
+}
+
+function mapNuvemFiscalErrorToHttps(err, fallbackMessage) {
+  const message = err?.message || "";
+
+  if (/authentication failed:\s*429/i.test(message) || /API error 429/.test(message)) {
+    return new HttpsError(
+      "resource-exhausted",
+      "Nuvem Fiscal está limitando requisições no momento. Tente novamente em alguns segundos.",
+    );
+  }
+
+  if (/authentication failed:\s*401/i.test(message) || /API error 401/.test(message)) {
+    return new HttpsError(
+      "failed-precondition",
+      "Credenciais da Nuvem Fiscal inválidas ou expiradas.",
+    );
+  }
+
+  return new HttpsError("internal", `${fallbackMessage}: ${message}`);
 }
 
 /**
  * Make an authenticated API call to Nuvem Fiscal
  */
 async function nuvemFiscalRequest(method, path, token, body = null) {
-  const url = `${API_BASE_URL}${path}`;
+  const url = `${getNuvemFiscalApiBaseUrl()}${path}`;
   const options = {
     method,
     headers: {
@@ -136,11 +248,55 @@ async function nuvemFiscalRequest(method, path, token, body = null) {
   return response.text();
 }
 
+async function nuvemFiscalRequestWithFallback(method, paths, token, body = null) {
+  let lastError = null;
+
+  for (const path of paths) {
+    try {
+      return await nuvemFiscalRequest(method, path, token, body);
+    } catch (error) {
+      lastError = error;
+      const notFound = /API error 404/.test(error.message || "");
+      if (!notFound) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error("Nuvem Fiscal request failed");
+}
+
 /**
  * Sleep helper
  */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function updateOrderByNfceId(idRestaurante, nfceId, payload) {
+  if (!nfceId) return;
+
+  const restauranteRef = db.collection("restaurantes").doc(idRestaurante);
+  const [mesaPedidosSnap, historicoSnap] = await Promise.all([
+    db.collectionGroup("pedidos").where("nfceId", "==", nfceId).limit(10).get(),
+    restauranteRef.collection("historicoPedidos").where("nfceId", "==", nfceId).limit(10).get(),
+  ]);
+
+  const updates = [];
+  mesaPedidosSnap.forEach((docSnap) => {
+    const parentRestauranteId = docSnap.ref.parent.parent?.parent?.parent?.id;
+    if (parentRestauranteId === idRestaurante) {
+      updates.push(docSnap.ref.set(payload, {merge: true}));
+    }
+  });
+
+  historicoSnap.forEach((docSnap) => {
+    updates.push(docSnap.ref.set(payload, {merge: true}));
+  });
+
+  if (updates.length > 0) {
+    await Promise.all(updates);
+  }
 }
 
 /**
@@ -202,7 +358,7 @@ function validateNfceConfig(configFiscal) {
 // Registers/updates the restaurant as an "empresa" in Nuvem Fiscal
 // ============================================================================
 exports.nfceRegistrarEmpresa = onCall(
-  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret], maxInstances: 5},
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
   async (request) => {
     const {idRestaurante} = request.data;
 
@@ -210,7 +366,9 @@ exports.nfceRegistrarEmpresa = onCall(
       throw new HttpsError("invalid-argument", "idRestaurante is required");
     }
 
-    logger.info("Registering empresa for restaurant", {idRestaurante});
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    logger.info("Registering empresa for restaurant", {idRestaurante, uid});
 
     // Read configFiscal from Firestore
     const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
@@ -283,7 +441,7 @@ exports.nfceRegistrarEmpresa = onCall(
 // Configures NFC-e settings for an already registered company
 // ============================================================================
 exports.nfceConfigurarEmpresa = onCall(
-  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret], maxInstances: 5},
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
   async (request) => {
     const {idRestaurante} = request.data;
 
@@ -291,7 +449,9 @@ exports.nfceConfigurarEmpresa = onCall(
       throw new HttpsError("invalid-argument", "idRestaurante is required");
     }
 
-    logger.info("Configuring NFC-e for restaurant", {idRestaurante});
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    logger.info("Configuring NFC-e for restaurant", {idRestaurante, uid});
 
     const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
     if (!restDoc.exists) {
@@ -316,7 +476,7 @@ exports.nfceConfigurarEmpresa = onCall(
       const token = await getAccessToken("empresa nfce");
 
       const nfceConfig = {
-        ambiente: "homologacao",
+        ambiente: getNuvemFiscalEnvironment(),
         sefaz: {
           id_csc: idCsc,
           csc,
@@ -345,7 +505,11 @@ exports.nfceConfigurarEmpresa = onCall(
 // Emits an NFC-e for a specific order
 // ============================================================================
 exports.nfceEmitir = onCall(
-  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret], maxInstances: 10, timeoutSeconds: 60},
+  {
+    secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment],
+    maxInstances: 10,
+    timeoutSeconds: 60,
+  },
   async (request) => {
     const {idRestaurante, mesaId, pedidoId, cpfConsumidor} = request.data;
 
@@ -353,7 +517,9 @@ exports.nfceEmitir = onCall(
       throw new HttpsError("invalid-argument", "idRestaurante, mesaId, and pedidoId are required");
     }
 
-    logger.info("Emitting NFC-e", {idRestaurante, mesaId, pedidoId});
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_orders", "view_fiscal"]);
+
+    logger.info("Emitting NFC-e", {idRestaurante, mesaId, pedidoId, uid});
 
     // 1. Read restaurant config and order data.
     // Orders may have already moved to historicoPedidos after checkout.
@@ -391,7 +557,24 @@ exports.nfceEmitir = onCall(
 
     // Check if NFC-e was already emitted
     if (pedido.nfceStatus === "autorizado") {
-      throw new HttpsError("already-exists", "NFC-e já emitida para este pedido");
+      return {
+        success: true,
+        nfceId: pedido.nfceId || null,
+        chaveAcesso: pedido.chaveAcesso || null,
+        nfceStatus: "autorizado",
+        numero: pedido.nfceNumero || null,
+        alreadyEmitted: true,
+      };
+    }
+
+    if ((pedido.nfceStatus === "processando" || pedido.nfceStatus === "pendente") && pedido.nfceId) {
+      return {
+        success: false,
+        nfceId: pedido.nfceId,
+        chaveAcesso: pedido.chaveAcesso || null,
+        nfceStatus: pedido.nfceStatus,
+        error: "NFC-e ainda em processamento. Consulte o status novamente em instantes.",
+      };
     }
 
     const cnpj = configFiscal.cnpj.replace(/\D/g, "");
@@ -527,7 +710,7 @@ exports.nfceEmitir = onCall(
           ],
         },
       },
-      ambiente: "homologacao",
+      ambiente: getNuvemFiscalEnvironment(),
       referencia: pedidoId,
     };
 
@@ -551,13 +734,25 @@ exports.nfceEmitir = onCall(
     try {
       const token = await getAccessToken("nfce");
 
+      // Mark order as processing to prevent duplicate emission requests.
+      const processingUpdate = {
+        nfceStatus: "processando",
+        nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      const processingUpdatePromises = [];
+      if (pedidoMesaSnap.exists) processingUpdatePromises.push(pedidoMesaRef.set(processingUpdate, {merge: true}));
+      if (pedidoHistoricoSnap.exists) processingUpdatePromises.push(pedidoHistoricoRef.set(processingUpdate, {merge: true}));
+      await Promise.all(processingUpdatePromises);
+
       let nfce = await nuvemFiscalRequest("POST", "/nfce", token, nfcePayload);
       logger.info("NFC-e submission response", {id: nfce.id, status: nfce.status});
 
       // 9. Poll if pending
       if (nfce.status === "pendente" || nfce.status === "processando") {
-        for (let i = 0; i < 10; i++) {
-          await sleep(2000);
+        const maxPollAttempts = 15;
+        const pollIntervalMs = 3000;
+        for (let i = 0; i < maxPollAttempts; i++) {
+          await sleep(pollIntervalMs);
           nfce = await nuvemFiscalRequest("GET", `/nfce/${nfce.id}`, token);
           logger.info("NFC-e poll attempt", {attempt: i + 1, status: nfce.status});
           if (nfce.status !== "pendente" && nfce.status !== "processando") break;
@@ -568,6 +763,7 @@ exports.nfceEmitir = onCall(
       const nfceResult = {
         nfceId: nfce.id,
         chaveAcesso: nfce.chave || null,
+        linkDanfce: nfce.url_danfce || nfce.url || null,
         nfceStatus: nfce.status,
         numero: nNF,
         serie: parseInt(configFiscal.nfce.serie) || 1,
@@ -578,8 +774,10 @@ exports.nfceEmitir = onCall(
         const updatePayload = {
           nfceId: nfceResult.nfceId,
           chaveAcesso: nfceResult.chaveAcesso,
+          linkDanfce: nfceResult.linkDanfce,
           nfceStatus: "autorizado",
           nfceNumero: nNF,
+          nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
         const updatePromises = [];
         if (pedidoMesaSnap.exists) updatePromises.push(pedidoMesaRef.update(updatePayload));
@@ -598,8 +796,10 @@ exports.nfceEmitir = onCall(
 
         // Persist rejection status in whichever order document still exists.
         const updatePayload = {
+          nfceId: nfceResult.nfceId,
           nfceStatus: "rejeitado",
           nfceErro: descricao,
+          nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
         const updatePromises = [];
         if (pedidoMesaSnap.exists) updatePromises.push(pedidoMesaRef.update(updatePayload));
@@ -610,11 +810,25 @@ exports.nfceEmitir = onCall(
       } else {
         // Still pending after polling
         logger.warn("NFC-e still pending after polling", {nfceId: nfce.id});
-        return {success: false, ...nfceResult, error: "Nota ainda pendente de processamento. Tente consultar novamente."};
+        const updatePayload = {
+          nfceId: nfceResult.nfceId,
+          nfceStatus: "pendente",
+          nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        const updatePromises = [];
+        if (pedidoMesaSnap.exists) updatePromises.push(pedidoMesaRef.set(updatePayload, {merge: true}));
+        if (pedidoHistoricoSnap.exists) updatePromises.push(pedidoHistoricoRef.set(updatePayload, {merge: true}));
+        await Promise.all(updatePromises);
+
+        return {
+          success: false,
+          ...nfceResult,
+          error: "Nota ainda pendente de processamento. Tente consultar novamente.",
+        };
       }
     } catch (err) {
       logger.error("Error emitting NFC-e", {error: err.message, idRestaurante, pedidoId});
-      throw new HttpsError("internal", `Erro ao emitir NFC-e: ${err.message}`);
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao emitir NFC-e");
     }
   },
 );
@@ -624,25 +838,29 @@ exports.nfceEmitir = onCall(
 // Checks the current status of an NFC-e
 // ============================================================================
 exports.nfceConsultar = onCall(
-  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret], maxInstances: 5},
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
   async (request) => {
-    const {nfceId} = request.data;
-    if (!nfceId) {
-      throw new HttpsError("invalid-argument", "nfceId is required");
+    const {idRestaurante, nfceId} = request.data;
+    if (!idRestaurante || !nfceId) {
+      throw new HttpsError("invalid-argument", "idRestaurante and nfceId are required");
     }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal", "edit_orders"]);
 
     try {
       const token = await getAccessToken("nfce");
       const nfce = await nuvemFiscalRequest("GET", `/nfce/${nfceId}`, token);
+      logger.info("NFC-e consulted", {idRestaurante, nfceId, uid, status: nfce.status});
       return {
         id: nfce.id,
         status: nfce.status,
         chaveAcesso: nfce.chave || null,
+        linkDanfce: nfce.url_danfce || nfce.url || null,
         mensagens: nfce.mensagens || [],
       };
     } catch (err) {
       logger.error("Error consulting NFC-e", {error: err.message, nfceId});
-      throw new HttpsError("internal", `Erro ao consultar NFC-e: ${err.message}`);
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar NFC-e");
     }
   },
 );
@@ -652,7 +870,7 @@ exports.nfceConsultar = onCall(
 // Lists all NFC-es emitted for a restaurant with pagination
 // ============================================================================
 exports.nfceListar = onCall(
-  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret], maxInstances: 5},
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
   async (request) => {
     const {idRestaurante, top = 50, skip = 0} = request.data;
 
@@ -660,7 +878,9 @@ exports.nfceListar = onCall(
       throw new HttpsError("invalid-argument", "idRestaurante is required");
     }
 
-    logger.info("Listing NFC-es", {idRestaurante, top, skip});
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal"]);
+
+    logger.info("Listing NFC-es", {idRestaurante, top, skip, uid});
 
     try {
       const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
@@ -680,12 +900,12 @@ exports.nfceListar = onCall(
       // Uses OData query syntax: $skip and $top for pagination
       const params = new URLSearchParams();
       params.append("cpf_cnpj", cnpj);
-      params.append("ambiente", "homologacao"); // homologacao or producao
+      params.append("ambiente", getNuvemFiscalEnvironment());
       params.append("$top", String(Math.min(top, 100))); // OData: limit 1-100
       params.append("$skip", String(Math.max(skip, 0))); // OData: offset
       params.append("$inlinecount", "true"); // Include total count
 
-      const url = `${API_BASE_URL}/nfce?${params.toString()}`;
+      const url = `${getNuvemFiscalApiBaseUrl()}/nfce?${params.toString()}`;
       logger.info("Calling Nuvem Fiscal API", {url: url.replace(cnpj, "***")});
 
       const response = await fetch(url, {
@@ -720,7 +940,121 @@ exports.nfceListar = onCall(
       };
     } catch (err) {
       logger.error("Error listing NFC-es", {error: err.message, idRestaurante});
-      throw new HttpsError("internal", `Erro ao listar NFC-es: ${err.message}`);
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao listar NFC-es");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceCancelar
+// Cancels an authorized NFC-e
+// ============================================================================
+exports.nfceCancelar = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, nfceId, justificativa} = request.data;
+
+    if (!idRestaurante || !nfceId || !justificativa) {
+      throw new HttpsError(
+        "invalid-argument",
+        "idRestaurante, nfceId, and justificativa are required",
+      );
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal", "edit_orders"]);
+
+    try {
+      const token = await getAccessToken("nfce");
+      const payload = {
+        justificativa: String(justificativa).trim(),
+      };
+
+      const nfce = await nuvemFiscalRequestWithFallback(
+        "POST",
+        [
+          `/nfce/${nfceId}/cancelamento`,
+          `/nfce/${nfceId}/cancelar`,
+          `/nfce/${nfceId}/cancelamento/solicitar`,
+        ],
+        token,
+        payload,
+      );
+
+      const cancelStatus = nfce.status || "cancelado";
+      const updatePayload = {
+        nfceStatus: cancelStatus,
+        nfceCancelada: true,
+        nfceCanceladaEm: admin.firestore.FieldValue.serverTimestamp(),
+        nfceCancelamentoJustificativa: payload.justificativa,
+        nfceCancelamentoId: nfce.id_cancelamento || nfce.cancelamento_id || null,
+        nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await updateOrderByNfceId(idRestaurante, nfceId, updatePayload);
+
+      logger.info("NFC-e canceled", {idRestaurante, nfceId, uid, status: cancelStatus});
+      return {
+        success: true,
+        nfceId,
+        status: cancelStatus,
+        message: "NFC-e cancelada com sucesso",
+        data: nfce,
+      };
+    } catch (err) {
+      logger.error("Error canceling NFC-e", {idRestaurante, nfceId, uid, error: err.message});
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao cancelar NFC-e");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceSincronizarDocumentos
+// Fetches NFC-e details and persists XML/DANFE links in Firestore
+// ============================================================================
+exports.nfceSincronizarDocumentos = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, nfceId} = request.data;
+
+    if (!idRestaurante || !nfceId) {
+      throw new HttpsError("invalid-argument", "idRestaurante and nfceId are required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal"]);
+
+    try {
+      const token = await getAccessToken("nfce");
+      const nfce = await nuvemFiscalRequest("GET", `/nfce/${nfceId}`, token);
+
+      const documentos = {
+        danfceUrl: nfce.url_danfce || nfce.url || null,
+        xmlUrl: nfce.url_xml || nfce.xml_url || null,
+        pdfUrl: nfce.url_pdf || null,
+        chaveAcesso: nfce.chave || null,
+        status: nfce.status || null,
+        syncedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      const updatePayload = {
+        linkDanfce: documentos.danfceUrl,
+        linkXml: documentos.xmlUrl,
+        linkPdf: documentos.pdfUrl,
+        chaveAcesso: documentos.chaveAcesso,
+        nfceStatus: documentos.status,
+        nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await updateOrderByNfceId(idRestaurante, nfceId, updatePayload);
+
+      logger.info("NFC-e documents synced", {idRestaurante, nfceId, uid});
+      return {
+        success: true,
+        nfceId,
+        documentos,
+      };
+    } catch (err) {
+      logger.error("Error syncing NFC-e documents", {idRestaurante, nfceId, uid, error: err.message});
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao sincronizar documentos da NFC-e");
     }
   },
 );
