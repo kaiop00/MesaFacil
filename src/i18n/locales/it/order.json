@@ -234,7 +234,8 @@
         "skip": "Salta",
         "emit": "Emetti NFC-e",
         "close": "Chiudi",
-        "retry": "Riprova"
+        "retry": "Riprova",
+        "checkStatus": "Controlla stato"
       }
     }
   }

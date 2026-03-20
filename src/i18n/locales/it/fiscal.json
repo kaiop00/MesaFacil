@@ -105,7 +105,8 @@
       "status": {
         "authorized": "Autorizzato",
         "rejected": "Rifiutato",
-        "pending": "In Sospeso"
+        "pending": "In Sospeso",
+        "canceled": "Annullato"
       },
       "viewDetails": "Visualizza dettagli"
     },
@@ -129,7 +130,16 @@
       "close": "Chiudi"
     },
     "actions": {
-      "view": "Visualizza"
+      "view": "Visualizza",
+      "sync": "Sincronizza documenti",
+      "syncSuccess": "Documenti NFC-e sincronizzati con successo.",
+      "syncError": "Errore durante la sincronizzazione dei documenti NFC-e.",
+      "openDanfce": "Apri DANFC-e",
+      "openXml": "Apri XML",
+      "cancel": "Annulla NFC-e",
+      "cancelPrompt": "Inserisci la motivazione per l'annullamento della NFC-e:",
+      "cancelSuccess": "NFC-e annullata con successo.",
+      "cancelError": "Errore durante l'annullamento della NFC-e."
     },
     "errors": {
       "loadFailed": "Errore nel caricamento dei NFC-e"

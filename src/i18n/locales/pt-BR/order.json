@@ -238,7 +238,8 @@
         "skip": "Pular",
         "emit": "Emitir NFC-e",
         "close": "Fechar",
-        "retry": "Tentar Novamente"
+        "retry": "Tentar Novamente",
+        "checkStatus": "Consultar status"
       }
     }
   }

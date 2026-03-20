@@ -236,7 +236,8 @@
         "skip": "Skip",
         "emit": "Issue NFC-e",
         "close": "Close",
-        "retry": "Try Again"
+        "retry": "Try Again",
+        "checkStatus": "Check status"
       }
     }
   }

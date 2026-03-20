@@ -219,7 +219,8 @@
         "skip": "Omitir",
         "emit": "Emitir NFC-e",
         "close": "Cerrar",
-        "retry": "Intentar Nuevamente"
+        "retry": "Intentar Nuevamente",
+        "checkStatus": "Consultar estado"
       }
     }
   }

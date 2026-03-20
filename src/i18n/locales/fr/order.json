@@ -218,7 +218,8 @@
         "skip": "Passer",
         "emit": "Émettre NFC-e",
         "close": "Fermer",
-        "retry": "Réessayer"
+        "retry": "Réessayer",
+        "checkStatus": "Consulter le statut"
       }
     }
   }
