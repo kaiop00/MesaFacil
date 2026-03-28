@@ -4,6 +4,7 @@ import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { emitirNfce, consultarNfce } from "@/features/fiscal/services/nfceService";
 import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
+import { useKitchenPrint } from "@/features/kitchen/hooks/useKitchenPrint";
 
 const STEPS = {
   FORM: "form",
@@ -12,8 +13,17 @@ const STEPS = {
   ERROR: "error",
 };
 
-const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
+const NfceModal = ({
+  isOpen,
+  onClose,
+  idRestaurante,
+  mesaId,
+  pedidoId,
+  orderData,
+  nfceEnabled = true,
+}) => {
   const { t } = useTranslation("order");
+  const { printReceipt } = useKitchenPrint();
   const [step, setStep] = useState(STEPS.FORM);
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [resultado, setResultado] = useState(null);
@@ -61,6 +71,7 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
   };
 
   const handleEmitir = async () => {
+    if (!nfceEnabled) return;
     if (step === STEPS.LOADING) return;
 
     setStep(STEPS.LOADING);
@@ -134,6 +145,12 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
     setPendingNfceId(null);
   };
 
+  const handlePrintReceipt = () => {
+    if (!orderData) return;
+    const documento = cpfCnpj.trim();
+    printReceipt(orderData, documento);
+  };
+
   return (
     <BaseModalWithHeader
       isOpen={isOpen}
@@ -184,12 +201,28 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
               <button
                 type="button"
                 onClick={handleEmitir}
-                disabled={step === STEPS.LOADING}
-                className="flex-1 px-4 py-3 bg-primary-dynamic text-white rounded-lg hover:opacity-90 font-medium transition-colors cursor-pointer"
+                disabled={step === STEPS.LOADING || !nfceEnabled}
+                className="flex-1 px-4 py-3 bg-primary-dynamic text-white rounded-lg hover:opacity-90 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t("nfce.modal.buttons.emit")}
               </button>
             </div>
+
+            {!nfceEnabled && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                {t("nfce.modal.emitDisabledHint")}
+              </p>
+            )}
+
+            {orderData && (
+              <button
+                type="button"
+                onClick={handlePrintReceipt}
+                className="w-full px-4 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 font-medium transition-colors cursor-pointer"
+              >
+                {t("nfce.modal.buttons.printReceipt")}
+              </button>
+            )}
           </>
         )}
 
@@ -241,6 +274,16 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
               >
                 {t("nfce.modal.success.viewDanfce")}
               </a>
+            )}
+
+            {orderData && (
+              <button
+                type="button"
+                onClick={handlePrintReceipt}
+                className="w-full px-4 py-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 font-medium transition-colors cursor-pointer"
+              >
+                {t("nfce.modal.buttons.printReceipt")}
+              </button>
             )}
 
             <button

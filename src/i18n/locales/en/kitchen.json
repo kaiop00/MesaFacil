@@ -31,7 +31,11 @@
   },
   "print": {
     "windowTitle": "Print order",
+    "receiptWindowTitle": "Print receipt",
     "header": "Kitchen Ticket",
+    "receiptHeader": "Mesfacil",
+    "receiptDisclaimer": "This receipt is not a fiscal document",
+    "consumerDocument": "CPF/CNPJ",
     "ticketNumber": "Order #{{number}}",
     "table": "Table",
     "createdAt": "Created at",

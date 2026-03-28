@@ -31,7 +31,11 @@
   },
   "print": {
     "windowTitle": "Stampa ordine",
+    "receiptWindowTitle": "Stampa ricevuta",
     "header": "Scontrino Cucina",
+    "receiptHeader": "Mesfacil",
+    "receiptDisclaimer": "Questa ricevuta non vale come documento fiscale",
+    "consumerDocument": "CPF/CNPJ",
     "ticketNumber": "Ordine #{{number}}",
     "table": "Tavolo",
     "createdAt": "Creato il",
