@@ -28,11 +28,12 @@
     "menu": "Cardápio",
     "reports": "Relatórios",
     "promotions": "Promoções",
-    "integrations": "iFood",
+    "integrations": "Integrações",
+    "iFood": "iFood",
     "items": "Itens",
     "movements": "Entradas e Saídas",
     "users": "Usuários",
-    "fiscal": "NFC-e",
+    "fiscal": "Configurar NFC-e",
     "nfceList": "NFC-e Emitidas"
   },
   "stock": {

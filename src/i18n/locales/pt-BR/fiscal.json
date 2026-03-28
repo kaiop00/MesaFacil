@@ -11,7 +11,24 @@
   "sections": {
     "company": "Dados da Empresa",
     "address": "Endereço do Estabelecimento",
+    "digitalCertificate": "Certificado Digital",
     "nfce": "Configuração NFC-e"
+  },
+
+  "certificate": {
+    "description": "Envie o certificado digital da empresa (.pfx ou .p12) para habilitar a assinatura e emissão fiscal na Nuvem Fiscal.",
+    "statusUploaded": "Certificado enviado",
+    "statusMissing": "Nenhum certificado cadastrado",
+    "loading": "Consultando certificado...",
+    "fileLabel": "Arquivo do certificado",
+    "fileHint": "Aceita arquivos .pfx e .p12 com tamanho máximo de 2MB.",
+    "passwordLabel": "Senha do certificado",
+    "passwordHint": "Senha utilizada para abrir o certificado digital (.pfx/.p12).",
+    "passwordPlaceholder": "Digite a senha do certificado",
+    "selectedFile": "Arquivo selecionado:",
+    "validUntil": "Validade",
+    "serialNumber": "Número de série",
+    "notInformed": "Não informado"
   },
 
   "fields": {
@@ -58,7 +75,15 @@
     "saving": "Salvando...",
     "registerCompany": "Registrar Empresa",
     "updateCompany": "Atualizar Empresa",
+    "updatingCompany": "Atualizando Empresa...",
+    "deleteCompany": "Deletar Empresa",
+    "deletingCompany": "Deletando Empresa...",
     "registering": "Registrando...",
+    "uploadCertificate": "Enviar Certificado",
+    "changeCertificate": "Alterar Certificado",
+    "uploadingCertificate": "Enviando certificado...",
+    "deleteCertificate": "Deletar Certificado",
+    "deletingCertificate": "Deletando certificado...",
     "configureNfce": "Configurar NFC-e",
     "configuringNfce": "Configurando NFC-e..."
   },
@@ -70,6 +95,10 @@
     "empresaRegistrada": "Empresa registrada/atualizada com sucesso na Nuvem Fiscal!",
     "empresaDadosRegistrados": "Dados da empresa cadastrados/atualizados com sucesso na Nuvem Fiscal!",
     "errorRegistrando": "Erro ao registrar empresa na Nuvem Fiscal.",
+    "errorUpdatingCompany": "Erro ao atualizar empresa na Nuvem Fiscal.",
+    "errorDeletingCompany": "Erro ao deletar empresa na Nuvem Fiscal.",
+    "companyDeleted": "Empresa deletada com sucesso na Nuvem Fiscal.",
+    "confirmDeleteCompany": "Tem certeza que deseja deletar a empresa na Nuvem Fiscal?",
     "nfceConfigurada": "Configuração de NFC-e salva com sucesso na Nuvem Fiscal!",
     "errorConfigurandoNfce": "Erro ao configurar NFC-e na Nuvem Fiscal.",
     "registerCompanyFirst": "Cadastre a empresa na Nuvem Fiscal antes de configurar a NFC-e.",
@@ -83,7 +112,18 @@
     "requiredUf": "UF é obrigatória.",
     "requiredCodigoMunicipio": "Código do município (IBGE) é obrigatório.",
     "requiredEmail": "E-mail é obrigatório.",
-    "requiredCsc": "CSC e ID do CSC são obrigatórios para NFC-e."
+    "requiredCsc": "CSC e ID do CSC são obrigatórios para NFC-e.",
+    "errorConsultingCertificate": "Erro ao consultar certificado digital.",
+    "selectCertificateFile": "Selecione um arquivo de certificado para enviar.",
+    "requiredCertificatePassword": "Informe a senha do certificado digital.",
+    "invalidCertificateType": "Formato inválido. Envie um arquivo .pfx ou .p12.",
+    "invalidCertificateSize": "Arquivo muito grande. O limite é 2MB.",
+    "certificateUploaded": "Certificado digital enviado com sucesso.",
+    "certificateUpdated": "Certificado digital alterado com sucesso.",
+    "certificateDeleted": "Certificado digital deletado com sucesso.",
+    "errorUploadingCertificate": "Erro ao enviar certificado digital.",
+    "errorDeletingCertificate": "Erro ao deletar certificado digital.",
+    "confirmDeleteCertificate": "Tem certeza que deseja deletar o certificado digital atual?"
   },
 
   "info": {
@@ -105,6 +145,7 @@
         "id": "ID",
         "numero": "Número",
         "chave": "Chave de Acesso",
+        "pedido": "Pedido",
         "valor": "Valor",
         "data": "Data",
         "status": "Status",
@@ -135,6 +176,15 @@
       "status": "Status",
       "valor": "Valor (R$)",
       "referencia": "Referência do Pedido",
+      "order": {
+        "title": "Detalhes do Pedido",
+        "reference": "Pedido",
+        "table": "Mesa",
+        "customer": "Cliente",
+        "items": "Itens",
+        "unnamedItem": "Item",
+        "notAvailable": "Detalhes do pedido não disponíveis para esta NFC-e."
+      },
       "close": "Fechar"
     },
     "actions": {
