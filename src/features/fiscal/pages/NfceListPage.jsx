@@ -8,10 +8,12 @@ import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import NfceTable from "@/features/fiscal/components/NfceTable";
 import {
   cancelarNfce,
+  isUsingNfceMocks,
   listarNfces,
   sincronizarDocumentosNfce,
 } from "@/features/fiscal/services/nfceListService";
 import { ChevronLeft, ChevronRight } from "react-coolicons";
+import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -21,6 +23,7 @@ const NfceListPage = () => {
   const { hasPermission } = usePermissions();
   const { notify } = useToast();
   const canViewFiscal = hasPermission("view_fiscal");
+  const usingMocks = isUsingNfceMocks();
 
   const [nfces, setNfces] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +56,7 @@ const NfceListPage = () => {
         lastLoadErrorRef.current = "";
       } catch (error) {
         console.error("Erro ao carregar NFC-es:", error);
-        const errorMessage = error?.message || loadFailedMessage;
+        const errorMessage = getFriendlyNfceError(error, loadFailedMessage);
 
         // Avoid firing the same toast repeatedly when backend is failing.
         if (errorMessage !== lastLoadErrorRef.current) {
@@ -99,7 +102,10 @@ const NfceListPage = () => {
     } catch (error) {
       console.error("Erro ao sincronizar documentos NFC-e:", error);
       notify(
-        error?.message || t("nfceList.actions.syncError") || "Erro ao sincronizar documentos",
+        getFriendlyNfceError(
+          error,
+          t("nfceList.actions.syncError") || "Erro ao sincronizar documentos",
+        ),
         "error",
       );
     } finally {
@@ -126,7 +132,7 @@ const NfceListPage = () => {
     } catch (error) {
       console.error("Erro ao cancelar NFC-e:", error);
       notify(
-        error?.message || t("nfceList.actions.cancelError") || "Erro ao cancelar NFC-e",
+        getFriendlyNfceError(error, t("nfceList.actions.cancelError") || "Erro ao cancelar NFC-e"),
         "error",
       );
     } finally {
@@ -137,6 +143,30 @@ const NfceListPage = () => {
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
   const canGoPrevious = currentPage > 0;
   const canGoNext = currentPage < totalPages - 1;
+
+  const getPedidoReferencia = (nfce) => (
+    nfce?.numero_pedido ||
+    nfce?.referencia ||
+    nfce?.pedidoId ||
+    nfce?.pedido_id ||
+    nfce?.pedido?.id ||
+    "-"
+  );
+
+  const getPedidoMesa = (nfce) => nfce?.mesa || nfce?.pedido?.mesa || "-";
+
+  const getPedidoCliente = (nfce) => (
+    nfce?.cliente?.nome ||
+    nfce?.pedido?.cliente?.nome ||
+    "-"
+  );
+
+  const getPedidoItens = (nfce) => {
+    if (Array.isArray(nfce?.itens)) return nfce.itens;
+    if (Array.isArray(nfce?.pedido?.itens)) return nfce.pedido.itens;
+    if (Array.isArray(nfce?.pedido?.items)) return nfce.pedido.items;
+    return [];
+  };
 
   if (!canViewFiscal) {
     return (
@@ -155,6 +185,12 @@ const NfceListPage = () => {
         subtitle={t("nfceList.page.subtitle") || "Listagem de todas as notas fiscais eletrônicas emitidas"}
         showButton={false}
       />
+
+      {usingMocks && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Modo demonstracao ativo: exibindo NFC-es mockadas (VITE_USE_NFCE_MOCKS=true ou ?mockNfce=1).
+        </div>
+      )}
 
       {/* Card de Tabela */}
       <div className="bg-white rounded-lg p-6 shadow-md">
@@ -222,7 +258,7 @@ const NfceListPage = () => {
       {/* Modal de detalhes (opcional - pode ser expandido depois) */}
       {showDetailsModal && selectedNfce && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 {t("nfceList.modal.title") || "Detalhes da NFC-e"}
@@ -256,7 +292,53 @@ const NfceListPage = () => {
                   </div>
                 )}
 
-                <div className="pt-2 flex flex-wrap gap-2">
+                <div className="pt-3 mt-2 border-t border-gray-200 space-y-2">
+                  <h3 className="font-semibold text-gray-800">
+                    {t("nfceList.modal.order.title") || "Detalhes do Pedido"}
+                  </h3>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t("nfceList.modal.order.reference") || "Pedido"}:</span>
+                    <span className="font-mono">{getPedidoReferencia(selectedNfce)}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t("nfceList.modal.order.table") || "Mesa"}:</span>
+                    <span>{getPedidoMesa(selectedNfce)}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t("nfceList.modal.order.customer") || "Cliente"}:</span>
+                    <span>{getPedidoCliente(selectedNfce)}</span>
+                  </div>
+
+                  <div>
+                    <span className="text-gray-600">{t("nfceList.modal.order.items") || "Itens"}:</span>
+                    {getPedidoItens(selectedNfce).length > 0 ? (
+                      <div className="mt-2 space-y-2">
+                        {getPedidoItens(selectedNfce).map((item, index) => (
+                          <div
+                            key={item.id || item.codigo || `${item.nome || item.descricao || "item"}-${index}`}
+                            className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2"
+                          >
+                            <div className="text-sm font-medium text-gray-900">
+                              {item.nome || item.descricao || t("nfceList.modal.order.unnamedItem") || "Item"}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {(item.quantidade || item.quantity || 1)}x
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-gray-500">
+                        {t("nfceList.modal.order.notAvailable") || "Detalhes do pedido nao disponiveis para esta NFC-e."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-2 border-t border-gray-200 flex flex-wrap gap-2">
                   <button
                     onClick={handleSyncDocuments}
                     disabled={actionLoading}
