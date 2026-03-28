@@ -31,7 +31,11 @@
   },
   "print": {
     "windowTitle": "Imprimer la commande",
+    "receiptWindowTitle": "Imprimer le reçu",
     "header": "Ticket de cuisine",
+    "receiptHeader": "Mesfacil",
+    "receiptDisclaimer": "Ce reçu ne vaut pas document fiscal",
+    "consumerDocument": "CPF/CNPJ",
     "ticketNumber": "Commande #{{number}}",
     "table": "Table",
     "createdAt": "Créé à",

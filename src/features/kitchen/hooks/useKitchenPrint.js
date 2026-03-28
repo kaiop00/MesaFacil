@@ -242,13 +242,17 @@ export const useKitchenPrint = () => {
   );
 
   const buildHtml = useCallback(
-    (order) => {
+    (order, options = {}) => {
+      const { isReceipt = false, consumerDocument = "" } = options;
       const createdAt = formatDate(order?.criadoEm);
       const createdAtLabel = createdAt ?? t("print.unknownDate");
       const observations =
         sanitize(order?.observacoes) || t("print.noObservations");
+      const safeConsumerDocument = sanitize(consumerDocument);
 
       const totalLabel = currencyFormatter.format(Number(order?.total || 0));
+      const headerLabel = isReceipt ? t("print.receiptHeader") : t("print.header");
+      const receiptDisclaimer = t("print.receiptDisclaimer");
 
       const now = formatDate(new Date()) ?? "";
 
@@ -257,7 +261,7 @@ export const useKitchenPrint = () => {
         <html>
           <head>
             <meta charSet="utf-8" />
-            <title>${t("print.windowTitle")}</title>
+            <title>${isReceipt ? t("print.receiptWindowTitle") : t("print.windowTitle")}</title>
             <style>
               @page {
                 size: 70mm auto;
@@ -337,6 +341,12 @@ export const useKitchenPrint = () => {
                 text-align: center;
                 width: 100%;
               }
+              .subtitle {
+                font-size: 10px;
+                text-align: center;
+                margin-bottom: 1.5mm;
+                line-height: 1.3;
+              }
               .item {
                 margin-bottom: 3.5mm;
                 width: 100%;
@@ -400,11 +410,27 @@ export const useKitchenPrint = () => {
           </head>
           <body>
             <section class="ticket">
-              <div class="row center title">${t("print.header")}</div>
-              <div class="row center">${t("print.ticketNumber", {
-                number: order?.id || "-"
-              })}</div>
+              <div class="row center title">${headerLabel}</div>
+              ${
+                isReceipt
+                  ? `<div class="row center subtitle">${sanitize(receiptDisclaimer)}</div>`
+                  : `<div class="row center">${t("print.ticketNumber", {
+                      number: order?.id || "-"
+                    })}</div>`
+              }
               <div class="divider"></div>
+
+              ${
+                isReceipt && safeConsumerDocument
+                  ? `
+                    <div class="row">
+                      <span>${t("print.consumerDocument")}</span>
+                      <span>${safeConsumerDocument}</span>
+                    </div>
+                    <div class="divider"></div>
+                  `
+                  : ""
+              }
 
               ${buildPickupNoticeSection(order)}
 
@@ -446,10 +472,10 @@ export const useKitchenPrint = () => {
   );
 
   const printOrder = useCallback(
-    (order) => {
+    (order, options = {}) => {
       if (!order) return;
 
-      const htmlContent = buildHtml(order);
+      const htmlContent = buildHtml(order, options);
       const printWindow = window.open("", "_blank", "width=600,height=800");
 
       if (!printWindow) {
@@ -475,7 +501,15 @@ export const useKitchenPrint = () => {
     [buildHtml]
   );
 
+  const printReceipt = useCallback(
+    (order, consumerDocument = "") => {
+      printOrder(order, { isReceipt: true, consumerDocument });
+    },
+    [printOrder]
+  );
+
   return {
     printOrder,
+    printReceipt,
   };
 };

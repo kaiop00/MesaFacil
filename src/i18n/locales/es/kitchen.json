@@ -31,7 +31,11 @@
   },
   "print": {
     "windowTitle": "Imprimir pedido",
+    "receiptWindowTitle": "Imprimir recibo",
     "header": "Ticket de Cocina",
+    "receiptHeader": "Mesfacil",
+    "receiptDisclaimer": "Este recibo no sirve como documento fiscal",
+    "consumerDocument": "CPF/CNPJ",
     "ticketNumber": "Pedido #{{number}}",
     "table": "Mesa",
     "createdAt": "Creado el",

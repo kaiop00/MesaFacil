@@ -90,8 +90,8 @@
         "buttons": {
           "addItems": "Agregar Artículos",
           "finishOrder": "Finalizar Pedido",
-          "emitNfce": "Emitir NFC-e",
-          "retryNfce": "Reemitir NFC-e",
+          "emitNfce": "Emitir NFC-e/recibo",
+          "retryNfce": "Reemitir NFC-e/recibo",
         "close": "Cerrar"
       }
     }
@@ -199,6 +199,7 @@
       "cpfLabel": "CPF o CNPJ del consumidor",
       "cpfHint": "Si no se informa, la nota será emitida sin identificación del consumidor.",
       "optional": "opcional",
+      "emitDisabledHint": "NFC-e no disponible: configure los datos fiscales en el módulo Fiscal. Aun así puede imprimir el recibo.",
       "loading": "Emitiendo NFC-e...",
       "loadingHint": "Comunicando con la SEFAZ. Esto puede tardar algunos segundos.",
       "success": {
@@ -220,7 +221,8 @@
         "emit": "Emitir NFC-e",
         "close": "Cerrar",
         "retry": "Intentar Nuevamente",
-        "checkStatus": "Consultar estado"
+        "checkStatus": "Consultar estado",
+        "printReceipt": "Imprimir recibo"
       }
     }
   }

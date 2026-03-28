@@ -262,15 +262,21 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         setPedidoParaFinalizar(null);
     };
 
-    const handleOpenNfceModal = useCallback((pedidoId) => {
+    const handleOpenNfceModal = useCallback((pedidoId, pedidoData = null) => {
         if (!mesaSelecionada?.id) return;
 
         setNfcePedidoInfo({
             mesaId: mesaSelecionada.id,
             pedidoId,
+            orderData: pedidoData
+                ? {
+                    ...pedidoData,
+                    mesaNumero: pedidoData?.mesaNumero || mesaSelecionada?.numero || "-",
+                }
+                : null,
         });
         setShowNfceModal(true);
-    }, [mesaSelecionada?.id]);
+    }, [mesaSelecionada?.id, mesaSelecionada?.numero]);
 
     const handleConfirmPayment = async (dadosPagamento) => {
         if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;
@@ -293,23 +299,19 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             // Fechar modal de pagamento
             handleClosePaymentModal();
 
-            // Verificar se NFC-e está ativo e oferecer emissão
-            try {
-                const configFiscal = await buscarConfigFiscal(idRestaurante);
-                if (configFiscal?.ativo && configFiscal?.empresaRegistrada) {
-                    setNfcePedidoInfo({
-                        mesaId: mesaSelecionada.id,
-                        pedidoId: pedidoIdFinalizado,
-                    });
-                    setShowNfceModal(true);
-                } else {
-                    notify(t('nfce.hints.configRequiredAfterFinish'), "warning");
-                }
-            } catch (fiscalErr) {
-                // Não bloquear o fluxo se houver erro ao verificar config fiscal
-                console.warn("Erro ao verificar config fiscal:", fiscalErr);
-                notify(t('nfce.hints.checkConfigError'), "warning");
-            }
+            // Sempre abre a modal após finalizar. A emissão de NFC-e é habilitada/desabilitada dentro da modal.
+            const pedidoFinalizado = dados?.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
+            setNfcePedidoInfo({
+                mesaId: mesaSelecionada.id,
+                pedidoId: pedidoIdFinalizado,
+                orderData: pedidoFinalizado
+                    ? {
+                        ...pedidoFinalizado,
+                        mesaNumero: pedidoFinalizado?.mesaNumero || mesaSelecionada?.numero || "-",
+                    }
+                    : null,
+            });
+            setShowNfceModal(true);
         } catch (error) {
             console.error("Erro ao finalizar pedido:", error);
             notify(t('messages.error.finishOrder'), "error");
@@ -734,9 +736,9 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     </p>
                                 )}
                                 <div className="flex justify-end gap-2">
-                                {pedido.status === 'entregue' && nfceDisponivel && pedido.nfceStatus !== "autorizado" && (
+                                {pedido.status === 'entregue' && pedido.nfceStatus !== "autorizado" && (
                                     <button
-                                        onClick={() => handleOpenNfceModal(pedido.id)}
+                                        onClick={() => handleOpenNfceModal(pedido.id, pedido)}
                                         className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 cursor-pointer"
                                     >
                                         {pedido.nfceStatus === "rejeitado"
@@ -865,6 +867,8 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 idRestaurante={idRestaurante}
                 mesaId={nfcePedidoInfo?.mesaId}
                 pedidoId={nfcePedidoInfo?.pedidoId}
+                orderData={nfcePedidoInfo?.orderData}
+                nfceEnabled={nfceDisponivel}
             />
         </BaseModalWithHeader>
     );

@@ -92,8 +92,8 @@
       "buttons": {
         "addItems": "Add Items",
         "finishOrder": "Finish Order", 
-         "emitNfce": "Issue NFC-e",
-         "retryNfce": "Reissue NFC-e",
+         "emitNfce": "Issue NFC-e/receipt",
+         "retryNfce": "Reissue NFC-e/receipt",
         "close": "Close"
       }
     }
@@ -216,6 +216,7 @@
       "cpfLabel": "Consumer CPF or CNPJ",
       "cpfHint": "If not provided, the invoice will be issued without consumer identification.",
       "optional": "optional",
+      "emitDisabledHint": "NFC-e unavailable: configure fiscal data in the Fiscal module. You can still print the receipt.",
       "loading": "Issuing NFC-e...",
       "loadingHint": "Communicating with SEFAZ. This may take a few seconds.",
       "success": {
@@ -237,7 +238,8 @@
         "emit": "Issue NFC-e",
         "close": "Close",
         "retry": "Try Again",
-        "checkStatus": "Check status"
+        "checkStatus": "Check status",
+        "printReceipt": "Print receipt"
       }
     }
   }
