@@ -44,6 +44,8 @@ const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 30 * 1000;
 const tokenCache = new Map();
 
 const NFCE_ALLOWED_ENVIRONMENTS = ["homologacao", "producao"];
+const CERTIFICATE_MAX_SIZE_BYTES = 2 * 1024 * 1024;
+const CERTIFICATE_ALLOWED_EXTENSIONS = [".pfx", ".p12"];
 
 function getNuvemFiscalEnvironment() {
   const rawEnv = (
@@ -266,6 +268,58 @@ async function nuvemFiscalRequestWithFallback(method, paths, token, body = null)
   throw lastError || new Error("Nuvem Fiscal request failed");
 }
 
+function getCnpjDigitsFromConfig(configFiscal) {
+  const cnpjDigits = (configFiscal?.cnpj || "").replace(/\D/g, "");
+  if (cnpjDigits.length !== 14) {
+    throw new HttpsError(
+      "failed-precondition",
+      "CNPJ inválido na configuração fiscal do restaurante.",
+    );
+  }
+  return cnpjDigits;
+}
+
+function normalizeCertificateInfo(certificado) {
+  if (!certificado || typeof certificado !== "object") {
+    return null;
+  }
+
+  return {
+    id: certificado.id || null,
+    serialNumber: certificado.serial_number || null,
+    issuerName: certificado.issuer_name || null,
+    subjectName: certificado.subject_name || null,
+    thumbprint: certificado.thumbprint || null,
+    notValidBefore: certificado.not_valid_before || null,
+    notValidAfter: certificado.not_valid_after || null,
+    cpfCnpj: certificado.cpf_cnpj || null,
+    nomeRazaoSocial: certificado.nome_razao_social || null,
+    createdAt: certificado.created_at || null,
+  };
+}
+
+function hasAllowedCertificateExtension(fileName = "") {
+  const lower = String(fileName).toLowerCase();
+  return CERTIFICATE_ALLOWED_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+function normalizeBase64Payload(base64Value = "") {
+  const value = String(base64Value || "").trim();
+  if (!value) return "";
+  if (value.includes(",")) {
+    const [, encoded] = value.split(",");
+    return (encoded || "").trim();
+  }
+  return value;
+}
+
+function estimateBytesFromBase64(base64Value = "") {
+  const normalized = normalizeBase64Payload(base64Value).replace(/\s/g, "");
+  if (!normalized) return 0;
+  const padding = normalized.endsWith("==") ? 2 : normalized.endsWith("=") ? 1 : 0;
+  return Math.floor((normalized.length * 3) / 4) - padding;
+}
+
 /**
  * Sleep helper
  */
@@ -331,6 +385,40 @@ function validateEmpresaConfig(configFiscal) {
 }
 
 /**
+ * Build payload expected by Nuvem Fiscal empresa endpoints.
+ * @param {object} configFiscal
+ * @returns {{cnpjDigits: string, empresaPayload: object}}
+ */
+function buildEmpresaPayload(configFiscal) {
+  const {cnpjDigits, endereco} = validateEmpresaConfig(configFiscal);
+
+  return {
+    cnpjDigits,
+    empresaPayload: {
+      cpf_cnpj: cnpjDigits,
+      nome_razao_social: configFiscal.razaoSocial,
+      nome_fantasia: configFiscal.nomeFantasia || configFiscal.razaoSocial,
+      inscricao_estadual: configFiscal.inscricaoEstadual || "",
+      inscricao_municipal: configFiscal.inscricaoMunicipal || "",
+      fone: configFiscal.fone || "",
+      email: configFiscal.email || "",
+      endereco: {
+        logradouro: endereco.logradouro,
+        numero: endereco.numero,
+        complemento: endereco.complemento || undefined,
+        bairro: endereco.bairro,
+        codigo_municipio: endereco.codigoMunicipio,
+        cidade: endereco.municipio,
+        uf: endereco.uf,
+        cep: endereco.cep?.replace(/\D/g, ""),
+        codigo_pais: "1058",
+        pais: "Brasil",
+      },
+    },
+  };
+}
+
+/**
  * Validates fields required by PUT /empresas/{cpf_cnpj}/nfce.
  * @param {object} configFiscal
  * @returns {{idCsc: number, csc: string}}
@@ -381,45 +469,11 @@ exports.nfceRegistrarEmpresa = onCall(
     }
 
     try {
-      const {cnpjDigits, endereco} = validateEmpresaConfig(configFiscal);
+      const {cnpjDigits, empresaPayload} = buildEmpresaPayload(configFiscal);
       const token = await getAccessToken("empresa");
 
-      // Build empresa payload
-      const empresaPayload = {
-        cpf_cnpj: cnpjDigits,
-        nome_razao_social: configFiscal.razaoSocial,
-        nome_fantasia: configFiscal.nomeFantasia || configFiscal.razaoSocial,
-        inscricao_estadual: configFiscal.inscricaoEstadual || "",
-        inscricao_municipal: configFiscal.inscricaoMunicipal || "",
-        fone: configFiscal.fone || "",
-        email: configFiscal.email || "",
-        endereco: {
-          logradouro: endereco.logradouro,
-          numero: endereco.numero,
-          complemento: endereco.complemento || undefined,
-          bairro: endereco.bairro,
-          codigo_municipio: endereco.codigoMunicipio,
-          cidade: endereco.municipio,
-          uf: endereco.uf,
-          cep: endereco.cep?.replace(/\D/g, ""),
-          codigo_pais: "1058",
-          pais: "Brasil",
-        },
-      };
-
-      // Try to create the empresa; if it already exists (409), update it
-      try {
-        await nuvemFiscalRequest("POST", "/empresas", token, empresaPayload);
-        logger.info("Empresa created in Nuvem Fiscal", {cnpj: cnpjDigits});
-      } catch (err) {
-        if (err.message.includes("409") || err.message.includes("already")) {
-          // Empresa already exists, update it
-          await nuvemFiscalRequest("PUT", `/empresas/${cnpjDigits}`, token, empresaPayload);
-          logger.info("Empresa updated in Nuvem Fiscal", {cnpj: cnpjDigits});
-        } else {
-          throw err;
-        }
-      }
+      await nuvemFiscalRequest("POST", "/empresas", token, empresaPayload);
+      logger.info("Empresa created in Nuvem Fiscal", {cnpj: cnpjDigits});
 
       // Update Firestore
       await db.collection("restaurantes").doc(idRestaurante).set({
@@ -428,10 +482,175 @@ exports.nfceRegistrarEmpresa = onCall(
         },
       }, {merge: true});
 
-      return {success: true, message: "Empresa registrada/atualizada com sucesso"};
+      return {success: true, message: "Empresa registrada com sucesso"};
     } catch (err) {
       logger.error("Error registering empresa", {error: err.message, idRestaurante});
-      throw new HttpsError("internal", `Erro ao registrar empresa: ${err.message}`);
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao registrar empresa");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceConsultarEmpresa
+// Reads company data from Nuvem Fiscal by CPF/CNPJ
+// ============================================================================
+exports.nfceConsultarEmpresa = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const token = await getAccessToken("empresa");
+
+      const empresa = await nuvemFiscalRequest("GET", `/empresas/${cnpjDigits}`, token);
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
+          empresaRegistrada: true,
+          empresaNuvemFiscalSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+      }, {merge: true});
+
+      logger.info("Empresa found in Nuvem Fiscal", {idRestaurante, uid, cnpj: cnpjDigits});
+
+      return {
+        success: true,
+        exists: true,
+        empresa,
+      };
+    } catch (err) {
+      if (/API error 404/i.test(err?.message || "")) {
+        await db.collection("restaurantes").doc(idRestaurante).set({
+          configFiscal: {
+            empresaRegistrada: false,
+            empresaNuvemFiscalSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        }, {merge: true});
+
+        return {
+          success: true,
+          exists: false,
+          empresa: null,
+        };
+      }
+
+      logger.error("Error consulting empresa", {error: err.message, idRestaurante});
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar empresa");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceAlterarEmpresa
+// Updates company data in Nuvem Fiscal
+// ============================================================================
+exports.nfceAlterarEmpresa = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      const {cnpjDigits, empresaPayload} = buildEmpresaPayload(configFiscal);
+      const token = await getAccessToken("empresa");
+
+      await nuvemFiscalRequest("PUT", `/empresas/${cnpjDigits}`, token, empresaPayload);
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
+          empresaRegistrada: true,
+          empresaNuvemFiscalSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+      }, {merge: true});
+
+      logger.info("Empresa updated in Nuvem Fiscal", {idRestaurante, uid, cnpj: cnpjDigits});
+
+      return {
+        success: true,
+        message: "Empresa atualizada com sucesso",
+      };
+    } catch (err) {
+      logger.error("Error updating empresa", {error: err.message, idRestaurante});
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao atualizar empresa");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceDeletarEmpresa
+// Deletes company data in Nuvem Fiscal
+// ============================================================================
+exports.nfceDeletarEmpresa = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const token = await getAccessToken("empresa");
+
+      try {
+        await nuvemFiscalRequest("DELETE", `/empresas/${cnpjDigits}`, token);
+      } catch (err) {
+        if (!/API error 404/i.test(err?.message || "")) {
+          throw err;
+        }
+      }
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
+          empresaRegistrada: false,
+          ativo: false,
+          empresaNuvemFiscalSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+      }, {merge: true});
+
+      logger.info("Empresa deleted in Nuvem Fiscal", {idRestaurante, uid, cnpj: cnpjDigits});
+
+      return {
+        success: true,
+        exists: false,
+        message: "Empresa removida com sucesso",
+      };
+    } catch (err) {
+      logger.error("Error deleting empresa", {error: err.message, idRestaurante});
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao deletar empresa");
     }
   },
 );
@@ -496,6 +715,257 @@ exports.nfceConfigurarEmpresa = onCall(
     } catch (err) {
       logger.error("Error configuring NFC-e", {error: err.message, idRestaurante});
       throw new HttpsError("internal", `Erro ao configurar NFC-e: ${err.message}`);
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceConsultarCertificado
+// Checks if there is a digital certificate for the company on Nuvem Fiscal
+// ============================================================================
+exports.nfceConsultarCertificado = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const token = await getAccessToken("empresa");
+      const certificado = await nuvemFiscalRequest(
+        "GET",
+        `/empresas/${cnpjDigits}/certificado`,
+        token,
+      );
+
+      const certificadoInfo = normalizeCertificateInfo(certificado);
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
+          certificadoDigital: {
+            existe: true,
+            id: certificadoInfo?.id || null,
+            serialNumber: certificadoInfo?.serialNumber || null,
+            thumbprint: certificadoInfo?.thumbprint || null,
+            notValidAfter: certificadoInfo?.notValidAfter || null,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+      }, {merge: true});
+
+      logger.info("Digital certificate consulted", {
+        idRestaurante,
+        uid,
+        cnpj: `${cnpjDigits.slice(0, 4)}***`,
+      });
+
+      return {
+        success: true,
+        exists: true,
+        certificate: certificadoInfo,
+      };
+    } catch (err) {
+      if (/API error 404/i.test(err?.message || "")) {
+        await db.collection("restaurantes").doc(idRestaurante).set({
+          configFiscal: {
+            certificadoDigital: {
+              existe: false,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+          },
+        }, {merge: true});
+
+        return {
+          success: true,
+          exists: false,
+          certificate: null,
+        };
+      }
+
+      logger.error("Error consulting digital certificate", {
+        idRestaurante,
+        uid,
+        error: err.message,
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar certificado digital");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceUploadCertificado
+// Uploads digital certificate file (.pfx/.p12) using multipart/form-data
+// ============================================================================
+exports.nfceUploadCertificado = onCall(
+  {
+    secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment],
+    maxInstances: 5,
+    timeoutSeconds: 120,
+  },
+  async (request) => {
+    const {idRestaurante, fileName, fileBase64, password} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+    if (!fileName || !fileBase64 || !password) {
+      throw new HttpsError("invalid-argument", "fileName, fileBase64 and password are required");
+    }
+    if (!hasAllowedCertificateExtension(fileName)) {
+      throw new HttpsError("invalid-argument", "O arquivo do certificado deve ser .pfx ou .p12");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    const normalizedBase64 = normalizeBase64Payload(fileBase64);
+    if (!normalizedBase64) {
+      throw new HttpsError("invalid-argument", "Arquivo de certificado vazio");
+    }
+
+    const approxBytes = estimateBytesFromBase64(normalizedBase64);
+    if (approxBytes <= 0) {
+      throw new HttpsError("invalid-argument", "Conteudo do certificado em Base64 invalido");
+    }
+    if (approxBytes > CERTIFICATE_MAX_SIZE_BYTES) {
+      throw new HttpsError("invalid-argument", "Arquivo de certificado maior que 2MB");
+    }
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const token = await getAccessToken("empresa");
+
+      const certificado = await nuvemFiscalRequest(
+        "PUT",
+        `/empresas/${cnpjDigits}/certificado`,
+        token,
+        {
+          certificado: normalizedBase64,
+          password: String(password),
+        },
+      );
+
+      const certificadoInfo = normalizeCertificateInfo(certificado);
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
+          certificadoDigital: {
+            existe: true,
+            id: certificadoInfo?.id || null,
+            serialNumber: certificadoInfo?.serialNumber || null,
+            thumbprint: certificadoInfo?.thumbprint || null,
+            notValidAfter: certificadoInfo?.notValidAfter || null,
+            fileName,
+            uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+      }, {merge: true});
+
+      logger.info("Digital certificate uploaded", {
+        idRestaurante,
+        uid,
+        cnpj: `${cnpjDigits.slice(0, 4)}***`,
+      });
+
+      return {
+        success: true,
+        message: "Certificado digital enviado com sucesso",
+        exists: true,
+        certificate: certificadoInfo,
+      };
+    } catch (err) {
+      logger.error("Error uploading digital certificate", {
+        idRestaurante,
+        uid,
+        error: err.message,
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao enviar certificado digital");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceDeletarCertificado
+// Deletes digital certificate configured on Nuvem Fiscal
+// ============================================================================
+exports.nfceDeletarCertificado = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const token = await getAccessToken("empresa");
+
+      try {
+        await nuvemFiscalRequest(
+          "DELETE",
+          `/empresas/${cnpjDigits}/certificado`,
+          token,
+        );
+      } catch (err) {
+        if (!/API error 404/i.test(err?.message || "")) {
+          throw err;
+        }
+      }
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
+          certificadoDigital: {
+            existe: false,
+            deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+      }, {merge: true});
+
+      logger.info("Digital certificate deleted", {
+        idRestaurante,
+        uid,
+        cnpj: `${cnpjDigits.slice(0, 4)}***`,
+      });
+
+      return {
+        success: true,
+        exists: false,
+        message: "Certificado digital removido com sucesso",
+      };
+    } catch (err) {
+      logger.error("Error deleting digital certificate", {
+        idRestaurante,
+        uid,
+        error: err.message,
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao deletar certificado digital");
     }
   },
 );
