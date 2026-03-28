@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { emitirNfce, consultarNfce } from "@/features/fiscal/services/nfceService";
+import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 
 const STEPS = {
   FORM: "form",
@@ -93,7 +94,7 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
       }
     } catch (error) {
       console.error("Erro ao emitir NFC-e:", error);
-      const msg = error?.message || error?.details?.message || t("nfce.modal.errors.generic");
+      const msg = getFriendlyNfceError(error, t("nfce.modal.errors.generic"));
       setErro(msg);
       setStep(STEPS.ERROR);
     }
@@ -115,7 +116,7 @@ const NfceModal = ({ isOpen, onClose, idRestaurante, mesaId, pedidoId }) => {
         setStep(STEPS.ERROR);
       }
     } catch (error) {
-      setErro(error?.message || t("nfce.modal.errors.generic"));
+      setErro(getFriendlyNfceError(error, t("nfce.modal.errors.generic")));
       setStep(STEPS.ERROR);
     }
   };

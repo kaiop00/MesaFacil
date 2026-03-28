@@ -11,7 +11,17 @@ import {
   getConfigFiscalPadrao,
   buscarEnderecoPorCep,
 } from "@/features/fiscal/services/configFiscalService";
-import { configurarEmpresaNfce, registrarEmpresa } from "@/features/fiscal/services/nfceService";
+import {
+  configurarEmpresaNfce,
+  registrarEmpresa,
+  consultarEmpresa,
+  alterarEmpresa,
+  deletarEmpresa,
+  consultarCertificadoDigital,
+  enviarCertificadoDigital,
+  deletarCertificadoDigital,
+} from "@/features/fiscal/services/nfceService";
+import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 
 const CRT_OPTIONS = [
   { value: 1, label: "1 – Simples Nacional" },
@@ -64,6 +74,8 @@ const InputField = ({ label, tooltip, children, required }) => (
 );
 
 const inputClass = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dynamic focus:border-transparent";
+const CERTIFICATE_MAX_SIZE_BYTES = 2 * 1024 * 1024;
+const CERTIFICATE_ALLOWED_EXTENSIONS = [".pfx", ".p12"];
 
 const ConfigFiscalPage = () => {
   const { t } = useTranslation("fiscal");
@@ -74,8 +86,18 @@ const ConfigFiscalPage = () => {
   const [config, setConfig] = useState(getConfigFiscalPadrao());
   const [loading, setLoading] = useState(true);
   const [registrando, setRegistrando] = useState(false);
+  const [deletandoEmpresa, setDeletandoEmpresa] = useState(false);
   const [configurandoNfce, setConfigurandoNfce] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [carregandoCertificado, setCarregandoCertificado] = useState(false);
+  const [enviandoCertificado, setEnviandoCertificado] = useState(false);
+  const [deletandoCertificado, setDeletandoCertificado] = useState(false);
+  const [certificadoFile, setCertificadoFile] = useState(null);
+  const [certificadoPassword, setCertificadoPassword] = useState("");
+  const [certificadoInfo, setCertificadoInfo] = useState(null);
+  const [certificadoInputKey, setCertificadoInputKey] = useState(0);
+
+  const temCertificado = Boolean(certificadoInfo);
 
   useEffect(() => {
     if (!idRestaurante) return;
@@ -91,6 +113,42 @@ const ConfigFiscalPage = () => {
         notify(t("messages.errorLoading"), "error");
       } finally {
         setLoading(false);
+      }
+    })();
+  }, [idRestaurante, notify, t]);
+
+  useEffect(() => {
+    if (!idRestaurante) return;
+
+    (async () => {
+      try {
+        const result = await consultarEmpresa({ idRestaurante });
+        const exists = Boolean(result?.exists);
+        setConfig((prev) => ({ ...prev, empresaRegistrada: exists }));
+      } catch (err) {
+        // Keep local state from Firestore when consult fails.
+        console.warn("Nao foi possivel consultar empresa na Nuvem Fiscal:", err);
+      }
+    })();
+  }, [idRestaurante]);
+
+  useEffect(() => {
+    if (!idRestaurante) return;
+    (async () => {
+      setCarregandoCertificado(true);
+      try {
+        const result = await consultarCertificadoDigital({ idRestaurante });
+        if (result?.exists) {
+          setCertificadoInfo(result.certificate || {});
+        } else {
+          setCertificadoInfo(null);
+        }
+      } catch (err) {
+        console.error("Erro ao consultar certificado digital:", err);
+        const msg = getFriendlyNfceError(err, t("messages.errorConsultingCertificate"));
+        notify(msg, "error");
+      } finally {
+        setCarregandoCertificado(false);
       }
     })();
   }, [idRestaurante, notify, t]);
@@ -198,20 +256,47 @@ const ConfigFiscalPage = () => {
       // Save first
       await salvarConfigFiscal(idRestaurante, config);
 
-      // Register/update company only
-      const result = await registrarEmpresa({ idRestaurante });
+      const shouldUpdate = Boolean(config.empresaRegistrada);
+      const result = shouldUpdate
+        ? await alterarEmpresa({ idRestaurante })
+        : await registrarEmpresa({ idRestaurante });
+
       if (result.success) {
         setConfig((prev) => ({ ...prev, empresaRegistrada: true }));
         notify(t("messages.empresaDadosRegistrados"), "success");
       } else {
-        notify(result.error || t("messages.errorRegistrando"), "error");
+        notify(getFriendlyNfceError(result?.error, t("messages.errorRegistrando")), "error");
       }
     } catch (err) {
       console.error("Erro ao registrar empresa:", err);
-      const msg = err?.message || t("messages.errorRegistrando");
+      const msg = getFriendlyNfceError(err, t("messages.errorRegistrando"));
       notify(msg, "error");
     } finally {
       setRegistrando(false);
+    }
+  };
+
+  const handleDeletarEmpresa = async () => {
+    if (!idRestaurante) return;
+
+    const confirmacao = window.confirm(t("messages.confirmDeleteCompany") || "Tem certeza que deseja deletar a empresa na Nuvem Fiscal?");
+    if (!confirmacao) return;
+
+    setDeletandoEmpresa(true);
+    try {
+      await deletarEmpresa({ idRestaurante });
+      setConfig((prev) => ({
+        ...prev,
+        empresaRegistrada: false,
+        ativo: false,
+      }));
+      notify(t("messages.companyDeleted") || "Empresa deletada com sucesso na Nuvem Fiscal.", "success");
+    } catch (err) {
+      console.error("Erro ao deletar empresa:", err);
+      const msg = getFriendlyNfceError(err, t("messages.errorDeletingCompany") || "Erro ao deletar empresa na Nuvem Fiscal.");
+      notify(msg, "error");
+    } finally {
+      setDeletandoEmpresa(false);
     }
   };
 
@@ -232,14 +317,101 @@ const ConfigFiscalPage = () => {
         setConfig((prev) => ({ ...prev, ativo: true }));
         notify(t("messages.nfceConfigurada"), "success");
       } else {
-        notify(result.error || t("messages.errorConfigurandoNfce"), "error");
+        notify(getFriendlyNfceError(result?.error, t("messages.errorConfigurandoNfce")), "error");
       }
     } catch (err) {
       console.error("Erro ao configurar NFC-e:", err);
-      const msg = err?.message || t("messages.errorConfigurandoNfce");
+      const msg = getFriendlyNfceError(err, t("messages.errorConfigurandoNfce"));
       notify(msg, "error");
     } finally {
       setConfigurandoNfce(false);
+    }
+  };
+
+  const handleCertificadoSelecionado = useCallback((event) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setCertificadoFile(null);
+      return;
+    }
+
+    const lowerName = file.name.toLowerCase();
+    const formatoValido = CERTIFICATE_ALLOWED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+    if (!formatoValido) {
+      notify(t("messages.invalidCertificateType"), "error");
+      setCertificadoFile(null);
+      setCertificadoInputKey((prev) => prev + 1);
+      return;
+    }
+
+    if (file.size > CERTIFICATE_MAX_SIZE_BYTES) {
+      notify(t("messages.invalidCertificateSize"), "error");
+      setCertificadoFile(null);
+      setCertificadoInputKey((prev) => prev + 1);
+      return;
+    }
+
+    setCertificadoFile(file);
+  }, [notify, t]);
+
+  const handleEnviarCertificado = async () => {
+    if (!idRestaurante) return;
+
+    if (!certificadoFile) {
+      notify(t("messages.selectCertificateFile"), "error");
+      return;
+    }
+    if (!certificadoPassword.trim()) {
+      notify(t("messages.requiredCertificatePassword"), "error");
+      return;
+    }
+
+    setEnviandoCertificado(true);
+    try {
+      const result = await enviarCertificadoDigital({
+        idRestaurante,
+        file: certificadoFile,
+        password: certificadoPassword,
+      });
+      setCertificadoInfo(result?.certificate || {});
+      setCertificadoFile(null);
+      setCertificadoPassword("");
+      setCertificadoInputKey((prev) => prev + 1);
+      notify(
+        temCertificado
+          ? t("messages.certificateUpdated")
+          : t("messages.certificateUploaded"),
+        "success",
+      );
+    } catch (err) {
+      console.error("Erro ao enviar certificado digital:", err);
+      const msg = getFriendlyNfceError(err, t("messages.errorUploadingCertificate"));
+      notify(msg, "error");
+    } finally {
+      setEnviandoCertificado(false);
+    }
+  };
+
+  const handleDeletarCertificado = async () => {
+    if (!idRestaurante || !temCertificado) return;
+
+    const confirmacao = window.confirm(t("messages.confirmDeleteCertificate"));
+    if (!confirmacao) return;
+
+    setDeletandoCertificado(true);
+    try {
+      await deletarCertificadoDigital({ idRestaurante });
+      setCertificadoInfo(null);
+      setCertificadoFile(null);
+      setCertificadoPassword("");
+      setCertificadoInputKey((prev) => prev + 1);
+      notify(t("messages.certificateDeleted"), "success");
+    } catch (err) {
+      console.error("Erro ao deletar certificado digital:", err);
+      const msg = getFriendlyNfceError(err, t("messages.errorDeletingCertificate"));
+      notify(msg, "error");
+    } finally {
+      setDeletandoCertificado(false);
     }
   };
 
@@ -460,18 +632,142 @@ const ConfigFiscalPage = () => {
             </InputField>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-gray-200">
+          <div className="pt-4 mt-4 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleRegistrarEmpresa}
-              disabled={registrando || configurandoNfce}
-              className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium text-sm hover:bg-green-700 transition disabled:opacity-50"
+              disabled={registrando || configurandoNfce || deletandoEmpresa}
+              className="w-full sm:flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium text-sm hover:bg-green-700 transition disabled:opacity-50"
             >
-              {registrando ? t("buttons.registering") : config.empresaRegistrada ? t("buttons.updateCompany") : t("buttons.registerCompany")}
+              {registrando
+                ? (config.empresaRegistrada ? t("buttons.updatingCompany") || t("buttons.registering") : t("buttons.registering"))
+                : config.empresaRegistrada
+                  ? t("buttons.updateCompany")
+                  : t("buttons.registerCompany")}
+            </button>
+
+            <button
+              onClick={handleDeletarEmpresa}
+              disabled={deletandoEmpresa || registrando || configurandoNfce || !config.empresaRegistrada}
+              className="w-full sm:flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition disabled:opacity-50"
+            >
+              {deletandoEmpresa
+                ? t("buttons.deletingCompany") || "Deletando Empresa..."
+                : t("buttons.deleteCompany") || "Deletar Empresa"}
             </button>
           </div>
         </section>
 
-        {/* Seção 3: Configuração NFC-e */}
+        {/* Seção 3: Certificado Digital */}
+        <section>
+          <SectionTitle>{t("sections.digitalCertificate")}</SectionTitle>
+
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4">
+            <p className="text-sm text-gray-600">
+              {t("certificate.description")}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                temCertificado
+                  ? "bg-green-100 text-green-700"
+                  : "bg-yellow-100 text-yellow-700"
+              }`}>
+                {temCertificado
+                  ? t("certificate.statusUploaded")
+                  : t("certificate.statusMissing")}
+              </span>
+              {carregandoCertificado && (
+                <span className="text-xs text-gray-500">{t("certificate.loading")}</span>
+              )}
+            </div>
+
+            <InputField
+              label={t("certificate.fileLabel")}
+              tooltip={t("certificate.fileHint")}
+              required
+            >
+              <input
+                key={certificadoInputKey}
+                type="file"
+                className={inputClass}
+                accept=".pfx,.p12,application/x-pkcs12"
+                onChange={handleCertificadoSelecionado}
+                disabled={enviandoCertificado || deletandoCertificado || carregandoCertificado}
+              />
+            </InputField>
+
+            <InputField
+              label={t("certificate.passwordLabel")}
+              tooltip={t("certificate.passwordHint")}
+              required
+            >
+              <input
+                type="password"
+                className={inputClass}
+                value={certificadoPassword}
+                onChange={(e) => setCertificadoPassword(e.target.value)}
+                placeholder={t("certificate.passwordPlaceholder")}
+                autoComplete="new-password"
+                disabled={enviandoCertificado || deletandoCertificado || carregandoCertificado}
+              />
+            </InputField>
+
+            {certificadoFile && (
+              <p className="text-xs text-gray-500">
+                {t("certificate.selectedFile")} {certificadoFile.name}
+              </p>
+            )}
+
+            {temCertificado && (
+              <div className="text-xs text-gray-600 space-y-1 rounded-md border border-green-200 bg-green-50 p-3">
+                <p>
+                  {t("certificate.validUntil")}: {certificadoInfo?.notValidAfter
+                    ? new Date(certificadoInfo.notValidAfter).toLocaleDateString()
+                    : t("certificate.notInformed")}
+                </p>
+                <p>
+                  {t("certificate.serialNumber")}: {certificadoInfo?.serialNumber || t("certificate.notInformed")}
+                </p>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-gray-200 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleEnviarCertificado}
+                disabled={
+                  enviandoCertificado ||
+                  deletandoCertificado ||
+                  carregandoCertificado ||
+                  !certificadoFile
+                }
+                className="w-full sm:flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition disabled:opacity-50"
+              >
+                {enviandoCertificado
+                  ? t("buttons.uploadingCertificate")
+                  : temCertificado
+                    ? t("buttons.changeCertificate")
+                    : t("buttons.uploadCertificate")}
+              </button>
+
+              <button
+                onClick={handleDeletarCertificado}
+                disabled={
+                  deletandoCertificado ||
+                  enviandoCertificado ||
+                  carregandoCertificado ||
+                  !temCertificado
+                }
+                className="w-full sm:flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {deletandoCertificado
+                  ? t("buttons.deletingCertificate")
+                  : t("buttons.deleteCertificate")}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Seção 4: Configuração NFC-e */}
         <section>
           <SectionTitle>{t("sections.nfce")}</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
