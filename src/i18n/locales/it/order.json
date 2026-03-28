@@ -90,7 +90,9 @@
       "buttons": {
         "addItems": "Aggiungi Articoli",
         "finishOrder": "Completa Ordine", 
-        "close": "Chiudi"
+          "close": "Chiudi",
+          "emitNfce": "Emetti NFC-e",
+          "retryNfce": "Riemetti NFC-e"
       }
     }
   },
@@ -196,6 +198,44 @@
         "cancel": "Annulla",
         "confirm": "Conferma Pagamento",
         "processing": "Elaborazione..."
+      }
+    }
+  },
+  "nfce": {
+    "hints": {
+      "availableAfterFinish": "Dopo la chiusura, potrai emettere la NFC-e per questo ordine.",
+      "configRequiredAfterFinish": "La NFC-e non è attiva per questo ristorante. Configurala nel modulo Fiscale prima di emettere le note.",
+      "checkConfigError": "Impossibile verificare la configurazione fiscale in questo momento."
+    },
+    "modal": {
+      "title": "Emetti NFC-e",
+      "subtitle": "Nota Fiscale Elettronica al Consumatore",
+      "description": "Vuoi emettere la NFC-e per questo ordine? Inserisci il CPF/CNPJ del consumatore qui sotto (opzionale).",
+      "cpfLabel": "CPF o CNPJ del consumatore",
+      "cpfHint": "Se non fornito, la nota sarà emessa senza identificazione del consumatore.",
+      "optional": "opzionale",
+      "loading": "Emissione NFC-e...",
+      "loadingHint": "Comunicazione con la SEFAZ. Potrebbe richiedere alcuni secondi.",
+      "success": {
+        "title": "NFC-e emessa con successo!",
+        "description": "La nota fiscale è stata autorizzata dalla SEFAZ.",
+        "accessKey": "Chiave di Accesso",
+        "viewDanfce": "Visualizza DANFC-e"
+      },
+      "error": {
+        "title": "Errore nell'emissione della NFC-e"
+      },
+      "errors": {
+        "rejected": "La nota fiscale è stata rifiutata dalla SEFAZ.",
+        "generic": "Si è verificato un errore durante l'emissione della NFC-e. Riprova.",
+        "timeout": "Tempo scaduto in attesa della risposta della SEFAZ. Prova a consultare nuovamente."
+      },
+      "buttons": {
+        "skip": "Salta",
+        "emit": "Emetti NFC-e",
+        "close": "Chiudi",
+        "retry": "Riprova",
+        "checkStatus": "Controlla stato"
       }
     }
   }

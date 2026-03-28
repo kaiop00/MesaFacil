@@ -12,6 +12,7 @@ import kitchen from "./kitchen.json";
 import config from "./config.json";
 import cliente from "./cliente.json";
 import ifoodHandshake from "./ifoodHandshake.json";
+import fiscal from "./fiscal.json";
 
 export default {
   dashboard,
@@ -28,4 +29,5 @@ export default {
   config,
   cliente,
   ifoodHandshake,
+  fiscal,
 };

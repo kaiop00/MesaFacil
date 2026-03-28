@@ -92,6 +92,8 @@
       "buttons": {
         "addItems": "Adicionar Itens",
         "finishOrder": "Finalizar Comanda", 
+        "emitNfce": "Emitir NFC-e",
+        "retryNfce": "Reemitir NFC-e",
         "close": "Fechar",
         "print": "Imprimir"
       }
@@ -200,6 +202,44 @@
         "cancel": "Cancelar",
         "confirm": "Confirmar Pagamento",
         "processing": "Processando..."
+      }
+    }
+  },
+  "nfce": {
+    "hints": {
+      "availableAfterFinish": "Ao finalizar, você poderá emitir a NFC-e deste pedido.",
+      "configRequiredAfterFinish": "NFC-e não está ativa para este restaurante. Configure no módulo Fiscal para emitir notas.",
+      "checkConfigError": "Não foi possível verificar a configuração fiscal agora."
+    },
+    "modal": {
+      "title": "Emitir NFC-e",
+      "subtitle": "Nota Fiscal de Consumidor Eletrônica",
+      "description": "Deseja emitir a NFC-e para este pedido? Informe o CPF/CNPJ do consumidor abaixo (opcional).",
+      "cpfLabel": "CPF ou CNPJ do consumidor",
+      "cpfHint": "Se não informado, a nota será emitida sem identificação do consumidor.",
+      "optional": "opcional",
+      "loading": "Emitindo NFC-e...",
+      "loadingHint": "Comunicando com a SEFAZ. Isso pode levar alguns segundos.",
+      "success": {
+        "title": "NFC-e emitida com sucesso!",
+        "description": "A nota fiscal foi autorizada pela SEFAZ.",
+        "accessKey": "Chave de Acesso",
+        "viewDanfce": "Visualizar DANFC-e"
+      },
+      "error": {
+        "title": "Erro ao emitir NFC-e"
+      },
+      "errors": {
+        "rejected": "A nota fiscal foi rejeitada pela SEFAZ.",
+        "generic": "Ocorreu um erro ao emitir a NFC-e. Tente novamente.",
+        "timeout": "Tempo esgotado aguardando resposta da SEFAZ. Tente consultar novamente."
+      },
+      "buttons": {
+        "skip": "Pular",
+        "emit": "Emitir NFC-e",
+        "close": "Fechar",
+        "retry": "Tentar Novamente",
+        "checkStatus": "Consultar status"
       }
     }
   }

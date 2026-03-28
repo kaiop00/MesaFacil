@@ -13,7 +13,15 @@ const PAYMENT_METHODS = [
   { id: "voucher", label: "payment.methods.voucher", icon: Gift, color: "bg-pink-50 text-pink-600 border-pink-200" },
 ];
 
-const PaymentMethodModal = ({ isOpen, onClose, onConfirm, mesaNumero, totalValue, loading = false }) => {
+const PaymentMethodModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  mesaNumero,
+  totalValue,
+  loading = false,
+  nfceDisponivel = false,
+}) => {
   const { t } = useTranslation('order');
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [observacoes, setObservacoes] = useState("");
@@ -137,6 +145,21 @@ const PaymentMethodModal = ({ isOpen, onClose, onConfirm, mesaNumero, totalValue
               t('payment.modal.buttons.confirm')
             )}
           </button>
+        </div>
+
+        {/* Aviso fiscal no ponto real da finalização */}
+        <div
+          className={`flex items-center gap-2 p-3 rounded-lg border ${
+            nfceDisponivel
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-amber-50 border-amber-200'
+          }`}
+        >
+          <span className={`text-sm ${nfceDisponivel ? 'text-emerald-800' : 'text-amber-800'}`}>
+            {nfceDisponivel
+              ? t('nfce.hints.availableAfterFinish')
+              : t('nfce.hints.configRequiredAfterFinish')}
+          </span>
         </div>
 
         {/* Aviso se não selecionou método */}

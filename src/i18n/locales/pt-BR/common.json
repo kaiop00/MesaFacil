@@ -28,10 +28,13 @@
     "menu": "Cardápio",
     "reports": "Relatórios",
     "promotions": "Promoções",
-    "integrations": "iFood",
+    "integrations": "Integrações",
+    "iFood": "iFood",
     "items": "Itens",
     "movements": "Entradas e Saídas",
-    "users": "Usuários"
+    "users": "Usuários",
+    "fiscal": "Configurar NFC-e",
+    "nfceList": "NFC-e Emitidas"
   },
   "stock": {
     "impact": "Impacto no Estoque",

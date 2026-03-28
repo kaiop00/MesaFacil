@@ -28,10 +28,13 @@
     "menu": "Menu",
     "reports": "Reports",
     "promotions": "Promotions",
-    "integrations": "iFood",
+    "integrations": "Integrations",
+    "iFood": "iFood",
     "items": "Items",
     "movements": "Movements",
-    "users": "Users"
+    "users": "Users",
+    "fiscal": "NFC-e",
+    "nfceList": "Issued NFC-es"
   },
   "stock": {
     "impact": "Stock Impact",

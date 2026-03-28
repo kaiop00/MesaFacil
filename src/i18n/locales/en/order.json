@@ -92,6 +92,8 @@
       "buttons": {
         "addItems": "Add Items",
         "finishOrder": "Finish Order", 
+         "emitNfce": "Issue NFC-e",
+         "retryNfce": "Reissue NFC-e",
         "close": "Close"
       }
     }
@@ -198,6 +200,44 @@
         "cancel": "Cancel",
         "confirm": "Confirm Payment",
         "processing": "Processing..."
+      }
+    }
+  },
+  "nfce": {
+    "hints": {
+      "availableAfterFinish": "After finishing, you will be able to issue NFC-e for this order.",
+      "configRequiredAfterFinish": "NFC-e is not active for this restaurant. Configure it in the Fiscal module before issuing invoices.",
+      "checkConfigError": "Could not verify fiscal configuration right now."
+    },
+    "modal": {
+      "title": "Issue NFC-e",
+      "subtitle": "Electronic Consumer Invoice",
+      "description": "Do you want to issue the NFC-e for this order? Enter the consumer's CPF/CNPJ below (optional).",
+      "cpfLabel": "Consumer CPF or CNPJ",
+      "cpfHint": "If not provided, the invoice will be issued without consumer identification.",
+      "optional": "optional",
+      "loading": "Issuing NFC-e...",
+      "loadingHint": "Communicating with SEFAZ. This may take a few seconds.",
+      "success": {
+        "title": "NFC-e issued successfully!",
+        "description": "The invoice was authorized by SEFAZ.",
+        "accessKey": "Access Key",
+        "viewDanfce": "View DANFC-e"
+      },
+      "error": {
+        "title": "Error issuing NFC-e"
+      },
+      "errors": {
+        "rejected": "The invoice was rejected by SEFAZ.",
+        "generic": "An error occurred while issuing the NFC-e. Please try again.",
+        "timeout": "Timed out waiting for SEFAZ response. Please try querying again."
+      },
+      "buttons": {
+        "skip": "Skip",
+        "emit": "Issue NFC-e",
+        "close": "Close",
+        "retry": "Try Again",
+        "checkStatus": "Check status"
       }
     }
   }

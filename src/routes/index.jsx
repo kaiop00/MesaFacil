@@ -37,6 +37,9 @@ import MovementsPage from "@/features/movements/pages/MovementsPage";
 import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
 import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
+import ConfigFiscalPage from "@/features/fiscal/pages/ConfigFiscalPage";
+import NfceListPage from "@/features/fiscal/pages/NfceListPage";
+import NfceDemoPage from "@/features/fiscal/pages/NfceDemoPage";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -199,6 +202,18 @@ const router = createBrowserRouter([
           {
             path: "whatsapp",
             element: <WhatsAppPage />
+          },
+          {
+            path: "fiscal",
+            element: <ConfigFiscalPage />,
+          },
+          {
+            path: "nfce-emitidas",
+            element: <NfceListPage />,
+          },
+          {
+            path: "nfce-demo",
+            element: <NfceDemoPage />,
           },
         ],
       }

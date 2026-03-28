@@ -1,0 +1,185 @@
+{
+  "title": "Configuración Fiscal (NFC-e)",
+  "subtitle": "Configure los datos de la empresa para la emisión de Nota Fiscal de Consumidor Electrónica.",
+  "status": {
+    "registered": "Empresa registrada en Nuvem Fiscal",
+    "notRegistered": "Empresa no registrada",
+    "active": "NFC-e activo"
+  },
+  "sections": {
+    "company": "Datos de la Empresa",
+    "address": "Dirección del Establecimiento",
+    "digitalCertificate": "Certificado Digital",
+    "nfce": "Configuración NFC-e"
+  },
+  "certificate": {
+    "description": "Suba el certificado digital de su empresa (.pfx o .p12) para habilitar la firma y emisión fiscal en Nuvem Fiscal.",
+    "statusUploaded": "Certificado enviado",
+    "statusMissing": "No hay certificado registrado",
+    "loading": "Consultando certificado...",
+    "fileLabel": "Archivo del certificado",
+    "fileHint": "Acepta archivos .pfx y .p12 de hasta 2MB.",
+    "passwordLabel": "Contraseña del certificado",
+    "passwordHint": "Contraseña utilizada para abrir el certificado digital (.pfx/.p12).",
+    "passwordPlaceholder": "Ingrese la contraseña del certificado",
+    "selectedFile": "Archivo seleccionado:",
+    "validUntil": "Válido hasta",
+    "serialNumber": "Número de serie",
+    "notInformed": "No informado"
+  },
+  "fields": {
+    "cnpj": "CNPJ",
+    "razaoSocial": "Razón Social",
+    "nomeFantasia": "Nombre Comercial",
+    "inscricaoMunicipal": "Inscripción Municipal",
+    "fone": "Teléfono",
+    "email": "Correo electrónico",
+    "inscricaoEstadual": "Inscripción Estadual",
+    "crt": "Código de Régimen Tributario (CRT)",
+    "cep": "CEP",
+    "logradouro": "Dirección",
+    "numero": "Número",
+    "complemento": "Complemento",
+    "bairro": "Barrio",
+    "municipio": "Municipio",
+    "codigoMunicipio": "Código IBGE del Municipio",
+    "uf": "UF",
+    "idCsc": "ID del CSC",
+    "csc": "CSC (Código de Seguridad del Contribuyente)",
+    "serie": "Serie",
+    "proximoNumero": "Próximo Número",
+    "ncmPadrao": "NCM Predeterminado",
+    "searchingCep": "Buscando CEP..."
+  },
+  "placeholders": {
+    "razaoSocial": "Razón social de la empresa",
+    "nomeFantasia": "Nombre comercial (opcional)",
+    "selectUf": "Seleccione",
+    "csc": "Token CSC de la SEFAZ"
+  },
+  "tooltips": {
+    "codigoMunicipio": "Código IBGE de 7 dígitos del municipio. Se completa automáticamente por el CEP.",
+    "idCsc": "Número de identificación del CSC, obtenido en el portal de la SEFAZ de su estado.",
+    "csc": "Código de Seguridad del Contribuyente, obtenido en el portal de la SEFAZ de su estado.",
+    "ncmPadrao": "NCM predeterminado para artículos sin NCM individual. Use 21069090 para alimentos preparados en general."
+  },
+  "buttons": {
+    "save": "Guardar Configuración",
+    "saving": "Guardando...",
+    "registerCompany": "Registrar Empresa",
+    "updateCompany": "Actualizar Empresa",
+    "updatingCompany": "Actualizando Empresa...",
+    "deleteCompany": "Eliminar Empresa",
+    "deletingCompany": "Eliminando Empresa...",
+    "registering": "Registrando...",
+    "uploadCertificate": "Enviar Certificado",
+    "changeCertificate": "Cambiar Certificado",
+    "uploadingCertificate": "Enviando certificado...",
+    "deleteCertificate": "Eliminar Certificado",
+    "deletingCertificate": "Eliminando certificado...",
+    "configureNfce": "Configurar NFC-e",
+    "configuringNfce": "Configurando NFC-e..."
+  },
+  "messages": {
+    "saved": "¡Configuración fiscal guardada con éxito!",
+    "errorSaving": "Error al guardar la configuración fiscal.",
+    "errorLoading": "Error al cargar la configuración fiscal.",
+    "empresaRegistrada": "¡Empresa registrada/actualizada con éxito en Nuvem Fiscal!",
+    "empresaDadosRegistrados": "¡Datos de la empresa registrados/actualizados con éxito en Nuvem Fiscal!",
+    "errorRegistrando": "Error al registrar la empresa en Nuvem Fiscal.",
+    "errorUpdatingCompany": "Error al actualizar la empresa en Nuvem Fiscal.",
+    "errorDeletingCompany": "Error al eliminar la empresa en Nuvem Fiscal.",
+    "companyDeleted": "Empresa eliminada con éxito en Nuvem Fiscal.",
+    "confirmDeleteCompany": "¿Está seguro de que desea eliminar la empresa en Nuvem Fiscal?",
+    "nfceConfigurada": "¡Configuración de NFC-e guardada con éxito en Nuvem Fiscal!",
+    "errorConfigurandoNfce": "Error al configurar NFC-e en Nuvem Fiscal.",
+    "registerCompanyFirst": "Registre la empresa en Nuvem Fiscal antes de configurar NFC-e.",
+    "invalidCnpj": "CNPJ inválido. Ingrese los 14 dígitos.",
+    "requiredRazaoSocial": "La Razón Social es obligatoria.",
+    "requiredIE": "La Inscripción Estadual es obligatoria.",
+    "invalidCep": "CEP inválido. Ingrese los 8 dígitos.",
+    "requiredLogradouro": "La dirección es obligatoria.",
+    "requiredNumero": "El número es obligatorio.",
+    "requiredBairro": "El barrio es obligatorio.",
+    "requiredUf": "La UF es obligatoria.",
+    "requiredCodigoMunicipio": "El código del municipio (IBGE) es obligatorio.",
+    "requiredEmail": "El correo electrónico es obligatorio.",
+    "requiredCsc": "El CSC y el ID del CSC son obligatorios para NFC-e.",
+    "errorConsultingCertificate": "Error al consultar el certificado digital.",
+    "selectCertificateFile": "Seleccione un archivo de certificado para enviar.",
+    "requiredCertificatePassword": "Informe la contraseña del certificado digital.",
+    "invalidCertificateType": "Formato inválido. Envíe un archivo .pfx o .p12.",
+    "invalidCertificateSize": "Archivo demasiado grande. El límite es 2MB.",
+    "certificateUploaded": "Certificado digital enviado con éxito.",
+    "certificateUpdated": "Certificado digital actualizado con éxito.",
+    "certificateDeleted": "Certificado digital eliminado con éxito.",
+    "errorUploadingCertificate": "Error al enviar el certificado digital.",
+    "errorDeletingCertificate": "Error al eliminar el certificado digital.",
+    "confirmDeleteCertificate": "¿Está seguro de que desea eliminar el certificado digital actual?"
+  },
+  "info": {
+    "title": "Información importante:",
+    "item1": "El entorno está configurado para HOMOLOGACIÓN (pruebas). Las notas no tendrán valor fiscal.",
+    "item2": "Obtenga el CSC y el ID del CSC en el portal de la SEFAZ de su estado.",
+    "item3": "Después de guardar, haga clic en \"Registrar Empresa\" para sincronizar con Nuvem Fiscal.",
+    "item4": "La emisión de NFC-e estará disponible automáticamente después del registro y la activación."  },
+
+  "nfceList": {
+    "page": {
+      "title": "NFC-es Emitidas",
+      "subtitle": "Listado de todas las facturas electrónicas emitidas por su empresa"
+    },
+    "table": {
+      "noData": "No se encontró NFC-e",
+      "columns": {
+        "id": "ID",
+        "numero": "Número",
+        "chave": "Clave de Acceso",
+        "valor": "Monto",
+        "data": "Fecha",
+        "status": "Estado",
+        "acoes": "Acciones"
+      },
+      "status": {
+        "authorized": "Autorizado",
+        "rejected": "Rechazado",
+        "pending": "Pendiente",
+        "canceled": "Cancelado"
+      },
+      "viewDetails": "Ver detalles"
+    },
+    "pagination": {
+      "showing": "Mostrando",
+      "to": "a",
+      "of": "de",
+      "noItems": "No se encontró NFC-e",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "page": "Página"
+    },
+    "modal": {
+      "title": "Detalles de NFC-e",
+      "id": "ID",
+      "numero": "Número",
+      "chave": "Clave de Acceso",
+      "status": "Estado",
+      "valor": "Monto (R$)",
+      "referencia": "Referencia del Pedido",
+      "close": "Cerrar"
+    },
+    "actions": {
+      "view": "Ver",
+      "sync": "Sincronizar documentos",
+      "syncSuccess": "Documentos de NFC-e sincronizados con éxito.",
+      "syncError": "Error al sincronizar documentos de NFC-e.",
+      "openDanfce": "Abrir DANFC-e",
+      "openXml": "Abrir XML",
+      "cancel": "Cancelar NFC-e",
+      "cancelPrompt": "Ingrese la justificación para cancelar la NFC-e:",
+      "cancelSuccess": "NFC-e cancelada con éxito.",
+      "cancelError": "Error al cancelar la NFC-e."
+    },
+    "errors": {
+      "loadFailed": "Error al cargar NFC-es"
+    }  }
+}
