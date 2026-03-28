@@ -62,6 +62,17 @@ const NfceTable = ({ nfces = [], loading = false, onViewDetails }) => {
     }
   };
 
+  const getPedidoReferencia = (nfce) => {
+    return (
+      nfce.numero_pedido ||
+      nfce.referencia ||
+      nfce.pedidoId ||
+      nfce.pedido_id ||
+      nfce.pedido?.id ||
+      "-"
+    );
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -93,6 +104,9 @@ const NfceTable = ({ nfces = [], loading = false, onViewDetails }) => {
               {t("nfceList.table.columns.chave") || "Chave de Acesso"}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {t("nfceList.table.columns.pedido") || "Pedido"}
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               {t("nfceList.table.columns.valor") || "Valor"}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -117,6 +131,9 @@ const NfceTable = ({ nfces = [], loading = false, onViewDetails }) => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">
                 {nfce.chave ? nfce.chave.slice(-8) : "-"}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {getPedidoReferencia(nfce)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {formatCurrency(nfce.valor || nfce.vNF || 0)}
