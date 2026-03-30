@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/config/firebaseConfig";
+import { db, functions } from "@/config/firebaseConfig";
+import { httpsCallable } from "firebase/functions";
 
 /**
  * Busca a configuração fiscal de um restaurante.
@@ -59,27 +60,38 @@ export function getConfigFiscalPadrao() {
 }
 
 /**
- * Busca endereço por CEP usando a API ViaCEP.
+ * Busca endereço por CEP na Nuvem Fiscal via Firebase Function.
+ * @param {string} idRestaurante
  * @param {string} cep - CEP sem máscara
  * @returns {Promise<object|null>}
  */
-export async function buscarEnderecoPorCep(cep) {
-  const cepLimpo = cep.replace(/\D/g, "");
-  if (cepLimpo.length !== 8) return null;
+export async function buscarEnderecoPorCep(idRestaurante, cep) {
+  const cepLimpo = String(cep || "").replace(/\D/g, "");
+  if (!idRestaurante || cepLimpo.length !== 8) return null;
 
   try {
-    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-    const data = await response.json();
-    if (data.erro) return null;
+    const fn = httpsCallable(functions, "nfceConsultarCep");
+    const result = await fn({ idRestaurante, cep: cepLimpo });
+    return result?.data?.mappedAddress || null;
+  } catch {
+    return null;
+  }
+}
 
-    return {
-      logradouro: data.logradouro || "",
-      bairro: data.bairro || "",
-      municipio: data.localidade || "",
-      codigoMunicipio: data.ibge || "",
-      uf: data.uf || "",
-      complemento: data.complemento || "",
-    };
+/**
+ * Consulta dados da empresa por CNPJ na Nuvem Fiscal via Firebase Function.
+ * @param {string} idRestaurante
+ * @param {string} cnpj - CNPJ com ou sem máscara
+ * @returns {Promise<object|null>}
+ */
+export async function buscarDadosEmpresaPorCnpj(idRestaurante, cnpj) {
+  const cnpjLimpo = String(cnpj || "").replace(/\D/g, "");
+  if (!idRestaurante || cnpjLimpo.length !== 14) return null;
+
+  try {
+    const fn = httpsCallable(functions, "nfceConsultarCnpj");
+    const result = await fn({ idRestaurante, cnpj: cnpjLimpo });
+    return result?.data?.mappedConfig || null;
   } catch {
     return null;
   }

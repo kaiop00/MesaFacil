@@ -233,3 +233,27 @@ export async function consultarNfce({ idRestaurante, nfceId }) {
   const result = await fn({ idRestaurante, nfceId });
   return result.data;
 }
+
+/**
+ * Consulta dados de CNPJ via Nuvem Fiscal.
+ * Chama a Firebase Function `nfceConsultarCnpj`.
+ * @param {{ idRestaurante: string, cnpj: string }} params
+ * @returns {Promise<object>}
+ */
+export async function consultarCnpjNuvemFiscal({ idRestaurante, cnpj }) {
+  const fn = httpsCallable(functions, "nfceConsultarCnpj");
+  const result = await fn({ idRestaurante, cnpj });
+  return result.data;
+}
+
+/**
+ * Consulta CEP via Nuvem Fiscal.
+ * Chama a Firebase Function `nfceConsultarCep`.
+ * @param {{ idRestaurante: string, cep: string }} params
+ * @returns {Promise<object>}
+ */
+export async function consultarCepNuvemFiscal({ idRestaurante, cep }) {
+  const fn = httpsCallable(functions, "nfceConsultarCep");
+  const result = await fn({ idRestaurante, cep });
+  return result.data;
+}

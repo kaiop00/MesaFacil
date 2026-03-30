@@ -10,6 +10,7 @@ import {
   salvarConfigFiscal,
   getConfigFiscalPadrao,
   buscarEnderecoPorCep,
+  buscarDadosEmpresaPorCnpj,
 } from "@/features/fiscal/services/configFiscalService";
 import {
   configurarEmpresaNfce,
@@ -88,6 +89,7 @@ const ConfigFiscalPage = () => {
   const [registrando, setRegistrando] = useState(false);
   const [deletandoEmpresa, setDeletandoEmpresa] = useState(false);
   const [configurandoNfce, setConfigurandoNfce] = useState(false);
+  const [buscandoCnpj, setBuscandoCnpj] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [carregandoCertificado, setCarregandoCertificado] = useState(false);
   const [enviandoCertificado, setEnviandoCertificado] = useState(false);
@@ -168,7 +170,47 @@ const ConfigFiscalPage = () => {
     handleChange("cnpj", maskCnpj(e.target.value));
   }, [handleChange]);
 
+  const handleCnpjBlur = useCallback(async () => {
+    if (!idRestaurante) return;
+
+    const cnpjDigits = config.cnpj.replace(/\D/g, "");
+    if (cnpjDigits.length !== 14) return;
+
+    setBuscandoCnpj(true);
+    try {
+      const empresa = await buscarDadosEmpresaPorCnpj(idRestaurante, cnpjDigits);
+      if (!empresa) {
+        notify(t("messages.companyNotFoundByCnpj") || "Não foi possível encontrar dados para este CNPJ.", "warning");
+        return;
+      }
+
+      setConfig((prev) => ({
+        ...prev,
+        cnpj: maskCnpj(empresa.cnpj || cnpjDigits),
+        razaoSocial: empresa.razaoSocial || prev.razaoSocial,
+        nomeFantasia: empresa.nomeFantasia || prev.nomeFantasia,
+        email: empresa.email || prev.email,
+        fone: empresa.fone || prev.fone,
+        endereco: {
+          ...prev.endereco,
+          ...(empresa.endereco || {}),
+          cep: maskCep(empresa.endereco?.cep || prev.endereco.cep || ""),
+          numero: prev.endereco.numero || empresa.endereco?.numero || "",
+          complemento: prev.endereco.complemento || empresa.endereco?.complemento || "",
+        },
+      }));
+    } catch (err) {
+      console.error("Erro ao consultar CNPJ na Nuvem Fiscal:", err);
+      const msg = getFriendlyNfceError(err, t("messages.errorLoadingCompanyByCnpj") || "Erro ao consultar CNPJ.");
+      notify(msg, "error");
+    } finally {
+      setBuscandoCnpj(false);
+    }
+  }, [idRestaurante, config.cnpj, notify, t]);
+
   const handleCepChange = useCallback(async (e) => {
+    if (!idRestaurante) return;
+
     const masked = maskCep(e.target.value);
     handleChange("endereco.cep", masked);
 
@@ -176,7 +218,7 @@ const ConfigFiscalPage = () => {
     if (digits.length === 8) {
       setBuscandoCep(true);
       try {
-        const endereco = await buscarEnderecoPorCep(digits);
+        const endereco = await buscarEnderecoPorCep(idRestaurante, digits);
         if (endereco) {
           setConfig((prev) => ({
             ...prev,
@@ -194,7 +236,7 @@ const ConfigFiscalPage = () => {
         setBuscandoCep(false);
       }
     }
-  }, [handleChange]);
+  }, [idRestaurante, handleChange]);
 
   const validarDadosEmpresa = useCallback(() => {
     const cnpjDigits = config.cnpj.replace(/\D/g, "");
@@ -455,14 +497,22 @@ const ConfigFiscalPage = () => {
           <SectionTitle>{t("sections.company")}</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InputField label="CNPJ" required>
-              <input
-                type="text"
-                className={inputClass}
-                value={config.cnpj}
-                onChange={handleCnpjChange}
-                placeholder="00.000.000/0000-00"
-                maxLength={18}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  className={inputClass}
+                  value={config.cnpj}
+                  onChange={handleCnpjChange}
+                  onBlur={handleCnpjBlur}
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
+                />
+                {buscandoCnpj && (
+                  <span className="absolute right-3 top-2.5 text-xs text-gray-400">
+                    {t("fields.searchingCnpj") || "Consultando CNPJ..."}
+                  </span>
+                )}
+              </div>
             </InputField>
 
             <InputField label={t("fields.razaoSocial")} required>
