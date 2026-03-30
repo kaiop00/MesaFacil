@@ -395,6 +395,8 @@ const {
   nfceConsultarCertificado,
   nfceUploadCertificado,
   nfceDeletarCertificado,
+  nfceConsultarCnpj,
+  nfceConsultarCep,
   nfceEmitir,
   nfceConsultar,
   nfceListar,
@@ -436,6 +438,8 @@ exports.nfceConfigurarEmpresa = nfceConfigurarEmpresa;
 exports.nfceConsultarCertificado = nfceConsultarCertificado;
 exports.nfceUploadCertificado = nfceUploadCertificado;
 exports.nfceDeletarCertificado = nfceDeletarCertificado;
+exports.nfceConsultarCnpj = nfceConsultarCnpj;
+exports.nfceConsultarCep = nfceConsultarCep;
 exports.nfceEmitir = nfceEmitir;
 exports.nfceConsultar = nfceConsultar;
 exports.nfceListar = nfceListar;

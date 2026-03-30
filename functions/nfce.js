@@ -40,6 +40,42 @@ const FORMA_PAGAMENTO_MAP = {
   ifood: "99",
 };
 
+const DEFAULT_APPROX_TAX_RATES = {
+  federal: 0.085,
+  estadual: 0.18,
+  municipal: 0.02,
+};
+
+const UF_DEFAULT_STATE_TAX_RATE = {
+  AC: 0.17,
+  AL: 0.19,
+  AM: 0.18,
+  AP: 0.18,
+  BA: 0.19,
+  CE: 0.18,
+  DF: 0.18,
+  ES: 0.17,
+  GO: 0.19,
+  MA: 0.18,
+  MG: 0.18,
+  MS: 0.17,
+  MT: 0.17,
+  PA: 0.17,
+  PB: 0.18,
+  PE: 0.18,
+  PI: 0.19,
+  PR: 0.19,
+  RJ: 0.20,
+  RN: 0.18,
+  RO: 0.175,
+  RR: 0.17,
+  RS: 0.17,
+  SC: 0.17,
+  SE: 0.19,
+  SP: 0.18,
+  TO: 0.18,
+};
+
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 30 * 1000;
 const tokenCache = new Map();
 
@@ -318,6 +354,105 @@ function estimateBytesFromBase64(base64Value = "") {
   if (!normalized) return 0;
   const padding = normalized.endsWith("==") ? 2 : normalized.endsWith("=") ? 1 : 0;
   return Math.floor((normalized.length * 3) / 4) - padding;
+}
+
+function normalizeTaxRate(value, fallback = 0) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return fallback;
+  if (num > 1) return num / 100;
+  return num;
+}
+
+function resolveApproxTaxRates(configFiscal = {}, endereco = {}) {
+  const uf = String(endereco?.uf || "").toUpperCase();
+  const configuredRates =
+    configFiscal?.nfce?.tributosAproximados ||
+    configFiscal?.tributosAproximados ||
+    {};
+
+  const federal = normalizeTaxRate(
+    configuredRates.federal,
+    DEFAULT_APPROX_TAX_RATES.federal,
+  );
+  const estadual = normalizeTaxRate(
+    configuredRates.estadual,
+    UF_DEFAULT_STATE_TAX_RATE[uf] || DEFAULT_APPROX_TAX_RATES.estadual,
+  );
+  const municipal = normalizeTaxRate(
+    configuredRates.municipal,
+    DEFAULT_APPROX_TAX_RATES.municipal,
+  );
+
+  return {
+    federal,
+    estadual,
+    municipal,
+    total: federal + estadual + municipal,
+  };
+}
+
+function calculateApproxTaxBreakdown(baseValue, taxRates) {
+  const value = Math.max(0, Number(baseValue) || 0);
+  const federal = Math.round(value * taxRates.federal * 100) / 100;
+  const estadual = Math.round(value * taxRates.estadual * 100) / 100;
+  const municipal = Math.round(value * taxRates.municipal * 100) / 100;
+
+  return {
+    federal,
+    estadual,
+    municipal,
+    total: Math.round((federal + estadual + municipal) * 100) / 100,
+  };
+}
+
+function mapCnpjEmpresaToConfigFiscal(empresa = {}) {
+  const endereco = empresa?.endereco || {};
+  const municipio = endereco?.municipio || {};
+  const telefones = Array.isArray(empresa?.telefones) ? empresa.telefones : [];
+  const telefonePrincipal = telefones[0] || {};
+  const fone = `${telefonePrincipal?.ddd || ""}${telefonePrincipal?.numero || ""}`;
+
+  return {
+    cnpj: empresa?.cnpj || "",
+    razaoSocial: empresa?.razao_social || "",
+    nomeFantasia: empresa?.nome_fantasia || "",
+    email: empresa?.email || "",
+    fone,
+    endereco: {
+      logradouro: `${endereco?.tipo_logradouro || ""} ${endereco?.logradouro || ""}`.trim(),
+      numero: endereco?.numero || "",
+      complemento: endereco?.complemento || "",
+      bairro: endereco?.bairro || "",
+      municipio: municipio?.descricao || "",
+      codigoMunicipio: municipio?.codigo_ibge || "",
+      uf: endereco?.uf || "",
+      cep: endereco?.cep || "",
+    },
+  };
+}
+
+function mapCepToConfigAddress(cepData = {}) {
+  return {
+    logradouro: `${cepData?.tipo_logradouro || ""} ${cepData?.logradouro || ""}`.trim(),
+    bairro: cepData?.bairro || "",
+    municipio: cepData?.municipio || "",
+    codigoMunicipio: cepData?.codigo_ibge || "",
+    uf: cepData?.uf || "",
+    complemento: cepData?.complemento || "",
+    cep: cepData?.cep || "",
+  };
+}
+
+function resolveIndPresFromPedido(pedido = {}) {
+  const origin = String(pedido.orderOrigin || "").toLowerCase();
+  const tipoEntrega = String(pedido.tipoEntrega || "").toLowerCase();
+  const orderType = String(pedido.orderType || "").toUpperCase();
+  const isIfoodDelivery =
+    origin === "ifood" &&
+    orderType !== "TAKEOUT" &&
+    tipoEntrega !== "retirada";
+
+  return isIfoodDelivery ? 4 : 1;
 }
 
 /**
@@ -720,6 +855,100 @@ exports.nfceConfigurarEmpresa = onCall(
 );
 
 // ============================================================================
+// FUNCTION: nfceConsultarCnpj
+// Consults CNPJ data from Nuvem Fiscal and returns mapped fields for ConfigFiscal
+// ============================================================================
+exports.nfceConsultarCnpj = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, cnpj} = request.data || {};
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const cnpjDigits = String(cnpj || "").replace(/\D/g, "");
+    if (cnpjDigits.length !== 14) {
+      throw new HttpsError("invalid-argument", "CNPJ must contain 14 digits");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const token = await getAccessToken("cnpj");
+      const empresa = await nuvemFiscalRequest("GET", `/cnpj/${cnpjDigits}`, token);
+
+      logger.info("CNPJ consulted via Nuvem Fiscal", {
+        idRestaurante,
+        uid,
+        cnpj: `${cnpjDigits.slice(0, 4)}***`,
+      });
+
+      return {
+        success: true,
+        empresa,
+        mappedConfig: mapCnpjEmpresaToConfigFiscal(empresa),
+      };
+    } catch (err) {
+      logger.error("Error consulting CNPJ", {
+        idRestaurante,
+        uid,
+        cnpj: `${cnpjDigits.slice(0, 4)}***`,
+        error: err.message,
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar CNPJ");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceConsultarCep
+// Consults CEP data from Nuvem Fiscal and returns mapped address fields
+// ============================================================================
+exports.nfceConsultarCep = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, cep} = request.data || {};
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const cepDigits = String(cep || "").replace(/\D/g, "");
+    if (cepDigits.length !== 8) {
+      throw new HttpsError("invalid-argument", "CEP must contain 8 digits");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const token = await getAccessToken("cep");
+      const endereco = await nuvemFiscalRequest("GET", `/cep/${cepDigits}`, token);
+
+      logger.info("CEP consulted via Nuvem Fiscal", {
+        idRestaurante,
+        uid,
+        cep: `${cepDigits.slice(0, 5)}***`,
+      });
+
+      return {
+        success: true,
+        endereco,
+        mappedAddress: mapCepToConfigAddress(endereco),
+      };
+    } catch (err) {
+      logger.error("Error consulting CEP", {
+        idRestaurante,
+        uid,
+        cep: `${cepDigits.slice(0, 5)}***`,
+        error: err.message,
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar CEP");
+    }
+  },
+);
+
+// ============================================================================
 // FUNCTION: nfceConsultarCertificado
 // Checks if there is a digital certificate for the company on Nuvem Fiscal
 // ============================================================================
@@ -1115,8 +1344,18 @@ exports.nfceEmitir = onCall(
     const vNF = Math.round(vProdTotal * 100) / 100;
 
     // 6. Payment mapping
-    const formaPagamento = pedido.formaPagamento || "dinheiro";
+    const formaPagamento = String(pedido.formaPagamento || "").trim().toLowerCase();
+    if (!formaPagamento) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Forma de pagamento é obrigatória para emissão de NFC-e.",
+      );
+    }
     const tPag = FORMA_PAGAMENTO_MAP[formaPagamento] || "99";
+
+    const indPres = resolveIndPresFromPedido(pedido);
+    const approxTaxRates = resolveApproxTaxRates(configFiscal, endereco);
+    const approxTaxBreakdown = calculateApproxTaxBreakdown(vNF, approxTaxRates);
 
     // 7. Build the NfePedidoEmissao
     const nfcePayload = {
@@ -1136,7 +1375,7 @@ exports.nfceEmitir = onCall(
           tpEmis: 1, // 1 = normal
           finNFe: 1, // 1 = normal
           indFinal: 1, // 1 = consumidor final
-          indPres: 1, // 1 = operação presencial
+          indPres, // 1 = presencial, 4 = entrega a domicílio
           procEmi: 0, // 0 = emissão com aplicativo do contribuinte
           verProc: "MesaFacil1.0",
         },
@@ -1165,6 +1404,7 @@ exports.nfceEmitir = onCall(
             vPIS: 0,
             vCOFINS: 0,
             vOutro: 0,
+            vTotTrib: approxTaxBreakdown.total,
             vNF,
           },
         },
