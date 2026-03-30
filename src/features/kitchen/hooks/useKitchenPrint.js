@@ -14,7 +14,19 @@ const sanitize = (value) => String(value ?? "").replace(/[<>]/g, "");
 const formatDate = (date) => {
   if (!date) return null;
   try {
-    return format(date, "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+    let normalizedDate = date;
+
+    if (typeof date?.toDate === "function") {
+      normalizedDate = date.toDate();
+    } else if (!(date instanceof Date)) {
+      normalizedDate = new Date(date);
+    }
+
+    if (!(normalizedDate instanceof Date) || Number.isNaN(normalizedDate.getTime())) {
+      return null;
+    }
+
+    return format(normalizedDate, "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
   } catch (error) {
     console.error("[useKitchenPrint] Erro ao formatar data:", error);
     return null;
@@ -23,6 +35,36 @@ const formatDate = (date) => {
 
 export const useKitchenPrint = () => {
   const { t } = useTranslation("kitchen");
+
+  const formatPaymentMethodLabel = useCallback((order) => {
+    const formaPagamento = String(order?.formaPagamento || "").toLowerCase();
+    const tipoEntrega = String(order?.tipoEntrega || "").toLowerCase();
+
+    if (!formaPagamento) return "-";
+    if (formaPagamento === "dinheiro") {
+      return tipoEntrega === "retirada" ? "Dinheiro (no local)" : "Dinheiro (na entrega)";
+    }
+    if (formaPagamento === "cartao") {
+      return "Cartão";
+    }
+    if (formaPagamento === "credito") {
+      return "Cartão de Crédito";
+    }
+    if (formaPagamento === "debito") {
+      return "Cartão de Débito";
+    }
+    if (formaPagamento === "pix") {
+      return "PIX";
+    }
+    if (formaPagamento === "ifood") {
+      return "iFood";
+    }
+    if (formaPagamento === "voucher") {
+      return "Voucher";
+    }
+
+    return sanitize(order?.formaPagamento);
+  }, []);
 
   const buildItemsSection = useCallback(
     (order) => {
@@ -144,17 +186,7 @@ export const useKitchenPrint = () => {
         enderecoFormatado = sanitize(cliente.endereco);
       }
 
-      const formaPagamentoLabel = order.formaPagamento === 'dinheiro' 
-        ? 'Dinheiro (na entrega)' 
-        : order.formaPagamento === 'cartao'
-          ? 'Cartão (na entrega)'
-          : order.formaPagamento === 'credito'
-            ? 'Cartão de Crédito'
-            : order.formaPagamento === 'debito'
-              ? 'Cartão de Débito'
-              : order.formaPagamento === 'pix'
-                ? 'PIX'
-                : sanitize(order.formaPagamento || '-');
+      const formaPagamentoLabel = formatPaymentMethodLabel(order);
 
       // Seção de troco (apenas para dinheiro)
       const trocoSection = order.troco?.precisaTroco ? `
@@ -194,7 +226,7 @@ export const useKitchenPrint = () => {
         ${trocoSection}
       `;
     },
-    []
+    [formatPaymentMethodLabel]
   );
 
   /**
@@ -244,11 +276,12 @@ export const useKitchenPrint = () => {
   const buildHtml = useCallback(
     (order, options = {}) => {
       const { isReceipt = false, consumerDocument = "" } = options;
-      const createdAt = formatDate(order?.criadoEm);
+      const createdAt = formatDate(order?.criadoEm || order?.createdAt || order?.finalizadoEm);
       const createdAtLabel = createdAt ?? t("print.unknownDate");
       const observations =
         sanitize(order?.observacoes) || t("print.noObservations");
       const safeConsumerDocument = sanitize(consumerDocument);
+      const paymentMethodLabel = formatPaymentMethodLabel(order);
 
       const totalLabel = currencyFormatter.format(Number(order?.total || 0));
       const headerLabel = isReceipt ? t("print.receiptHeader") : t("print.header");
@@ -446,6 +479,16 @@ export const useKitchenPrint = () => {
                 <span>${t("print.createdAt")}</span>
                 <span>${createdAtLabel}</span>
               </div>
+              ${
+                isReceipt && !isWhatsAppOrder(order)
+                  ? `
+                    <div class="row">
+                      <span>Pagamento</span>
+                      <span>${paymentMethodLabel}</span>
+                    </div>
+                  `
+                  : ""
+              }
 
               <div class="divider"></div>
               <div class="row title">${t("print.items")}</div>
@@ -468,7 +511,7 @@ export const useKitchenPrint = () => {
         </html>
       `;
     },
-    [buildItemsSection, buildDeliverySection, buildTotalSection, buildPickupNoticeSection, t]
+    [buildItemsSection, buildDeliverySection, buildTotalSection, buildPickupNoticeSection, formatPaymentMethodLabel, t]
   );
 
   const printOrder = useCallback(

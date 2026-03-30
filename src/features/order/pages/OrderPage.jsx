@@ -62,6 +62,12 @@ const OrderPage = () => {
     setIsAddItemsModalOpen(true);
   }
 
+  const handleOpenDetailModal = (mesa) => {
+    if (!mesa) return;
+    setMesaDetalhe(mesa);
+    setIsDetailModalOpen(true);
+  };
+
   // Abrir detalhes via deep-link (?mesaId=...)
   useEffect(() => {
     const mesaId = searchParams.get('mesaId');
@@ -114,18 +120,21 @@ const OrderPage = () => {
                 status="entregue"
                 items={mesasEntreguesDisplay}
                 idRestaurante={idRestaurante}
+                onOpenDetail={handleOpenDetailModal}
               />
               <TableSection
                 title={t('tables.status.andamento')}
                 status="andamento"
                 items={mesasAndamentoDisplay}
                 idRestaurante={idRestaurante}
+                onOpenDetail={handleOpenDetailModal}
               />
               <TableSection
                 title={t('tables.status.livre')}
                 status="livre"
                 items={mesasLivresDisplay}
                 idRestaurante={idRestaurante}
+                onOpenDetail={handleOpenDetailModal}
               />
             </>
           )}

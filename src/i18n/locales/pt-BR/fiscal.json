@@ -53,6 +53,7 @@
     "serie": "Série",
     "proximoNumero": "Próximo Número",
     "ncmPadrao": "NCM Padrão",
+    "searchingCnpj": "Consultando CNPJ...",
     "searchingCep": "Buscando CEP..."
   },
 
@@ -112,6 +113,8 @@
     "requiredUf": "UF é obrigatória.",
     "requiredCodigoMunicipio": "Código do município (IBGE) é obrigatório.",
     "requiredEmail": "E-mail é obrigatório.",
+    "companyNotFoundByCnpj": "Não foi possível encontrar dados para este CNPJ.",
+    "errorLoadingCompanyByCnpj": "Erro ao consultar CNPJ.",
     "requiredCsc": "CSC e ID do CSC são obrigatórios para NFC-e.",
     "errorConsultingCertificate": "Erro ao consultar certificado digital.",
     "selectCertificateFile": "Selecione um arquivo de certificado para enviar.",

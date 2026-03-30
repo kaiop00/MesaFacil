@@ -281,6 +281,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     const handleConfirmPayment = async (dadosPagamento) => {
         if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;
         const pedidoIdFinalizado = pedidoParaFinalizar;
+        const pedidoEmAndamento = pedidos.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
         
         setFinalizando(prev => ({ ...prev, [pedidoParaFinalizar]: true }));
         try {
@@ -301,15 +302,24 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
 
             // Sempre abre a modal após finalizar. A emissão de NFC-e é habilitada/desabilitada dentro da modal.
             const pedidoFinalizado = dados?.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
+            const orderDataForFiscalModal = pedidoFinalizado
+                ? {
+                    ...pedidoFinalizado,
+                    mesaNumero: pedidoFinalizado?.mesaNumero || mesaSelecionada?.numero || "-",
+                }
+                : pedidoEmAndamento
+                    ? {
+                        ...pedidoEmAndamento,
+                        ...dadosPagamento,
+                        status: "entregue",
+                        mesaNumero: pedidoEmAndamento?.mesaNumero || mesaSelecionada?.numero || "-",
+                    }
+                    : null;
+
             setNfcePedidoInfo({
                 mesaId: mesaSelecionada.id,
                 pedidoId: pedidoIdFinalizado,
-                orderData: pedidoFinalizado
-                    ? {
-                        ...pedidoFinalizado,
-                        mesaNumero: pedidoFinalizado?.mesaNumero || mesaSelecionada?.numero || "-",
-                    }
-                    : null,
+                orderData: orderDataForFiscalModal,
             });
             setShowNfceModal(true);
         } catch (error) {
@@ -736,16 +746,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     </p>
                                 )}
                                 <div className="flex justify-end gap-2">
-                                {pedido.status === 'entregue' && pedido.nfceStatus !== "autorizado" && (
-                                    <button
-                                        onClick={() => handleOpenNfceModal(pedido.id, pedido)}
-                                        className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 cursor-pointer"
-                                    >
-                                        {pedido.nfceStatus === "rejeitado"
-                                            ? t('modals.orderDetail.buttons.retryNfce')
-                                            : t('modals.orderDetail.buttons.emitNfce')}
-                                    </button>
-                                )}
                                 <button
                                     onClick={() => handleOpenPaymentModal(pedido.id)}
                                     disabled={!!finalizando[pedido.id]}
@@ -863,6 +863,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 onClose={() => {
                     setShowNfceModal(false);
                     setNfcePedidoInfo(null);
+                    onClose?.();
                 }}
                 idRestaurante={idRestaurante}
                 mesaId={nfcePedidoInfo?.mesaId}

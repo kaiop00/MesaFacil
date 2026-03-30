@@ -7,6 +7,7 @@ const TableSection = ({
   status,
   items,
   idRestaurante,
+  onOpenDetail,
 }) => {
   const { t } = useTranslation('order');
 
@@ -44,6 +45,7 @@ const TableSection = ({
             total={it.total}
             mesa={it.mesa}
             idRestaurante={idRestaurante}
+            onOpenDetail={onOpenDetail}
           />
         ))}
       </div>

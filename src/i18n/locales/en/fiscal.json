@@ -49,6 +49,7 @@
     "serie": "Series",
     "proximoNumero": "Next Number",
     "ncmPadrao": "Default NCM",
+    "searchingCnpj": "Searching CNPJ...",
     "searchingCep": "Searching CEP..."
   },
   "placeholders": {
@@ -104,6 +105,8 @@
     "requiredUf": "UF is required.",
     "requiredCodigoMunicipio": "City code (IBGE) is required.",
     "requiredEmail": "Email is required.",
+    "companyNotFoundByCnpj": "Could not find data for this CNPJ.",
+    "errorLoadingCompanyByCnpj": "Error querying CNPJ.",
     "requiredCsc": "CSC and CSC ID are required for NFC-e.",
     "errorConsultingCertificate": "Error checking digital certificate.",
     "selectCertificateFile": "Select a certificate file to upload.",

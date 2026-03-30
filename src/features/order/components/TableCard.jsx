@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { House02, MoreHorizontal, ShoppingBag02 } from "react-coolicons";
 import { useTranslation } from "react-i18next";
 import TableOptionsMenu from "@/features/order/components/TableOptionsMenu";
-import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import { resetMesaParaNovoCliente } from "@/features/order/services/orderService";
 import { useToast } from "@/hooks/useToast";
@@ -15,10 +14,10 @@ const TableCard = ({
   timeAgo,
   total,
   mesa,          // ✅ objeto real
-  idRestaurante
+  idRestaurante,
+  onOpenDetail,
 }) => {
   const { t } = useTranslation('order');
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ title: "", message: "" });
   const [showOptions, setShowOptions] = useState(false);
@@ -79,7 +78,7 @@ const TableCard = ({
   const handleFinalize = () => {
     if (mesa?.status === "andamento") {
       // Em andamento: abrir detalhes para escolher qual pedido finalizar
-      setIsDetailModalOpen(true);
+      onOpenDetail?.(mesa);
       setShowOptions(false);
       return;
     } else if (mesa?.status === "entregue") {
@@ -87,7 +86,7 @@ const TableCard = ({
       //   title: t('messages.confirm.finishOrder'),
       //   message: t('messages.confirm.finishOrderDescription'),
       // });
-      setIsDetailModalOpen(true);
+      onOpenDetail?.(mesa);
       setShowOptions(false);
     }
     setIsConfirmModalOpen(false);
@@ -117,7 +116,7 @@ const TableCard = ({
               {showOptions && (
                 <TableOptionsMenu
                   onDetail={() => {
-                    setIsDetailModalOpen(true);
+                    onOpenDetail?.(mesa);
                     setShowOptions(false);
                   }}
                   onFinalize={handleFinalize}
@@ -161,14 +160,6 @@ const TableCard = ({
         </div>
 
       </div>
-
-      <DetailOrderModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        mesaSelecionada={mesa}
-        idRestaurante={idRestaurante}
-      />
-
       <ConfirmModal
         isOpen={isConfirmModalOpen}
         title={modalConfig.title}

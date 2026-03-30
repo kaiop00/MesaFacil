@@ -168,7 +168,7 @@ const NfceModal = ({
 
             <div>
               <label
-                htmlFor="nfce-cpf"
+                htmlFor="nfce-cpf-cnpj"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 {t("nfce.modal.cpfLabel")}
@@ -177,11 +177,11 @@ const NfceModal = ({
                 </span>
               </label>
               <input
-                id="nfce-cpf"
+                id="nfce-cpf-cnpj"
                 type="text"
                 value={cpfCnpj}
                 onChange={handleCpfCnpjChange}
-                placeholder="000.000.000-00"
+                placeholder="000.000.000-00 ou 00.000.000/0000-00"
                 className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary-dynamic focus:border-transparent"
               />
               <p className="text-xs text-gray-400 mt-1">
