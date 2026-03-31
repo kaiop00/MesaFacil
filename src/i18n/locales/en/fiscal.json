@@ -1,6 +1,9 @@
 {
   "title": "Fiscal Configuration (NFC-e)",
   "subtitle": "Configure company data for issuing Electronic Consumer Invoice (NFC-e).",
+  "page": {
+    "loading": "Loading..."
+  },
   "status": {
     "registered": "Company registered on Nuvem Fiscal",
     "notRegistered": "Company not registered",

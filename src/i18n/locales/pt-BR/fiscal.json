@@ -2,6 +2,10 @@
   "title": "Configuração Fiscal (NFC-e)",
   "subtitle": "Configure os dados da empresa para emissão de Nota Fiscal de Consumidor Eletrônica.",
 
+  "page": {
+    "loading": "Carregando..."
+  },
+
   "status": {
     "registered": "Empresa registrada na Nuvem Fiscal",
     "notRegistered": "Empresa não registrada",

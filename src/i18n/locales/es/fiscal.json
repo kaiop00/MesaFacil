@@ -129,6 +129,9 @@
 
   "nfceList": {
     "page": {
+  "page": {
+    "loading": "Cargando..."
+  },
       "title": "NFC-es Emitidas",
       "subtitle": "Listado de todas las facturas electrónicas emitidas por su empresa",
       "loading": "Cargando NFC-es..."
