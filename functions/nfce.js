@@ -40,6 +40,11 @@ const FORMA_PAGAMENTO_MAP = {
   ifood: "99",
 };
 
+const PIS_COFINS_ALIQUOTAS_DEFAULT = {
+  pis: 0.65,
+  cofins: 3.00,
+};
+
 const DEFAULT_APPROX_TAX_RATES = {
   federal: 0.085,
   estadual: 0.18,
@@ -405,6 +410,138 @@ function calculateApproxTaxBreakdown(baseValue, taxRates) {
   };
 }
 
+function roundCurrency(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function normalizePercent(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+  return parsed;
+}
+
+function isTruthyTaxFlag(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value > 0;
+  if (typeof value !== "string") return false;
+
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["true", "1", "sim", "yes", "y", "on", "monofasico", "monofasica"].includes(normalized);
+}
+
+function normalizeTaxType(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function isMonofasicoItem(item = {}) {
+  if (!item || typeof item !== "object") return false;
+
+  const explicitFlags = [
+    item.monofasico,
+    item.isMonofasico,
+    item.pisCofinsMonofasico,
+    item.tributacaoMonofasica,
+  ];
+  if (explicitFlags.some((value) => isTruthyTaxFlag(value))) {
+    return true;
+  }
+
+  const tipoTributacaoCandidates = [
+    item.tipoTributacao,
+    item.tributacaoTipo,
+    item.taxType,
+    item.fiscalType,
+  ].map((value) => normalizeTaxType(value));
+
+  return tipoTributacaoCandidates.includes("monofasico");
+}
+
+function extractPisValue(imposto = {}) {
+  return roundCurrency(
+    imposto?.PIS?.PISAliq?.vPIS ||
+    imposto?.PIS?.PISOutr?.vPIS ||
+    0,
+  );
+}
+
+function extractCofinsValue(imposto = {}) {
+  return roundCurrency(
+    imposto?.COFINS?.COFINSAliq?.vCOFINS ||
+    imposto?.COFINS?.COFINSOutr?.vCOFINS ||
+    0,
+  );
+}
+
+function buildPisCofins(crt, vProd, item = {}, configFiscal = {}) {
+  if (isMonofasicoItem(item)) {
+    return {
+      PIS: {
+        PISNT: {
+          CST: "04", // Tributacao monofasica (revenda)
+        },
+      },
+      COFINS: {
+        COFINSNT: {
+          CST: "04", // Tributacao monofasica (revenda)
+        },
+      },
+    };
+  }
+
+  if (crt === 1 || crt === 4) {
+    return {
+      PIS: {
+        PISOutr: {
+          CST: "49", // Outras operacoes de saida (Simples Nacional)
+          vBC: 0,
+          pPIS: 0,
+          vPIS: 0,
+        },
+      },
+      COFINS: {
+        COFINSOutr: {
+          CST: "49", // Outras operacoes de saida (Simples Nacional)
+          vBC: 0,
+          pCOFINS: 0,
+          vCOFINS: 0,
+        },
+      },
+    };
+  }
+
+  const configuredPis = configFiscal?.nfce?.pisCofinsAliquotas?.pis;
+  const configuredCofins = configFiscal?.nfce?.pisCofinsAliquotas?.cofins;
+  const pPIS = normalizePercent(configuredPis, PIS_COFINS_ALIQUOTAS_DEFAULT.pis);
+  const pCOFINS = normalizePercent(configuredCofins, PIS_COFINS_ALIQUOTAS_DEFAULT.cofins);
+  const vPIS = roundCurrency(vProd * (pPIS / 100));
+  const vCOFINS = roundCurrency(vProd * (pCOFINS / 100));
+
+  return {
+    PIS: {
+      PISAliq: {
+        CST: "01",
+        vBC: vProd,
+        pPIS,
+        vPIS,
+      },
+    },
+    COFINS: {
+      COFINSAliq: {
+        CST: "01",
+        vBC: vProd,
+        pCOFINS,
+        vCOFINS,
+      },
+    },
+  };
+}
+
 function mapCnpjEmpresaToConfigFiscal(empresa = {}) {
   const endereco = empresa?.endereco || {};
   const municipio = endereco?.municipio || {};
@@ -462,26 +599,87 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isFirestoreFailedPrecondition(error) {
+  const code = Number(error?.code);
+  const message = String(error?.message || "");
+  return code === 9 || /FAILED_PRECONDITION/i.test(message);
+}
+
+async function findMesaPedidosByNfceWithoutCollectionGroup(idRestaurante, nfceId, maxDocs = 10) {
+  const mesasRef = db.collection("restaurantes").doc(idRestaurante).collection("mesas");
+  const mesasSnap = await mesasRef.get();
+  const foundDocSnaps = [];
+
+  for (const mesaDoc of mesasSnap.docs) {
+    if (foundDocSnaps.length >= maxDocs) break;
+
+    const remaining = Math.max(1, maxDocs - foundDocSnaps.length);
+    const pedidosSnap = await mesaDoc.ref
+      .collection("pedidos")
+      .where("nfceId", "==", nfceId)
+      .limit(remaining)
+      .get();
+
+    pedidosSnap.forEach((docSnap) => {
+      foundDocSnaps.push(docSnap);
+    });
+  }
+
+  return foundDocSnaps;
+}
+
 async function updateOrderByNfceId(idRestaurante, nfceId, payload) {
   if (!nfceId) return;
 
   const restauranteRef = db.collection("restaurantes").doc(idRestaurante);
-  const [mesaPedidosSnap, historicoSnap] = await Promise.all([
-    db.collectionGroup("pedidos").where("nfceId", "==", nfceId).limit(10).get(),
-    restauranteRef.collection("historicoPedidos").where("nfceId", "==", nfceId).limit(10).get(),
-  ]);
+  const historicoSnap = await restauranteRef.collection("historicoPedidos").where("nfceId", "==", nfceId).limit(10).get();
 
   const updates = [];
-  mesaPedidosSnap.forEach((docSnap) => {
-    const parentRestauranteId = docSnap.ref.parent.parent?.parent?.parent?.id;
-    if (parentRestauranteId === idRestaurante) {
-      updates.push(docSnap.ref.set(payload, {merge: true}));
-    }
-  });
-
   historicoSnap.forEach((docSnap) => {
     updates.push(docSnap.ref.set(payload, {merge: true}));
   });
+
+  // Most finalized orders live in historicoPedidos.
+  // Only hit pedidos/* paths when nothing was found in historico.
+  if (updates.length > 0) {
+    await Promise.all(updates);
+    return;
+  }
+
+  let mesaPedidoDocs = [];
+  try {
+    const mesaPedidosSnap = await db.collectionGroup("pedidos").where("nfceId", "==", nfceId).limit(10).get();
+    mesaPedidoDocs = mesaPedidosSnap.docs;
+  } catch (error) {
+    if (isFirestoreFailedPrecondition(error)) {
+      // Keep sync flow working even if collection group query cannot run.
+      logger.warn("Skipping collectionGroup('pedidos') due to Firestore FAILED_PRECONDITION", {
+        idRestaurante,
+        nfceId,
+        code: error?.code || null,
+        details: error?.details || null,
+        error: error?.message || String(error),
+      });
+
+      mesaPedidoDocs = await findMesaPedidosByNfceWithoutCollectionGroup(idRestaurante, nfceId, 10);
+      logger.info("Fallback pedidos lookup completed", {
+        idRestaurante,
+        nfceId,
+        found: mesaPedidoDocs.length,
+      });
+    } else {
+      throw error;
+    }
+  }
+
+  if (mesaPedidoDocs.length > 0) {
+    mesaPedidoDocs.forEach((docSnap) => {
+      const parentRestauranteId = docSnap.ref.parent.parent?.parent?.parent?.id;
+      if (parentRestauranteId === idRestaurante) {
+        updates.push(docSnap.ref.set(payload, {merge: true}));
+      }
+    });
+  }
 
   if (updates.length > 0) {
     await Promise.all(updates);
@@ -1316,6 +1514,7 @@ exports.nfceEmitir = onCall(
       const unitPrice = Number(item.price) * fatorTaxa;
       const vUnCom = Math.round(unitPrice * 100) / 100;
       const vProd = Math.round(vUnCom * quantity * 100) / 100;
+      const imposto = buildImposto(configFiscal.crt, vProd, item, configFiscal);
 
       return {
         nItem: index + 1,
@@ -1335,13 +1534,15 @@ exports.nfceEmitir = onCall(
           vUnTrib: vUnCom,
           indTot: 1,
         },
-        imposto: buildImposto(configFiscal.crt, vProd),
+        imposto,
       };
     });
 
     // 5. Calculate totals
     const vProdTotal = det.reduce((sum, d) => sum + d.prod.vProd, 0);
     const vNF = Math.round(vProdTotal * 100) / 100;
+    const vPISTotal = roundCurrency(det.reduce((sum, d) => sum + extractPisValue(d.imposto), 0));
+    const vCOFINSTotal = roundCurrency(det.reduce((sum, d) => sum + extractCofinsValue(d.imposto), 0));
 
     // 6. Payment mapping
     const formaPagamento = String(pedido.formaPagamento || "").trim().toLowerCase();
@@ -1401,8 +1602,8 @@ exports.nfceEmitir = onCall(
             vII: 0,
             vIPI: 0,
             vIPIDevol: 0,
-            vPIS: 0,
-            vCOFINS: 0,
+            vPIS: vPISTotal,
+            vCOFINS: vCOFINSTotal,
             vOutro: 0,
             vTotTrib: approxTaxBreakdown.total,
             vNF,
@@ -1497,18 +1698,34 @@ exports.nfceEmitir = onCall(
         logger.info("NFC-e authorized successfully", {nfceId: nfce.id, chave: nfce.chave});
         return {success: true, ...nfceResult};
       } else if (nfce.status === "rejeitado" || nfce.status === "erro") {
-        const mensagens = nfce.mensagens || [];
-        const descricao = mensagens.length > 0
+        const mensagens = Array.isArray(nfce.mensagens) ? nfce.mensagens : [];
+        const mensagemTexto = mensagens.length > 0
           ? mensagens.map((m) => m.descricao || m.mensagem || JSON.stringify(m)).join("; ")
-          : "Nota rejeitada pela SEFAZ";
+          : "";
+        const motivoAutorizacao = nfce?.autorizacao?.motivo_status || "";
+        const motivoStatus = nfce?.motivo_status || "";
+        const erroTexto = nfce?.erro?.mensagem || nfce?.erro?.message || "";
+        const descricao = mensagemTexto || motivoAutorizacao || motivoStatus || erroTexto || "Nota rejeitada pela SEFAZ";
 
-        logger.error("NFC-e rejected", {nfceId: nfce.id, mensagens});
+        logger.error("NFC-e rejected", {
+          nfceId: nfce.id,
+          descricao,
+          mensagens,
+          motivoStatus,
+          motivoAutorizacao,
+          codigoStatus: nfce?.codigo_status || null,
+          codigoStatusAutorizacao: nfce?.autorizacao?.codigo_status || null,
+          nfce,
+        });
 
         // Persist rejection status in whichever order document still exists.
         const updatePayload = {
           nfceId: nfceResult.nfceId,
           nfceStatus: "rejeitado",
           nfceErro: descricao,
+          nfceRejeicao: nfce,
+          nfceRejeicaoCodigo: nfce?.codigo_status || nfce?.autorizacao?.codigo_status || null,
+          nfceRejeicaoMotivo: motivoStatus || motivoAutorizacao || null,
           nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
         const updatePromises = [];
@@ -1561,12 +1778,27 @@ exports.nfceConsultar = onCall(
       const token = await getAccessToken("nfce");
       const nfce = await nuvemFiscalRequest("GET", `/nfce/${nfceId}`, token);
       logger.info("NFC-e consulted", {idRestaurante, nfceId, uid, status: nfce.status});
+      const mensagens = Array.isArray(nfce.mensagens) ? nfce.mensagens : [];
+      const codigoStatus = nfce.codigo_status || nfce?.autorizacao?.codigo_status || null;
+      const motivoStatus =
+        nfce.motivo_status ||
+        nfce?.autorizacao?.motivo_status ||
+        nfce?.erro?.mensagem ||
+        nfce?.erro?.message ||
+        null;
+
       return {
         id: nfce.id,
         status: nfce.status,
+        referencia: nfce.referencia || null,
+        numero: nfce.numero || null,
+        serie: nfce.serie || null,
+        codigoStatus,
+        motivoStatus,
         chaveAcesso: nfce.chave || null,
         linkDanfce: nfce.url_danfce || nfce.url || null,
-        mensagens: nfce.mensagens || [],
+        mensagens,
+        data: nfce,
       };
     } catch (err) {
       logger.error("Error consulting NFC-e", {error: err.message, nfceId});
@@ -1763,7 +1995,14 @@ exports.nfceSincronizarDocumentos = onCall(
         documentos,
       };
     } catch (err) {
-      logger.error("Error syncing NFC-e documents", {idRestaurante, nfceId, uid, error: err.message});
+      logger.error("Error syncing NFC-e documents", {
+        idRestaurante,
+        nfceId,
+        uid,
+        error: err?.message || String(err),
+        code: err?.code || null,
+        details: err?.details || null,
+      });
       throw mapNuvemFiscalErrorToHttps(err, "Erro ao sincronizar documentos da NFC-e");
     }
   },
@@ -1772,8 +2011,10 @@ exports.nfceSincronizarDocumentos = onCall(
 // ============================================================================
 // HELPER: Build imposto object based on CRT
 // ============================================================================
-function buildImposto(crt, vProd) {
+function buildImposto(crt, vProd, item = {}, configFiscal = {}) {
   // For Simples Nacional (CRT 1 or 4), use ICMSSN102
+  const pisCofins = buildPisCofins(crt, vProd, item, configFiscal);
+
   if (crt === 1 || crt === 4) {
     return {
       ICMS: {
@@ -1782,22 +2023,7 @@ function buildImposto(crt, vProd) {
           CSOSN: "102", // 102 = Tributada sem permissão de crédito
         },
       },
-      PIS: {
-        PISOutr: {
-          CST: "07", // 07 = Operação isenta
-          vBC: 0,
-          pPIS: 0,
-          vPIS: 0,
-        },
-      },
-      COFINS: {
-        COFINSOutr: {
-          CST: "07", // 07 = Operação isenta
-          vBC: 0,
-          pCOFINS: 0,
-          vCOFINS: 0,
-        },
-      },
+      ...pisCofins,
     };
   }
 
@@ -1813,21 +2039,6 @@ function buildImposto(crt, vProd) {
         vICMS: 0,
       },
     },
-    PIS: {
-      PISAliq: {
-        CST: "01",
-        vBC: vProd,
-        pPIS: 0,
-        vPIS: 0,
-      },
-    },
-    COFINS: {
-      COFINSAliq: {
-        CST: "01",
-        vBC: vProd,
-        pCOFINS: 0,
-        vCOFINS: 0,
-      },
-    },
+    ...pisCofins,
   };
 }
