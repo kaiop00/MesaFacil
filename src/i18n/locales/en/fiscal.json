@@ -81,9 +81,16 @@
     "uploadingCertificate": "Uploading certificate...",
     "deleteCertificate": "Delete Certificate",
     "deletingCertificate": "Deleting certificate...",
+    "syncCrt": "Sync CRT",
+    "syncingCrt": "Syncing CRT...",
     "configureNfce": "Configure NFC-e",
     "configuringNfce": "Configuring NFC-e..."
   },
+
+  "warnings": {
+    "crtMismatch": "CRT mismatch detected"
+  },
+
   "messages": {
     "saved": "Fiscal configuration saved successfully!",
     "errorSaving": "Error saving fiscal configuration.",

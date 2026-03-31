@@ -396,20 +396,6 @@ function resolveApproxTaxRates(configFiscal = {}, endereco = {}) {
   };
 }
 
-function calculateApproxTaxBreakdown(baseValue, taxRates) {
-  const value = Math.max(0, Number(baseValue) || 0);
-  const federal = Math.round(value * taxRates.federal * 100) / 100;
-  const estadual = Math.round(value * taxRates.estadual * 100) / 100;
-  const municipal = Math.round(value * taxRates.municipal * 100) / 100;
-
-  return {
-    federal,
-    estadual,
-    municipal,
-    total: Math.round((federal + estadual + municipal) * 100) / 100,
-  };
-}
-
 function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
@@ -605,6 +591,83 @@ function isFirestoreFailedPrecondition(error) {
   return code === 9 || /FAILED_PRECONDITION/i.test(message);
 }
 
+/**
+ * Extract CRT from SEFAZ company data (Nuvem Fiscal /cnpj endpoint response)
+ * Based on: simples.optante, simei.optante
+ * CRT 1 = Simples Nacional
+ * CRT 2 = Simples com excesso de sublimite
+ * CRT 3 = Regime Normal
+ * CRT 4 = MEI (Microempreendedor Individual)
+ * @param {object} empresa - Data from Nuvem Fiscal /cnpj API
+ * @returns {number|null}
+ */
+function extractCrtFromSefaz(empresa = {}) {
+  if (!empresa || typeof empresa !== "object") {
+    return null;
+  }
+
+  // Check MEI first (CRT 4)
+  if (empresa?.simei?.optante === true) {
+    return 4;
+  }
+
+  // Check Simples Nacional (CRT 1)
+  if (empresa?.simples?.optante === true) {
+    return 1;
+  }
+
+  // Default to Regime Normal (CRT 3)
+  return 3;
+}
+
+/**
+ * Validates if local CRT matches SEFAZ registration
+ * @param {object} empresa - Data from Nuvem Fiscal CNPJ/SEFAZ API
+ * @param {number} localCrt - CRT value from local config
+ * @returns {{match: boolean, sefazCrt: number|null, warning: string|null}}
+ */
+function validateCrtAgainstSefaz(empresa = {}, localCrt) {
+  if (!empresa || typeof empresa !== "object") {
+    return {
+      match: true,
+      sefazCrt: null,
+      warning: "Não foi possível validar CRT contra SEFAZ",
+    };
+  }
+
+  // Extract CRT from SEFAZ using simples/simei indicators
+  const sefazCrt = extractCrtFromSefaz(empresa);
+
+  if (sefazCrt === null) {
+    return {
+      match: true,
+      sefazCrt: null,
+      warning: "SEFAZ não retornou informação de CRT. Configure manualmente.",
+    };
+  }
+
+  const sefazCrtNum = Number(sefazCrt);
+  const localCrtNum = Number(localCrt);
+
+  if (sefazCrtNum !== localCrtNum) {
+    const crtNames = {1: "Simples Nacional", 2: "Simples (excesso)", 3: "Regime Normal", 4: "MEI"};
+    const sefazCrtName = crtNames[sefazCrtNum] || `CRT ${sefazCrtNum}`;
+    const localCrtName = crtNames[localCrtNum] || `CRT ${localCrtNum}`;
+    
+    return {
+      match: false,
+      sefazCrt: sefazCrtNum,
+      warning: `⚠️ CRT diverge: Sistema tem ${localCrtName} (CRT ${localCrtNum}), SEFAZ registra ${sefazCrtName} (CRT ${sefazCrtNum}). Isso impedirá emissão de NFC-e.`,
+    };
+  }
+
+  return {
+    match: true,
+    sefazCrt: sefazCrtNum,
+    warning: null,
+  };
+}
+
 async function findMesaPedidosByNfceWithoutCollectionGroup(idRestaurante, nfceId, maxDocs = 10) {
   const mesasRef = db.collection("restaurantes").doc(idRestaurante).collection("mesas");
   const mesasSnap = await mesasRef.get();
@@ -758,11 +821,12 @@ function buildEmpresaPayload(configFiscal) {
  */
 function validateNfceConfig(configFiscal) {
   const idCsc = parseInt(configFiscal?.nfce?.idCsc, 10);
-  const csc = configFiscal?.nfce?.csc || "";
+  const cscRaw = String(configFiscal?.nfce?.csc || "");
+  const csc = cscRaw.replace(/\s+/g, "").toUpperCase();
 
   const missingFields = [];
   if (!Number.isInteger(idCsc) || idCsc <= 0) missingFields.push("nfce.idCsc");
-  if (!csc.trim()) missingFields.push("nfce.csc");
+  if (!csc) missingFields.push("nfce.csc");
 
   if (missingFields.length > 0) {
     throw new HttpsError(
@@ -771,7 +835,7 @@ function validateNfceConfig(configFiscal) {
     );
   }
 
-  return {idCsc, csc: csc.trim()};
+  return {idCsc, csc};
 }
 
 // ============================================================================
@@ -815,7 +879,42 @@ exports.nfceRegistrarEmpresa = onCall(
         },
       }, {merge: true});
 
-      return {success: true, message: "Empresa registrada com sucesso"};
+      // ===== NEW: Validate CRT against SEFAZ =====
+      try {
+        const tokenCnpj = await getAccessToken("cnpj");
+        const sefazEmpresa = await nuvemFiscalRequest(
+          "GET",
+          `/cnpj/${cnpjDigits}`,
+          tokenCnpj,
+        );
+        const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+
+        if (!crtValidation.match) {
+          logger.warn("CRT mismatch detected", {
+            idRestaurante,
+            cnpj: cnpjDigits,
+            localCrt: configFiscal.crt,
+            sefazCrt: crtValidation.sefazCrt,
+          });
+        }
+
+        return {
+          success: true,
+          message: "Empresa registrada com sucesso",
+          crtValidation,
+        };
+      } catch (crtValidationErr) {
+        // CRT validation is informational; don't fail the request
+        logger.warn("Could not validate CRT", {
+          idRestaurante,
+          error: crtValidationErr.message,
+        });
+        return {
+          success: true,
+          message: "Empresa registrada com sucesso",
+          crtValidation: {match: true, warning: null},
+        };
+      }
     } catch (err) {
       logger.error("Error registering empresa", {error: err.message, idRestaurante});
       throw mapNuvemFiscalErrorToHttps(err, "Erro ao registrar empresa");
@@ -922,10 +1021,41 @@ exports.nfceAlterarEmpresa = onCall(
 
       logger.info("Empresa updated in Nuvem Fiscal", {idRestaurante, uid, cnpj: cnpjDigits});
 
-      return {
-        success: true,
-        message: "Empresa atualizada com sucesso",
-      };
+      // ===== NEW: Validate CRT against SEFAZ after update =====
+      try {
+        const tokenCnpj = await getAccessToken("cnpj");
+        const sefazEmpresa = await nuvemFiscalRequest(
+          "GET",
+          `/cnpj/${cnpjDigits}`,
+          tokenCnpj,
+        );
+        const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+
+        if (!crtValidation.match) {
+          logger.warn("CRT mismatch detected after update", {
+            idRestaurante,
+            cnpj: cnpjDigits,
+            localCrt: configFiscal.crt,
+            sefazCrt: crtValidation.sefazCrt,
+          });
+        }
+
+        return {
+          success: true,
+          message: "Empresa atualizada com sucesso",
+          crtValidation,
+        };
+      } catch (crtValidationErr) {
+        logger.warn("Could not validate CRT after update", {
+          idRestaurante,
+          error: crtValidationErr.message,
+        });
+        return {
+          success: true,
+          message: "Empresa atualizada com sucesso",
+          crtValidation: {match: true, warning: null},
+        };
+      }
     } catch (err) {
       logger.error("Error updating empresa", {error: err.message, idRestaurante});
       throw mapNuvemFiscalErrorToHttps(err, "Erro ao atualizar empresa");
@@ -1095,6 +1225,95 @@ exports.nfceConsultarCnpj = onCall(
         error: err.message,
       });
       throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar CNPJ");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceSincronizarCrt
+// Syncs CRT from SEFAZ to local config and validates consistency
+// ============================================================================
+exports.nfceSincronizarCrt = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data || {};
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      if (!configFiscal) {
+        throw new HttpsError("failed-precondition", "Configuração fiscal não encontrada");
+      }
+
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const tokenCnpj = await getAccessToken("cnpj");
+      const sefazEmpresa = await nuvemFiscalRequest(
+        "GET",
+        `/cnpj/${cnpjDigits}`,
+        tokenCnpj,
+      );
+
+      // Extract CRT from SEFAZ response using simples/simei indicators
+      const sefazCrt = extractCrtFromSefaz(sefazEmpresa);
+
+      if (sefazCrt === null) {
+        throw new HttpsError(
+          "unavailable",
+          "SEFAZ não retornou informação de CRT. Tente novamente ou configure manualmente.",
+        );
+      }
+
+      const sefazCrtNum = Number(sefazCrt);
+
+      // Validate consistency before updating
+      const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+
+      if (!crtValidation.match) {
+        // Update to match SEFAZ
+        await db.collection("restaurantes").doc(idRestaurante).set({
+          configFiscal: {
+            crt: sefazCrtNum,
+            crtSyncedFromSefazAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        }, {merge: true});
+
+        logger.info("CRT synchronized from SEFAZ", {
+          idRestaurante,
+          cnpj: cnpjDigits,
+          oldCrt: configFiscal.crt,
+          newCrt: sefazCrtNum,
+          uid,
+        });
+
+        return {
+          success: true,
+          message: `CRT sincronizado com sucesso. Atualizado de ${configFiscal.crt} para ${sefazCrtNum}.`,
+          synchronized: true,
+          previousCrt: configFiscal.crt,
+          newCrt: sefazCrtNum,
+        };
+      }
+
+      return {
+        success: true,
+        message: "CRT já está sincronizado com SEFAZ.",
+        synchronized: false,
+        crt: configFiscal.crt,
+      };
+    } catch (err) {
+      logger.error("Error syncing CRT", {idRestaurante, error: err.message});
+      if (err instanceof HttpsError) throw err;
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao sincronizar CRT com SEFAZ");
     }
   },
 );
@@ -1444,6 +1663,37 @@ exports.nfceEmitir = onCall(
       throw new HttpsError("failed-precondition", "Configuração fiscal não ativa");
     }
 
+    // ===== NEW: Validate CRT before emission =====
+    try {
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const tokenCnpj = await getAccessToken("cnpj");
+      const sefazEmpresa = await nuvemFiscalRequest(
+        "GET",
+        `/cnpj/${cnpjDigits}`,
+        tokenCnpj,
+      );
+      const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+
+      if (!crtValidation.match) {
+        logger.error("CRT mismatch blocking NFC-e emission", {
+          idRestaurante,
+          cnpj: cnpjDigits,
+          localCrt: configFiscal.crt,
+          sefazCrt: crtValidation.sefazCrt,
+        });
+        throw new HttpsError(
+          "failed-precondition",
+          `CRT diverge da SEFAZ. Sistema tem CRT ${configFiscal.crt}, SEFAZ registra CRT ${crtValidation.sefazCrt}. Sincronize em Configuração Fiscal > Sincronizar CRT.`,
+        );
+      }
+    } catch (crtErr) {
+      if (crtErr instanceof HttpsError) throw crtErr;
+      logger.warn("Could not validate CRT before NFC-e emission, allowing to proceed", {
+        idRestaurante,
+        error: crtErr.message,
+      });
+    }
+
     const pedidoSnap = pedidoMesaSnap.exists ? pedidoMesaSnap : pedidoHistoricoSnap;
     const pedidoOrigem = pedidoMesaSnap.exists ? "mesa" : "historico";
     const pedido = {id: pedidoSnap.id, ...pedidoSnap.data()};
@@ -1507,6 +1757,7 @@ exports.nfceEmitir = onCall(
     }, 0);
 
     const fatorTaxa = subtotalPedido > 0 ? (subtotalPedido + taxaEntrega) / subtotalPedido : 1;
+    const approxTaxRates = resolveApproxTaxRates(configFiscal, endereco);
 
     // 4. Build det (items array)
     const det = pedido.items.map((item, index) => {
@@ -1514,7 +1765,8 @@ exports.nfceEmitir = onCall(
       const unitPrice = Number(item.price) * fatorTaxa;
       const vUnCom = Math.round(unitPrice * 100) / 100;
       const vProd = Math.round(vUnCom * quantity * 100) / 100;
-      const imposto = buildImposto(configFiscal.crt, vProd, item, configFiscal);
+      const itemApproxTrib = roundCurrency(vProd * approxTaxRates.total);
+      const imposto = buildImposto(configFiscal.crt, vProd, item, configFiscal, itemApproxTrib);
 
       return {
         nItem: index + 1,
@@ -1553,10 +1805,22 @@ exports.nfceEmitir = onCall(
       );
     }
     const tPag = FORMA_PAGAMENTO_MAP[formaPagamento] || "99";
+    const isCardPayment = tPag === "03" || tPag === "04";
+    const detPag = {
+      tPag,
+      vPag: vNF,
+    };
+
+    if (isCardPayment) {
+      // NFC-e: for credit/debit payments, include card group.
+      // tpIntegra=2 keeps flow compatible when POS is not integrated with fiscal app.
+      detPag.card = {
+        tpIntegra: 2,
+      };
+    }
 
     const indPres = resolveIndPresFromPedido(pedido);
-    const approxTaxRates = resolveApproxTaxRates(configFiscal, endereco);
-    const approxTaxBreakdown = calculateApproxTaxBreakdown(vNF, approxTaxRates);
+    const vTotTribTotal = roundCurrency(det.reduce((sum, d) => sum + Number(d.imposto?.vTotTrib || 0), 0));
 
     // 7. Build the NfePedidoEmissao
     const nfcePayload = {
@@ -1605,7 +1869,7 @@ exports.nfceEmitir = onCall(
             vPIS: vPISTotal,
             vCOFINS: vCOFINSTotal,
             vOutro: 0,
-            vTotTrib: approxTaxBreakdown.total,
+            vTotTrib: vTotTribTotal,
             vNF,
           },
         },
@@ -1614,10 +1878,7 @@ exports.nfceEmitir = onCall(
         },
         pag: {
           detPag: [
-            {
-              tPag,
-              vPag: vNF,
-            },
+            detPag,
           ],
         },
       },
@@ -2011,12 +2272,13 @@ exports.nfceSincronizarDocumentos = onCall(
 // ============================================================================
 // HELPER: Build imposto object based on CRT
 // ============================================================================
-function buildImposto(crt, vProd, item = {}, configFiscal = {}) {
+function buildImposto(crt, vProd, item = {}, configFiscal = {}, vTotTrib = 0) {
   // For Simples Nacional (CRT 1 or 4), use ICMSSN102
   const pisCofins = buildPisCofins(crt, vProd, item, configFiscal);
 
   if (crt === 1 || crt === 4) {
     return {
+      vTotTrib,
       ICMS: {
         ICMSSN102: {
           orig: 0, // 0 = Nacional
@@ -2029,6 +2291,7 @@ function buildImposto(crt, vProd, item = {}, configFiscal = {}) {
 
   // For Regime Normal (CRT 3), use ICMS00 (simplified - 0% for food in many states)
   return {
+    vTotTrib,
     ICMS: {
       ICMS00: {
         orig: 0,

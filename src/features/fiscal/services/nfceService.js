@@ -257,3 +257,15 @@ export async function consultarCepNuvemFiscal({ idRestaurante, cep }) {
   const result = await fn({ idRestaurante, cep });
   return result.data;
 }
+
+/**
+ * Sincroniza CRT (Código de Regime Tributário) com SEFAZ.
+ * Chama a Firebase Function `nfceSincronizarCrt`.
+ * @param {{ idRestaurante: string }} params
+ * @returns {Promise<object>}
+ */
+export async function sincronizarCrtComSefaz({ idRestaurante }) {
+  const fn = httpsCallable(functions, "nfceSincronizarCrt");
+  const result = await fn({ idRestaurante });
+  return result.data;
+}

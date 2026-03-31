@@ -89,8 +89,14 @@
     "uploadingCertificate": "Enviando certificado...",
     "deleteCertificate": "Deletar Certificado",
     "deletingCertificate": "Deletando certificado...",
+    "syncCrt": "Sincronizar CRT",
+    "syncingCrt": "Sincronizando CRT...",
     "configureNfce": "Configurar NFC-e",
     "configuringNfce": "Configurando NFC-e..."
+  },
+
+  "warnings": {
+    "crtMismatch": "Divergencia de CRT - acao requerida"
   },
 
   "messages": {

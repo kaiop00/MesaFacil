@@ -78,9 +78,16 @@
     "uploadingCertificate": "Envoi du certificat...",
     "deleteCertificate": "Supprimer le Certificat",
     "deletingCertificate": "Suppression du certificat...",
+    "syncCrt": "Synchroniser le CRT",
+    "syncingCrt": "Synchronisation du CRT...",
     "configureNfce": "Configurer la NFC-e",
     "configuringNfce": "Configuration NFC-e..."
   },
+
+  "warnings": {
+    "crtMismatch": "Divergence de CRT detectee"
+  },
+
   "messages": {
     "saved": "Configuration fiscale enregistrée avec succès !",
     "errorSaving": "Erreur lors de l'enregistrement de la configuration fiscale.",

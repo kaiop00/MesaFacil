@@ -21,6 +21,7 @@ import {
   consultarCertificadoDigital,
   enviarCertificadoDigital,
   deletarCertificadoDigital,
+  sincronizarCrtComSefaz,
 } from "@/features/fiscal/services/nfceService";
 import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 
@@ -98,6 +99,8 @@ const ConfigFiscalPage = () => {
   const [certificadoPassword, setCertificadoPassword] = useState("");
   const [certificadoInfo, setCertificadoInfo] = useState(null);
   const [certificadoInputKey, setCertificadoInputKey] = useState(0);
+  const [crtValidation, setCrtValidation] = useState(null);
+  const [sincronizandoCrt, setSincronizandoCrt] = useState(false);
 
   const temCertificado = Boolean(certificadoInfo);
 
@@ -305,6 +308,10 @@ const ConfigFiscalPage = () => {
 
       if (result.success) {
         setConfig((prev) => ({ ...prev, empresaRegistrada: true }));
+        // Capture CRT validation from response
+        if (result.crtValidation) {
+          setCrtValidation(result.crtValidation);
+        }
         notify(t("messages.empresaDadosRegistrados"), "success");
       } else {
         notify(getFriendlyNfceError(result?.error, t("messages.errorRegistrando")), "error");
@@ -457,6 +464,33 @@ const ConfigFiscalPage = () => {
     }
   };
 
+  const handleSincronizarCrt = async () => {
+    if (!idRestaurante) return;
+
+    setSincronizandoCrt(true);
+    try {
+      const result = await sincronizarCrtComSefaz({ idRestaurante });
+
+      if (result?.success) {
+        if (result?.synchronized) {
+          setConfig((prev) => ({ ...prev, crt: result?.newCrt }));
+          notify(result.message, "success");
+        } else {
+          notify(result.message, "info");
+        }
+        setCrtValidation(null);
+      } else {
+        notify("Erro ao sincronizar CRT", "error");
+      }
+    } catch (err) {
+      console.error("Erro ao sincronizar CRT:", err);
+      const msg = getFriendlyNfceError(err, "Erro ao sincronizar CRT com SEFAZ");
+      notify(msg, "error");
+    } finally {
+      setSincronizandoCrt(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   if (!hasPermission("edit_config") && !hasPermission("view_fiscal")) {
@@ -490,6 +524,45 @@ const ConfigFiscalPage = () => {
           </span>
         )}
       </div>
+
+      {/* CRT Validation Alert - CRITICAL */}
+      {crtValidation && !crtValidation.match && (
+        <div className="mb-6 bg-red-50 border-l-4 border-red-600 rounded-lg p-4 flex items-start gap-3">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg className="w-6 h-6 text-red-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-red-900 mb-2">
+              🚨 {t("warnings.crtMismatch") || "Divergência de CRT - Ação Requerida"}
+            </h3>
+            <p className="text-sm text-red-700 mb-2 font-medium">
+              {crtValidation.warning}
+            </p>
+            <p className="text-xs text-red-600 mb-3">
+              ⚠️ Você NÃO poderá emitir NFC-e enquanto este problema existir. Clique no botão abaixo para sincronizar com a SEFAZ.
+            </p>
+            <button
+              onClick={handleSincronizarCrt}
+              disabled={sincronizandoCrt || registrando}
+              className="px-4 py-2 bg-red-600 text-white rounded font-semibold text-sm hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+            >
+              {sincronizandoCrt ? (
+                <>
+                  <span className="inline-block animate-spin">⟳</span>
+                  {t("buttons.syncingCrt") || "Sincronizando..."}
+                </>
+              ) : (
+                <>
+                  <span>✓</span>
+                  {t("buttons.syncCrt") || "Sincronizar CRT Agora"}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         {/* Seção 1: Dados da Empresa */}
@@ -887,7 +960,6 @@ const ConfigFiscalPage = () => {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
           <p className="font-medium mb-1">{t("info.title")}</p>
           <ul className="list-disc list-inside space-y-1 text-xs text-blue-700">
-            <li>{t("info.item1")}</li>
             <li>{t("info.item2")}</li>
             <li>{t("info.item3")}</li>
             <li>{t("info.item4")}</li>

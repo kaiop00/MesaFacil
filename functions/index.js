@@ -401,6 +401,7 @@ const {
   nfceConsultar,
   nfceListar,
   nfceCancelar,
+  nfceSincronizarCrt,
   nfceSincronizarDocumentos,
 } = require("./nfce");
 
@@ -444,4 +445,5 @@ exports.nfceEmitir = nfceEmitir;
 exports.nfceConsultar = nfceConsultar;
 exports.nfceListar = nfceListar;
 exports.nfceCancelar = nfceCancelar;
+exports.nfceSincronizarCrt = nfceSincronizarCrt;
 exports.nfceSincronizarDocumentos = nfceSincronizarDocumentos;
