@@ -10,6 +10,14 @@ const initialState = {
     categorias: [],
     valor: "",
     descricao: "",
+    tipoTributacao: "normal",
+};
+
+const resolveTipoTributacao = (food = {}) => {
+    if (food?.tipoTributacao === "monofasico") return "monofasico";
+    if (food?.tipoTributacao === "normal") return "normal";
+    if (food?.monofasico || food?.isMonofasico || food?.pisCofinsMonofasico) return "monofasico";
+    return "normal";
 };
 
 export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving }) {
@@ -31,6 +39,7 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
                     : [],
                 valor: food.valor != null ? String(food.valor) : "",
                 descricao: food.descricao || "",
+                tipoTributacao: resolveTipoTributacao(food),
             });
             setErrors({});
             setSubmitError("");
@@ -61,6 +70,7 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
                 categorias: formData.categorias.map((cat) => (typeof cat === "string" ? cat : cat.value)),
                 valor: Number(formData.valor),
                 descricao: formData.descricao?.trim() || "",
+                tipoTributacao: formData.tipoTributacao === "monofasico" ? "monofasico" : "normal",
             });
             onClose();
         } catch (err) {
@@ -117,6 +127,18 @@ export default function EditFoodModal({ isOpen, onClose, food, onSubmit, saving 
                         onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
                         className="w-full border border-gray-300 rounded-md px-3 py-2 h-28 resize-none focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
                     />
+                </div>
+
+                <div>
+                    <label className="block mb-1 font-medium text-gray-700">{t('form.labels.taxationType')}</label>
+                    <select
+                        value={formData.tipoTributacao || "normal"}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, tipoTributacao: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-primary-dynamic focus:border-primary-dynamic"
+                    >
+                        <option value="normal">{t('form.options.taxationNormal')}</option>
+                        <option value="monofasico">{t('form.options.taxationMonofasico')}</option>
+                    </select>
                 </div>
 
                 {submitError && <p className="text-xs text-red-500">{submitError}</p>}

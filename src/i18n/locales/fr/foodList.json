@@ -29,8 +29,13 @@
       "categories": "Catégories",
       "allergies": "Allergies (optionnel)",
       "value": "Prix",
+      "taxationType": "Type de taxation (PIS/COFINS)",
       "description": "Description",
       "ingredients": "Ingrédients"
+    },
+    "options": {
+      "taxationNormal": "Normal (Repas) - CST 49",
+      "taxationMonofasico": "Monophasique (Boissons) - CST 04"
     },
     "placeholders": {
       "chooseCategories": "Choisissez une ou plusieurs catégories",
@@ -63,6 +68,7 @@
         "name": "Nom",
         "price": "Prix",
         "categories": "Catégories",
+        "taxationType": "Taxation",
         "description": "Description",
         "allergies": "Allergies",
         "ingredients": "Ingrédients"

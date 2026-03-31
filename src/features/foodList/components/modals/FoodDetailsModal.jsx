@@ -82,7 +82,7 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
         }
     };
 
-    const handleItemUpdate = async ({ nome, categorias, valor, descricao }) => {
+    const handleItemUpdate = async ({ nome, categorias, valor, descricao, tipoTributacao }) => {
         if (!foodData?.id) return;
         setSavingItem(true);
         try {
@@ -91,6 +91,7 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                 categorias,
                 valor,
                 descricao,
+                tipoTributacao,
             });
             notify(t('success.itemUpdated'), "success");
             setFoodData((prev) => ({
@@ -99,6 +100,8 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                 categorias,
                 valor,
                 descricao,
+                tipoTributacao,
+                monofasico: tipoTributacao === "monofasico",
             }));
             await carregarItens();
         } catch (error) {
@@ -160,6 +163,12 @@ const FoodDetailsModal = ({ isOpen, onClose, food }) => {
                                 <p><strong>{t('modals.itemDetails.fields.name')}:</strong> {foodData.nome}</p>
                                 <p><strong>{t('modals.itemDetails.fields.price')}:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(foodData.valor)}</p>
                                 <p><strong>{t('modals.itemDetails.fields.categories')}:</strong> {Array.isArray(foodData.categorias) && foodData.categorias.length > 0 ? foodData.categorias.join(", ") : "-"}</p>
+                                <p>
+                                    <strong>{t('modals.itemDetails.fields.taxationType')}:</strong>{" "}
+                                    {(foodData.tipoTributacao || (foodData.monofasico ? "monofasico" : "normal")) === "monofasico"
+                                        ? t('form.options.taxationMonofasico')
+                                        : t('form.options.taxationNormal')}
+                                </p>
                                 {foodData.descricao && (
                                     <p><strong>{t('modals.itemDetails.fields.description')}:</strong> {foodData.descricao}</p>
                                 )}

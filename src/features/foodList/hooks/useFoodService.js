@@ -11,7 +11,9 @@ export function useFoodService() {
   };
 
   const salvarNovoItem = async (formData) => {
-    const { nome, categorias, valor, descricao, file, alergias, ingredientes } = formData;
+    const { nome, categorias, valor, descricao, file, alergias, ingredientes, tipoTributacao } = formData;
+    const tipoTributacaoNormalizado = tipoTributacao === "monofasico" ? "monofasico" : "normal";
+    const monofasico = tipoTributacaoNormalizado === "monofasico";
 
     if (!nome || !valor || !file || categorias.length === 0) {
       throw new Error("Preencha todos os campos obrigatórios (inclua uma imagem).");
@@ -37,6 +39,8 @@ export function useFoodService() {
       descricao,
       valor: parseFloat(valor),
       categorias: categorias.map((c) => c.value),
+      tipoTributacao: tipoTributacaoNormalizado,
+      monofasico,
       imagemUrl: downloadURL,  // <- compatível com seu front
       storagePath,             // opcional: útil para deletar/trocar depois
       alergias: alergias || [],
@@ -63,11 +67,16 @@ export function useFoodService() {
   const atualizarItemCardapio = async (itemId, dados) => {
     if (!itemId) throw new Error("ID do item não informado para atualização.");
 
+    const tipoTributacaoNormalizado = dados.tipoTributacao === "monofasico" ? "monofasico" : "normal";
+    const monofasico = tipoTributacaoNormalizado === "monofasico";
+
     const payload = {
       nome: dados.nome,
       descricao: dados.descricao ?? "",
       categorias: Array.isArray(dados.categorias) ? dados.categorias : [],
       valor: dados.valor != null ? Number(dados.valor) : 0,
+      tipoTributacao: tipoTributacaoNormalizado,
+      monofasico,
     };
 
     await update(idRestaurante, "cardapio", itemId, payload);

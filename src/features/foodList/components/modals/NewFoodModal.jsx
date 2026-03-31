@@ -14,6 +14,7 @@ const initialFormData = {
     categorias: [],
     valor: "",
     descricao: "",
+    tipoTributacao: "normal",
     file: null,
     previewUrl: "",
     alergias: [],

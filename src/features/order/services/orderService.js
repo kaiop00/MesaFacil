@@ -112,6 +112,9 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
         alergias: item.alergias || [],
         descricao: item.descricao || "",
         imagemUrl: item.imagemUrl || "",
+        ncm: item.ncm || null,
+        tipoTributacao: item.tipoTributacao || (item.monofasico ? "monofasico" : "normal"),
+        monofasico: Boolean(item.monofasico || item.isMonofasico || item.tipoTributacao === "monofasico"),
     }));
 
     // 1. Verificar estoque disponível antes de processar o pedido
