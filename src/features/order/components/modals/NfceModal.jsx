@@ -13,6 +13,45 @@ const STEPS = {
   ERROR: "error",
 };
 
+const normalizeStatus = (status) => String(status || "").trim().toLowerCase();
+
+const isAuthorizedStatus = (status) => {
+  const normalized = normalizeStatus(status);
+  return normalized === "autorizado" || normalized === "autorizada";
+};
+
+const isRejectedStatus = (status) => {
+  const normalized = normalizeStatus(status);
+  return normalized === "rejeitado" || normalized === "rejeitada" || normalized === "erro";
+};
+
+const extractRejectionCode = (payload = {}) => {
+  return payload?.codigoStatus ||
+    payload?.codigo_status ||
+    payload?.data?.codigo_status ||
+    payload?.data?.autorizacao?.codigo_status ||
+    null;
+};
+
+const extractRejectionReason = (payload = {}) => {
+  const mensagens = Array.isArray(payload?.mensagens) ? payload.mensagens : [];
+  const mensagensTexto = mensagens.length > 0
+    ? mensagens.map((m) => m?.descricao || m?.mensagem || JSON.stringify(m)).join("; ")
+    : "";
+
+  return payload?.motivoStatus ||
+    payload?.motivo_status ||
+    payload?.motivo ||
+    payload?.mensagem ||
+    payload?.error ||
+    payload?.data?.motivo_status ||
+    payload?.data?.autorizacao?.motivo_status ||
+    payload?.data?.erro?.mensagem ||
+    payload?.data?.erro?.message ||
+    mensagensTexto ||
+    "";
+};
+
 const NfceModal = ({
   isOpen,
   onClose,
@@ -29,6 +68,7 @@ const NfceModal = ({
   const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState(null);
   const [pendingNfceId, setPendingNfceId] = useState(null);
+  const [rejectionCode, setRejectionCode] = useState(null);
 
   const resetState = useCallback(() => {
     setStep(STEPS.FORM);
@@ -36,6 +76,7 @@ const NfceModal = ({
     setResultado(null);
     setErro(null);
     setPendingNfceId(null);
+    setRejectionCode(null);
   }, []);
 
   const handleClose = () => {
@@ -76,6 +117,7 @@ const NfceModal = ({
 
     setStep(STEPS.LOADING);
     setErro(null);
+    setRejectionCode(null);
 
     try {
       const cpfLimpo = cpfCnpj.replace(/\D/g, "") || null;
@@ -86,27 +128,34 @@ const NfceModal = ({
         cpfConsumidor: cpfLimpo,
       });
 
-      if (result?.success && (result?.nfceStatus === "autorizado" || result?.nfceStatus === "autorizada")) {
+      if (result?.success && isAuthorizedStatus(result?.nfceStatus)) {
         setPendingNfceId(null);
         setResultado(result);
         setStep(STEPS.SUCCESS);
-      } else if (result?.nfceStatus === "rejeitado" || result?.nfceStatus === "rejeitada" || result?.nfceStatus === "erro") {
-        setErro(result?.error || result?.motivo || result?.mensagem || t("nfce.modal.errors.rejected"));
-        setPendingNfceId(result?.nfceId || null);
+      } else if (isRejectedStatus(result?.nfceStatus)) {
+        const reason = extractRejectionReason(result) || t("nfce.modal.errors.rejected");
+        setErro(reason);
+        setRejectionCode(extractRejectionCode(result));
+        setPendingNfceId(null);
+        setResultado(result || null);
         setStep(STEPS.ERROR);
       } else if (result?.nfceId) {
         setPendingNfceId(result.nfceId || result.id);
+        setResultado(result || null);
         // Pending — poll once and allow manual consult if still pending
         await pollStatus(result.nfceId || result.id);
       } else {
         setErro(result?.error || t("nfce.modal.errors.generic"));
         setPendingNfceId(null);
+        setResultado(result || null);
         setStep(STEPS.ERROR);
       }
     } catch (error) {
       console.error("Erro ao emitir NFC-e:", error);
       const msg = getFriendlyNfceError(error, t("nfce.modal.errors.generic"));
       setErro(msg);
+      setPendingNfceId(null);
+      setResultado(null);
       setStep(STEPS.ERROR);
     }
   };
@@ -114,20 +163,26 @@ const NfceModal = ({
   const pollStatus = async (nfceId) => {
     try {
       const result = await consultarNfce({ idRestaurante, nfceId });
-      if (result.status === "autorizado" || result.status === "autorizada") {
+      if (isAuthorizedStatus(result?.status)) {
         setPendingNfceId(null);
         setResultado(result);
         setStep(STEPS.SUCCESS);
-      } else if (result.status === "rejeitado" || result.status === "rejeitada" || result.status === "erro") {
-        setErro(result.motivo || result.mensagem || t("nfce.modal.errors.rejected"));
+      } else if (isRejectedStatus(result?.status)) {
+        const reason = extractRejectionReason(result) || t("nfce.modal.errors.rejected");
+        setErro(reason);
+        setRejectionCode(extractRejectionCode(result));
+        setResultado(result || null);
+        setPendingNfceId(null);
         setStep(STEPS.ERROR);
       } else {
         setPendingNfceId(nfceId);
+        setResultado(result || null);
         setErro(t("nfce.modal.errors.timeout"));
         setStep(STEPS.ERROR);
       }
     } catch (error) {
       setErro(getFriendlyNfceError(error, t("nfce.modal.errors.generic")));
+      setPendingNfceId(nfceId || null);
       setStep(STEPS.ERROR);
     }
   };
@@ -143,6 +198,8 @@ const NfceModal = ({
     setStep(STEPS.FORM);
     setErro(null);
     setPendingNfceId(null);
+    setRejectionCode(null);
+    setResultado(null);
   };
 
   const handlePrintReceipt = () => {
@@ -309,6 +366,23 @@ const NfceModal = ({
                   {erro}
                 </p>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-red-200 bg-red-50/40 p-3 text-xs text-red-800 space-y-1">
+              <p>
+                <span className="font-semibold">{t("nfce.modal.error.statusLabel", "Status")}:</span>{" "}
+                {normalizeStatus(resultado?.nfceStatus || resultado?.status) || "-"}
+              </p>
+              <p>
+                <span className="font-semibold">{t("nfce.modal.error.nfceIdLabel", "NFC-e ID")}:</span>{" "}
+                <span className="font-mono break-all">{pendingNfceId || resultado?.nfceId || resultado?.id || "-"}</span>
+              </p>
+              {rejectionCode && (
+                <p>
+                  <span className="font-semibold">{t("nfce.modal.error.codeLabel", "Codigo")}:</span>{" "}
+                  {rejectionCode}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-3 pt-2">

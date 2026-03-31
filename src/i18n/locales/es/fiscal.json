@@ -130,7 +130,8 @@
   "nfceList": {
     "page": {
       "title": "NFC-es Emitidas",
-      "subtitle": "Listado de todas las facturas electrónicas emitidas por su empresa"
+      "subtitle": "Listado de todas las facturas electrónicas emitidas por su empresa",
+      "loading": "Cargando NFC-es..."
     },
     "table": {
       "noData": "No se encontró NFC-e",
@@ -168,11 +169,30 @@
       "status": "Estado",
       "valor": "Monto (R$)",
       "referencia": "Referencia del Pedido",
+      "environment": "Ambiente",
+      "emissionDate": "Emisión",
+      "receiptDate": "Recepción",
+      "rejection": {
+        "title": "Detalles del rechazo",
+        "reason": "Motivo",
+        "code": "Código",
+        "notInformed": "No informado"
+      },
+      "order": {
+        "title": "Detalles del pedido",
+        "reference": "Pedido",
+        "table": "Mesa",
+        "customer": "Cliente",
+        "items": "Ítems",
+        "unnamedItem": "Ítem",
+        "notAvailable": "Los detalles del pedido no están disponibles para esta NFC-e."
+      },
       "close": "Cerrar"
     },
     "actions": {
       "view": "Ver",
       "sync": "Sincronizar documentos",
+      "syncing": "Sincronizando...",
       "syncSuccess": "Documentos de NFC-e sincronizados con éxito.",
       "syncError": "Error al sincronizar documentos de NFC-e.",
       "openDanfce": "Abrir DANFC-e",

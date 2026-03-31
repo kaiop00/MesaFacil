@@ -17,6 +17,45 @@ import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 
 const ITEMS_PER_PAGE = 50;
 
+const normalizeStatus = (status) => String(status || "").trim().toLowerCase();
+
+const isAuthorizedStatus = (status) => {
+  const normalized = normalizeStatus(status);
+  return normalized === "autorizado" || normalized === "autorizada";
+};
+
+const isRejectedStatus = (status) => {
+  const normalized = normalizeStatus(status);
+  return normalized === "rejeitado" || normalized === "rejeitada" || normalized === "erro";
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleString("pt-BR");
+};
+
+const formatCurrency = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "0.00";
+  return number.toFixed(2);
+};
+
+const getStatusBadgeClasses = (status) => {
+  const normalized = normalizeStatus(status);
+  if (isAuthorizedStatus(normalized)) {
+    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  }
+  if (normalized === "cancelado") {
+    return "bg-slate-100 text-slate-700 border border-slate-200";
+  }
+  if (isRejectedStatus(normalized)) {
+    return "bg-red-50 text-red-700 border border-red-200";
+  }
+  return "bg-amber-50 text-amber-700 border border-amber-200";
+};
+
 const NfceListPage = () => {
   const { t } = useTranslation("fiscal");
   const { idRestaurante } = useAuth();
@@ -168,6 +207,47 @@ const NfceListPage = () => {
     return [];
   };
 
+  const getNfceCodigoStatus = (nfce) => (
+    nfce?.codigoStatus ||
+    nfce?.codigo_status ||
+    nfce?.autorizacao?.codigo_status ||
+    nfce?.data?.codigo_status ||
+    nfce?.data?.autorizacao?.codigo_status ||
+    nfce?.nfceRejeicaoCodigo ||
+    null
+  );
+
+  const getNfceMotivoStatus = (nfce) => {
+    const mensagens = Array.isArray(nfce?.mensagens)
+      ? nfce.mensagens
+      : Array.isArray(nfce?.data?.mensagens)
+        ? nfce.data.mensagens
+        : [];
+    const mensagemTexto = mensagens.length > 0
+      ? mensagens.map((m) => m?.descricao || m?.mensagem || JSON.stringify(m)).join("; ")
+      : "";
+
+    return (
+      nfce?.motivoStatus ||
+      nfce?.motivo_status ||
+      nfce?.autorizacao?.motivo_status ||
+      nfce?.data?.motivo_status ||
+      nfce?.data?.autorizacao?.motivo_status ||
+      nfce?.nfceRejeicaoMotivo ||
+      nfce?.nfceErro ||
+      mensagemTexto ||
+      ""
+    );
+  };
+
+  const getNfceAmbiente = (nfce) => nfce?.ambiente || nfce?.data?.ambiente || "-";
+  const getNfceDataEmissao = (nfce) => nfce?.data_emissao || nfce?.data?.data_emissao || null;
+  const getNfceDataRecebimento = (nfce) => (
+    nfce?.autorizacao?.data_recebimento ||
+    nfce?.data?.autorizacao?.data_recebimento ||
+    null
+  );
+
   if (!canViewFiscal) {
     return (
       <PermissionDeniedPage
@@ -279,16 +359,51 @@ const NfceListPage = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t("nfceList.modal.status") || "Status"}:</span>
-                  <span className="font-medium">{selectedNfce.status || "-"}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClasses(selectedNfce.status)}`}>
+                    {selectedNfce.status || "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t("nfceList.modal.valor") || "Valor"} (R$):</span>
-                  <span className="font-semibold">{(selectedNfce.valor || selectedNfce.vNF || 0).toFixed(2)}</span>
+                  <span className="font-semibold">{formatCurrency(selectedNfce.valor || selectedNfce.vNF || selectedNfce.valor_total || 0)}</span>
                 </div>
                 {selectedNfce.referencia && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t("nfceList.modal.referencia") || "Referência do Pedido"}:</span>
                     <span className="font-mono">{selectedNfce.referencia}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t("nfceList.modal.environment") || "Ambiente"}:</span>
+                  <span>{getNfceAmbiente(selectedNfce)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t("nfceList.modal.emissionDate") || "Emissão"}:</span>
+                  <span>{formatDateTime(getNfceDataEmissao(selectedNfce))}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t("nfceList.modal.receiptDate") || "Recebimento"}:</span>
+                  <span>{formatDateTime(getNfceDataRecebimento(selectedNfce))}</span>
+                </div>
+
+                {isRejectedStatus(selectedNfce.status) && (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 space-y-1">
+                    <p className="text-xs font-semibold text-red-800">
+                      {t("nfceList.modal.rejection.title") || "Detalhes da rejeição"}
+                    </p>
+                    <p className="text-xs text-red-700">
+                      <span className="font-medium">{t("nfceList.modal.rejection.reason") || "Motivo"}:</span>{" "}
+                      {getNfceMotivoStatus(selectedNfce) || (t("nfceList.modal.rejection.notInformed") || "Nao informado")}
+                    </p>
+                    {getNfceCodigoStatus(selectedNfce) && (
+                      <p className="text-xs text-red-700">
+                        <span className="font-medium">{t("nfceList.modal.rejection.code") || "Código"}:</span>{" "}
+                        {getNfceCodigoStatus(selectedNfce)}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -344,7 +459,9 @@ const NfceListPage = () => {
                     disabled={actionLoading}
                     className="px-3 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {t("nfceList.actions.sync") || "Sincronizar documentos"}
+                    {actionLoading
+                      ? (t("nfceList.actions.syncing") || "Sincronizando...")
+                      : (t("nfceList.actions.sync") || "Sincronizar documentos")}
                   </button>
 
                   {(selectedNfce.url_danfce || selectedNfce.url) && (
@@ -369,7 +486,7 @@ const NfceListPage = () => {
                     </a>
                   )}
 
-                  {selectedNfce.status === "autorizado" && (
+                  {isAuthorizedStatus(selectedNfce.status) && (
                     <button
                       onClick={handleCancelNfce}
                       disabled={actionLoading}

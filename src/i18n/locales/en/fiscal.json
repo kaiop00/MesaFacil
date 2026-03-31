@@ -131,7 +131,8 @@
   "nfceList": {
     "page": {
       "title": "Issued NFC-es",
-      "subtitle": "List of all electronic invoices issued by your company"
+      "subtitle": "List of all electronic invoices issued by your company",
+      "loading": "Loading NFC-es..."
     },
     "table": {
       "noData": "No NFC-e found",
@@ -169,11 +170,30 @@
       "status": "Status",
       "valor": "Amount (R$)",
       "referencia": "Order Reference",
+      "environment": "Environment",
+      "emissionDate": "Issued at",
+      "receiptDate": "Received at",
+      "rejection": {
+        "title": "Rejection details",
+        "reason": "Reason",
+        "code": "Code",
+        "notInformed": "Not informed"
+      },
+      "order": {
+        "title": "Order details",
+        "reference": "Order",
+        "table": "Table",
+        "customer": "Customer",
+        "items": "Items",
+        "unnamedItem": "Item",
+        "notAvailable": "Order details are not available for this NFC-e."
+      },
       "close": "Close"
     },
     "actions": {
       "view": "View",
       "sync": "Sync documents",
+      "syncing": "Syncing...",
       "syncSuccess": "NFC-e documents synced successfully.",
       "syncError": "Error syncing NFC-e documents.",
       "openDanfce": "Open DANFC-e",
