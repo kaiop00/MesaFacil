@@ -46,20 +46,46 @@ const NfceTable = ({ nfces = [], loading = false, onViewDetails }) => {
   };
 
   const formatCurrency = (value) => {
+    const numericValue = Number(value);
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value || 0);
+    }).format(Number.isFinite(numericValue) ? numericValue : 0);
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     try {
       const date = new Date(dateString);
+      if (Number.isNaN(date.getTime())) return "-";
       return date.toLocaleString("pt-BR");
     } catch {
-      return dateString;
+      return "-";
     }
+  };
+
+  const getNfceValor = (nfce) => {
+    return (
+      nfce?.valor ??
+      nfce?.vNF ??
+      nfce?.valor_total ??
+      nfce?.total?.valor ??
+      nfce?.data?.valor ??
+      nfce?.data?.vNF ??
+      nfce?.data?.valor_total ??
+      0
+    );
+  };
+
+  const getNfceData = (nfce) => {
+    return (
+      nfce?.data_emissao ||
+      nfce?.data?.data_emissao ||
+      nfce?.autorizacao?.data_recebimento ||
+      nfce?.data?.autorizacao?.data_recebimento ||
+      nfce?.criado_em ||
+      null
+    );
   };
 
   const getPedidoReferencia = (nfce) => {
@@ -136,10 +162,10 @@ const NfceTable = ({ nfces = [], loading = false, onViewDetails }) => {
                 {getPedidoReferencia(nfce)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {formatCurrency(nfce.valor || nfce.vNF || 0)}
+                {formatCurrency(getNfceValor(nfce))}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {formatDate(nfce.criado_em || nfce.data)}
+                {formatDate(getNfceData(nfce))}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {getStatusBadge(nfce.status)}

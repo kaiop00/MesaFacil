@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/useToast";
 import CardHeader from "@/components/CardHeader";
+import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import NfceTable from "@/features/fiscal/components/NfceTable";
 import {
@@ -335,180 +336,173 @@ const NfceListPage = () => {
         </div>
       </div>
 
-      {/* Modal de detalhes (opcional - pode ser expandido depois) */}
+      {/* Modal de detalhes */}
       {showDetailsModal && selectedNfce && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {t("nfceList.modal.title") || "Detalhes da NFC-e"}
-              </h2>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t("nfceList.modal.id") || "ID"}:</span>
-                  <span className="font-mono">{selectedNfce.id || "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t("nfceList.modal.numero") || "Número"}:</span>
-                  <span className="font-semibold">{selectedNfce.numero || "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t("nfceList.modal.chave") || "Chave de Acesso"}:</span>
-                  <span className="font-mono text-xs break-all">{selectedNfce.chave || "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t("nfceList.modal.status") || "Status"}:</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClasses(selectedNfce.status)}`}>
+        <BaseModalWithHeader
+          isOpen={showDetailsModal}
+          onClose={() => setShowDetailsModal(false)}
+          title={t("nfceList.modal.title") || "Detalhes da NFC-e"}
+          subTitle={`${t("nfceList.modal.numero") || "Número"}: ${selectedNfce.numero || "-"}`}
+        >
+          <div className="space-y-4 text-sm">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+              <div className="space-y-3">
+                <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 flex items-center justify-between gap-3">
+                  <span className="text-gray-600 font-medium">{t("nfceList.modal.status") || "Status"}:</span>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusBadgeClasses(selectedNfce.status)}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
                     {selectedNfce.status || "-"}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t("nfceList.modal.valor") || "Valor"} (R$):</span>
-                  <span className="font-semibold">{formatCurrency(selectedNfce.valor || selectedNfce.vNF || selectedNfce.valor_total || 0)}</span>
-                </div>
-                {selectedNfce.referencia && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">{t("nfceList.modal.referencia") || "Referência do Pedido"}:</span>
-                    <span className="font-mono">{selectedNfce.referencia}</span>
-                  </div>
-                )}
 
-                <div className="flex justify-between">
+                <div className="space-y-1">
+                  <span className="text-gray-600">{t("nfceList.modal.id") || "ID"}:</span>
+                  <p className="font-mono text-gray-900 break-all">{selectedNfce.id || "-"}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-gray-600">{t("nfceList.modal.chave") || "Chave de Acesso"}:</span>
+                  <p className="font-mono text-xs text-gray-900 break-all">{selectedNfce.chave || "-"}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-gray-600">{t("nfceList.modal.valor") || "Valor"}:</span>
+                  <p className="font-semibold text-gray-900">{formatCurrency(selectedNfce.valor || selectedNfce.vNF || selectedNfce.valor_total || 0)}</p>
+                </div>
+
+                <div className="space-y-1">
                   <span className="text-gray-600">{t("nfceList.modal.environment") || "Ambiente"}:</span>
-                  <span>{getNfceAmbiente(selectedNfce)}</span>
+                  <p className="text-gray-900">{getNfceAmbiente(selectedNfce)}</p>
                 </div>
 
-                <div className="flex justify-between">
+                <div className="space-y-1">
                   <span className="text-gray-600">{t("nfceList.modal.emissionDate") || "Emissão"}:</span>
-                  <span>{formatDateTime(getNfceDataEmissao(selectedNfce))}</span>
+                  <p className="text-gray-900">{formatDateTime(getNfceDataEmissao(selectedNfce))}</p>
                 </div>
 
-                <div className="flex justify-between">
+                <div className="space-y-1">
                   <span className="text-gray-600">{t("nfceList.modal.receiptDate") || "Recebimento"}:</span>
-                  <span>{formatDateTime(getNfceDataRecebimento(selectedNfce))}</span>
+                  <p className="text-gray-900">{formatDateTime(getNfceDataRecebimento(selectedNfce))}</p>
                 </div>
 
-                {isRejectedStatus(selectedNfce.status) && (
-                  <div className="rounded-md border border-red-200 bg-red-50 p-3 space-y-1">
-                    <p className="text-xs font-semibold text-red-800">
-                      {t("nfceList.modal.rejection.title") || "Detalhes da rejeição"}
-                    </p>
-                    <p className="text-xs text-red-700">
-                      <span className="font-medium">{t("nfceList.modal.rejection.reason") || "Motivo"}:</span>{" "}
-                      {getNfceMotivoStatus(selectedNfce) || (t("nfceList.modal.rejection.notInformed") || "Nao informado")}
-                    </p>
-                    {getNfceCodigoStatus(selectedNfce) && (
-                      <p className="text-xs text-red-700">
-                        <span className="font-medium">{t("nfceList.modal.rejection.code") || "Código"}:</span>{" "}
-                        {getNfceCodigoStatus(selectedNfce)}
-                      </p>
-                    )}
+                {selectedNfce.referencia && (
+                  <div className="space-y-1">
+                    <span className="text-gray-600">{t("nfceList.modal.referencia") || "Referência do Pedido"}:</span>
+                    <p className="font-mono text-gray-900 break-all">{selectedNfce.referencia}</p>
                   </div>
                 )}
-
-                <div className="pt-3 mt-2 border-t border-gray-200 space-y-2">
-                  <h3 className="font-semibold text-gray-800">
-                    {t("nfceList.modal.order.title") || "Detalhes do Pedido"}
-                  </h3>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">{t("nfceList.modal.order.reference") || "Pedido"}:</span>
-                    <span className="font-mono">{getPedidoReferencia(selectedNfce)}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">{t("nfceList.modal.order.table") || "Mesa"}:</span>
-                    <span>{getPedidoMesa(selectedNfce)}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">{t("nfceList.modal.order.customer") || "Cliente"}:</span>
-                    <span>{getPedidoCliente(selectedNfce)}</span>
-                  </div>
-
-                  <div>
-                    <span className="text-gray-600">{t("nfceList.modal.order.items") || "Itens"}:</span>
-                    {getPedidoItens(selectedNfce).length > 0 ? (
-                      <div className="mt-2 space-y-2">
-                        {getPedidoItens(selectedNfce).map((item, index) => (
-                          <div
-                            key={item.id || item.codigo || `${item.nome || item.descricao || "item"}-${index}`}
-                            className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2"
-                          >
-                            <div className="text-sm font-medium text-gray-900">
-                              {item.nome || item.descricao || t("nfceList.modal.order.unnamedItem") || "Item"}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {(item.quantidade || item.quantity || 1)}x
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="mt-1 text-xs text-gray-500">
-                        {t("nfceList.modal.order.notAvailable") || "Detalhes do pedido nao disponiveis para esta NFC-e."}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-3 mt-2 border-t border-gray-200 flex flex-wrap gap-2">
-                  <button
-                    onClick={handleSyncDocuments}
-                    disabled={actionLoading}
-                    className="px-3 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {actionLoading
-                      ? (t("nfceList.actions.syncing") || "Sincronizando...")
-                      : (t("nfceList.actions.sync") || "Sincronizar documentos")}
-                  </button>
-
-                  {(selectedNfce.url_danfce || selectedNfce.url) && (
-                    <a
-                      href={selectedNfce.url_danfce || selectedNfce.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-2 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md hover:bg-emerald-100"
-                    >
-                      {t("nfceList.actions.openDanfce") || "Abrir DANFC-e"}
-                    </a>
-                  )}
-
-                  {selectedNfce.url_xml && (
-                    <a
-                      href={selectedNfce.url_xml}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-2 text-xs bg-violet-50 text-violet-700 border border-violet-200 rounded-md hover:bg-violet-100"
-                    >
-                      {t("nfceList.actions.openXml") || "Abrir XML"}
-                    </a>
-                  )}
-
-                  {isAuthorizedStatus(selectedNfce.status) && (
-                    <button
-                      onClick={handleCancelNfce}
-                      disabled={actionLoading}
-                      className="px-3 py-2 text-xs bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {t("nfceList.actions.cancel") || "Cancelar NFC-e"}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="w-full px-4 py-2 bg-primary-dynamic text-white rounded-lg hover:opacity-90 transition-colors cursor-pointer"
-                >
-                  {t("nfceList.modal.close") || "Fechar"}
-                </button>
               </div>
             </div>
+
+            {isRejectedStatus(selectedNfce.status) && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-1">
+                <p className="text-xs font-semibold text-red-800">
+                  {t("nfceList.modal.rejection.title") || "Detalhes da rejeição"}
+                </p>
+                <p className="text-xs text-red-700">
+                  <span className="font-medium">{t("nfceList.modal.rejection.reason") || "Motivo"}:</span>{" "}
+                  {getNfceMotivoStatus(selectedNfce) || (t("nfceList.modal.rejection.notInformed") || "Nao informado")}
+                </p>
+                {getNfceCodigoStatus(selectedNfce) && (
+                  <p className="text-xs text-red-700">
+                    <span className="font-medium">{t("nfceList.modal.rejection.code") || "Código"}:</span>{" "}
+                    {getNfceCodigoStatus(selectedNfce)}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-4 space-y-2">
+              <h3 className="font-semibold text-gray-800">
+                {t("nfceList.modal.order.title") || "Detalhes do Pedido"}
+              </h3>
+
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-600">{t("nfceList.modal.order.reference") || "Pedido"}:</span>
+                <span className="font-mono text-right break-all">{getPedidoReferencia(selectedNfce)}</span>
+              </div>
+
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-600">{t("nfceList.modal.order.table") || "Mesa"}:</span>
+                <span>{getPedidoMesa(selectedNfce)}</span>
+              </div>
+
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-600">{t("nfceList.modal.order.customer") || "Cliente"}:</span>
+                <span>{getPedidoCliente(selectedNfce)}</span>
+              </div>
+
+              <div>
+                <span className="text-gray-600">{t("nfceList.modal.order.items") || "Itens"}:</span>
+                {getPedidoItens(selectedNfce).length > 0 ? (
+                  <div className="mt-2 space-y-2">
+                    {getPedidoItens(selectedNfce).map((item, index) => (
+                      <div
+                        key={item.id || item.codigo || `${item.nome || item.descricao || "item"}-${index}`}
+                        className="rounded-md border border-gray-200 bg-white px-3 py-2"
+                      >
+                        <div className="text-sm font-medium text-gray-900">
+                          {item.nome || item.descricao || t("nfceList.modal.order.unnamedItem") || "Item"}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {(item.quantidade || item.quantity || 1)}x
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t("nfceList.modal.order.notAvailable") || "Detalhes do pedido nao disponiveis para esta NFC-e."}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200 flex flex-wrap gap-2">
+              <button
+                onClick={handleSyncDocuments}
+                disabled={actionLoading}
+                className="px-3 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoading
+                  ? (t("nfceList.actions.syncing") || "Sincronizando...")
+                  : (t("nfceList.actions.sync") || "Sincronizar documentos")}
+              </button>
+
+              {(selectedNfce.url_danfce || selectedNfce.url) && (
+                <a
+                  href={selectedNfce.url_danfce || selectedNfce.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md hover:bg-emerald-100"
+                >
+                  {t("nfceList.actions.openDanfce") || "Abrir DANFC-e"}
+                </a>
+              )}
+
+              {selectedNfce.url_xml && (
+                <a
+                  href={selectedNfce.url_xml}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 text-xs bg-violet-50 text-violet-700 border border-violet-200 rounded-md hover:bg-violet-100"
+                >
+                  {t("nfceList.actions.openXml") || "Abrir XML"}
+                </a>
+              )}
+
+              {isAuthorizedStatus(selectedNfce.status) && (
+                <button
+                  onClick={handleCancelNfce}
+                  disabled={actionLoading}
+                  className="px-3 py-2 text-xs bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("nfceList.actions.cancel") || "Cancelar NFC-e"}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        </BaseModalWithHeader>
       )}
     </div>
   );
