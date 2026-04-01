@@ -22,6 +22,7 @@ import {
   enviarCertificadoDigital,
   deletarCertificadoDigital,
   sincronizarCrtComSefaz,
+  consultarConfiguracaoNfce,
 } from "@/features/fiscal/services/nfceService";
 import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 
@@ -101,6 +102,7 @@ const ConfigFiscalPage = () => {
   const [certificadoInputKey, setCertificadoInputKey] = useState(0);
   const [crtValidation, setCrtValidation] = useState(null);
   const [sincronizandoCrt, setSincronizandoCrt] = useState(false);
+  const [nfceConfigExists, setNfceConfigExists] = useState(false);
 
   const temCertificado = Boolean(certificadoInfo);
 
@@ -133,6 +135,32 @@ const ConfigFiscalPage = () => {
       } catch (err) {
         // Keep local state from Firestore when consult fails.
         console.warn("Nao foi possivel consultar empresa na Nuvem Fiscal:", err);
+      }
+    })();
+  }, [idRestaurante]);
+
+  useEffect(() => {
+    if (!idRestaurante) return;
+
+    (async () => {
+      try {
+        const result = await consultarConfiguracaoNfce({ idRestaurante });
+        if (result?.exists && result?.mappedConfig) {
+          setNfceConfigExists(true);
+          setConfig((prev) => ({
+            ...prev,
+            crt: Number(result.mappedConfig.crt || prev.crt || 1),
+            nfce: {
+              ...prev.nfce,
+              ...result.mappedConfig,
+              csc: result.mappedConfig.csc || prev.nfce?.csc || "",
+            },
+          }));
+        } else {
+          setNfceConfigExists(false);
+        }
+      } catch (err) {
+        console.warn("Nao foi possivel consultar configuracao NFC-e na Nuvem Fiscal:", err);
       }
     })();
   }, [idRestaurante]);
@@ -290,6 +318,15 @@ const ConfigFiscalPage = () => {
       notify(t("messages.requiredCsc"), "error");
       return false;
     }
+    if (!config.nfce?.ambiente || !["homologacao", "producao"].includes(String(config.nfce.ambiente).toLowerCase())) {
+      notify(t("messages.requiredEnvironment") || "Informe o ambiente da NFC-e.", "error");
+      return false;
+    }
+    const crt = Number(config.nfce?.crt);
+    if (!Number.isInteger(crt) || crt < 1 || crt > 4) {
+      notify(t("messages.requiredCrt") || "Informe o CRT da NFC-e.", "error");
+      return false;
+    }
     return true;
   }, [config.nfce, notify, t]);
 
@@ -363,8 +400,18 @@ const ConfigFiscalPage = () => {
       const result = await configurarEmpresaNfce({ idRestaurante });
 
       if (result.success) {
-        setConfig((prev) => ({ ...prev, ativo: true }));
-        notify(t("messages.nfceConfigurada"), "success");
+        setConfig((prev) => ({
+          ...prev,
+          ativo: true,
+          crt: Number(prev.nfce?.crt || prev.crt || 1),
+        }));
+        setNfceConfigExists(true);
+        notify(
+          nfceConfigExists
+            ? (t("messages.nfceAtualizada") || "Configuração de NFC-e atualizada com sucesso na Nuvem Fiscal!")
+            : t("messages.nfceConfigurada"),
+          "success",
+        );
       } else {
         notify(getFriendlyNfceError(result?.error, t("messages.errorConfigurandoNfce")), "error");
       }
@@ -473,7 +520,14 @@ const ConfigFiscalPage = () => {
 
       if (result?.success) {
         if (result?.synchronized) {
-          setConfig((prev) => ({ ...prev, crt: result?.newCrt }));
+          setConfig((prev) => ({
+            ...prev,
+            crt: result?.newCrt,
+            nfce: {
+              ...prev.nfce,
+              crt: result?.newCrt,
+            },
+          }));
           notify(result.message, "success");
         } else {
           notify(result.message, "info");
@@ -648,17 +702,6 @@ const ConfigFiscalPage = () => {
               />
             </InputField>
 
-            <InputField label={t("fields.crt")} required>
-              <select
-                className={inputClass}
-                value={config.crt}
-                onChange={(e) => handleChange("crt", Number(e.target.value))}
-              >
-                {CRT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </InputField>
           </div>
         </section>
 
@@ -894,6 +937,29 @@ const ConfigFiscalPage = () => {
         <section>
           <SectionTitle>{t("sections.nfce")}</SectionTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InputField label={t("fields.environment") || "Ambiente"} required>
+              <select
+                className={inputClass}
+                value={config.nfce?.ambiente || "homologacao"}
+                onChange={(e) => handleChange("nfce.ambiente", e.target.value)}
+              >
+                <option value="homologacao">{t("options.environment.homologacao") || "Homologação"}</option>
+                <option value="producao">{t("options.environment.producao") || "Produção"}</option>
+              </select>
+            </InputField>
+
+            <InputField label={t("fields.crt")} required>
+              <select
+                className={inputClass}
+                value={Number(config.nfce?.crt || config.crt || 1)}
+                onChange={(e) => handleChange("nfce.crt", Number(e.target.value))}
+              >
+                {CRT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </InputField>
+
             <InputField label={t("fields.idCsc")} tooltip={t("tooltips.idCsc")}>
               <input
                 type="text"
@@ -951,7 +1017,11 @@ const ConfigFiscalPage = () => {
               disabled={configurandoNfce || registrando}
               className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition disabled:opacity-50"
             >
-              {configurandoNfce ? t("buttons.configuringNfce") : t("buttons.configureNfce")}
+              {configurandoNfce
+                ? t("buttons.configuringNfce")
+                : nfceConfigExists
+                  ? (t("buttons.updateNfce") || "Atualizar Configuração NFC-e")
+                  : t("buttons.configureNfce")}
             </button>
           </div>
         </section>

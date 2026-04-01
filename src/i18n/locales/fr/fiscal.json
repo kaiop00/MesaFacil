@@ -44,6 +44,7 @@
     "municipio": "Commune",
     "codigoMunicipio": "Code IBGE de la Commune",
     "uf": "UF",
+    "environment": "Environnement",
     "idCsc": "ID du CSC",
     "csc": "CSC (Code de Sécurité du Contribuable)",
     "serie": "Série",
@@ -57,6 +58,12 @@
     "nomeFantasia": "Nom commercial (optionnel)",
     "selectUf": "Sélectionnez",
     "csc": "Jeton CSC de la SEFAZ"
+  },
+  "options": {
+    "environment": {
+      "homologacao": "Homologation",
+      "producao": "Production"
+    }
   },
   "tooltips": {
     "codigoMunicipio": "Code IBGE à 7 chiffres de la commune. Rempli automatiquement par le CEP.",
@@ -81,6 +88,7 @@
     "syncCrt": "Synchroniser le CRT",
     "syncingCrt": "Synchronisation du CRT...",
     "configureNfce": "Configurer la NFC-e",
+    "updateNfce": "Mettre a jour la configuration NFC-e",
     "configuringNfce": "Configuration NFC-e..."
   },
 
@@ -100,6 +108,7 @@
     "companyDeleted": "Entreprise supprimée avec succès sur Nuvem Fiscal.",
     "confirmDeleteCompany": "Voulez-vous vraiment supprimer l'entreprise sur Nuvem Fiscal ?",
     "nfceConfigurada": "Configuration NFC-e enregistrée avec succès sur Nuvem Fiscal !",
+    "nfceAtualizada": "Configuration NFC-e mise a jour avec succes sur Nuvem Fiscal !",
     "errorConfigurandoNfce": "Erreur lors de la configuration NFC-e sur Nuvem Fiscal.",
     "registerCompanyFirst": "Enregistrez l'entreprise sur Nuvem Fiscal avant de configurer la NFC-e.",
     "invalidCnpj": "CNPJ invalide. Saisissez les 14 chiffres.",
@@ -115,6 +124,8 @@
     "companyNotFoundByCnpj": "Impossible de trouver des données pour ce CNPJ.",
     "errorLoadingCompanyByCnpj": "Erreur lors de la consultation du CNPJ.",
     "requiredCsc": "Le CSC et l'ID du CSC sont obligatoires pour NFC-e.",
+    "requiredEnvironment": "L'environnement NFC-e est obligatoire.",
+    "requiredCrt": "Le CRT de la NFC-e est obligatoire.",
     "errorConsultingCertificate": "Erreur lors de la consultation du certificat numérique.",
     "selectCertificateFile": "Sélectionnez un fichier de certificat à envoyer.",
     "requiredCertificatePassword": "Saisissez le mot de passe du certificat numérique.",

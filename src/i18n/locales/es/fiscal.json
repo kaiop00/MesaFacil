@@ -44,6 +44,7 @@
     "municipio": "Municipio",
     "codigoMunicipio": "Código IBGE del Municipio",
     "uf": "UF",
+    "environment": "Ambiente",
     "idCsc": "ID del CSC",
     "csc": "CSC (Código de Seguridad del Contribuyente)",
     "serie": "Serie",
@@ -57,6 +58,12 @@
     "nomeFantasia": "Nombre comercial (opcional)",
     "selectUf": "Seleccione",
     "csc": "Token CSC de la SEFAZ"
+  },
+  "options": {
+    "environment": {
+      "homologacao": "Homologación",
+      "producao": "Producción"
+    }
   },
   "tooltips": {
     "codigoMunicipio": "Código IBGE de 7 dígitos del municipio. Se completa automáticamente por el CEP.",
@@ -81,6 +88,7 @@
     "syncCrt": "Sincronizar CRT",
     "syncingCrt": "Sincronizando CRT...",
     "configureNfce": "Configurar NFC-e",
+    "updateNfce": "Actualizar Configuración NFC-e",
     "configuringNfce": "Configurando NFC-e..."
   },
 
@@ -100,6 +108,7 @@
     "companyDeleted": "Empresa eliminada con éxito en Nuvem Fiscal.",
     "confirmDeleteCompany": "¿Está seguro de que desea eliminar la empresa en Nuvem Fiscal?",
     "nfceConfigurada": "¡Configuración de NFC-e guardada con éxito en Nuvem Fiscal!",
+    "nfceAtualizada": "¡Configuración de NFC-e actualizada con éxito en Nuvem Fiscal!",
     "errorConfigurandoNfce": "Error al configurar NFC-e en Nuvem Fiscal.",
     "registerCompanyFirst": "Registre la empresa en Nuvem Fiscal antes de configurar NFC-e.",
     "invalidCnpj": "CNPJ inválido. Ingrese los 14 dígitos.",
@@ -115,6 +124,8 @@
     "companyNotFoundByCnpj": "No fue posible encontrar datos para este CNPJ.",
     "errorLoadingCompanyByCnpj": "Error al consultar CNPJ.",
     "requiredCsc": "El CSC y el ID del CSC son obligatorios para NFC-e.",
+    "requiredEnvironment": "El ambiente de NFC-e es obligatorio.",
+    "requiredCrt": "El CRT de NFC-e es obligatorio.",
     "errorConsultingCertificate": "Error al consultar el certificado digital.",
     "selectCertificateFile": "Seleccione un archivo de certificado para enviar.",
     "requiredCertificatePassword": "Informe la contraseña del certificado digital.",

@@ -50,6 +50,8 @@ export function getConfigFiscalPadrao() {
     nfce: {
       csc: "",
       idCsc: "",
+      ambiente: "homologacao",
+      crt: 1,
       serie: "1",
       proximoNumero: 1,
     },

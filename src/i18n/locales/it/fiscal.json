@@ -47,6 +47,7 @@
     "municipio": "Comune",
     "codigoMunicipio": "Codice IBGE del Comune",
     "uf": "UF",
+    "environment": "Ambiente",
     "idCsc": "ID del CSC",
     "csc": "CSC (Codice di Sicurezza del Contribuente)",
     "serie": "Serie",
@@ -60,6 +61,12 @@
     "nomeFantasia": "Nome commerciale (opzionale)",
     "selectUf": "Seleziona",
     "csc": "Token CSC della SEFAZ"
+  },
+  "options": {
+    "environment": {
+      "homologacao": "Omologazione",
+      "producao": "Produzione"
+    }
   },
   "tooltips": {
     "codigoMunicipio": "Codice IBGE a 7 cifre del comune. Compilato automaticamente dal CEP.",
@@ -84,6 +91,7 @@
     "syncCrt": "Sincronizza CRT",
     "syncingCrt": "Sincronizzazione CRT...",
     "configureNfce": "Configura NFC-e",
+    "updateNfce": "Aggiorna configurazione NFC-e",
     "configuringNfce": "Configurazione NFC-e..."
   },
 
@@ -103,6 +111,7 @@
     "companyDeleted": "Azienda eliminata con successo su Nuvem Fiscal.",
     "confirmDeleteCompany": "Sei sicuro di voler eliminare l'azienda su Nuvem Fiscal?",
     "nfceConfigurada": "Configurazione NFC-e salvata con successo su Nuvem Fiscal!",
+    "nfceAtualizada": "Configurazione NFC-e aggiornata con successo su Nuvem Fiscal!",
     "errorConfigurandoNfce": "Errore nella configurazione NFC-e su Nuvem Fiscal.",
     "registerCompanyFirst": "Registra l'azienda su Nuvem Fiscal prima di configurare la NFC-e.",
     "invalidCnpj": "CNPJ non valido. Inserisci le 14 cifre.",
@@ -118,6 +127,8 @@
     "companyNotFoundByCnpj": "Impossibile trovare dati per questo CNPJ.",
     "errorLoadingCompanyByCnpj": "Errore durante la consultazione del CNPJ.",
     "requiredCsc": "CSC e ID del CSC sono obbligatori per NFC-e.",
+    "requiredEnvironment": "L'ambiente NFC-e e obbligatorio.",
+    "requiredCrt": "Il CRT della NFC-e e obbligatorio.",
     "errorConsultingCertificate": "Errore durante la verifica del certificato digitale.",
     "selectCertificateFile": "Seleziona un file certificato da caricare.",
     "requiredCertificatePassword": "Inserisci la password del certificato digitale.",

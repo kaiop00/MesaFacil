@@ -154,6 +154,18 @@ export async function configurarEmpresaNfce({ idRestaurante }) {
 }
 
 /**
+ * Consulta a configuração de NFC-e cadastrada na Nuvem Fiscal.
+ * Chama a Firebase Function `nfceConsultarConfigNfce`.
+ * @param {{ idRestaurante: string }} params
+ * @returns {Promise<{success:boolean, exists:boolean, config:object|null}>}
+ */
+export async function consultarConfiguracaoNfce({ idRestaurante }) {
+  const fn = httpsCallable(functions, "nfceConsultarConfigNfce");
+  const result = await fn({ idRestaurante });
+  return result.data;
+}
+
+/**
  * Consulta certificado digital cadastrado para a empresa na Nuvem Fiscal.
  * Chama a Firebase Function `nfceConsultarCertificado`.
  * @param {{ idRestaurante: string }} params

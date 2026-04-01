@@ -47,6 +47,7 @@
     "municipio": "City",
     "codigoMunicipio": "IBGE City Code",
     "uf": "UF",
+    "environment": "Environment",
     "idCsc": "CSC ID",
     "csc": "CSC (Taxpayer Security Code)",
     "serie": "Series",
@@ -60,6 +61,13 @@
     "nomeFantasia": "Trade name (optional)",
     "selectUf": "Select",
     "csc": "SEFAZ CSC Token"
+  },
+
+  "options": {
+    "environment": {
+      "homologacao": "Homologation",
+      "producao": "Production"
+    }
   },
   "tooltips": {
     "codigoMunicipio": "7-digit IBGE code for the city. Automatically filled by CEP.",
@@ -84,6 +92,7 @@
     "syncCrt": "Sync CRT",
     "syncingCrt": "Syncing CRT...",
     "configureNfce": "Configure NFC-e",
+    "updateNfce": "Update NFC-e Configuration",
     "configuringNfce": "Configuring NFC-e..."
   },
 
@@ -103,6 +112,7 @@
     "companyDeleted": "Company deleted successfully on Nuvem Fiscal.",
     "confirmDeleteCompany": "Are you sure you want to delete the company on Nuvem Fiscal?",
     "nfceConfigurada": "NFC-e configuration successfully saved on Nuvem Fiscal!",
+    "nfceAtualizada": "NFC-e configuration successfully updated on Nuvem Fiscal!",
     "errorConfigurandoNfce": "Error configuring NFC-e on Nuvem Fiscal.",
     "registerCompanyFirst": "Register the company on Nuvem Fiscal before configuring NFC-e.",
     "invalidCnpj": "Invalid CNPJ. Enter the 14 digits.",
@@ -118,6 +128,8 @@
     "companyNotFoundByCnpj": "Could not find data for this CNPJ.",
     "errorLoadingCompanyByCnpj": "Error querying CNPJ.",
     "requiredCsc": "CSC and CSC ID are required for NFC-e.",
+    "requiredEnvironment": "NFC-e environment is required.",
+    "requiredCrt": "NFC-e CRT is required.",
     "errorConsultingCertificate": "Error checking digital certificate.",
     "selectCertificateFile": "Select a certificate file to upload.",
     "requiredCertificatePassword": "Enter the digital certificate password.",

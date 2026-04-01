@@ -17,6 +17,9 @@ const nuvemFiscalClientId = defineSecret("NUVEM_FISCAL_CLIENT_ID");
 const nuvemFiscalClientSecret = defineSecret("NUVEM_FISCAL_CLIENT_SECRET");
 const nuvemFiscalEnvironment = defineSecret("NUVEM_FISCAL_ENVIRONMENT");
 
+// Define secret for NFC-e emission control (temporary debugging flag)
+const nfceEmitDisabled = defineSecret("NFCE_EMIT_DISABLED");
+
 // Nuvem Fiscal API endpoints
 const AUTH_URL = "https://auth.nuvemfiscal.com.br/oauth/token";
 const DEFAULT_API_BASE_HOMOLOGACAO = "https://api.sandbox.nuvemfiscal.com.br";
@@ -320,6 +323,28 @@ function getCnpjDigitsFromConfig(configFiscal) {
   return cnpjDigits;
 }
 
+function resolveConfiguredCrt(configFiscal = {}) {
+  const nfceCrt = Number(configFiscal?.nfce?.crt);
+  if (Number.isInteger(nfceCrt) && nfceCrt >= 1 && nfceCrt <= 4) {
+    return nfceCrt;
+  }
+
+  const legacyCrt = Number(configFiscal?.crt);
+  if (Number.isInteger(legacyCrt) && legacyCrt >= 1 && legacyCrt <= 4) {
+    return legacyCrt;
+  }
+
+  return 1;
+}
+
+function resolveNfceEnvironment(configFiscal = {}) {
+  const configured = String(configFiscal?.nfce?.ambiente || "").trim().toLowerCase();
+  if (NFCE_ALLOWED_ENVIRONMENTS.includes(configured)) {
+    return configured;
+  }
+  return getNuvemFiscalEnvironment();
+}
+
 function normalizeCertificateInfo(certificado) {
   if (!certificado || typeof certificado !== "object") {
     return null;
@@ -398,6 +423,21 @@ function resolveApproxTaxRates(configFiscal = {}, endereco = {}) {
 
 function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function formatDhEmiSefaz(date = new Date()) {
+  // SEFAZ is stricter with timezone formatting; send explicit -03:00 and no milliseconds.
+  const offsetMinutes = -180;
+  const adjusted = new Date(date.getTime() + (offsetMinutes * 60 * 1000));
+
+  const year = adjusted.getUTCFullYear();
+  const month = String(adjusted.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(adjusted.getUTCDate()).padStart(2, "0");
+  const hours = String(adjusted.getUTCHours()).padStart(2, "0");
+  const minutes = String(adjusted.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(adjusted.getUTCSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}-03:00`;
 }
 
 function normalizePercent(value, fallback = 0) {
@@ -817,16 +857,20 @@ function buildEmpresaPayload(configFiscal) {
 /**
  * Validates fields required by PUT /empresas/{cpf_cnpj}/nfce.
  * @param {object} configFiscal
- * @returns {{idCsc: number, csc: string}}
+ * @returns {{idCsc: number, csc: string, ambiente: string, crt: number}}
  */
 function validateNfceConfig(configFiscal) {
   const idCsc = parseInt(configFiscal?.nfce?.idCsc, 10);
   const cscRaw = String(configFiscal?.nfce?.csc || "");
   const csc = cscRaw.replace(/\s+/g, "").toUpperCase();
+  const ambiente = resolveNfceEnvironment(configFiscal);
+  const crt = resolveConfiguredCrt(configFiscal);
 
   const missingFields = [];
   if (!Number.isInteger(idCsc) || idCsc <= 0) missingFields.push("nfce.idCsc");
   if (!csc) missingFields.push("nfce.csc");
+  if (!NFCE_ALLOWED_ENVIRONMENTS.includes(ambiente)) missingFields.push("nfce.ambiente");
+  if (!Number.isInteger(crt) || crt < 1 || crt > 4) missingFields.push("nfce.crt");
 
   if (missingFields.length > 0) {
     throw new HttpsError(
@@ -835,7 +879,7 @@ function validateNfceConfig(configFiscal) {
     );
   }
 
-  return {idCsc, csc};
+  return {idCsc, csc, ambiente, crt};
 }
 
 // ============================================================================
@@ -887,13 +931,14 @@ exports.nfceRegistrarEmpresa = onCall(
           `/cnpj/${cnpjDigits}`,
           tokenCnpj,
         );
-        const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+        const configuredCrt = resolveConfiguredCrt(configFiscal);
+        const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configuredCrt);
 
         if (!crtValidation.match) {
           logger.warn("CRT mismatch detected", {
             idRestaurante,
             cnpj: cnpjDigits,
-            localCrt: configFiscal.crt,
+            localCrt: configuredCrt,
             sefazCrt: crtValidation.sefazCrt,
           });
         }
@@ -1029,13 +1074,14 @@ exports.nfceAlterarEmpresa = onCall(
           `/cnpj/${cnpjDigits}`,
           tokenCnpj,
         );
-        const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+        const configuredCrt = resolveConfiguredCrt(configFiscal);
+        const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configuredCrt);
 
         if (!crtValidation.match) {
           logger.warn("CRT mismatch detected after update", {
             idRestaurante,
             cnpj: cnpjDigits,
-            localCrt: configFiscal.crt,
+            localCrt: configuredCrt,
             sefazCrt: crtValidation.sefazCrt,
           });
         }
@@ -1154,11 +1200,12 @@ exports.nfceConfigurarEmpresa = onCall(
 
     try {
       const {cnpjDigits} = validateEmpresaConfig(configFiscal);
-      const {idCsc, csc} = validateNfceConfig(configFiscal);
+      const {idCsc, csc, ambiente, crt} = validateNfceConfig(configFiscal);
       const token = await getAccessToken("empresa nfce");
 
       const nfceConfig = {
-        ambiente: getNuvemFiscalEnvironment(),
+        ambiente,
+        crt,
         sefaz: {
           id_csc: idCsc,
           csc,
@@ -1171,6 +1218,13 @@ exports.nfceConfigurarEmpresa = onCall(
       await db.collection("restaurantes").doc(idRestaurante).set({
         configFiscal: {
           ativo: true,
+          crt,
+          nfce: {
+            ...configFiscal.nfce,
+            crt,
+            ambiente,
+            idCsc: String(idCsc),
+          },
         },
       }, {merge: true});
 
@@ -1178,6 +1232,76 @@ exports.nfceConfigurarEmpresa = onCall(
     } catch (err) {
       logger.error("Error configuring NFC-e", {error: err.message, idRestaurante});
       throw new HttpsError("internal", `Erro ao configurar NFC-e: ${err.message}`);
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceConsultarConfigNfce
+// Reads NFC-e settings from Nuvem Fiscal for an already registered company
+// ============================================================================
+exports.nfceConsultarConfigNfce = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante} = request.data;
+
+    if (!idRestaurante) {
+      throw new HttpsError("invalid-argument", "idRestaurante is required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["edit_config", "view_fiscal"]);
+
+    try {
+      const restDoc = await db.collection("restaurantes").doc(idRestaurante).get();
+      if (!restDoc.exists) {
+        throw new HttpsError("not-found", "Restaurant not found");
+      }
+
+      const configFiscal = restDoc.data()?.configFiscal;
+      const cnpjDigits = getCnpjDigitsFromConfig(configFiscal);
+      const token = await getAccessToken("empresa nfce");
+
+      const remoteConfig = await nuvemFiscalRequest("GET", `/empresas/${cnpjDigits}/nfce`, token);
+
+      const mappedConfig = {
+        ambiente: remoteConfig?.ambiente || resolveNfceEnvironment(configFiscal),
+        idCsc: remoteConfig?.sefaz?.id_csc != null ? String(remoteConfig.sefaz.id_csc) : "",
+        csc: remoteConfig?.sefaz?.csc || "",
+        crt: Number(remoteConfig?.crt || resolveConfiguredCrt(configFiscal)),
+        serie: remoteConfig?.serie != null ? String(remoteConfig.serie) : String(configFiscal?.nfce?.serie || "1"),
+      };
+
+      await db.collection("restaurantes").doc(idRestaurante).set({
+        configFiscal: {
+          crt: mappedConfig.crt,
+          nfce: {
+            ...configFiscal?.nfce,
+            ...mappedConfig,
+            csc: mappedConfig.csc || configFiscal?.nfce?.csc || "",
+          },
+        },
+      }, {merge: true});
+
+      logger.info("NFC-e config consulted in Nuvem Fiscal", {idRestaurante, uid, cnpj: cnpjDigits});
+
+      return {
+        success: true,
+        exists: true,
+        config: remoteConfig,
+        mappedConfig,
+      };
+    } catch (err) {
+      if (/API error 404/i.test(err?.message || "")) {
+        return {
+          success: true,
+          exists: false,
+          config: null,
+          mappedConfig: null,
+        };
+      }
+
+      logger.error("Error consulting NFC-e config", {error: err.message, idRestaurante});
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar configuração de NFC-e");
     }
   },
 );
@@ -1276,13 +1400,18 @@ exports.nfceSincronizarCrt = onCall(
       const sefazCrtNum = Number(sefazCrt);
 
       // Validate consistency before updating
-      const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+      const configuredCrt = resolveConfiguredCrt(configFiscal);
+      const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configuredCrt);
 
       if (!crtValidation.match) {
         // Update to match SEFAZ
         await db.collection("restaurantes").doc(idRestaurante).set({
           configFiscal: {
             crt: sefazCrtNum,
+            nfce: {
+              ...configFiscal.nfce,
+              crt: sefazCrtNum,
+            },
             crtSyncedFromSefazAt: admin.firestore.FieldValue.serverTimestamp(),
           },
         }, {merge: true});
@@ -1290,16 +1419,16 @@ exports.nfceSincronizarCrt = onCall(
         logger.info("CRT synchronized from SEFAZ", {
           idRestaurante,
           cnpj: cnpjDigits,
-          oldCrt: configFiscal.crt,
+          oldCrt: configuredCrt,
           newCrt: sefazCrtNum,
           uid,
         });
 
         return {
           success: true,
-          message: `CRT sincronizado com sucesso. Atualizado de ${configFiscal.crt} para ${sefazCrtNum}.`,
+          message: `CRT sincronizado com sucesso. Atualizado de ${configuredCrt} para ${sefazCrtNum}.`,
           synchronized: true,
-          previousCrt: configFiscal.crt,
+          previousCrt: configuredCrt,
           newCrt: sefazCrtNum,
         };
       }
@@ -1308,7 +1437,7 @@ exports.nfceSincronizarCrt = onCall(
         success: true,
         message: "CRT já está sincronizado com SEFAZ.",
         synchronized: false,
-        crt: configFiscal.crt,
+        crt: configuredCrt,
       };
     } catch (err) {
       logger.error("Error syncing CRT", {idRestaurante, error: err.message});
@@ -1622,7 +1751,7 @@ exports.nfceDeletarCertificado = onCall(
 // ============================================================================
 exports.nfceEmitir = onCall(
   {
-    secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment],
+    secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment, nfceEmitDisabled],
     maxInstances: 10,
     timeoutSeconds: 60,
   },
@@ -1672,18 +1801,19 @@ exports.nfceEmitir = onCall(
         `/cnpj/${cnpjDigits}`,
         tokenCnpj,
       );
-      const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configFiscal.crt);
+      const configuredCrt = resolveConfiguredCrt(configFiscal);
+      const crtValidation = validateCrtAgainstSefaz(sefazEmpresa, configuredCrt);
 
       if (!crtValidation.match) {
         logger.error("CRT mismatch blocking NFC-e emission", {
           idRestaurante,
           cnpj: cnpjDigits,
-          localCrt: configFiscal.crt,
+          localCrt: configuredCrt,
           sefazCrt: crtValidation.sefazCrt,
         });
         throw new HttpsError(
           "failed-precondition",
-          `CRT diverge da SEFAZ. Sistema tem CRT ${configFiscal.crt}, SEFAZ registra CRT ${crtValidation.sefazCrt}. Sincronize em Configuração Fiscal > Sincronizar CRT.`,
+          `CRT diverge da SEFAZ. Sistema tem CRT ${configuredCrt}, SEFAZ registra CRT ${crtValidation.sefazCrt}. Sincronize em Configuração Fiscal > Sincronizar CRT.`,
         );
       }
     } catch (crtErr) {
@@ -1760,13 +1890,15 @@ exports.nfceEmitir = onCall(
     const approxTaxRates = resolveApproxTaxRates(configFiscal, endereco);
 
     // 4. Build det (items array)
+    const configuredCrt = resolveConfiguredCrt(configFiscal);
+
     const det = pedido.items.map((item, index) => {
       const quantity = Number(item.quantity || 1);
       const unitPrice = Number(item.price) * fatorTaxa;
       const vUnCom = Math.round(unitPrice * 100) / 100;
       const vProd = Math.round(vUnCom * quantity * 100) / 100;
       const itemApproxTrib = roundCurrency(vProd * approxTaxRates.total);
-      const imposto = buildImposto(configFiscal.crt, vProd, item, configFiscal, itemApproxTrib);
+      const imposto = buildImposto(configuredCrt, vProd, item, configFiscal, itemApproxTrib);
 
       return {
         nItem: index + 1,
@@ -1832,7 +1964,7 @@ exports.nfceEmitir = onCall(
           mod: 65, // NFC-e
           serie: parseInt(configFiscal.nfce.serie) || 1,
           nNF,
-          dhEmi: new Date().toISOString(),
+          dhEmi: formatDhEmiSefaz(),
           tpNF: 1, // 1 = saída
           idDest: 1, // 1 = operação interna
           cMunFG: endereco.codigoMunicipio,
@@ -1846,7 +1978,7 @@ exports.nfceEmitir = onCall(
         },
         emit: {
           CNPJ: cnpj,
-          CRT: configFiscal.crt,
+          CRT: configuredCrt,
         },
         det,
         total: {
@@ -1882,7 +2014,7 @@ exports.nfceEmitir = onCall(
           ],
         },
       },
-      ambiente: getNuvemFiscalEnvironment(),
+      ambiente: resolveNfceEnvironment(configFiscal),
       referencia: pedidoId,
     };
 
@@ -1906,6 +2038,13 @@ exports.nfceEmitir = onCall(
     try {
       const token = await getAccessToken("nfce");
 
+      // INTERCEPTAÇÃO TEMPORÁRIA: Log completo do payload e desabilitação do envio
+      const nfceDisabled = process.env.NFCE_EMIT_DISABLED === "true" || nfceEmitDisabled.value() === "true";
+      logger.info("=== NFCE PAYLOAD INTERCEPTADO ===", {
+        disabled: nfceDisabled,
+        payload: JSON.stringify(nfcePayload, null, 2),
+      });
+
       // Mark order as processing to prevent duplicate emission requests.
       const processingUpdate = {
         nfceStatus: "processando",
@@ -1916,8 +2055,24 @@ exports.nfceEmitir = onCall(
       if (pedidoHistoricoSnap.exists) processingUpdatePromises.push(pedidoHistoricoRef.set(processingUpdate, {merge: true}));
       await Promise.all(processingUpdatePromises);
 
-      let nfce = await nuvemFiscalRequest("POST", "/nfce", token, nfcePayload);
-      logger.info("NFC-e submission response", {id: nfce.id, status: nfce.status});
+      let nfce;
+      if (nfceDisabled) {
+        // MOCK RESPONSE: Retorna sucesso fictício para análise
+        logger.warn("=== ENVIO PARA NUVEM FISCAL DESABILITADO (MOCK) ===", {
+          pedidoId,
+          nNF,
+        });
+        nfce = {
+          id: `MOCK_${Date.now()}`,
+          status: "autorizado",
+          chave: "35240101000000000000650010000000011234567891",
+          url_danfce: "https://mock.nuvemfiscal.com.br/danfce",
+          url: "https://mock.nuvemfiscal.com.br/nfce",
+        };
+      } else {
+        nfce = await nuvemFiscalRequest("POST", "/nfce", token, nfcePayload);
+        logger.info("NFC-e submission response", {id: nfce.id, status: nfce.status});
+      }
 
       // 9. Poll if pending
       if (nfce.status === "pendente" || nfce.status === "processando") {
@@ -2069,6 +2224,53 @@ exports.nfceConsultar = onCall(
 );
 
 // ============================================================================
+// FUNCTION: nfceConsultarDebugHttpResponse
+// Retrieves raw HTTP response body captured by Nuvem Fiscal debug tools
+// Endpoint: GET /debug/http-requests/{id}/response-content
+// ============================================================================
+exports.nfceConsultarDebugHttpResponse = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, httpRequestId} = request.data || {};
+
+    if (!idRestaurante || !httpRequestId) {
+      throw new HttpsError("invalid-argument", "idRestaurante and httpRequestId are required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal", "edit_orders"]);
+
+    try {
+      const token = await getAccessToken("conta empresa nfe debug");
+      const responseContent = await nuvemFiscalRequest(
+        "GET",
+        `/debug/http-requests/${httpRequestId}/response-content`,
+        token,
+      );
+
+      logger.info("NFC-e debug HTTP response content consulted", {
+        idRestaurante,
+        uid,
+        httpRequestId,
+      });
+
+      return {
+        success: true,
+        httpRequestId,
+        responseContent,
+      };
+    } catch (err) {
+      logger.error("Error consulting debug HTTP response content", {
+        idRestaurante,
+        uid,
+        httpRequestId,
+        error: err?.message || String(err),
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar corpo da resposta HTTP do debug");
+    }
+  },
+);
+
+// ============================================================================
 // FUNCTION: nfceListar
 // Lists all NFC-es emitted for a restaurant with pagination
 // ============================================================================
@@ -2103,7 +2305,7 @@ exports.nfceListar = onCall(
       // Uses OData query syntax: $skip and $top for pagination
       const params = new URLSearchParams();
       params.append("cpf_cnpj", cnpj);
-      params.append("ambiente", getNuvemFiscalEnvironment());
+      params.append("ambiente", resolveNfceEnvironment(configFiscal));
       params.append("$top", String(Math.min(top, 100))); // OData: limit 1-100
       params.append("$skip", String(Math.max(skip, 0))); // OData: offset
       params.append("$inlinecount", "true"); // Include total count

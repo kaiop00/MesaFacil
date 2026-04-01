@@ -52,6 +52,7 @@
     "municipio": "Município",
     "codigoMunicipio": "Código IBGE do Município",
     "uf": "UF",
+    "environment": "Ambiente",
     "idCsc": "ID do CSC",
     "csc": "CSC (Código de Segurança do Contribuinte)",
     "serie": "Série",
@@ -66,6 +67,13 @@
     "nomeFantasia": "Nome fantasia (opcional)",
     "selectUf": "Selecione",
     "csc": "Token CSC da SEFAZ"
+  },
+
+  "options": {
+    "environment": {
+      "homologacao": "Homologação",
+      "producao": "Produção"
+    }
   },
 
   "tooltips": {
@@ -92,6 +100,7 @@
     "syncCrt": "Sincronizar CRT",
     "syncingCrt": "Sincronizando CRT...",
     "configureNfce": "Configurar NFC-e",
+    "updateNfce": "Atualizar Configuração NFC-e",
     "configuringNfce": "Configurando NFC-e..."
   },
 
@@ -111,6 +120,7 @@
     "companyDeleted": "Empresa deletada com sucesso na Nuvem Fiscal.",
     "confirmDeleteCompany": "Tem certeza que deseja deletar a empresa na Nuvem Fiscal?",
     "nfceConfigurada": "Configuração de NFC-e salva com sucesso na Nuvem Fiscal!",
+    "nfceAtualizada": "Configuração de NFC-e atualizada com sucesso na Nuvem Fiscal!",
     "errorConfigurandoNfce": "Erro ao configurar NFC-e na Nuvem Fiscal.",
     "registerCompanyFirst": "Cadastre a empresa na Nuvem Fiscal antes de configurar a NFC-e.",
     "invalidCnpj": "CNPJ inválido. Informe os 14 dígitos.",
@@ -126,6 +136,8 @@
     "companyNotFoundByCnpj": "Não foi possível encontrar dados para este CNPJ.",
     "errorLoadingCompanyByCnpj": "Erro ao consultar CNPJ.",
     "requiredCsc": "CSC e ID do CSC são obrigatórios para NFC-e.",
+    "requiredEnvironment": "Ambiente da NFC-e é obrigatório.",
+    "requiredCrt": "CRT da NFC-e é obrigatório.",
     "errorConsultingCertificate": "Erro ao consultar certificado digital.",
     "selectCertificateFile": "Selecione um arquivo de certificado para enviar.",
     "requiredCertificatePassword": "Informe a senha do certificado digital.",
