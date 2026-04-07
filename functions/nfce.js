@@ -36,11 +36,41 @@ const UF_TO_CUF = {
 // Map formaPagamento -> tPag (NFC-e payment type codes)
 const FORMA_PAGAMENTO_MAP = {
   dinheiro: "01",
+  cheque: "02",
   debito: "04",
   credito: "03",
   pix: "17",
-  voucher: "15",
+  credito_loja: "05",
+  vale_alimentacao: "10",
+  vale_refeicao: "11",
+  vale_presente: "12",
+  vale_combustivel: "13",
+  boleto: "15",
+  deposito: "16",
+  transferencia: "18",
+  carteira_digital: "18",
+  cashback: "19",
+  sem_pagamento: "90",
+  voucher: "99",
   ifood: "99",
+};
+
+const PAYMENT_BRAND_TO_TBAND = {
+  VISA: "01",
+  MASTERCARD: "02",
+  MASTER: "02",
+  AMEX: "03",
+  AMERICAN_EXPRESS: "03",
+  SOROCRED: "04",
+  DINERS: "05",
+  ELO: "06",
+  HIPERCARD: "07",
+  AURA: "08",
+  CABAL: "09",
+  ALELO: "99",
+  VR: "99",
+  SODEXO: "99",
+  TICKET: "99",
 };
 
 const PIS_COFINS_ALIQUOTAS_DEFAULT = {
@@ -461,8 +491,282 @@ function normalizeTaxType(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
     .trim()
     .toLowerCase();
+}
+
+function sanitizePaymentDescription(value, fallback = "OUTROS") {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+  if (!normalized) return fallback;
+  return normalized.substring(0, 60);
+}
+
+function resolvePaymentCodeAndDescription(formaPagamento, pedido = {}) {
+  const normalizedMethod = normalizeTaxType(formaPagamento);
+  const mapped = FORMA_PAGAMENTO_MAP[normalizedMethod];
+
+  if (mapped === "99") {
+    if (normalizedMethod === "ifood") {
+      return {tPag: "99", xPag: "iFood"};
+    }
+    if (normalizedMethod === "voucher") {
+      return {tPag: "99", xPag: "Voucher/Cortesia"};
+    }
+    const fallback = pedido?.observacoesPagamento || formaPagamento || "Outros";
+    return {tPag: "99", xPag: sanitizePaymentDescription(fallback, "Outros")};
+  }
+
+  if (mapped) {
+    return {tPag: mapped, xPag: null};
+  }
+
+  const fallback = pedido?.observacoesPagamento || formaPagamento || "Outros";
+  return {tPag: "99", xPag: sanitizePaymentDescription(fallback, "Outros")};
+}
+
+function parseAmount(value) {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  const normalized = String(value)
+    .trim()
+    .replace(/\./g, "")
+    .replace(/,/g, ".");
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resolveCardGroup(tPag, pedido = {}, configFiscal = {}, paymentEntry = null) {
+  const supportsCardGroup = tPag === "03" || tPag === "04";
+
+  const paymentCandidate =
+    pedido?.payments?.[0] ||
+    pedido?.paymentsRaw?.methods?.[0] ||
+    null;
+
+  const cardSources = [
+    paymentEntry,
+    paymentEntry?.card,
+    pedido?.pagamentoCartao,
+    pedido?.cartao,
+    pedido?.card,
+    pedido?.pix,
+    paymentCandidate,
+    paymentCandidate?.card,
+    configFiscal?.nfce,
+  ].filter((source) => source && typeof source === "object");
+
+  const readFirst = (keys = []) => {
+    for (const source of cardSources) {
+      for (const key of keys) {
+        const value = source?.[key];
+        if (value !== null && value !== undefined && String(value).trim() !== "") {
+          return String(value).trim();
+        }
+      }
+    }
+    return "";
+  };
+
+  const cnpjRaw = readFirst([
+    "cnpj",
+    "cnpjCredenciadora",
+    "credenciadoraCnpj",
+    "acquirerCnpj",
+    "cnpj_credenciadora",
+  ]);
+  const cnpjDigits = cnpjRaw.replace(/\D/g, "");
+
+  const brandRaw = readFirst([
+    "brand",
+    "bandeira",
+    "cardBrand",
+    "card_brand",
+  ]).toUpperCase();
+
+  const authRaw = readFirst([
+    "authorizationCode",
+    "authorization_code",
+    "autorizacao",
+    "authorization",
+    "cAut",
+    "caut",
+    "transactionCode",
+    "transaction_code",
+    "txid",
+    "pixTxId",
+    "pixTransactionId",
+  ]);
+
+  const cAut = authRaw.replace(/\s+/g, "").substring(0, 20);
+  const tBand = PAYMENT_BRAND_TO_TBAND[brandRaw] || "99";
+  const hasPixTransactionData = tPag === "17" && (cnpjDigits.length === 14 || Boolean(cAut));
+
+  if (!supportsCardGroup && !hasPixTransactionData) {
+    return null;
+  }
+
+  const card = {
+    tpIntegra: 2,
+  };
+
+  if (cnpjDigits.length === 14) {
+    card.CNPJ = cnpjDigits;
+  }
+
+  if (supportsCardGroup) {
+    card.tBand = tBand;
+  }
+
+  if (cAut) {
+    card.cAut = cAut;
+  }
+
+  return card;
+}
+
+function resolveSingleDetPag({
+  formaPagamento,
+  valor,
+  pedido,
+  configFiscal,
+}) {
+  const {tPag, xPag} = resolvePaymentCodeAndDescription(formaPagamento, pedido);
+  const isCashPayment = tPag === "01";
+  const expectedValue = roundCurrency(valor);
+
+  let vPag = expectedValue;
+  let vTroco = 0;
+  if (isCashPayment) {
+    const paidCandidates = [
+      pedido?.troco?.valorPagamento,
+      pedido?.troco?.changeFor,
+      pedido?.payments?.[0]?.changeFor,
+      pedido?.paymentsRaw?.methods?.[0]?.cash?.changeFor,
+      pedido?.paymentsRaw?.methods?.[0]?.changeFor,
+    ];
+
+    for (const candidate of paidCandidates) {
+      const paidAmount = parseAmount(candidate);
+      if (Number.isFinite(paidAmount) && paidAmount >= expectedValue) {
+        vPag = roundCurrency(paidAmount);
+        vTroco = roundCurrency(vPag - expectedValue);
+        break;
+      }
+    }
+  }
+
+  const detPag = {
+    tPag,
+    vPag,
+  };
+
+  if (tPag === "99" && xPag) {
+    detPag.xPag = xPag;
+  }
+
+  const card = resolveCardGroup(tPag, pedido, configFiscal, null);
+  if (card) {
+    detPag.card = card;
+  }
+
+  return {detPag, vTroco};
+}
+
+function normalizeSplitPaymentEntries(pedido = {}) {
+  if (!Array.isArray(pedido?.pagamentos)) return [];
+
+  return pedido.pagamentos
+    .map((entry) => {
+      const method = String(entry?.formaPagamento || "").trim();
+      const amount = parseAmount(entry?.valor);
+      if (!method || !Number.isFinite(amount) || amount <= 0) {
+        return null;
+      }
+      return {
+        formaPagamento: method,
+        valor: roundCurrency(amount),
+        valorPagamento: parseAmount(entry?.valorPagamento ?? entry?.troco?.valorPagamento),
+        card: entry?.card || null,
+      };
+    })
+    .filter(Boolean);
+}
+
+function resolveDetPagList(pedido = {}, vNF = 0, configFiscal = {}) {
+  const splitEntries = normalizeSplitPaymentEntries(pedido);
+
+  if (splitEntries.length === 0) {
+    const formaPagamento = String(pedido.formaPagamento || "").trim();
+    if (!formaPagamento) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Forma de pagamento é obrigatória para emissão de NFC-e.",
+      );
+    }
+
+    const {detPag, vTroco} = resolveSingleDetPag({
+      formaPagamento,
+      valor: vNF,
+      pedido,
+      configFiscal,
+    });
+
+    return {
+      detPagList: [detPag],
+      vTroco,
+    };
+  }
+
+  const totalSplit = roundCurrency(
+    splitEntries.reduce((sum, entry) => sum + entry.valor, 0),
+  );
+  const splitDiff = roundCurrency(vNF - totalSplit);
+  if (Math.abs(splitDiff) > 0.01) {
+    throw new HttpsError(
+      "failed-precondition",
+      "A soma dos pagamentos divididos deve ser igual ao total da NFC-e.",
+    );
+  }
+
+  let totalTroco = 0;
+  const detPagList = splitEntries.map((entry) => {
+    const {tPag, xPag} = resolvePaymentCodeAndDescription(entry.formaPagamento, pedido);
+    const detPag = {
+      tPag,
+      vPag: entry.valor,
+    };
+
+    if (tPag === "99" && xPag) {
+      detPag.xPag = xPag;
+    }
+
+    const card = resolveCardGroup(tPag, pedido, configFiscal, entry);
+    if (card) {
+      detPag.card = card;
+    }
+
+    // Optional: support troco in split mode when a cash entry includes valorPagamento.
+    if (tPag === "01") {
+      const splitPaidAmount = parseAmount(entry?.valorPagamento ?? entry?.troco?.valorPagamento);
+      if (Number.isFinite(splitPaidAmount) && splitPaidAmount >= entry.valor) {
+        detPag.vPag = roundCurrency(splitPaidAmount);
+        totalTroco += roundCurrency(detPag.vPag - entry.valor);
+      }
+    }
+
+    return detPag;
+  });
+
+  return {
+    detPagList,
+    vTroco: roundCurrency(totalTroco),
+  };
 }
 
 function isMonofasicoItem(item = {}) {
@@ -1929,27 +2233,7 @@ exports.nfceEmitir = onCall(
     const vCOFINSTotal = roundCurrency(det.reduce((sum, d) => sum + extractCofinsValue(d.imposto), 0));
 
     // 6. Payment mapping
-    const formaPagamento = String(pedido.formaPagamento || "").trim().toLowerCase();
-    if (!formaPagamento) {
-      throw new HttpsError(
-        "failed-precondition",
-        "Forma de pagamento é obrigatória para emissão de NFC-e.",
-      );
-    }
-    const tPag = FORMA_PAGAMENTO_MAP[formaPagamento] || "99";
-    const isCardPayment = tPag === "03" || tPag === "04";
-    const detPag = {
-      tPag,
-      vPag: vNF,
-    };
-
-    if (isCardPayment) {
-      // NFC-e: for credit/debit payments, include card group.
-      // tpIntegra=2 keeps flow compatible when POS is not integrated with fiscal app.
-      detPag.card = {
-        tpIntegra: 2,
-      };
-    }
+    const {detPagList, vTroco} = resolveDetPagList(pedido, vNF, configFiscal);
 
     const indPres = resolveIndPresFromPedido(pedido);
     const vTotTribTotal = roundCurrency(det.reduce((sum, d) => sum + Number(d.imposto?.vTotTrib || 0), 0));
@@ -2009,9 +2293,8 @@ exports.nfceEmitir = onCall(
           modFrete: 9, // 9 = sem frete
         },
         pag: {
-          detPag: [
-            detPag,
-          ],
+          ...(vTroco > 0 ? {vTroco} : {}),
+          detPag: detPagList,
         },
       },
       ambiente: resolveNfceEnvironment(configFiscal),
