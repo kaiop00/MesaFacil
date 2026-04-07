@@ -34,7 +34,7 @@
     "windowTitle": "Imprimir pedido",
     "receiptWindowTitle": "Imprimir recibo",
     "header": "Mesa Fácil - Cozinha",
-    "receiptHeader": "Mesfacil",
+    "receiptHeader": "Mesafacil",
     "receiptDisclaimer": "Este recibo não serve como documento fiscal",
     "consumerDocument": "CPF/CNPJ",
     "ticketNumber": "Pedido #{{number}}",

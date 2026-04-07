@@ -33,7 +33,7 @@
     "windowTitle": "Print order",
     "receiptWindowTitle": "Print receipt",
     "header": "Kitchen Ticket",
-    "receiptHeader": "Mesfacil",
+    "receiptHeader": "Mesafacil",
     "receiptDisclaimer": "This receipt is not a fiscal document",
     "consumerDocument": "CPF/CNPJ",
     "ticketNumber": "Order #{{number}}",
