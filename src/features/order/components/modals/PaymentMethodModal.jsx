@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import { CreditCard01, Handbag, QrCode, ShoppingBag02, Gift } from "react-coolicons";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+
+const createEmptySplitPayment = () => ({
+  method: "",
+  amount: "",
+});
 
 const PAYMENT_METHODS = [
   { id: "dinheiro", label: "payment.methods.cash", icon: Handbag, color: "bg-green-50 text-green-600 border-green-200" },
@@ -25,20 +30,158 @@ const PaymentMethodModal = ({
   const { t } = useTranslation('order');
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [observacoes, setObservacoes] = useState("");
+  const [precisaTroco, setPrecisaTroco] = useState(false);
+  const [valorPago, setValorPago] = useState("");
+  const [splitPaymentEnabled, setSplitPaymentEnabled] = useState(false);
+  const [splitPayments, setSplitPayments] = useState([createEmptySplitPayment()]);
+
+  const totalPedido = Number(totalValue || 0);
+
+  const valorPagoNumerico = useMemo(() => {
+    const valorNormalizado = String(valorPago || "")
+      .trim()
+      .replace(/\./g, "")
+      .replace(/,/g, ".");
+
+    if (!valorNormalizado) return null;
+    const parsed = Number(valorNormalizado);
+    return Number.isFinite(parsed) ? parsed : null;
+  }, [valorPago]);
+
+  const valorTroco = useMemo(() => {
+    if (valorPagoNumerico == null || valorPagoNumerico <= totalPedido) return 0;
+    return Math.round((valorPagoNumerico - totalPedido) * 100) / 100;
+  }, [valorPagoNumerico, totalPedido]);
+
+  const trocoInvalido =
+    selectedMethod === "dinheiro" &&
+    precisaTroco &&
+    (valorPagoNumerico == null || valorPagoNumerico < totalPedido);
+
+  const trocoPayload =
+    selectedMethod === "dinheiro" && precisaTroco && !trocoInvalido
+      ? {
+          precisaTroco: true,
+          valorPagamento: valorPagoNumerico,
+          valorTroco,
+        }
+      : null;
+
+  const splitPaymentsNormalized = useMemo(() => {
+    if (!splitPaymentEnabled) return [];
+
+    return splitPayments
+      .map((entry) => {
+        const normalizedAmount = String(entry.amount || "")
+          .trim()
+          .replace(/\./g, "")
+          .replace(/,/g, ".");
+        const amountParsed = Number(normalizedAmount);
+        return {
+          method: String(entry.method || "").trim(),
+          amount: Number.isFinite(amountParsed) ? amountParsed : null,
+        };
+      })
+      .filter((entry) => entry.method && entry.amount != null);
+  }, [splitPaymentEnabled, splitPayments]);
+
+  const splitTotal = useMemo(() => {
+    return Math.round(
+      splitPaymentsNormalized.reduce((acc, entry) => acc + Number(entry.amount || 0), 0) * 100,
+    ) / 100;
+  }, [splitPaymentsNormalized]);
+
+  const splitDifference = useMemo(() => {
+    return Math.round((totalPedido - splitTotal) * 100) / 100;
+  }, [totalPedido, splitTotal]);
+
+  const splitHasIncompleteEntry = useMemo(() => {
+    if (!splitPaymentEnabled) return false;
+    return splitPayments.some((entry) => {
+      const hasMethod = String(entry.method || "").trim().length > 0;
+      const hasAmount = String(entry.amount || "").trim().length > 0;
+      return hasMethod !== hasAmount;
+    });
+  }, [splitPaymentEnabled, splitPayments]);
+
+  const splitInvalid =
+    splitPaymentEnabled && (
+      splitPaymentsNormalized.length === 0 ||
+      splitHasIncompleteEntry ||
+      Math.abs(splitDifference) > 0.01
+    );
 
   const handleConfirm = () => {
-    if (!selectedMethod) return;
+    if (splitPaymentEnabled) {
+      if (splitInvalid) return;
+
+      onConfirm({
+        formaPagamento: splitPaymentsNormalized[0]?.method || null,
+        observacoesPagamento: observacoes.trim(),
+        pagamentos: splitPaymentsNormalized.map((entry) => ({
+          formaPagamento: entry.method,
+          valor: Math.round(Number(entry.amount || 0) * 100) / 100,
+        })),
+      });
+      return;
+    }
+
+    if (!selectedMethod || trocoInvalido) return;
     
     onConfirm({
       formaPagamento: selectedMethod,
       observacoesPagamento: observacoes.trim(),
+      troco: trocoPayload,
     });
   };
 
   const handleClose = () => {
     setSelectedMethod(null);
     setObservacoes("");
+    setPrecisaTroco(false);
+    setValorPago("");
+    setSplitPaymentEnabled(false);
+    setSplitPayments([createEmptySplitPayment()]);
     onClose();
+  };
+
+  const handleSelectMethod = (methodId) => {
+    setSelectedMethod(methodId);
+    if (methodId !== "dinheiro") {
+      setPrecisaTroco(false);
+      setValorPago("");
+    }
+  };
+
+  const handleToggleSplitPayment = (enabled) => {
+    setSplitPaymentEnabled(enabled);
+    if (enabled) {
+      setSelectedMethod(null);
+      setPrecisaTroco(false);
+      setValorPago("");
+      if (!splitPayments.length) {
+        setSplitPayments([createEmptySplitPayment()]);
+      }
+      return;
+    }
+    setSplitPayments([createEmptySplitPayment()]);
+  };
+
+  const updateSplitPayment = (index, field, value) => {
+    setSplitPayments((prev) =>
+      prev.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry)),
+    );
+  };
+
+  const addSplitPaymentEntry = () => {
+    setSplitPayments((prev) => [...prev, createEmptySplitPayment()]);
+  };
+
+  const removeSplitPaymentEntry = (index) => {
+    setSplitPayments((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [createEmptySplitPayment()];
+    });
   };
 
   return (
@@ -72,37 +215,186 @@ const PaymentMethodModal = ({
 
         {/* Formas de Pagamento */}
         <div>
+          <div className="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={splitPaymentEnabled}
+                onChange={(e) => handleToggleSplitPayment(e.target.checked)}
+                className="w-4 h-4 text-primary-dynamic focus:ring-primary-dynamic rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {t('payment.modal.split.enable', { defaultValue: 'Dividir pagamento em mais de um método' })}
+              </span>
+            </label>
+          </div>
+
           <label className="block text-sm font-semibold text-gray-700 mb-3">
             {t('payment.modal.selectMethod')}
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            {PAYMENT_METHODS.map((method) => {
-              const Icon = method.icon;
-              const isSelected = selectedMethod === method.id;
-              
-              return (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => setSelectedMethod(method.id)}
-                  className={`
-                    flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 
-                    transition-all duration-200 cursor-pointer
-                    ${isSelected 
-                      ? 'border-primary-dynamic bg-primary-dynamic/5 shadow-md' 
-                      : `${method.color} border hover:shadow-md`
-                    }
-                  `}
-                >
-                  <Icon className={`w-8 h-8 ${isSelected ? 'text-primary-dynamic' : ''}`} />
-                  <span className={`text-sm font-medium ${isSelected ? 'text-primary-dynamic' : 'text-gray-700'}`}>
-                    {t(method.label)}
+          {!splitPaymentEnabled && (
+            <div className="grid grid-cols-2 gap-3">
+              {PAYMENT_METHODS.map((method) => {
+                const Icon = method.icon;
+                const isSelected = selectedMethod === method.id;
+
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => handleSelectMethod(method.id)}
+                    className={`
+                      flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 
+                      transition-all duration-200 cursor-pointer
+                      ${isSelected
+                        ? 'border-primary-dynamic bg-primary-dynamic/5 shadow-md'
+                        : `${method.color} border hover:shadow-md`
+                      }
+                    `}
+                  >
+                    <Icon className={`w-8 h-8 ${isSelected ? 'text-primary-dynamic' : ''}`} />
+                    <span className={`text-sm font-medium ${isSelected ? 'text-primary-dynamic' : 'text-gray-700'}`}>
+                      {t(method.label)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {splitPaymentEnabled && (
+            <div className="space-y-3">
+              {splitPayments.map((entry, index) => (
+                <div key={`split-${index}`} className="grid grid-cols-12 gap-2 items-center p-2 border border-gray-200 rounded-lg">
+                  <select
+                    value={entry.method}
+                    onChange={(e) => updateSplitPayment(index, "method", e.target.value)}
+                    className="col-span-7 border border-gray-300 rounded-md px-2 py-2 text-sm"
+                  >
+                    <option value="">{t('payment.modal.split.methodPlaceholder', { defaultValue: 'Forma de pagamento' })}</option>
+                    {PAYMENT_METHODS.map((method) => (
+                      <option key={`option-${method.id}`} value={method.id}>
+                        {t(method.label)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="col-span-4 relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">R$</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={entry.amount}
+                      onChange={(e) => updateSplitPayment(index, "amount", e.target.value.replace(/[^0-9,.]/g, ""))}
+                      placeholder={t('payment.modal.split.amountPlaceholder', { defaultValue: '0,00' })}
+                      className="w-full pl-7 pr-2 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeSplitPaymentEntry(index)}
+                    className="col-span-1 text-red-600 font-bold"
+                    aria-label={t('payment.modal.split.remove', { defaultValue: 'Remover' })}
+                  >
+                    −
+                  </button>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addSplitPaymentEntry}
+                className="text-sm px-3 py-2 border border-primary-dynamic text-primary-dynamic rounded-md hover:bg-primary-dynamic/5"
+              >
+                {t('payment.modal.split.add', { defaultValue: 'Adicionar forma de pagamento' })}
+              </button>
+
+              <div className="text-sm bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
+                <div className="flex justify-between">
+                  <span>{t('payment.modal.split.totalTyped', { defaultValue: 'Total informado' })}:</span>
+                  <span className="font-semibold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(splitTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{t('payment.modal.split.remaining', { defaultValue: 'Diferença para o total' })}:</span>
+                  <span className={`font-semibold ${Math.abs(splitDifference) <= 0.01 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(splitDifference)}
                   </span>
-                </button>
-              );
-            })}
-          </div>
+                </div>
+                {splitHasIncompleteEntry && (
+                  <p className="text-red-700 text-xs">
+                    {t('payment.modal.split.incomplete', { defaultValue: 'Preencha método e valor em cada linha ou remova linhas vazias.' })}
+                  </p>
+                )}
+                {Math.abs(splitDifference) > 0.01 && !splitHasIncompleteEntry && (
+                  <p className="text-red-700 text-xs">
+                    {t('payment.modal.split.invalidTotal', { defaultValue: 'A soma dos pagamentos deve ser igual ao total do pedido.' })}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
+        {!splitPaymentEnabled && selectedMethod === "dinheiro" && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={precisaTroco}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setPrecisaTroco(checked);
+                  if (!checked) {
+                    setValorPago("");
+                  }
+                }}
+                className="w-4 h-4 text-primary-dynamic focus:ring-primary-dynamic rounded"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {t('payment.modal.cashChange.needChange')}
+              </span>
+            </label>
+
+            {precisaTroco && (
+              <div className="space-y-2">
+                <label htmlFor="valor-pago" className="block text-xs text-gray-600">
+                  {t('payment.modal.cashChange.amountPaidLabel')}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
+                  <input
+                    id="valor-pago"
+                    type="text"
+                    inputMode="decimal"
+                    value={valorPago}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9,.]/g, "");
+                      setValorPago(value);
+                    }}
+                    placeholder={t('payment.modal.cashChange.amountPaidPlaceholder')}
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:border-primary-dynamic focus:ring-primary-dynamic focus:outline-none focus:ring-2 focus:ring-opacity-20"
+                  />
+                </div>
+
+                {!trocoInvalido && valorPagoNumerico != null && (
+                  <div className="flex justify-between items-center p-2 bg-green-100 border border-green-300 rounded text-sm">
+                    <span className="text-green-800 font-medium">
+                      {t('payment.modal.cashChange.changeLabel')}:
+                    </span>
+                    <span className="text-green-800 font-bold">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorTroco)}
+                    </span>
+                  </div>
+                )}
+
+                {trocoInvalido && (
+                  <div className="p-2 bg-red-100 border border-red-300 rounded text-sm text-red-700">
+                    {t('payment.modal.cashChange.invalidAmount')}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Campo de Observações */}
         <div>
@@ -133,7 +425,7 @@ const PaymentMethodModal = ({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={!selectedMethod || loading}
+            disabled={splitPaymentEnabled ? (loading || splitInvalid) : (!selectedMethod || loading || trocoInvalido)}
             className="flex-1 px-4 py-3 bg-primary-dynamic text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             {loading ? (
@@ -163,7 +455,7 @@ const PaymentMethodModal = ({
         </div>
 
         {/* Aviso se não selecionou método */}
-        {!selectedMethod && (
+        {!splitPaymentEnabled && !selectedMethod && (
           <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <span className="text-sm text-yellow-800">
               {t('payment.modal.warning')}

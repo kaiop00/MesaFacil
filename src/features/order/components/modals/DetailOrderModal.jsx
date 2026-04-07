@@ -694,6 +694,22 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                             readOnly                       // Flag de só leitura
                         />
 
+                        {Array.isArray(pedido.pagamentos) && pedido.pagamentos.length > 0 && (
+                            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                                <p className="text-sm font-semibold text-slate-700">
+                                    {t('payment.modal.split.title', { defaultValue: 'Pagamento dividido' })}
+                                </p>
+                                {pedido.pagamentos.map((pagamento, index) => (
+                                    <div key={`pagamento-${pedido.id}-${index}`} className="flex justify-between text-sm text-slate-700">
+                                        <span className="capitalize">{pagamento.formaPagamento || '-'}</span>
+                                        <span className="font-medium">
+                                            {formatCurrency(Number(pagamento.valor || 0))}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         {/* Exibição do total com taxa de entrega individual quando aplicável */}
                         <div className="space-y-1">
                             {pedido.taxaEntrega?.aplicada && pedido.taxaEntrega?.valor > 0 ? (
@@ -736,6 +752,23 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                         {/* Observations - hide for iFood orders since IfoodCustomerDetails already shows all info */}
                         {pedido.observacoes && !ifoodOrdersInfo[pedido.id] && (
                             <p>{t('modals.orderDetail.observations')}: {pedido.observacoes}</p>
+                        )}
+
+                        {pedido.orderOrigin !== 'whatsapp' && pedido.troco?.precisaTroco && (
+                            <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-lg">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-yellow-800">💵 Troco para:</span>
+                                    <span className="font-bold text-yellow-900">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pedido.troco.valorPagamento || 0)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm mt-1">
+                                    <span className="text-green-800">🔄 Troco:</span>
+                                    <span className="font-bold text-green-700">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pedido.troco.valorTroco || 0)}
+                                    </span>
+                                </div>
+                            </div>
                         )}
 
                         {(pedido.status === 'andamento' || pedido.status === 'entregue') && (

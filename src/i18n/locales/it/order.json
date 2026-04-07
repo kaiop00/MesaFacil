@@ -190,6 +190,25 @@
       "table": "Tavolo",
       "total": "Importo Totale",
       "selectMethod": "Seleziona il metodo di pagamento",
+      "cashChange": {
+        "needChange": "Serve resto?",
+        "amountPaidLabel": "Importo pagato dal cliente",
+        "amountPaidPlaceholder": "0,00",
+        "changeLabel": "Resto",
+        "invalidAmount": "L'importo pagato deve essere maggiore o uguale al totale dell'ordine."
+      },
+      "split": {
+        "title": "Pagamento suddiviso",
+        "enable": "Dividi il pagamento in più metodi",
+        "methodPlaceholder": "Metodo di pagamento",
+        "amountPlaceholder": "0,00",
+        "remove": "Rimuovi",
+        "add": "Aggiungi metodo di pagamento",
+        "totalTyped": "Totale inserito",
+        "remaining": "Differenza rispetto al totale",
+        "incomplete": "Compila metodo e importo in ogni riga oppure rimuovi le righe vuote.",
+        "invalidTotal": "La somma dei pagamenti deve essere uguale al totale dell'ordine."
+      },
       "observations": "Osservazioni",
       "optional": "opzionale",
       "observationsPlaceholder": "Es: Cliente ha pagato metà in contanti e metà con PIX...",

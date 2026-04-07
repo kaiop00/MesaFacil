@@ -194,6 +194,25 @@
       "table": "Mesa",
       "total": "Valor Total",
       "selectMethod": "Selecione a forma de pagamento",
+      "cashChange": {
+        "needChange": "Precisa de troco?",
+        "amountPaidLabel": "Valor pago pelo cliente",
+        "amountPaidPlaceholder": "0,00",
+        "changeLabel": "Troco",
+        "invalidAmount": "O valor pago deve ser maior ou igual ao total do pedido."
+      },
+      "split": {
+        "title": "Pagamento dividido",
+        "enable": "Dividir pagamento em mais de um método",
+        "methodPlaceholder": "Forma de pagamento",
+        "amountPlaceholder": "0,00",
+        "remove": "Remover",
+        "add": "Adicionar forma de pagamento",
+        "totalTyped": "Total informado",
+        "remaining": "Diferença para o total",
+        "incomplete": "Preencha método e valor em cada linha ou remova linhas vazias.",
+        "invalidTotal": "A soma dos pagamentos deve ser igual ao total do pedido."
+      },
       "observations": "Observações",
       "optional": "opcional",
       "observationsPlaceholder": "Ex: Cliente pagou metade em dinheiro e metade no PIX...",
