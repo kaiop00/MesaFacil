@@ -21,6 +21,66 @@ const formatDate = (date) => {
   }
 };
 
+const PAYMENT_LABELS = {
+  dinheiro: "Dinheiro",
+  debito: "Cartão de Débito",
+  credito: "Cartão de Crédito",
+  pix: "PIX",
+  ifood: "iFood",
+  voucher: "Voucher/Cortesia",
+};
+
+const CARD_BRAND_LABELS = {
+  VISA: "Visa",
+  MASTERCARD: "Mastercard",
+  MASTER: "Mastercard",
+  ELO: "Elo",
+  AMEX: "American Express",
+  AMERICAN_EXPRESS: "American Express",
+  HIPERCARD: "Hipercard",
+  DINERS: "Diners Club",
+  DINERS_CLUB: "Diners Club",
+  AURA: "Aura",
+  CABAL: "Cabal",
+};
+
+const formatPaymentLabel = (method) => {
+  const normalized = String(method || "").trim().toLowerCase();
+  return PAYMENT_LABELS[normalized] || method || "Pagamento";
+};
+
+const formatCardBrandLabel = (brand) => {
+  const normalized = String(brand || "").trim().toUpperCase();
+  return CARD_BRAND_LABELS[normalized] || brand || "";
+};
+
+const getPaymentEntriesFromPedido = (pedido) => {
+  if (!pedido || typeof pedido !== "object") return [];
+
+  if (Array.isArray(pedido.pagamentos) && pedido.pagamentos.length > 0) {
+    return pedido.pagamentos.map((entry) => ({
+      method: entry?.formaPagamento || entry?.method || "",
+      amount: Number(entry?.valor || entry?.amount || 0),
+      cardBrand:
+        entry?.card?.brand ||
+        entry?.pagamentoCartao?.brand ||
+        entry?.cardBrand ||
+        entry?.brand ||
+        "",
+    }));
+  }
+
+  if (pedido.formaPagamento) {
+    return [{
+      method: pedido.formaPagamento,
+      amount: Number(pedido.total || 0),
+      cardBrand: pedido?.pagamentoCartao?.brand || pedido?.cardBrand || pedido?.card?.brand || "",
+    }];
+  }
+
+  return [];
+};
+
 /**
  * Hook para impressão de comanda com detalhes do pedido incluindo couvert e taxas
  */
@@ -143,6 +203,73 @@ export const useDetailOrderPrint = () => {
         <span>${currencyFormatter.format(totalComServico)}</span>
       </div>
     `;
+
+    return html;
+  }, []);
+
+  /**
+   * Constrói a seção de pagamentos quando o pedido tiver múltiplas formas ou cartão com bandeira.
+   */
+  const buildPaymentSection = useCallback((pedidos) => {
+    const paymentEntries = [];
+
+    pedidos.forEach((pedido) => {
+      const entries = getPaymentEntriesFromPedido(pedido);
+      if (entries.length === 0) return;
+
+      paymentEntries.push({
+        pedidoId: pedido?.id || "",
+        entries,
+        troco: pedido?.troco || null,
+      });
+    });
+
+    if (paymentEntries.length === 0) {
+      return "";
+    }
+
+    let html = `
+      <div class="divider"></div>
+      <div class="row title">Pagamentos</div>
+    `;
+
+    paymentEntries.forEach((paymentGroup) => {
+      if (paymentGroup.pedidoId) {
+        html += `
+          <div class="row" style="font-weight: 700; margin-top: 1mm;">
+            <span>Pedido ${sanitize(paymentGroup.pedidoId)}</span>
+            <span></span>
+          </div>
+        `;
+      }
+
+      paymentGroup.entries.forEach((entry) => {
+        const label = formatPaymentLabel(entry.method);
+        const amount = currencyFormatter.format(Number(entry.amount || 0));
+        const brandLabel = formatCardBrandLabel(entry.cardBrand);
+        const suffix = brandLabel ? ` (${brandLabel})` : "";
+
+        html += `
+          <div class="row">
+            <span>${sanitize(label)}${sanitize(suffix)}</span>
+            <span>${amount}</span>
+          </div>
+        `;
+      });
+
+      if (paymentGroup.troco?.precisaTroco) {
+        html += `
+          <div class="row">
+            <span>Troco para</span>
+            <span>${currencyFormatter.format(Number(paymentGroup.troco.valorPagamento || 0))}</span>
+          </div>
+          <div class="row">
+            <span>Troco</span>
+            <span>${currencyFormatter.format(Number(paymentGroup.troco.valorTroco || 0))}</span>
+          </div>
+        `;
+      }
+    });
 
     return html;
   }, []);
@@ -350,6 +477,8 @@ export const useDetailOrderPrint = () => {
                 totalComServico,
               })}
 
+              ${buildPaymentSection(pedidos)}
+
               <div class="divider"></div>
               <div class="footer">
                 <div>Obrigado pela preferência!</div>
@@ -360,7 +489,7 @@ export const useDetailOrderPrint = () => {
         </html>
       `;
     },
-    [buildItemsSection, buildTotalSection]
+    [buildItemsSection, buildTotalSection, buildPaymentSection]
   );
 
   /**

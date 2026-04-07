@@ -11,6 +11,17 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 
 const sanitize = (value) => String(value ?? "").replace(/[<>]/g, "");
 
+const PAYMENT_LABELS = {
+  dinheiro: "Dinheiro",
+  debito: "Cartão de Débito",
+  credito: "Cartão de Crédito",
+  pix: "PIX",
+  ifood: "iFood",
+  voucher: "Voucher",
+};
+
+const formatCurrency = (value) => currencyFormatter.format(Number(value || 0));
+
 const formatDate = (date) => {
   if (!date) return null;
   try {
@@ -39,10 +50,25 @@ export const useKitchenPrint = () => {
   const formatPaymentMethodLabel = useCallback((order) => {
     const formaPagamento = String(order?.formaPagamento || "").toLowerCase();
     const tipoEntrega = String(order?.tipoEntrega || "").toLowerCase();
+    const isWhatsAppOrder = order?.orderOrigin === 'whatsapp' || 
+           order?.mesaId === 'mesa-whatsapp-delivery' ||
+           order?.mesaId === 'whatsapp';
 
     if (!formaPagamento) return "-";
     if (formaPagamento === "dinheiro") {
-      return tipoEntrega === "retirada" ? "Dinheiro (no local)" : "Dinheiro (na entrega)";
+      if (!isWhatsAppOrder) {
+        return "Dinheiro";
+      }
+
+      if (tipoEntrega === "retirada") {
+        return "Dinheiro (no local)";
+      }
+
+      if (tipoEntrega === "delivery") {
+        return "Dinheiro (na entrega)";
+      }
+
+      return "Dinheiro";
     }
     if (formaPagamento === "cartao") {
       return "Cartão";
@@ -65,6 +91,62 @@ export const useKitchenPrint = () => {
 
     return sanitize(order?.formaPagamento);
   }, []);
+
+  const getPaymentEntries = useCallback((order) => {
+    if (!order || typeof order !== "object") {
+      return [];
+    }
+
+    if (Array.isArray(order.pagamentos) && order.pagamentos.length > 0) {
+      return order.pagamentos.map((entry) => ({
+        method: String(entry?.formaPagamento || entry?.method || "").toLowerCase(),
+        amount: Number(entry?.valor || entry?.amount || 0),
+      }));
+    }
+
+    if (order.formaPagamento) {
+      return [{
+        method: String(order.formaPagamento || "").toLowerCase(),
+        amount: Number(order?.total || 0),
+      }];
+    }
+
+    return [];
+  }, []);
+
+  const buildPaymentSection = useCallback((order) => {
+    const paymentEntries = getPaymentEntries(order);
+
+    if (paymentEntries.length === 0) {
+      return "";
+    }
+
+    return `
+      <div class="divider"></div>
+      <div class="row title">Pagamento</div>
+      ${paymentEntries
+        .map((entry) => {
+          const label = PAYMENT_LABELS[entry.method] || entry.method || "Pagamento";
+          return `
+            <div class="row">
+              <span>${sanitize(label)}</span>
+              <span>${formatCurrency(entry.amount)}</span>
+            </div>
+          `;
+        })
+        .join("")}
+      ${order?.troco?.precisaTroco ? `
+        <div class="row">
+          <span>Troco para</span>
+          <span>${formatCurrency(order.troco.valorPagamento || 0)}</span>
+        </div>
+        <div class="row">
+          <span>Troco</span>
+          <span>${formatCurrency(order.troco.valorTroco || 0)}</span>
+        </div>
+      ` : ""}
+    `;
+  }, [getPaymentEntries]);
 
   const buildItemsSection = useCallback(
     (order) => {
@@ -281,8 +363,6 @@ export const useKitchenPrint = () => {
       const observations =
         sanitize(order?.observacoes) || t("print.noObservations");
       const safeConsumerDocument = sanitize(consumerDocument);
-      const paymentMethodLabel = formatPaymentMethodLabel(order);
-
       const totalLabel = currencyFormatter.format(Number(order?.total || 0));
       const headerLabel = isReceipt ? t("print.receiptHeader") : t("print.header");
       const receiptDisclaimer = t("print.receiptDisclaimer");
@@ -479,16 +559,7 @@ export const useKitchenPrint = () => {
                 <span>${t("print.createdAt")}</span>
                 <span>${createdAtLabel}</span>
               </div>
-              ${
-                isReceipt && !isWhatsAppOrder(order)
-                  ? `
-                    <div class="row">
-                      <span>Pagamento</span>
-                      <span>${paymentMethodLabel}</span>
-                    </div>
-                  `
-                  : ""
-              }
+              ${isReceipt ? buildPaymentSection(order) : ""}
 
               <div class="divider"></div>
               <div class="row title">${t("print.items")}</div>
@@ -511,7 +582,7 @@ export const useKitchenPrint = () => {
         </html>
       `;
     },
-    [buildItemsSection, buildDeliverySection, buildTotalSection, buildPickupNoticeSection, formatPaymentMethodLabel, t]
+    [buildItemsSection, buildDeliverySection, buildTotalSection, buildPickupNoticeSection, buildPaymentSection, t]
   );
 
   const printOrder = useCallback(

@@ -543,6 +543,7 @@ function parseAmount(value) {
 
 function resolveCardGroup(tPag, pedido = {}, configFiscal = {}, paymentEntry = null) {
   const supportsCardGroup = tPag === "03" || tPag === "04";
+  const requiresPixCardGroup = tPag === "17";
 
   const paymentCandidate =
     pedido?.payments?.[0] ||
@@ -605,18 +606,21 @@ function resolveCardGroup(tPag, pedido = {}, configFiscal = {}, paymentEntry = n
 
   const cAut = authRaw.replace(/\s+/g, "").substring(0, 20);
   const tBand = PAYMENT_BRAND_TO_TBAND[brandRaw] || "99";
-  const hasPixTransactionData = tPag === "17" && (cnpjDigits.length === 14 || Boolean(cAut));
-
-  if (!supportsCardGroup && !hasPixTransactionData) {
+  if (!supportsCardGroup && !requiresPixCardGroup) {
     return null;
   }
 
+  const emitCnpjDigits = String(configFiscal?.cnpj || "").replace(/\D/g, "");
   const card = {
     tpIntegra: 2,
   };
 
   if (cnpjDigits.length === 14) {
     card.CNPJ = cnpjDigits;
+  } else if (emitCnpjDigits.length === 14) {
+    // Fallback to issuer CNPJ when acquirer/PSP CNPJ is not informed.
+    // This avoids SEFAZ rejecting electronic payments with missing card group data.
+    card.CNPJ = emitCnpjDigits;
   }
 
   if (supportsCardGroup) {

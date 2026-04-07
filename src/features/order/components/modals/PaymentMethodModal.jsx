@@ -7,7 +7,21 @@ import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 const createEmptySplitPayment = () => ({
   method: "",
   amount: "",
+  cardBrand: "",
 });
+
+const CARD_BRANDS = [
+  { id: "VISA", label: "Visa" },
+  { id: "MASTERCARD", label: "Mastercard" },
+  { id: "ELO", label: "Elo" },
+  { id: "AMEX", label: "American Express" },
+  { id: "HIPERCARD", label: "Hipercard" },
+  { id: "DINERS", label: "Diners Club" },
+  { id: "CABAL", label: "Cabal" },
+  { id: "AURA", label: "Aura" },
+];
+
+const isCardMethod = (methodId) => methodId === "credito" || methodId === "debito";
 
 const PAYMENT_METHODS = [
   { id: "dinheiro", label: "payment.methods.cash", icon: Handbag, color: "bg-green-50 text-green-600 border-green-200" },
@@ -32,6 +46,7 @@ const PaymentMethodModal = ({
   const [observacoes, setObservacoes] = useState("");
   const [precisaTroco, setPrecisaTroco] = useState(false);
   const [valorPago, setValorPago] = useState("");
+  const [selectedCardBrand, setSelectedCardBrand] = useState("");
   const [splitPaymentEnabled, setSplitPaymentEnabled] = useState(false);
   const [splitPayments, setSplitPayments] = useState([createEmptySplitPayment()]);
 
@@ -80,6 +95,7 @@ const PaymentMethodModal = ({
         return {
           method: String(entry.method || "").trim(),
           amount: Number.isFinite(amountParsed) ? amountParsed : null,
+          cardBrand: String(entry.cardBrand || "").trim().toUpperCase(),
         };
       })
       .filter((entry) => entry.method && entry.amount != null);
@@ -104,10 +120,25 @@ const PaymentMethodModal = ({
     });
   }, [splitPaymentEnabled, splitPayments]);
 
+  const splitHasMissingCardBrand = useMemo(() => {
+    if (!splitPaymentEnabled) return false;
+    return splitPayments.some((entry) => {
+      const method = String(entry.method || "").trim();
+      const hasAmount = String(entry.amount || "").trim().length > 0;
+      const isCard = isCardMethod(method);
+      if (!isCard || !hasAmount) return false;
+      return String(entry.cardBrand || "").trim().length === 0;
+    });
+  }, [splitPaymentEnabled, splitPayments]);
+
+  const singleCardBrandMissing =
+    !splitPaymentEnabled && isCardMethod(selectedMethod) && !selectedCardBrand;
+
   const splitInvalid =
     splitPaymentEnabled && (
       splitPaymentsNormalized.length === 0 ||
       splitHasIncompleteEntry ||
+      splitHasMissingCardBrand ||
       Math.abs(splitDifference) > 0.01
     );
 
@@ -121,17 +152,23 @@ const PaymentMethodModal = ({
         pagamentos: splitPaymentsNormalized.map((entry) => ({
           formaPagamento: entry.method,
           valor: Math.round(Number(entry.amount || 0) * 100) / 100,
+          ...(isCardMethod(entry.method) && entry.cardBrand
+            ? { card: { brand: entry.cardBrand } }
+            : {}),
         })),
       });
       return;
     }
 
-    if (!selectedMethod || trocoInvalido) return;
+    if (!selectedMethod || trocoInvalido || singleCardBrandMissing) return;
     
     onConfirm({
       formaPagamento: selectedMethod,
       observacoesPagamento: observacoes.trim(),
       troco: trocoPayload,
+      ...(isCardMethod(selectedMethod) && selectedCardBrand
+        ? { pagamentoCartao: { brand: selectedCardBrand } }
+        : {}),
     });
   };
 
@@ -140,6 +177,7 @@ const PaymentMethodModal = ({
     setObservacoes("");
     setPrecisaTroco(false);
     setValorPago("");
+    setSelectedCardBrand("");
     setSplitPaymentEnabled(false);
     setSplitPayments([createEmptySplitPayment()]);
     onClose();
@@ -151,6 +189,9 @@ const PaymentMethodModal = ({
       setPrecisaTroco(false);
       setValorPago("");
     }
+    if (!isCardMethod(methodId)) {
+      setSelectedCardBrand("");
+    }
   };
 
   const handleToggleSplitPayment = (enabled) => {
@@ -159,6 +200,7 @@ const PaymentMethodModal = ({
       setSelectedMethod(null);
       setPrecisaTroco(false);
       setValorPago("");
+      setSelectedCardBrand("");
       if (!splitPayments.length) {
         setSplitPayments([createEmptySplitPayment()]);
       }
@@ -265,38 +307,58 @@ const PaymentMethodModal = ({
           {splitPaymentEnabled && (
             <div className="space-y-3">
               {splitPayments.map((entry, index) => (
-                <div key={`split-${index}`} className="grid grid-cols-12 gap-2 items-center p-2 border border-gray-200 rounded-lg">
-                  <select
-                    value={entry.method}
-                    onChange={(e) => updateSplitPayment(index, "method", e.target.value)}
-                    className="col-span-7 border border-gray-300 rounded-md px-2 py-2 text-sm"
-                  >
-                    <option value="">{t('payment.modal.split.methodPlaceholder', { defaultValue: 'Forma de pagamento' })}</option>
-                    {PAYMENT_METHODS.map((method) => (
-                      <option key={`option-${method.id}`} value={method.id}>
-                        {t(method.label)}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="col-span-4 relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">R$</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={entry.amount}
-                      onChange={(e) => updateSplitPayment(index, "amount", e.target.value.replace(/[^0-9,.]/g, ""))}
-                      placeholder={t('payment.modal.split.amountPlaceholder', { defaultValue: '0,00' })}
-                      className="w-full pl-7 pr-2 py-2 border border-gray-300 rounded-md text-sm"
-                    />
+                <div key={`split-${index}`} className="p-2 border border-gray-200 rounded-lg space-y-2">
+                  <div className="grid grid-cols-12 gap-2 items-center">
+                    <select
+                      value={entry.method}
+                      onChange={(e) => updateSplitPayment(index, "method", e.target.value)}
+                      className="col-span-7 border border-gray-300 rounded-md px-2 py-2 text-sm"
+                    >
+                      <option value="">{t('payment.modal.split.methodPlaceholder', { defaultValue: 'Forma de pagamento' })}</option>
+                      {PAYMENT_METHODS.map((method) => (
+                        <option key={`option-${method.id}`} value={method.id}>
+                          {t(method.label)}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="col-span-4 relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs">R$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={entry.amount}
+                        onChange={(e) => updateSplitPayment(index, "amount", e.target.value.replace(/[^0-9,.]/g, ""))}
+                        placeholder={t('payment.modal.split.amountPlaceholder', { defaultValue: '0,00' })}
+                        className="w-full pl-7 pr-2 py-2 border border-gray-300 rounded-md text-sm"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeSplitPaymentEntry(index)}
+                      className="col-span-1 text-red-600 font-bold"
+                      aria-label={t('payment.modal.split.remove', { defaultValue: 'Remover' })}
+                    >
+                      −
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeSplitPaymentEntry(index)}
-                    className="col-span-1 text-red-600 font-bold"
-                    aria-label={t('payment.modal.split.remove', { defaultValue: 'Remover' })}
-                  >
-                    −
-                  </button>
+
+                  {isCardMethod(entry.method) && (
+                    <div className="grid grid-cols-12 gap-2 items-center">
+                      <label className="col-span-4 text-xs text-gray-600">
+                        {t('payment.modal.cardBrandLabel', { defaultValue: 'Bandeira do cartão' })}
+                      </label>
+                      <select
+                        value={entry.cardBrand || ""}
+                        onChange={(e) => updateSplitPayment(index, "cardBrand", e.target.value)}
+                        className="col-span-8 border border-gray-300 rounded-md px-2 py-2 text-sm"
+                      >
+                        <option value="">{t('payment.modal.cardBrandPlaceholder', { defaultValue: 'Selecione a bandeira' })}</option>
+                        {CARD_BRANDS.map((brand) => (
+                          <option key={`brand-${brand.id}`} value={brand.id}>{brand.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -324,6 +386,11 @@ const PaymentMethodModal = ({
                     {t('payment.modal.split.incomplete', { defaultValue: 'Preencha método e valor em cada linha ou remova linhas vazias.' })}
                   </p>
                 )}
+                {splitHasMissingCardBrand && !splitHasIncompleteEntry && (
+                  <p className="text-red-700 text-xs">
+                    {t('payment.modal.split.missingCardBrand', { defaultValue: 'Informe a bandeira para pagamentos em cartão.' })}
+                  </p>
+                )}
                 {Math.abs(splitDifference) > 0.01 && !splitHasIncompleteEntry && (
                   <p className="text-red-700 text-xs">
                     {t('payment.modal.split.invalidTotal', { defaultValue: 'A soma dos pagamentos deve ser igual ao total do pedido.' })}
@@ -333,6 +400,30 @@ const PaymentMethodModal = ({
             </div>
           )}
         </div>
+
+        {!splitPaymentEnabled && isCardMethod(selectedMethod) && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+            <label htmlFor="card-brand" className="block text-xs text-gray-700 font-medium">
+              {t('payment.modal.cardBrandLabel', { defaultValue: 'Bandeira do cartão' })}
+            </label>
+            <select
+              id="card-brand"
+              value={selectedCardBrand}
+              onChange={(e) => setSelectedCardBrand(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            >
+              <option value="">{t('payment.modal.cardBrandPlaceholder', { defaultValue: 'Selecione a bandeira' })}</option>
+              {CARD_BRANDS.map((brand) => (
+                <option key={`single-brand-${brand.id}`} value={brand.id}>{brand.label}</option>
+              ))}
+            </select>
+            {!selectedCardBrand && (
+              <p className="text-red-700 text-xs">
+                {t('payment.modal.cardBrandRequired', { defaultValue: 'A bandeira do cartão é obrigatória para emissão fiscal.' })}
+              </p>
+            )}
+          </div>
+        )}
 
         {!splitPaymentEnabled && selectedMethod === "dinheiro" && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg space-y-3">
@@ -425,7 +516,7 @@ const PaymentMethodModal = ({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={splitPaymentEnabled ? (loading || splitInvalid) : (!selectedMethod || loading || trocoInvalido)}
+            disabled={splitPaymentEnabled ? (loading || splitInvalid) : (!selectedMethod || loading || trocoInvalido || singleCardBrandMissing)}
             className="flex-1 px-4 py-3 bg-primary-dynamic text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             {loading ? (

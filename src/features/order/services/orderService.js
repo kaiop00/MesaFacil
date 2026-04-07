@@ -53,6 +53,7 @@ const salvarPedidoNoHistorico = async ({
     observacoesPagamento = null,
     troco = null,
     pagamentos = null,
+    pagamentoCartao = null,
 }) => {
     if (!idRestaurante || !mesaId || !pedidoId || !pedidoData) {
         return;
@@ -75,6 +76,7 @@ const salvarPedidoNoHistorico = async ({
         observacoesPagamento: observacoesPagamento || pedidoData.observacoesPagamento || null,
         troco: troco?.precisaTroco ? troco : (pedidoData.troco || null),
         pagamentos: Array.isArray(pagamentos) && pagamentos.length > 0 ? pagamentos : (pedidoData.pagamentos || null),
+        pagamentoCartao: pagamentoCartao || pedidoData.pagamentoCartao || null,
     };
 
     await setDoc(historicoRef, payload, { merge: true });
@@ -212,7 +214,7 @@ export const getPedidosDaMesa = async (idRestaurante, mesaId) => {
  * Finaliza o pedido e atualiza o status da mesa para 'entregue'
  */
 export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}) => {
-    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null } = dadosPagamento;
+    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null, pagamentoCartao = null } = dadosPagamento;
     
     const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
     const snapshot = await getDocs(pedidosRef);
@@ -253,6 +255,9 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
             if (Array.isArray(pagamentos) && pagamentos.length > 0) {
                 updateData.pagamentos = pagamentos;
             }
+            if (pagamentoCartao && typeof pagamentoCartao === "object") {
+                updateData.pagamentoCartao = pagamentoCartao;
+            }
             
             await updateDoc(pedidoDocRef, updateData);
             
@@ -268,6 +273,7 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
                 observacoesPagamento,
                 troco,
                 pagamentos,
+                pagamentoCartao,
             });
         })
     );
@@ -284,7 +290,7 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
  * Remove o pedido da subcoleção e mantém apenas no histórico
  */
 export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId, dadosPagamento = {}, removerDaLista = true) => {
-    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null } = dadosPagamento;
+    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null, pagamentoCartao = null } = dadosPagamento;
     
     const pedidoDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoId);
     const pedidoSnapshot = await getDoc(pedidoDocRef);
@@ -314,6 +320,7 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
                 observacoesPagamento,
                 troco,
                 pagamentos,
+                pagamentoCartao,
             },
             finalizadoEm,
             status: "entregue",
@@ -321,6 +328,7 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
             observacoesPagamento,
             troco,
             pagamentos,
+            pagamentoCartao,
         });
     }
 
@@ -347,6 +355,7 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
             ...(observacoesPagamento ? { observacoesPagamento } : {}),
             ...(troco?.precisaTroco ? { troco } : {}),
             ...(Array.isArray(pagamentos) && pagamentos.length > 0 ? { pagamentos } : {}),
+            ...(pagamentoCartao && typeof pagamentoCartao === "object" ? { pagamentoCartao } : {}),
         });
     }
 
