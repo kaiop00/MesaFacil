@@ -256,7 +256,9 @@
         "close": "Chiudi",
         "retry": "Riprova",
         "checkStatus": "Controlla stato",
-        "printReceipt": "Stampa ricevuta"
+        "printReceipt": "Stampa ricevuta",
+        "printDanfcePdf": "Stampa DANFC-e (PDF)",
+        "printingDanfce": "Generazione PDF..."
       }
     }
   }

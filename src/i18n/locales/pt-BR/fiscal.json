@@ -16,7 +16,8 @@
     "company": "Dados da Empresa",
     "address": "Endereço do Estabelecimento",
     "digitalCertificate": "Certificado Digital",
-    "nfce": "Configuração NFC-e"
+    "nfce": "Configuração NFC-e",
+    "danfcePrint": "Impressão do DANFC-e"
   },
 
   "certificate": {
@@ -58,6 +59,13 @@
     "serie": "Série",
     "proximoNumero": "Próximo Número",
     "ncmPadrao": "NCM Padrão",
+    "danfceWidth": "Largura (mm)",
+    "danfceMargin": "Margem (mm)",
+    "danfceFooterMessage": "Mensagem de rodapé",
+    "danfcePrintLogo": "Imprimir logotipo",
+    "danfcePrintNomeFantasia": "Exibir nome fantasia",
+    "danfceResumido": "DANFC-e resumido",
+    "danfceQrCodeLateral": "QRCode lateral",
     "searchingCnpj": "Consultando CNPJ...",
     "searchingCep": "Buscando CEP..."
   },
@@ -66,7 +74,8 @@
     "razaoSocial": "Razão Social da empresa",
     "nomeFantasia": "Nome fantasia (opcional)",
     "selectUf": "Selecione",
-    "csc": "Token CSC da SEFAZ"
+    "csc": "Token CSC da SEFAZ",
+    "danfceFooterMessage": "Obrigado pela preferência!"
   },
 
   "options": {
@@ -80,7 +89,10 @@
     "codigoMunicipio": "Código IBGE de 7 dígitos do município. Preenchido automaticamente pelo CEP.",
     "idCsc": "Número de identificação do CSC, obtido no portal da SEFAZ do seu estado.",
     "csc": "Código de Segurança do Contribuinte, obtido no portal da SEFAZ do seu estado.",
-    "ncmPadrao": "NCM padrão para itens sem NCM individual. Use 21069090 para alimentos preparados em geral."
+    "ncmPadrao": "NCM padrão para itens sem NCM individual. Use 21069090 para alimentos preparados em geral.",
+    "danfceWidth": "Largura do DANFC-e entre 40 e 80 mm.",
+    "danfceMargin": "Use de 1 a 4 valores entre 0 e 9, separados por vírgula. Ex: 2 ou 1,2,3,4.",
+    "danfceFooterMessage": "Máximo de 120 caracteres. Use | para alinhar: esquerda|centro|direita."
   },
 
   "buttons": {
@@ -138,6 +150,9 @@
     "requiredCsc": "CSC e ID do CSC são obrigatórios para NFC-e.",
     "requiredEnvironment": "Ambiente da NFC-e é obrigatório.",
     "requiredCrt": "CRT da NFC-e é obrigatório.",
+    "invalidDanfceWidth": "A largura do DANFC-e deve estar entre 40 e 80 mm.",
+    "invalidDanfceMargin": "A margem do DANFC-e deve ter de 1 a 4 valores entre 0 e 9, separados por vírgula.",
+    "invalidDanfceFooter": "A mensagem de rodapé do DANFC-e deve ter no máximo 120 caracteres.",
     "errorConsultingCertificate": "Erro ao consultar certificado digital.",
     "selectCertificateFile": "Selecione um arquivo de certificado para enviar.",
     "requiredCertificatePassword": "Informe a senha do certificado digital.",

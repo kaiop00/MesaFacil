@@ -258,7 +258,9 @@
         "close": "Close",
         "retry": "Try Again",
         "checkStatus": "Check status",
-        "printReceipt": "Print receipt"
+        "printReceipt": "Print receipt",
+        "printDanfcePdf": "Print DANFC-e (PDF)",
+        "printingDanfce": "Generating PDF..."
       }
     }
   }

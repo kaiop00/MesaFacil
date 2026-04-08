@@ -10,7 +10,8 @@
     "company": "Données de l'Entreprise",
     "address": "Adresse de l'Établissement",
     "digitalCertificate": "Certificat Numérique",
-    "nfce": "Configuration NFC-e"
+    "nfce": "Configuration NFC-e",
+    "danfcePrint": "Impression du DANFC-e"
   },
   "certificate": {
     "description": "Téléchargez le certificat numérique de votre entreprise (.pfx ou .p12) pour activer la signature et l'émission fiscale sur Nuvem Fiscal.",
@@ -50,6 +51,13 @@
     "serie": "Série",
     "proximoNumero": "Prochain Numéro",
     "ncmPadrao": "NCM Par Défaut",
+    "danfceWidth": "Largeur (mm)",
+    "danfceMargin": "Marge (mm)",
+    "danfceFooterMessage": "Message de pied de page",
+    "danfcePrintLogo": "Imprimer le logo",
+    "danfcePrintNomeFantasia": "Afficher le nom commercial",
+    "danfceResumido": "DANFC-e résumé",
+    "danfceQrCodeLateral": "QR code latéral",
     "searchingCnpj": "Consultation du CNPJ...",
     "searchingCep": "Recherche du CEP..."
   },
@@ -57,7 +65,8 @@
     "razaoSocial": "Raison sociale de l'entreprise",
     "nomeFantasia": "Nom commercial (optionnel)",
     "selectUf": "Sélectionnez",
-    "csc": "Jeton CSC de la SEFAZ"
+    "csc": "Jeton CSC de la SEFAZ",
+    "danfceFooterMessage": "Merci pour votre achat !"
   },
   "options": {
     "environment": {
@@ -69,7 +78,10 @@
     "codigoMunicipio": "Code IBGE à 7 chiffres de la commune. Rempli automatiquement par le CEP.",
     "idCsc": "Numéro d'identification du CSC, obtenu sur le portail SEFAZ de votre état.",
     "csc": "Code de Sécurité du Contribuable, obtenu sur le portail SEFAZ de votre état.",
-    "ncmPadrao": "NCM par défaut pour les articles sans NCM individuel. Utilisez 21069090 pour les aliments préparés en général."
+    "ncmPadrao": "NCM par défaut pour les articles sans NCM individuel. Utilisez 21069090 pour les aliments préparés en général.",
+    "danfceWidth": "Largeur du DANFC-e entre 40 et 80 mm.",
+    "danfceMargin": "Utilisez 1 à 4 valeurs entre 0 et 9, séparées par des virgules. Ex : 2 ou 1,2,3,4.",
+    "danfceFooterMessage": "120 caractères maximum. Utilisez | pour aligner : gauche|centre|droite."
   },
   "buttons": {
     "save": "Enregistrer la Configuration",
@@ -126,6 +138,9 @@
     "requiredCsc": "Le CSC et l'ID du CSC sont obligatoires pour NFC-e.",
     "requiredEnvironment": "L'environnement NFC-e est obligatoire.",
     "requiredCrt": "Le CRT de la NFC-e est obligatoire.",
+    "invalidDanfceWidth": "La largeur du DANFC-e doit être comprise entre 40 et 80 mm.",
+    "invalidDanfceMargin": "La marge du DANFC-e doit comporter de 1 à 4 valeurs entre 0 et 9, séparées par des virgules.",
+    "invalidDanfceFooter": "Le message de pied de page du DANFC-e doit contenir au maximum 120 caractères.",
     "errorConsultingCertificate": "Erreur lors de la consultation du certificat numérique.",
     "selectCertificateFile": "Sélectionnez un fichier de certificat à envoyer.",
     "requiredCertificatePassword": "Saisissez le mot de passe du certificat numérique.",

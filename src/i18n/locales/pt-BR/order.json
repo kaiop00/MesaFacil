@@ -260,7 +260,9 @@
         "close": "Fechar",
         "retry": "Tentar Novamente",
         "checkStatus": "Consultar status",
-        "printReceipt": "Imprimir recibo"
+        "printReceipt": "Imprimir recibo",
+        "printDanfcePdf": "Imprimir DANFC-e (PDF)",
+        "printingDanfce": "Gerando PDF..."
       }
     }
   }

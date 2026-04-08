@@ -247,6 +247,42 @@ export async function consultarNfce({ idRestaurante, nfceId }) {
 }
 
 /**
+ * Baixa o PDF do DANFC-e para uma NFC-e autorizada.
+ * Chama a Firebase Function `nfceBaixarPdfDanfce`.
+ * @param {{
+ *   idRestaurante: string,
+ *   nfceId: string,
+ *   options?: {
+ *     logotipo?: boolean,
+ *     nome_fantasia?: boolean,
+ *     mensagem_rodape?: string,
+ *     resumido?: boolean,
+ *     qrcode_lateral?: boolean,
+ *     largura?: number,
+ *     margem?: string,
+ *   }
+ * }} params
+ * @returns {Promise<{success:boolean, nfceId:string, fileName:string, contentType:string, pdfBase64:string, bytes:number}>}
+ */
+export async function baixarPdfDanfce({ idRestaurante, nfceId, options = {} }) {
+  if (shouldUseNfceMocks()) {
+    return {
+      success: true,
+      nfceId,
+      fileName: `danfce-${nfceId || "mock"}.pdf`,
+      contentType: "application/pdf",
+      pdfBase64: "",
+      bytes: 0,
+      mockUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    };
+  }
+
+  const fn = httpsCallable(functions, "nfceBaixarPdfDanfce");
+  const result = await fn({ idRestaurante, nfceId, options });
+  return result.data;
+}
+
+/**
  * Consulta dados de CNPJ via Nuvem Fiscal.
  * Chama a Firebase Function `nfceConsultarCnpj`.
  * @param {{ idRestaurante: string, cnpj: string }} params

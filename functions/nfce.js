@@ -120,6 +120,9 @@ const tokenCache = new Map();
 const NFCE_ALLOWED_ENVIRONMENTS = ["homologacao", "producao"];
 const CERTIFICATE_MAX_SIZE_BYTES = 2 * 1024 * 1024;
 const CERTIFICATE_ALLOWED_EXTENSIONS = [".pfx", ".p12"];
+const DANFCE_MIN_WIDTH = 40;
+const DANFCE_MAX_WIDTH = 80;
+const DANFCE_MAX_FOOTER_MESSAGE_LENGTH = 120;
 
 function getNuvemFiscalEnvironment() {
   const rawEnv = (
@@ -340,6 +343,163 @@ async function nuvemFiscalRequestWithFallback(method, paths, token, body = null)
   }
 
   throw lastError || new Error("Nuvem Fiscal request failed");
+}
+
+async function nuvemFiscalRequestBinary(method, path, token) {
+  const url = `${getNuvemFiscalApiBaseUrl()}${path}`;
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/pdf, application/json",
+    },
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const contentDisposition = response.headers.get("content-disposition") || "";
+
+  if (!response.ok) {
+    let errorDetail = "";
+    if (contentType.includes("application/json")) {
+      const errorJson = await response.json();
+      errorDetail = JSON.stringify(errorJson);
+    } else {
+      errorDetail = await response.text();
+    }
+
+    logger.error("Nuvem Fiscal API binary error", {
+      method,
+      path,
+      url,
+      status: response.status,
+      responseDetail: errorDetail,
+    });
+    throw new Error(`Nuvem Fiscal API error ${response.status}: ${errorDetail}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return {
+    buffer,
+    contentType,
+    contentDisposition,
+  };
+}
+
+function parseBooleanOption(value, fieldName) {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "sim", "yes", "on"].includes(normalized)) return true;
+    if (["false", "0", "nao", "não", "no", "off"].includes(normalized)) return false;
+  }
+
+  throw new HttpsError("invalid-argument", `Campo '${fieldName}' deve ser booleano.`);
+}
+
+function parseOptionalIntegerOption(value, fieldName) {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) {
+    throw new HttpsError("invalid-argument", `Campo '${fieldName}' deve ser um inteiro.`);
+  }
+  return parsed;
+}
+
+function parseDanfceOptions(rawOptions = {}) {
+  const options = rawOptions && typeof rawOptions === "object" ? rawOptions : {};
+
+  const logotipo = parseBooleanOption(options.logotipo, "logotipo");
+  const nomeFantasia = parseBooleanOption(options.nome_fantasia, "nome_fantasia");
+  const resumido = parseBooleanOption(options.resumido, "resumido");
+  const qrcodeLateral = parseBooleanOption(options.qrcode_lateral, "qrcode_lateral");
+
+  const largura = parseOptionalIntegerOption(options.largura, "largura");
+  if (largura !== null && (largura < DANFCE_MIN_WIDTH || largura > DANFCE_MAX_WIDTH)) {
+    throw new HttpsError(
+      "invalid-argument",
+      `Campo 'largura' deve estar entre ${DANFCE_MIN_WIDTH} e ${DANFCE_MAX_WIDTH}.`,
+    );
+  }
+
+  let mensagemRodape = null;
+  if (options.mensagem_rodape !== undefined && options.mensagem_rodape !== null) {
+    mensagemRodape = String(options.mensagem_rodape).trim();
+    if (mensagemRodape.length > DANFCE_MAX_FOOTER_MESSAGE_LENGTH) {
+      throw new HttpsError(
+        "invalid-argument",
+        `Campo 'mensagem_rodape' deve ter no máximo ${DANFCE_MAX_FOOTER_MESSAGE_LENGTH} caracteres.`,
+      );
+    }
+  }
+
+  let margem = null;
+  if (options.margem !== undefined && options.margem !== null && String(options.margem).trim()) {
+    margem = String(options.margem).trim();
+    const parts = margem.split(",").map((item) => item.trim());
+    const validLength = parts.length >= 1 && parts.length <= 4;
+    const validValues = parts.every((part) => /^\d$/.test(part));
+    if (!validLength || !validValues) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Campo 'margem' deve conter de 1 a 4 valores entre 0 e 9, separados por vírgula.",
+      );
+    }
+    margem = parts.join(",");
+  }
+
+  return {
+    logotipo,
+    nome_fantasia: nomeFantasia,
+    mensagem_rodape: mensagemRodape,
+    resumido,
+    qrcode_lateral: qrcodeLateral,
+    largura,
+    margem,
+  };
+}
+
+function buildDanfcePdfQueryString(options = {}) {
+  const params = new URLSearchParams();
+
+  const boolFields = ["logotipo", "nome_fantasia", "resumido", "qrcode_lateral"];
+  for (const field of boolFields) {
+    if (typeof options[field] === "boolean") {
+      params.append(field, String(options[field]));
+    }
+  }
+
+  if (typeof options.mensagem_rodape === "string" && options.mensagem_rodape) {
+    params.append("mensagem_rodape", options.mensagem_rodape);
+  }
+
+  if (Number.isInteger(options.largura)) {
+    params.append("largura", String(options.largura));
+  }
+
+  if (typeof options.margem === "string" && options.margem) {
+    params.append("margem", options.margem);
+  }
+
+  return params.toString();
+}
+
+function extractFilenameFromContentDisposition(contentDisposition = "") {
+  if (!contentDisposition) return null;
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]).replace(/"/g, "").trim();
+  }
+
+  const plainMatch = contentDisposition.match(/filename=([^;]+)/i);
+  if (!plainMatch?.[1]) return null;
+
+  return plainMatch[1].replace(/"/g, "").trim();
 }
 
 function getCnpjDigitsFromConfig(configFiscal) {
@@ -2506,6 +2666,64 @@ exports.nfceConsultar = onCall(
     } catch (err) {
       logger.error("Error consulting NFC-e", {error: err.message, nfceId});
       throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar NFC-e");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfceBaixarPdfDanfce
+// Downloads DANFC-e PDF by NFC-e id
+// ============================================================================
+exports.nfceBaixarPdfDanfce = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, nfceId, options} = request.data || {};
+
+    if (!idRestaurante || !nfceId) {
+      throw new HttpsError("invalid-argument", "idRestaurante and nfceId are required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal", "edit_orders"]);
+
+    try {
+      const token = await getAccessToken("nfce");
+      const parsedOptions = parseDanfceOptions(options);
+      const queryString = buildDanfcePdfQueryString(parsedOptions);
+      const suffix = queryString ? `?${queryString}` : "";
+
+      const pdfResponse = await nuvemFiscalRequestBinary(
+        "GET",
+        `/nfce/${nfceId}/pdf${suffix}`,
+        token,
+      );
+
+      const resolvedFileName =
+        extractFilenameFromContentDisposition(pdfResponse.contentDisposition) ||
+        `danfce-${nfceId}.pdf`;
+
+      logger.info("NFC-e DANFC-e PDF downloaded", {
+        idRestaurante,
+        uid,
+        nfceId,
+        bytes: pdfResponse.buffer.length,
+      });
+
+      return {
+        success: true,
+        nfceId,
+        fileName: resolvedFileName,
+        contentType: pdfResponse.contentType || "application/pdf",
+        pdfBase64: pdfResponse.buffer.toString("base64"),
+        bytes: pdfResponse.buffer.length,
+      };
+    } catch (err) {
+      logger.error("Error downloading DANFC-e PDF", {
+        idRestaurante,
+        uid,
+        nfceId,
+        error: err?.message || String(err),
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao baixar PDF do DANFC-e");
     }
   },
 );

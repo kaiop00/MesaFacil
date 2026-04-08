@@ -222,7 +222,9 @@
         "close": "Cerrar",
         "retry": "Intentar Nuevamente",
         "checkStatus": "Consultar estado",
-        "printReceipt": "Imprimir recibo"
+        "printReceipt": "Imprimir recibo",
+        "printDanfcePdf": "Imprimir DANFC-e (PDF)",
+        "printingDanfce": "Generando PDF..."
       }
     }
   }

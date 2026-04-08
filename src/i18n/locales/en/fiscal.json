@@ -13,7 +13,8 @@
     "company": "Company Data",
     "address": "Establishment Address",
     "digitalCertificate": "Digital Certificate",
-    "nfce": "NFC-e Configuration"
+    "nfce": "NFC-e Configuration",
+    "danfcePrint": "DANFC-e Printing"
   },
   "certificate": {
     "description": "Upload your company's digital certificate (.pfx or .p12) to enable fiscal signing and issuance on Nuvem Fiscal.",
@@ -53,6 +54,13 @@
     "serie": "Series",
     "proximoNumero": "Next Number",
     "ncmPadrao": "Default NCM",
+    "danfceWidth": "Width (mm)",
+    "danfceMargin": "Margin (mm)",
+    "danfceFooterMessage": "Footer message",
+    "danfcePrintLogo": "Print logo",
+    "danfcePrintNomeFantasia": "Show trade name",
+    "danfceResumido": "Short DANFC-e",
+    "danfceQrCodeLateral": "Side QR code",
     "searchingCnpj": "Searching CNPJ...",
     "searchingCep": "Searching CEP..."
   },
@@ -60,7 +68,8 @@
     "razaoSocial": "Company legal name",
     "nomeFantasia": "Trade name (optional)",
     "selectUf": "Select",
-    "csc": "SEFAZ CSC Token"
+    "csc": "SEFAZ CSC Token",
+    "danfceFooterMessage": "Thanks for your purchase!"
   },
 
   "options": {
@@ -73,7 +82,10 @@
     "codigoMunicipio": "7-digit IBGE code for the city. Automatically filled by CEP.",
     "idCsc": "CSC identification number, obtained from your state's SEFAZ portal.",
     "csc": "Taxpayer Security Code, obtained from your state's SEFAZ portal.",
-    "ncmPadrao": "Default NCM for items without an individual NCM. Use 21069090 for general prepared foods."
+    "ncmPadrao": "Default NCM for items without an individual NCM. Use 21069090 for general prepared foods.",
+    "danfceWidth": "DANFC-e width between 40 and 80 mm.",
+    "danfceMargin": "Use 1 to 4 values between 0 and 9, separated by commas. Example: 2 or 1,2,3,4.",
+    "danfceFooterMessage": "Maximum 120 characters. Use | to align: left|center|right."
   },
   "buttons": {
     "save": "Save Configuration",
@@ -130,6 +142,9 @@
     "requiredCsc": "CSC and CSC ID are required for NFC-e.",
     "requiredEnvironment": "NFC-e environment is required.",
     "requiredCrt": "NFC-e CRT is required.",
+    "invalidDanfceWidth": "DANFC-e width must be between 40 and 80 mm.",
+    "invalidDanfceMargin": "DANFC-e margin must have 1 to 4 values between 0 and 9, separated by commas.",
+    "invalidDanfceFooter": "DANFC-e footer message must be at most 120 characters.",
     "errorConsultingCertificate": "Error checking digital certificate.",
     "selectCertificateFile": "Select a certificate file to upload.",
     "requiredCertificatePassword": "Enter the digital certificate password.",

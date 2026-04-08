@@ -79,6 +79,7 @@ const InputField = ({ label, tooltip, children, required }) => (
 const inputClass = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dynamic focus:border-transparent";
 const CERTIFICATE_MAX_SIZE_BYTES = 2 * 1024 * 1024;
 const CERTIFICATE_ALLOWED_EXTENSIONS = [".pfx", ".p12"];
+const DANFCE_MAX_FOOTER_LENGTH = 120;
 
 const ConfigFiscalPage = () => {
   const { t } = useTranslation("fiscal");
@@ -327,6 +328,36 @@ const ConfigFiscalPage = () => {
       notify(t("messages.requiredCrt") || "Informe o CRT da NFC-e.", "error");
       return false;
     }
+
+    const largura = Number(config.nfce?.largura);
+    if (!Number.isInteger(largura) || largura < 40 || largura > 80) {
+      notify(t("messages.invalidDanfceWidth") || "A largura do DANFC-e deve estar entre 40 e 80 mm.", "error");
+      return false;
+    }
+
+    const margem = String(config.nfce?.margem || "").trim();
+    if (margem) {
+      const parts = margem.split(",").map((item) => item.trim());
+      const validLength = parts.length >= 1 && parts.length <= 4;
+      const validValues = parts.every((part) => /^\d$/.test(part));
+      if (!validLength || !validValues) {
+        notify(
+          t("messages.invalidDanfceMargin") || "A margem do DANFC-e deve ter de 1 a 4 valores entre 0 e 9, separados por vírgula.",
+          "error",
+        );
+        return false;
+      }
+    }
+
+    const mensagemRodape = String(config.nfce?.mensagem_rodape || "").trim();
+    if (mensagemRodape.length > DANFCE_MAX_FOOTER_LENGTH) {
+      notify(
+        t("messages.invalidDanfceFooter") || "A mensagem de rodapé do DANFC-e deve ter no máximo 120 caracteres.",
+        "error",
+      );
+      return false;
+    }
+
     return true;
   }, [config.nfce, notify, t]);
 
@@ -1009,6 +1040,99 @@ const ConfigFiscalPage = () => {
                 maxLength={8}
               />
             </InputField>
+
+            <div className="md:col-span-2 mt-2 border-t border-gray-200 pt-4">
+              <h4 className="text-sm font-semibold text-gray-800 mb-3">
+                {t("sections.danfcePrint") || "Impressao do DANFC-e"}
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InputField
+                  label={t("fields.danfceWidth") || "Largura (mm)"}
+                  tooltip={t("tooltips.danfceWidth") || "Largura do DANFC-e entre 40 e 80 mm."}
+                >
+                  <input
+                    type="number"
+                    className={inputClass}
+                    value={Number(config.nfce?.largura || 80)}
+                    onChange={(e) => handleChange("nfce.largura", Math.min(80, Math.max(40, Number(e.target.value) || 80)))}
+                    min={40}
+                    max={80}
+                  />
+                </InputField>
+
+                <InputField
+                  label={t("fields.danfceMargin") || "Margem (mm)"}
+                  tooltip={t("tooltips.danfceMargin") || "Use 1 a 4 valores entre 0 e 9, separados por virgula. Ex: 2 ou 1,2,3,4"}
+                >
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={config.nfce?.margem || "2"}
+                    onChange={(e) => handleChange("nfce.margem", e.target.value.replace(/[^0-9,]/g, "").slice(0, 15))}
+                    placeholder="2"
+                  />
+                </InputField>
+
+                <div className="md:col-span-2">
+                  <InputField
+                    label={t("fields.danfceFooterMessage") || "Mensagem de rodape"}
+                    tooltip={t("tooltips.danfceFooterMessage") || "Maximo de 120 caracteres. Use | para alinhar: esquerda|centro|direita"}
+                  >
+                    <textarea
+                      className={inputClass}
+                      value={config.nfce?.mensagem_rodape || ""}
+                      onChange={(e) => handleChange("nfce.mensagem_rodape", e.target.value.slice(0, DANFCE_MAX_FOOTER_LENGTH))}
+                      rows={2}
+                      placeholder={t("placeholders.danfceFooterMessage") || "Obrigado pela preferencia!"}
+                    />
+                  </InputField>
+                  <p className="mt-1 text-xs text-gray-500 text-right">
+                    {String(config.nfce?.mensagem_rodape || "").length}/{DANFCE_MAX_FOOTER_LENGTH}
+                  </p>
+                </div>
+
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-primary-dynamic focus:ring-primary-dynamic"
+                    checked={Boolean(config.nfce?.logotipo)}
+                    onChange={(e) => handleChange("nfce.logotipo", e.target.checked)}
+                  />
+                  {t("fields.danfcePrintLogo") || "Imprimir logotipo"}
+                </label>
+
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-primary-dynamic focus:ring-primary-dynamic"
+                    checked={Boolean(config.nfce?.nome_fantasia)}
+                    onChange={(e) => handleChange("nfce.nome_fantasia", e.target.checked)}
+                  />
+                  {t("fields.danfcePrintNomeFantasia") || "Exibir nome fantasia"}
+                </label>
+
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-primary-dynamic focus:ring-primary-dynamic"
+                    checked={Boolean(config.nfce?.resumido)}
+                    onChange={(e) => handleChange("nfce.resumido", e.target.checked)}
+                  />
+                  {t("fields.danfceResumido") || "DANFC-e resumido"}
+                </label>
+
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-primary-dynamic focus:ring-primary-dynamic"
+                    checked={Boolean(config.nfce?.qrcode_lateral)}
+                    onChange={(e) => handleChange("nfce.qrcode_lateral", e.target.checked)}
+                  />
+                  {t("fields.danfceQrCodeLateral") || "QRCode lateral"}
+                </label>
+              </div>
+            </div>
           </div>
 
           <div className="pt-4 mt-4 border-t border-gray-200">

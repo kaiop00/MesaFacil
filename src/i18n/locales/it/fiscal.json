@@ -13,7 +13,8 @@
     "company": "Dati dell'Azienda",
     "address": "Indirizzo dello Stabilimento",
     "digitalCertificate": "Certificato Digitale",
-    "nfce": "Configurazione NFC-e"
+    "nfce": "Configurazione NFC-e",
+    "danfcePrint": "Stampa DANFC-e"
   },
   "certificate": {
     "description": "Carica il certificato digitale della tua azienda (.pfx o .p12) per abilitare firma ed emissione fiscale su Nuvem Fiscal.",
@@ -53,6 +54,13 @@
     "serie": "Serie",
     "proximoNumero": "Prossimo Numero",
     "ncmPadrao": "NCM Predefinito",
+    "danfceWidth": "Larghezza (mm)",
+    "danfceMargin": "Margine (mm)",
+    "danfceFooterMessage": "Messaggio nel piè di pagina",
+    "danfcePrintLogo": "Stampa logo",
+    "danfcePrintNomeFantasia": "Mostra nome commerciale",
+    "danfceResumido": "DANFC-e sintetico",
+    "danfceQrCodeLateral": "QR code laterale",
     "searchingCnpj": "Consultazione CNPJ...",
     "searchingCep": "Ricerca CEP..."
   },
@@ -60,7 +68,8 @@
     "razaoSocial": "Ragione sociale dell'azienda",
     "nomeFantasia": "Nome commerciale (opzionale)",
     "selectUf": "Seleziona",
-    "csc": "Token CSC della SEFAZ"
+    "csc": "Token CSC della SEFAZ",
+    "danfceFooterMessage": "Grazie per il tuo acquisto!"
   },
   "options": {
     "environment": {
@@ -72,7 +81,10 @@
     "codigoMunicipio": "Codice IBGE a 7 cifre del comune. Compilato automaticamente dal CEP.",
     "idCsc": "Numero di identificazione del CSC, ottenuto dal portale SEFAZ del tuo stato.",
     "csc": "Codice di Sicurezza del Contribuente, ottenuto dal portale SEFAZ del tuo stato.",
-    "ncmPadrao": "NCM predefinito per articoli senza NCM individuale. Usa 21069090 per alimenti preparati in generale."
+    "ncmPadrao": "NCM predefinito per articoli senza NCM individuale. Usa 21069090 per alimenti preparati in generale.",
+    "danfceWidth": "Larghezza del DANFC-e tra 40 e 80 mm.",
+    "danfceMargin": "Usa da 1 a 4 valori tra 0 e 9, separati da virgole. Es: 2 o 1,2,3,4.",
+    "danfceFooterMessage": "Massimo 120 caratteri. Usa | per allineare: sinistra|centro|destra."
   },
   "buttons": {
     "save": "Salva Configurazione",
@@ -129,6 +141,9 @@
     "requiredCsc": "CSC e ID del CSC sono obbligatori per NFC-e.",
     "requiredEnvironment": "L'ambiente NFC-e e obbligatorio.",
     "requiredCrt": "Il CRT della NFC-e e obbligatorio.",
+    "invalidDanfceWidth": "La larghezza del DANFC-e deve essere compresa tra 40 e 80 mm.",
+    "invalidDanfceMargin": "Il margine del DANFC-e deve avere da 1 a 4 valori tra 0 e 9, separati da virgole.",
+    "invalidDanfceFooter": "Il messaggio nel piè di pagina del DANFC-e deve contenere al massimo 120 caratteri.",
     "errorConsultingCertificate": "Errore durante la verifica del certificato digitale.",
     "selectCertificateFile": "Seleziona un file certificato da caricare.",
     "requiredCertificatePassword": "Inserisci la password del certificato digitale.",

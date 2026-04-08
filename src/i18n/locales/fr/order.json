@@ -221,7 +221,9 @@
         "close": "Fermer",
         "retry": "Réessayer",
         "checkStatus": "Consulter le statut",
-        "printReceipt": "Imprimer le reçu"
+        "printReceipt": "Imprimer le reçu",
+        "printDanfcePdf": "Imprimer DANFC-e (PDF)",
+        "printingDanfce": "Génération du PDF..."
       }
     }
   }

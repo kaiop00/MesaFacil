@@ -2,7 +2,11 @@ import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
-import { emitirNfce, consultarNfce } from "@/features/fiscal/services/nfceService";
+import {
+  emitirNfce,
+  consultarNfce,
+  baixarPdfDanfce,
+} from "@/features/fiscal/services/nfceService";
 import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 import { useKitchenPrint } from "@/features/kitchen/hooks/useKitchenPrint";
 
@@ -69,6 +73,7 @@ const NfceModal = ({
   const [erro, setErro] = useState(null);
   const [pendingNfceId, setPendingNfceId] = useState(null);
   const [rejectionCode, setRejectionCode] = useState(null);
+  const [isPrintingDanfce, setIsPrintingDanfce] = useState(false);
 
   const resetState = useCallback(() => {
     setStep(STEPS.FORM);
@@ -77,6 +82,7 @@ const NfceModal = ({
     setErro(null);
     setPendingNfceId(null);
     setRejectionCode(null);
+    setIsPrintingDanfce(false);
   }, []);
 
   const handleClose = () => {
@@ -208,6 +214,83 @@ const NfceModal = ({
     printReceipt(orderData, documento);
   };
 
+  const openPdfAndPrint = (url) => {
+    if (!url) {
+      throw new Error(t("nfce.modal.errors.generic"));
+    }
+
+    const printWindow = window.open(url, "_blank");
+    if (!printWindow) {
+      throw new Error(t("nfce.modal.errors.popupBlocked", "Nao foi possivel abrir a janela de impressao."));
+    }
+
+    const safePrint = () => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch {
+        // Browser can block programmatic print in some contexts.
+      }
+    };
+
+    printWindow.onload = safePrint;
+    setTimeout(safePrint, 900);
+  };
+
+  const base64ToBlobUrl = (base64Value, mimeType = "application/pdf") => {
+    const cleanBase64 = String(base64Value || "").replace(/\s/g, "");
+    const binaryString = atob(cleanBase64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i += 1) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mimeType });
+    return URL.createObjectURL(blob);
+  };
+
+  const handlePrintDanfcePdf = async () => {
+    const nfceId = resultado?.nfceId || resultado?.id || pendingNfceId;
+    if (!nfceId || isPrintingDanfce) return;
+
+    setIsPrintingDanfce(true);
+    try {
+      const pdfResult = await baixarPdfDanfce({
+        idRestaurante,
+        nfceId,
+        options: {
+          logotipo: true,
+          nome_fantasia: true,
+          largura: 80,
+        },
+      });
+
+      if (pdfResult?.pdfBase64) {
+        const blobUrl = base64ToBlobUrl(pdfResult.pdfBase64, pdfResult.contentType || "application/pdf");
+        openPdfAndPrint(blobUrl);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
+        return;
+      }
+
+      if (pdfResult?.mockUrl) {
+        openPdfAndPrint(pdfResult.mockUrl);
+        return;
+      }
+
+      if (resultado?.linkDanfce) {
+        openPdfAndPrint(resultado.linkDanfce);
+        return;
+      }
+
+      throw new Error(t("nfce.modal.errors.generic"));
+    } catch (error) {
+      setErro(getFriendlyNfceError(error, t("nfce.modal.errors.generic")));
+      setStep(STEPS.ERROR);
+    } finally {
+      setIsPrintingDanfce(false);
+    }
+  };
+
   return (
     <BaseModalWithHeader
       isOpen={isOpen}
@@ -332,6 +415,17 @@ const NfceModal = ({
                 {t("nfce.modal.success.viewDanfce")}
               </a>
             )}
+
+            <button
+              type="button"
+              onClick={handlePrintDanfcePdf}
+              disabled={isPrintingDanfce}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isPrintingDanfce
+                ? t("nfce.modal.buttons.printingDanfce", "Gerando PDF...")
+                : t("nfce.modal.buttons.printDanfcePdf", "Imprimir DANFC-e (PDF)")}
+            </button>
 
             {orderData && (
               <button
