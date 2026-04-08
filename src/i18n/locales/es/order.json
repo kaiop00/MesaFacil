@@ -218,6 +218,8 @@
       },
       "buttons": {
         "skip": "Omitir",
+        "previewDanfcePdf": "Ver vista previa del DANFC-e",
+        "previewingDanfce": "Generando vista previa...",
         "emit": "Emitir NFC-e",
         "close": "Cerrar",
         "retry": "Intentar Nuevamente",

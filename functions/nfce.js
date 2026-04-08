@@ -345,15 +345,22 @@ async function nuvemFiscalRequestWithFallback(method, paths, token, body = null)
   throw lastError || new Error("Nuvem Fiscal request failed");
 }
 
-async function nuvemFiscalRequestBinary(method, path, token) {
+async function nuvemFiscalRequestBinary(method, path, token, body = null) {
   const url = `${getNuvemFiscalApiBaseUrl()}${path}`;
-  const response = await fetch(url, {
+  const requestOptions = {
     method,
     headers: {
       "Authorization": `Bearer ${token}`,
       "Accept": "application/pdf, application/json",
+      "Content-Type": "application/json",
     },
-  });
+  };
+
+  if (body) {
+    requestOptions.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(url, requestOptions);
 
   const contentType = response.headers.get("content-type") || "";
   const contentDisposition = response.headers.get("content-disposition") || "";
@@ -500,6 +507,209 @@ function extractFilenameFromContentDisposition(contentDisposition = "") {
   if (!plainMatch?.[1]) return null;
 
   return plainMatch[1].replace(/"/g, "").trim();
+}
+
+async function loadNfcePreviewContext(idRestaurante, mesaId, pedidoId) {
+  const pedidoMesaRef = db.collection("restaurantes").doc(idRestaurante)
+    .collection("mesas").doc(mesaId)
+    .collection("pedidos").doc(pedidoId);
+  const pedidoHistoricoRef = db.collection("restaurantes").doc(idRestaurante)
+    .collection("historicoPedidos").doc(pedidoId);
+
+  const [restSnap, pedidoMesaSnap, pedidoHistoricoSnap] = await Promise.all([
+    db.collection("restaurantes").doc(idRestaurante).get(),
+    pedidoMesaRef.get(),
+    pedidoHistoricoRef.get(),
+  ]);
+
+  if (!restSnap.exists) {
+    throw new HttpsError("not-found", "Restaurant not found");
+  }
+  if (!pedidoMesaSnap.exists && !pedidoHistoricoSnap.exists) {
+    throw new HttpsError("not-found", "Pedido not found");
+  }
+
+  const configFiscal = restSnap.data()?.configFiscal;
+  if (!configFiscal?.ativo) {
+    throw new HttpsError("failed-precondition", "Configuração fiscal não ativa");
+  }
+
+  const pedidoSnap = pedidoMesaSnap.exists ? pedidoMesaSnap : pedidoHistoricoSnap;
+  const pedido = {id: pedidoSnap.id, ...pedidoSnap.data()};
+  if (!pedido.items || pedido.items.length === 0) {
+    throw new HttpsError("failed-precondition", "Pedido sem itens");
+  }
+
+  const cnpj = configFiscal.cnpj.replace(/\D/g, "");
+  const endereco = configFiscal.endereco || {};
+  const cUF = UF_TO_CUF[endereco.uf];
+  if (!cUF) {
+    throw new HttpsError("failed-precondition", `UF inválida: ${endereco.uf}`);
+  }
+
+  const ncmPadrao = configFiscal.ncmPadrao || "21069090";
+  const configuredCrt = resolveConfiguredCrt(configFiscal);
+  const nNF = Number(configFiscal?.nfce?.proximoNumero || 1);
+
+  const taxaEntrega = (pedido.taxaEntrega?.aplicada && pedido.taxaEntrega?.valor > 0)
+    ? Number(pedido.taxaEntrega.valor)
+    : 0;
+
+  const subtotalPedido = pedido.items.reduce((sum, item) => {
+    return sum + (Number(item.price) * Number(item.quantity || 1));
+  }, 0);
+
+  const fatorTaxa = subtotalPedido > 0 ? (subtotalPedido + taxaEntrega) / subtotalPedido : 1;
+  const approxTaxRates = resolveApproxTaxRates(configFiscal, endereco);
+
+  const det = pedido.items.map((item, index) => {
+    const quantity = Number(item.quantity || 1);
+    const unitPrice = Number(item.price) * fatorTaxa;
+    const vUnCom = Math.round(unitPrice * 100) / 100;
+    const vProd = Math.round(vUnCom * quantity * 100) / 100;
+    const itemApproxTrib = roundCurrency(vProd * approxTaxRates.total);
+    const imposto = buildImposto(configuredCrt, vProd, item, configFiscal, itemApproxTrib);
+
+    return {
+      nItem: index + 1,
+      prod: {
+        cProd: item.id || String(index + 1),
+        cEAN: "SEM GTIN",
+        xProd: (item.nome || `Item ${index + 1}`).substring(0, 120),
+        NCM: item.ncm || ncmPadrao,
+        CFOP: "5102",
+        uCom: "UN",
+        qCom: quantity,
+        vUnCom,
+        vProd,
+        cEANTrib: "SEM GTIN",
+        uTrib: "UN",
+        qTrib: quantity,
+        vUnTrib: vUnCom,
+        indTot: 1,
+      },
+      imposto,
+    };
+  });
+
+  const vProdTotal = det.reduce((sum, d) => sum + d.prod.vProd, 0);
+  const vNF = Math.round(vProdTotal * 100) / 100;
+  const vPISTotal = roundCurrency(det.reduce((sum, d) => sum + extractPisValue(d.imposto), 0));
+  const vCOFINSTotal = roundCurrency(det.reduce((sum, d) => sum + extractCofinsValue(d.imposto), 0));
+  const {detPagList, vTroco} = resolveDetPagList(pedido, vNF, configFiscal);
+  const indPres = resolveIndPresFromPedido(pedido);
+  const vTotTribTotal = roundCurrency(det.reduce((sum, d) => sum + Number(d.imposto?.vTotTrib || 0), 0));
+
+  return {
+    configFiscal,
+    pedido,
+    cnpj,
+    endereco,
+    cUF,
+    ncmPadrao,
+    configuredCrt,
+    det,
+    vNF,
+    vPISTotal,
+    vCOFINSTotal,
+    detPagList,
+    vTroco,
+    indPres,
+    vTotTribTotal,
+    nNF,
+  };
+}
+
+function buildNfcePayloadFromContext(context, cpfConsumidor = null) {
+  const {
+    configFiscal,
+    cnpj,
+    cUF,
+    endereco,
+    configuredCrt,
+    det,
+    vNF,
+    vPISTotal,
+    vCOFINSTotal,
+    detPagList,
+    vTroco,
+    indPres,
+    vTotTribTotal,
+    nNF,
+  } = context;
+
+  const nfcePayload = {
+    infNFe: {
+      versao: "4.00",
+      ide: {
+        cUF,
+        natOp: "VENDA AO CONSUMIDOR",
+        mod: 65,
+        serie: parseInt(configFiscal.nfce.serie) || 1,
+        nNF,
+        dhEmi: formatDhEmiSefaz(),
+        tpNF: 1,
+        idDest: 1,
+        cMunFG: endereco.codigoMunicipio,
+        tpImp: 4,
+        tpEmis: 1,
+        finNFe: 1,
+        indFinal: 1,
+        indPres,
+        procEmi: 0,
+        verProc: "MesaFacil1.0",
+      },
+      emit: {
+        CNPJ: cnpj,
+        CRT: configuredCrt,
+      },
+      det,
+      total: {
+        ICMSTot: {
+          vBC: 0,
+          vICMS: 0,
+          vICMSDeson: 0,
+          vFCP: 0,
+          vBCST: 0,
+          vST: 0,
+          vFCPST: 0,
+          vFCPSTRet: 0,
+          vProd: vNF,
+          vFrete: 0,
+          vSeg: 0,
+          vDesc: 0,
+          vII: 0,
+          vIPI: 0,
+          vIPIDevol: 0,
+          vPIS: vPISTotal,
+          vCOFINS: vCOFINSTotal,
+          vOutro: 0,
+          vTotTrib: vTotTribTotal,
+          vNF,
+        },
+      },
+      transp: {
+        modFrete: 9,
+      },
+      pag: {
+        ...(vTroco > 0 ? {vTroco} : {}),
+        detPag: detPagList,
+      },
+    },
+    ambiente: resolveNfceEnvironment(configFiscal),
+    referencia: String(context.pedido?.id || ""),
+  };
+
+  if (cpfConsumidor) {
+    const cpfDigits = String(cpfConsumidor).replace(/\D/g, "");
+    if (cpfDigits.length === 11) {
+      nfcePayload.infNFe.dest = {CPF: cpfDigits, indIEDest: 9};
+    } else if (cpfDigits.length === 14) {
+      nfcePayload.infNFe.dest = {CNPJ: cpfDigits, indIEDest: 9};
+    }
+  }
+
+  return nfcePayload;
 }
 
 function getCnpjDigitsFromConfig(configFiscal) {
@@ -2666,6 +2876,68 @@ exports.nfceConsultar = onCall(
     } catch (err) {
       logger.error("Error consulting NFC-e", {error: err.message, nfceId});
       throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar NFC-e");
+    }
+  },
+);
+
+// ============================================================================
+// FUNCTION: nfcePreviaPdfDanfce
+// Generates a preview PDF for the DANFC-e without fiscal value
+// ============================================================================
+exports.nfcePreviaPdfDanfce = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, mesaId, pedidoId, cpfConsumidor, options} = request.data || {};
+
+    if (!idRestaurante || !mesaId || !pedidoId) {
+      throw new HttpsError("invalid-argument", "idRestaurante, mesaId, and pedidoId are required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal", "edit_orders"]);
+
+    try {
+      const previewContext = await loadNfcePreviewContext(idRestaurante, mesaId, pedidoId);
+      const nfcePayload = buildNfcePayloadFromContext(previewContext, cpfConsumidor || null);
+      const token = await getAccessToken("nfce");
+      const parsedOptions = parseDanfceOptions(options);
+      const queryString = buildDanfcePdfQueryString(parsedOptions);
+      const suffix = queryString ? `?${queryString}` : "";
+
+      const pdfResponse = await nuvemFiscalRequestBinary(
+        "POST",
+        `/nfce/previa/pdf${suffix}`,
+        token,
+        nfcePayload,
+      );
+
+      const resolvedFileName =
+        extractFilenameFromContentDisposition(pdfResponse.contentDisposition) ||
+        `danfce-previa-${pedidoId}.pdf`;
+
+      logger.info("DANFC-e preview PDF generated", {
+        idRestaurante,
+        uid,
+        pedidoId,
+        bytes: pdfResponse.buffer.length,
+      });
+
+      return {
+        success: true,
+        pedidoId,
+        fileName: resolvedFileName,
+        contentType: pdfResponse.contentType || "application/pdf",
+        pdfBase64: pdfResponse.buffer.toString("base64"),
+        bytes: pdfResponse.buffer.length,
+        previewPayload: nfcePayload,
+      };
+    } catch (err) {
+      logger.error("Error generating DANFC-e preview PDF", {
+        idRestaurante,
+        uid,
+        pedidoId,
+        error: err?.message || String(err),
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao gerar prévia do DANFC-e");
     }
   },
 );

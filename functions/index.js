@@ -400,6 +400,7 @@ const {
   nfceConsultarCep,
   nfceEmitir,
   nfceConsultar,
+  nfcePreviaPdfDanfce,
   nfceBaixarPdfDanfce,
   nfceListar,
   nfceCancelar,
@@ -446,6 +447,7 @@ exports.nfceConsultarCnpj = nfceConsultarCnpj;
 exports.nfceConsultarCep = nfceConsultarCep;
 exports.nfceEmitir = nfceEmitir;
 exports.nfceConsultar = nfceConsultar;
+exports.nfcePreviaPdfDanfce = nfcePreviaPdfDanfce;
 exports.nfceBaixarPdfDanfce = nfceBaixarPdfDanfce;
 exports.nfceListar = nfceListar;
 exports.nfceCancelar = nfceCancelar;

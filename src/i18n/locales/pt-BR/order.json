@@ -256,6 +256,8 @@
       },
       "buttons": {
         "skip": "Pular",
+        "previewDanfcePdf": "Visualizar prévia do DANFC-e",
+        "previewingDanfce": "Gerando prévia...",
         "emit": "Emitir NFC-e",
         "close": "Fechar",
         "retry": "Tentar Novamente",

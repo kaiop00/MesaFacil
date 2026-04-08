@@ -254,6 +254,8 @@
       },
       "buttons": {
         "skip": "Skip",
+        "previewDanfcePdf": "Preview DANFC-e",
+        "previewingDanfce": "Generating preview...",
         "emit": "Issue NFC-e",
         "close": "Close",
         "retry": "Try Again",

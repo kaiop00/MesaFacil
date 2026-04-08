@@ -47,6 +47,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     const [showNfceModal, setShowNfceModal] = useState(false);
     const [nfcePedidoInfo, setNfcePedidoInfo] = useState(null);
     const [nfceDisponivel, setNfceDisponivel] = useState(false);
+    const [configFiscal, setConfigFiscal] = useState(null);
     const [numeroPessoas, setNumeroPessoas] = useState(1);
     const { notify } = useToast();
     const { printDetailOrder } = useDetailOrderPrint();
@@ -109,9 +110,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         const carregarConfigFiscal = async () => {
             try {
                 const configFiscal = await buscarConfigFiscal(idRestaurante);
+                setConfigFiscal(configFiscal || null);
                 setNfceDisponivel(Boolean(configFiscal?.ativo && configFiscal?.empresaRegistrada));
             } catch (error) {
                 console.warn("Erro ao carregar configuração fiscal:", error);
+                setConfigFiscal(null);
                 setNfceDisponivel(false);
             }
         };
@@ -903,6 +906,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 pedidoId={nfcePedidoInfo?.pedidoId}
                 orderData={nfcePedidoInfo?.orderData}
                 nfceEnabled={nfceDisponivel}
+                danfceOptions={configFiscal?.nfce || {}}
             />
         </BaseModalWithHeader>
     );

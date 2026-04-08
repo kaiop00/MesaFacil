@@ -252,6 +252,8 @@
       },
       "buttons": {
         "skip": "Salta",
+        "previewDanfcePdf": "Visualizza anteprima DANFC-e",
+        "previewingDanfce": "Generazione anteprima...",
         "emit": "Emetti NFC-e",
         "close": "Chiudi",
         "retry": "Riprova",

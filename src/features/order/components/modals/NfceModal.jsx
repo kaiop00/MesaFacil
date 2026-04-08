@@ -6,6 +6,7 @@ import {
   emitirNfce,
   consultarNfce,
   baixarPdfDanfce,
+  visualizarPreviaDanfce,
 } from "@/features/fiscal/services/nfceService";
 import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 import { useKitchenPrint } from "@/features/kitchen/hooks/useKitchenPrint";
@@ -64,6 +65,7 @@ const NfceModal = ({
   pedidoId,
   orderData,
   nfceEnabled = true,
+  danfceOptions = {},
 }) => {
   const { t } = useTranslation("order");
   const { printReceipt } = useKitchenPrint();
@@ -73,6 +75,7 @@ const NfceModal = ({
   const [erro, setErro] = useState(null);
   const [pendingNfceId, setPendingNfceId] = useState(null);
   const [rejectionCode, setRejectionCode] = useState(null);
+  const [isPreviewingDanfce, setIsPreviewingDanfce] = useState(false);
   const [isPrintingDanfce, setIsPrintingDanfce] = useState(false);
 
   const resetState = useCallback(() => {
@@ -82,6 +85,7 @@ const NfceModal = ({
     setErro(null);
     setPendingNfceId(null);
     setRejectionCode(null);
+    setIsPreviewingDanfce(false);
     setIsPrintingDanfce(false);
   }, []);
 
@@ -258,11 +262,7 @@ const NfceModal = ({
       const pdfResult = await baixarPdfDanfce({
         idRestaurante,
         nfceId,
-        options: {
-          logotipo: true,
-          nome_fantasia: true,
-          largura: 80,
-        },
+        options: danfceOptions,
       });
 
       if (pdfResult?.pdfBase64) {
@@ -288,6 +288,40 @@ const NfceModal = ({
       setStep(STEPS.ERROR);
     } finally {
       setIsPrintingDanfce(false);
+    }
+  };
+
+  const handlePreviewDanfcePdf = async () => {
+    if (step === STEPS.LOADING || isPreviewingDanfce) return;
+
+    setIsPreviewingDanfce(true);
+    try {
+      const pdfResult = await visualizarPreviaDanfce({
+        idRestaurante,
+        mesaId,
+        pedidoId,
+        cpfConsumidor: cpfCnpj.replace(/\D/g, "") || null,
+        options: danfceOptions,
+      });
+
+      if (pdfResult?.pdfBase64) {
+        const blobUrl = base64ToBlobUrl(pdfResult.pdfBase64, pdfResult.contentType || "application/pdf");
+        openPdfAndPrint(blobUrl);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
+        return;
+      }
+
+      if (pdfResult?.mockUrl) {
+        openPdfAndPrint(pdfResult.mockUrl);
+        return;
+      }
+
+      throw new Error(t("nfce.modal.errors.generic"));
+    } catch (error) {
+      setErro(getFriendlyNfceError(error, t("nfce.modal.errors.generic")));
+      setStep(STEPS.ERROR);
+    } finally {
+      setIsPreviewingDanfce(false);
     }
   };
 
@@ -337,6 +371,16 @@ const NfceModal = ({
                 className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors cursor-pointer"
               >
                 {t("nfce.modal.buttons.skip")}
+              </button>
+              <button
+                type="button"
+                onClick={handlePreviewDanfcePdf}
+                disabled={step === STEPS.LOADING || isPreviewingDanfce}
+                className="flex-1 px-4 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPreviewingDanfce
+                  ? t("nfce.modal.buttons.previewingDanfce", "Gerando prévia...")
+                  : t("nfce.modal.buttons.previewDanfcePdf", "Visualizar prévia do DANFC-e")}
               </button>
               <button
                 type="button"

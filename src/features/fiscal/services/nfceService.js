@@ -283,6 +283,30 @@ export async function baixarPdfDanfce({ idRestaurante, nfceId, options = {} }) {
 }
 
 /**
+ * Gera uma prévia em PDF do DANFC-e a partir do pedido atual.
+ * Chama a Firebase Function `nfcePreviaPdfDanfce`.
+ * @param {{ idRestaurante: string, mesaId: string, pedidoId: string, cpfConsumidor?: string, options?: object }} params
+ * @returns {Promise<{success:boolean, pedidoId:string, fileName:string, contentType:string, pdfBase64:string, bytes:number}>}
+ */
+export async function visualizarPreviaDanfce({ idRestaurante, mesaId, pedidoId, cpfConsumidor, options = {} }) {
+  if (shouldUseNfceMocks()) {
+    return {
+      success: true,
+      pedidoId,
+      fileName: `danfce-previa-${pedidoId || "mock"}.pdf`,
+      contentType: "application/pdf",
+      pdfBase64: "",
+      bytes: 0,
+      mockUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    };
+  }
+
+  const fn = httpsCallable(functions, "nfcePreviaPdfDanfce");
+  const result = await fn({ idRestaurante, mesaId, pedidoId, cpfConsumidor: cpfConsumidor || null, options });
+  return result.data;
+}
+
+/**
  * Consulta dados de CNPJ via Nuvem Fiscal.
  * Chama a Firebase Function `nfceConsultarCnpj`.
  * @param {{ idRestaurante: string, cnpj: string }} params
