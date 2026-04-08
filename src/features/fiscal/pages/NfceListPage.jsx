@@ -158,10 +158,10 @@ const NfceListPage = () => {
 
     const justificativa = window.prompt(
       t("nfceList.actions.cancelPrompt") ||
-        "Informe a justificativa do cancelamento da NFC-e:",
+        "Informe a justificativa do cancelamento da NFC-e (opcional):",
     );
 
-    if (!justificativa || !justificativa.trim()) return;
+    if (justificativa === null) return;
 
     setActionLoading(true);
     try {

@@ -3136,10 +3136,10 @@ exports.nfceCancelar = onCall(
   async (request) => {
     const {idRestaurante, nfceId, justificativa} = request.data;
 
-    if (!idRestaurante || !nfceId || !justificativa) {
+    if (!idRestaurante || !nfceId) {
       throw new HttpsError(
         "invalid-argument",
-        "idRestaurante, nfceId, and justificativa are required",
+        "idRestaurante and nfceId are required",
       );
     }
 
@@ -3147,17 +3147,14 @@ exports.nfceCancelar = onCall(
 
     try {
       const token = await getAccessToken("nfce");
+      const justificativaNormalizada = String(justificativa || "").trim();
       const payload = {
-        justificativa: String(justificativa).trim(),
+        justificativa: justificativaNormalizada,
       };
 
       const nfce = await nuvemFiscalRequestWithFallback(
         "POST",
-        [
-          `/nfce/${nfceId}/cancelamento`,
-          `/nfce/${nfceId}/cancelar`,
-          `/nfce/${nfceId}/cancelamento/solicitar`,
-        ],
+        [`/nfce/${nfceId}/cancelamento`],
         token,
         payload,
       );
@@ -3167,7 +3164,7 @@ exports.nfceCancelar = onCall(
         nfceStatus: cancelStatus,
         nfceCancelada: true,
         nfceCanceladaEm: admin.firestore.FieldValue.serverTimestamp(),
-        nfceCancelamentoJustificativa: payload.justificativa,
+        nfceCancelamentoJustificativa: justificativaNormalizada || null,
         nfceCancelamentoId: nfce.id_cancelamento || nfce.cancelamento_id || null,
         nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };

@@ -102,7 +102,11 @@ export const cancelarNfce = async (idRestaurante, nfceId, justificativa) => {
   }
 
   const fn = httpsCallable(functions, "nfceCancelar");
-  const result = await fn({idRestaurante, nfceId, justificativa});
+  const result = await fn({
+    idRestaurante,
+    nfceId,
+    justificativa: typeof justificativa === "string" ? justificativa : "",
+  });
   return result.data;
 };
 
