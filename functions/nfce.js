@@ -279,6 +279,20 @@ function mapNuvemFiscalErrorToHttps(err, fallbackMessage) {
     );
   }
 
+  if (/API error 400/.test(message)) {
+    if (/InvalidJsonProperty/i.test(message)) {
+      return new HttpsError(
+        "invalid-argument",
+        "Configuração enviada para NFC-e contém campos inválidos para a API da Nuvem Fiscal.",
+      );
+    }
+
+    return new HttpsError(
+      "invalid-argument",
+      "Dados inválidos ao configurar NFC-e na Nuvem Fiscal.",
+    );
+  }
+
   return new HttpsError("internal", `${fallbackMessage}: ${message}`);
 }
 
@@ -1883,7 +1897,6 @@ exports.nfceConfigurarEmpresa = onCall(
 
       const nfceConfig = {
         ambiente,
-        crt,
         sefaz: {
           id_csc: idCsc,
           csc,
@@ -1909,7 +1922,7 @@ exports.nfceConfigurarEmpresa = onCall(
       return {success: true, message: "Configuração de NFC-e salva com sucesso"};
     } catch (err) {
       logger.error("Error configuring NFC-e", {error: err.message, idRestaurante});
-      throw new HttpsError("internal", `Erro ao configurar NFC-e: ${err.message}`);
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao configurar NFC-e");
     }
   },
 );
