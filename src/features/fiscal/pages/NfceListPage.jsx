@@ -15,6 +15,7 @@ import {
   listarNfces,
   sincronizarDocumentosNfce,
 } from "@/features/fiscal/services/nfceListService";
+import { baixarPdfDanfce } from "@/features/fiscal/services/nfceService";
 import { ChevronLeft, ChevronRight } from "react-coolicons";
 import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 
@@ -48,6 +49,29 @@ const formatCurrency = (value) => {
   const number = Number(value);
   if (!Number.isFinite(number)) return "0.00";
   return number.toFixed(2);
+};
+
+const base64ToBlob = (base64Value, mimeType = "application/pdf") => {
+  const cleanBase64 = String(base64Value || "").replace(/\s/g, "");
+  const binaryString = atob(cleanBase64);
+  const bytes = new Uint8Array(binaryString.length);
+
+  for (let i = 0; i < binaryString.length; i += 1) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  return new Blob([bytes], { type: mimeType });
+};
+
+const triggerBlobDownload = (blob, fileName = "danfce.pdf") => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
 };
 
 const getStatusBadgeClasses = (status) => {
@@ -116,6 +140,7 @@ const NfceListPage = () => {
   const [selectedNfce, setSelectedNfce] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [downloadingDanfce, setDownloadingDanfce] = useState(false);
   const [loadingPedidoHistorico, setLoadingPedidoHistorico] = useState(false);
   const [cancelamentoData, setCancelamentoData] = useState(null);
   const notifyRef = useRef(notify);
@@ -299,6 +324,52 @@ const NfceListPage = () => {
       );
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleDownloadDanfce = async () => {
+    if (!selectedNfce?.id || !idRestaurante || downloadingDanfce) return;
+
+    setDownloadingDanfce(true);
+    try {
+      const result = await baixarPdfDanfce({
+        idRestaurante,
+        nfceId: selectedNfce.id,
+      });
+
+      if (result?.pdfBase64) {
+        const blob = base64ToBlob(result.pdfBase64, result.contentType || "application/pdf");
+        triggerBlobDownload(blob, result.fileName || `danfce-${selectedNfce.id}.pdf`);
+        notify(t("nfceList.actions.downloadDanfceSuccess") || "DANFC-e baixado com sucesso", "success");
+        return;
+      }
+
+      const fallbackUrl = result?.mockUrl || selectedNfce.url_pdf || selectedNfce.url_danfce || selectedNfce.url;
+      if (fallbackUrl) {
+        const anchor = document.createElement("a");
+        anchor.href = fallbackUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.download = "";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        notify(t("nfceList.actions.downloadDanfceSuccess") || "DANFC-e baixado com sucesso", "success");
+        return;
+      }
+
+      throw new Error(t("nfceList.actions.downloadDanfceError") || "Nao foi possivel baixar o DANFC-e");
+    } catch (error) {
+      console.error("Erro ao baixar DANFC-e:", error);
+      notify(
+        getFriendlyNfceError(
+          error,
+          t("nfceList.actions.downloadDanfceError") || "Erro ao baixar DANFC-e",
+        ),
+        "error",
+      );
+    } finally {
+      setDownloadingDanfce(false);
     }
   };
 
@@ -673,6 +744,16 @@ const NfceListPage = () => {
                   {t("nfceList.actions.openDanfce") || "Abrir DANFC-e"}
                 </a>
               )}
+
+              <button
+                onClick={handleDownloadDanfce}
+                disabled={downloadingDanfce}
+                className="px-3 py-2 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {downloadingDanfce
+                  ? (t("nfceList.actions.downloadingDanfce") || "Baixando DANFC-e...")
+                  : (t("nfceList.actions.downloadDanfce") || "Baixar DANFC-e")}
+              </button>
 
               {selectedNfce.url_xml && (
                 <a
