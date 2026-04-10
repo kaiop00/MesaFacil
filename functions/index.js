@@ -404,6 +404,7 @@ const {
   nfceBaixarPdfDanfce,
   nfceListar,
   nfceCancelar,
+  nfceConsultarCancelamento,
   nfceSincronizarCrt,
   nfceSincronizarDocumentos,
 } = require("./nfce");
@@ -451,5 +452,6 @@ exports.nfcePreviaPdfDanfce = nfcePreviaPdfDanfce;
 exports.nfceBaixarPdfDanfce = nfceBaixarPdfDanfce;
 exports.nfceListar = nfceListar;
 exports.nfceCancelar = nfceCancelar;
+exports.nfceConsultarCancelamento = nfceConsultarCancelamento;
 exports.nfceSincronizarCrt = nfceSincronizarCrt;
 exports.nfceSincronizarDocumentos = nfceSincronizarDocumentos;

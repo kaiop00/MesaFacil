@@ -3200,6 +3200,75 @@ exports.nfceCancelar = onCall(
 );
 
 // ============================================================================
+// FUNCTION: nfceConsultarCancelamento
+// Consults cancellation event details for an NFC-e
+// ============================================================================
+exports.nfceConsultarCancelamento = onCall(
+  {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
+  async (request) => {
+    const {idRestaurante, nfceId} = request.data || {};
+
+    if (!idRestaurante || !nfceId) {
+      throw new HttpsError("invalid-argument", "idRestaurante and nfceId are required");
+    }
+
+    const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal"]);
+
+    try {
+      const token = await getAccessToken("nfce");
+      const cancelamento = await nuvemFiscalRequest(
+        "GET",
+        `/nfce/${nfceId}/cancelamento`,
+        token,
+      );
+
+      const cancelStatus = cancelamento?.status || null;
+      const updatePayload = {
+        nfceCancelamentoStatus: cancelStatus,
+        nfceCancelamentoId: cancelamento?.id || null,
+        nfceCancelamentoJustificativa: cancelamento?.justificativa || null,
+        nfceCancelamentoCodigoStatus: cancelamento?.codigo_status || null,
+        nfceCancelamentoMotivoStatus: cancelamento?.motivo_status || null,
+        nfceCancelamentoProtocolo: cancelamento?.numero_protocolo || null,
+        nfceCancelamentoDataEvento: cancelamento?.data_evento || null,
+        nfceCancelamentoDataRecebimento: cancelamento?.data_recebimento || null,
+        nfceUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      if (cancelStatus === "registrado") {
+        updatePayload.nfceStatus = "cancelado";
+        updatePayload.nfceCancelada = true;
+        updatePayload.nfceCanceladaEm = admin.firestore.FieldValue.serverTimestamp();
+      }
+
+      await updateOrderByNfceId(idRestaurante, nfceId, updatePayload);
+
+      logger.info("NFC-e cancellation consulted", {
+        idRestaurante,
+        nfceId,
+        uid,
+        status: cancelStatus,
+      });
+
+      return {
+        success: true,
+        nfceId,
+        status: cancelStatus,
+        data: cancelamento,
+      };
+    } catch (err) {
+      logger.error("Error consulting NFC-e cancellation", {
+        idRestaurante,
+        nfceId,
+        uid,
+        error: err?.message || String(err),
+      });
+      throw mapNuvemFiscalErrorToHttps(err, "Erro ao consultar cancelamento da NFC-e");
+    }
+  },
+);
+
+// ============================================================================
 // FUNCTION: nfceSincronizarDocumentos
 // Fetches NFC-e details and persists XML/DANFE links in Firestore
 // ============================================================================
