@@ -30,6 +30,9 @@ const isRejectedStatus = (status) => {
   return normalized === "rejeitado" || normalized === "rejeitada" || normalized === "erro";
 };
 
+const POPUP_BLOCKED_INSTRUCTION =
+  "Seu navegador pode ter bloqueado o pop-up. Permita pop-ups para este site e tente novamente.";
+
 const extractRejectionCode = (payload = {}) => {
   return payload?.codigoStatus ||
     payload?.codigo_status ||
@@ -225,7 +228,12 @@ const NfceModal = ({
 
     const printWindow = window.open(url, "_blank");
     if (!printWindow) {
-      throw new Error(t("nfce.modal.errors.popupBlocked", "Nao foi possivel abrir a janela de impressao."));
+      throw new Error(
+        t(
+          "nfce.modal.errors.popupBlocked",
+          "Nao foi possivel abrir a janela de impressao. Seu navegador pode ter bloqueado o pop-up. Permita pop-ups para este site e tente novamente."
+        )
+      );
     }
 
     const safePrint = () => {
@@ -360,6 +368,9 @@ const NfceModal = ({
               />
               <p className="text-xs text-gray-400 mt-1">
                 {t("nfce.modal.cpfHint")}
+              </p>
+              <p className="text-xs text-amber-700 mt-2">
+                {t("nfce.modal.popupHint", POPUP_BLOCKED_INSTRUCTION)}
               </p>
             </div>
 
