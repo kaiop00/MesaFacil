@@ -226,12 +226,22 @@
         "code": "Código",
         "notInformed": "Não informado"
       },
+      "cancelation": {
+        "title": "Evento de cancelamento",
+        "reason": "Justificativa",
+        "code": "Código",
+        "statusReason": "Motivo",
+        "protocol": "Protocolo",
+        "eventDate": "Data do evento",
+        "receiptDate": "Recebimento"
+      },
       "order": {
         "title": "Detalhes do Pedido",
         "reference": "Pedido",
         "table": "Mesa",
         "customer": "Cliente",
         "items": "Itens",
+        "loading": "Buscando pedido no historico...",
         "unnamedItem": "Item",
         "notAvailable": "Detalhes do pedido não disponíveis para esta NFC-e."
       },
@@ -246,6 +256,10 @@
       "openDanfce": "Abrir DANFC-e",
       "openXml": "Abrir XML",
       "cancel": "Cancelar NFC-e",
+      "consultCancel": "Consultar cancelamento",
+      "consultingCancel": "Consultando cancelamento...",
+      "consultCancelSuccess": "Consulta de cancelamento realizada com sucesso.",
+      "consultCancelError": "Erro ao consultar cancelamento.",
       "cancelPrompt": "Informe a justificativa do cancelamento da NFC-e:",
       "cancelSuccess": "NFC-e cancelada com sucesso.",
       "cancelError": "Erro ao cancelar NFC-e."

@@ -407,4 +407,30 @@ export function simulateCancelNfce(id, justificativa) {
   };
 }
 
+/**
+ * Simula consulta do evento de cancelamento de uma NFC-e
+ * @param {Object} nfce
+ * @returns {Object}
+ */
+export function simulateConsultarCancelamento(nfce = {}) {
+  const isCanceled = String(nfce?.status || "").toLowerCase() === "cancelado";
+
+  return {
+    justificativa: nfce?.motivo_cancelamento || null,
+    id: isCanceled ? `evt_cancel_${nfce.id || "mock"}` : null,
+    ambiente: "homologacao",
+    status: isCanceled ? "registrado" : "pendente",
+    chave_acesso: nfce?.chave || null,
+    data_evento: nfce?.cancelado_em || nfce?.data || null,
+    numero_sequencial: 1,
+    data_recebimento: isCanceled ? (nfce?.cancelado_em || nfce?.data || null) : null,
+    codigo_status: isCanceled ? 135 : 128,
+    motivo_status: isCanceled ? "Evento registrado e vinculado a NFC-e" : "Evento de cancelamento ainda pendente",
+    numero_protocolo: isCanceled ? (nfce?.protocolo || `1${String(nfce?.numero || "").padStart(14, "0")}`) : null,
+    codigo_mensagem: isCanceled ? 135 : 0,
+    mensagem: isCanceled ? "Cancelamento homologado na SEFAZ" : "Aguardando processamento do cancelamento",
+    tipo_evento: "cancelamento",
+  };
+}
+
 export default NFCE_MOCKS;

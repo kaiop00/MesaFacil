@@ -1,7 +1,11 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
+import { collection, doc, documentId, getDoc, getDocs, limit, query, where } from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
 import {
   getMockNfceList,
+  getMockNfceById,
   simulateCancelNfce,
+  simulateConsultarCancelamento,
   simulateSyncNfceDocuments,
 } from "@/features/fiscal/mocks/nfceMocks";
 
@@ -19,6 +23,8 @@ const mockState = {
   initialized: false,
   nfces: [],
 };
+
+const firstNonEmpty = (...values) => values.find((value) => value !== undefined && value !== null && value !== "");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -41,6 +47,61 @@ const getMockPagination = (top = 50, skip = 0) => {
 };
 
 export const isUsingNfceMocks = () => shouldUseNfceMocks();
+
+/**
+ * Fetch historical order details from restaurantes/{idRestaurante}/historicoPedidos
+ * to enrich NFC-e details modal (items, customer and table).
+ * @param {string} idRestaurante
+ * @param {object} nfce
+ * @returns {Promise<object|null>}
+ */
+export const buscarPedidoHistoricoDaNfce = async (idRestaurante, nfce = {}) => {
+  if (!idRestaurante || !nfce || typeof nfce !== "object") return null;
+
+  if (shouldUseNfceMocks()) {
+    return nfce?.pedido || null;
+  }
+
+  const historicoRef = collection(db, "restaurantes", idRestaurante, "historicoPedidos");
+
+  const docIdCandidates = [
+    nfce?.pedidoId,
+    nfce?.pedido_id,
+    nfce?.referencia,
+    nfce?.numero_pedido,
+    nfce?.pedido?.id,
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  for (const pedidoId of docIdCandidates) {
+    const snap = await getDoc(doc(historicoRef, pedidoId));
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() };
+    }
+  }
+
+  const nfceId = String(firstNonEmpty(nfce?.id, nfce?.nfceId) || "").trim();
+  if (nfceId) {
+    const byNfceId = await getDocs(query(historicoRef, where("nfceId", "==", nfceId), limit(1)));
+    if (!byNfceId.empty) {
+      const found = byNfceId.docs[0];
+      return { id: found.id, ...found.data() };
+    }
+  }
+
+  if (docIdCandidates.length > 0) {
+    const byDocId = await getDocs(
+      query(historicoRef, where(documentId(), "in", docIdCandidates.slice(0, 10)), limit(1)),
+    );
+    if (!byDocId.empty) {
+      const found = byDocId.docs[0];
+      return { id: found.id, ...found.data() };
+    }
+  }
+
+  return null;
+};
 
 /**
  * List emitted NFC-es for a restaurant with pagination
@@ -107,6 +168,35 @@ export const cancelarNfce = async (idRestaurante, nfceId, justificativa) => {
     nfceId,
     justificativa: typeof justificativa === "string" ? justificativa : "",
   });
+  return result.data;
+};
+
+/**
+ * Consult cancellation status/details for an NFC-e.
+ * @param {string} idRestaurante
+ * @param {string} nfceId
+ * @returns {Promise<object>}
+ */
+export const consultarCancelamentoNfce = async (idRestaurante, nfceId) => {
+  if (shouldUseNfceMocks()) {
+    ensureMockState();
+    await sleep(250);
+
+    const found = mockState.nfces.find((nfce) => nfce.id === nfceId) || getMockNfceById(nfceId);
+    if (!found) {
+      throw new Error("NFC-e nao encontrada");
+    }
+
+    return {
+      success: true,
+      nfceId,
+      status: found.status,
+      data: simulateConsultarCancelamento(found),
+    };
+  }
+
+  const fn = httpsCallable(functions, "nfceConsultarCancelamento");
+  const result = await fn({idRestaurante, nfceId});
   return result.data;
 };
 

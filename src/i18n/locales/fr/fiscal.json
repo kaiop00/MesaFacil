@@ -214,6 +214,15 @@
         "code": "Code",
         "notInformed": "Non renseigné"
       },
+      "cancelation": {
+        "title": "Événement d'annulation",
+        "reason": "Justification",
+        "code": "Code",
+        "statusReason": "Motif",
+        "protocol": "Protocole",
+        "eventDate": "Date de l'événement",
+        "receiptDate": "Réception"
+      },
       "order": {
         "title": "Détails de la commande",
         "reference": "Commande",
@@ -234,6 +243,10 @@
       "openDanfce": "Ouvrir DANFC-e",
       "openXml": "Ouvrir XML",
       "cancel": "Annuler NFC-e",
+      "consultCancel": "Consulter l'annulation",
+      "consultingCancel": "Consultation de l'annulation...",
+      "consultCancelSuccess": "Consultation de l'annulation effectuée avec succès.",
+      "consultCancelError": "Erreur lors de la consultation de l'annulation.",
       "cancelPrompt": "Saisissez la justification de l'annulation de la NFC-e :",
       "cancelSuccess": "NFC-e annulée avec succès.",
       "cancelError": "Erreur lors de l'annulation de la NFC-e."

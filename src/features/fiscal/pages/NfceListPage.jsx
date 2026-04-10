@@ -8,7 +8,9 @@ import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import NfceTable from "@/features/fiscal/components/NfceTable";
 import {
+  buscarPedidoHistoricoDaNfce,
   cancelarNfce,
+  consultarCancelamentoNfce,
   isUsingNfceMocks,
   listarNfces,
   sincronizarDocumentosNfce,
@@ -30,6 +32,11 @@ const isRejectedStatus = (status) => {
   return normalized === "rejeitado" || normalized === "rejeitada" || normalized === "erro";
 };
 
+const isCanceledStatus = (status) => {
+  const normalized = normalizeStatus(status);
+  return normalized === "cancelado" || normalized === "cancelada";
+};
+
 const formatDateTime = (value) => {
   if (!value) return "-";
   const parsed = new Date(value);
@@ -48,13 +55,50 @@ const getStatusBadgeClasses = (status) => {
   if (isAuthorizedStatus(normalized)) {
     return "bg-emerald-50 text-emerald-700 border border-emerald-200";
   }
-  if (normalized === "cancelado") {
+  if (isCanceledStatus(normalized)) {
     return "bg-slate-100 text-slate-700 border border-slate-200";
   }
   if (isRejectedStatus(normalized)) {
     return "bg-red-50 text-red-700 border border-red-200";
   }
   return "bg-amber-50 text-amber-700 border border-amber-200";
+};
+
+const getCancelamentoStatusBadgeClasses = (status) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === "registrado") {
+    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  }
+  if (normalized === "rejeitado" || normalized === "erro") {
+    return "bg-red-50 text-red-700 border border-red-200";
+  }
+  return "bg-amber-50 text-amber-700 border border-amber-200";
+};
+
+const mergePedidoHistoricoIntoNfce = (nfce, pedidoHistorico) => {
+  if (!nfce || !pedidoHistorico) return nfce;
+
+  const pedidoMapped = {
+    id: pedidoHistorico.id || pedidoHistorico.pedidoId || nfce?.pedido?.id || null,
+    mesa: pedidoHistorico.mesaNumero || pedidoHistorico.mesaId || nfce?.pedido?.mesa || null,
+    cliente: pedidoHistorico.cliente || nfce?.pedido?.cliente || null,
+    itens: Array.isArray(pedidoHistorico.items) ? pedidoHistorico.items : nfce?.pedido?.itens || [],
+  };
+
+  return {
+    ...nfce,
+    pedidoId: nfce?.pedidoId || pedidoMapped.id || null,
+    pedido_id: nfce?.pedido_id || pedidoMapped.id || null,
+    referencia: nfce?.referencia || pedidoMapped.id || null,
+    numero_pedido: nfce?.numero_pedido || pedidoMapped.id || null,
+    mesa: nfce?.mesa || pedidoMapped.mesa || "-",
+    cliente: nfce?.cliente || pedidoMapped.cliente || null,
+    itens: Array.isArray(nfce?.itens) && nfce.itens.length > 0 ? nfce.itens : pedidoMapped.itens,
+    pedido: {
+      ...(nfce?.pedido || {}),
+      ...pedidoMapped,
+    },
+  };
 };
 
 const NfceListPage = () => {
@@ -72,8 +116,11 @@ const NfceListPage = () => {
   const [selectedNfce, setSelectedNfce] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [loadingPedidoHistorico, setLoadingPedidoHistorico] = useState(false);
+  const [cancelamentoData, setCancelamentoData] = useState(null);
   const notifyRef = useRef(notify);
   const lastLoadErrorRef = useRef("");
+  const lastPedidoFetchRef = useRef(0);
 
   useEffect(() => {
     notifyRef.current = notify;
@@ -113,8 +160,42 @@ const NfceListPage = () => {
 
   const handleViewDetails = (nfce) => {
     setSelectedNfce(nfce);
+    setCancelamentoData(null);
     setShowDetailsModal(true);
   };
+
+  useEffect(() => {
+    if (!showDetailsModal || !selectedNfce?.id || !idRestaurante) return;
+
+    let isCancelled = false;
+    const requestId = Date.now();
+    lastPedidoFetchRef.current = requestId;
+
+    const carregarPedidoHistorico = async () => {
+      setLoadingPedidoHistorico(true);
+      try {
+        const pedidoHistorico = await buscarPedidoHistoricoDaNfce(idRestaurante, selectedNfce);
+        if (isCancelled || lastPedidoFetchRef.current !== requestId || !pedidoHistorico) return;
+
+        setSelectedNfce((prev) => {
+          if (!prev || prev.id !== selectedNfce.id) return prev;
+          return mergePedidoHistoricoIntoNfce(prev, pedidoHistorico);
+        });
+      } catch (error) {
+        console.error("Erro ao carregar pedido em historicoPedidos:", error);
+      } finally {
+        if (!isCancelled && lastPedidoFetchRef.current === requestId) {
+          setLoadingPedidoHistorico(false);
+        }
+      }
+    };
+
+    carregarPedidoHistorico();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [showDetailsModal, selectedNfce?.id, idRestaurante]);
 
   const refreshList = async () => {
     const skip = currentPage * ITEMS_PER_PAGE;
@@ -166,13 +247,54 @@ const NfceListPage = () => {
     setActionLoading(true);
     try {
       await cancelarNfce(idRestaurante, selectedNfce.id, justificativa.trim());
-      setSelectedNfce((prev) => ({...prev, status: "cancelado"}));
+      setSelectedNfce((prev) => ({ ...prev, status: "cancelado" }));
+      setCancelamentoData((prev) => ({
+        ...(prev || {}),
+        justificativa: justificativa.trim() || prev?.justificativa || null,
+        status: prev?.status || "pendente",
+      }));
       notify(t("nfceList.actions.cancelSuccess") || "NFC-e cancelada com sucesso", "success");
       await refreshList();
     } catch (error) {
       console.error("Erro ao cancelar NFC-e:", error);
       notify(
         getFriendlyNfceError(error, t("nfceList.actions.cancelError") || "Erro ao cancelar NFC-e"),
+        "error",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConsultarCancelamento = async () => {
+    if (!selectedNfce?.id || !idRestaurante || actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      const result = await consultarCancelamentoNfce(idRestaurante, selectedNfce.id);
+      const cancelamento = result?.data || null;
+
+      setCancelamentoData(cancelamento);
+
+      if (cancelamento?.status === "registrado") {
+        setSelectedNfce((prev) => ({
+          ...prev,
+          status: "cancelado",
+        }));
+      }
+
+      notify(
+        t("nfceList.actions.consultCancelSuccess") || "Consulta de cancelamento realizada com sucesso",
+        "success",
+      );
+      await refreshList();
+    } catch (error) {
+      console.error("Erro ao consultar cancelamento NFC-e:", error);
+      notify(
+        getFriendlyNfceError(
+          error,
+          t("nfceList.actions.consultCancelError") || "Erro ao consultar cancelamento",
+        ),
         "error",
       );
     } finally {
@@ -340,7 +462,10 @@ const NfceListPage = () => {
       {showDetailsModal && selectedNfce && (
         <BaseModalWithHeader
           isOpen={showDetailsModal}
-          onClose={() => setShowDetailsModal(false)}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setCancelamentoData(null);
+          }}
           title={t("nfceList.modal.title") || "Detalhes da NFC-e"}
           subTitle={`${t("nfceList.modal.numero") || "Número"}: ${selectedNfce.numero || "-"}`}
         >
@@ -412,6 +537,60 @@ const NfceListPage = () => {
               </div>
             )}
 
+            {cancelamentoData && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold text-slate-800">
+                    {t("nfceList.modal.cancelation.title") || "Evento de cancelamento"}
+                  </p>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${getCancelamentoStatusBadgeClasses(cancelamentoData.status)}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                    {cancelamentoData.status || "-"}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-700">
+                  <span className="font-medium">{t("nfceList.modal.cancelation.reason") || "Justificativa"}:</span>{" "}
+                  {cancelamentoData.justificativa || (t("nfceList.modal.rejection.notInformed") || "Nao informado")}
+                </p>
+
+                {cancelamentoData.codigo_status && (
+                  <p className="text-xs text-slate-700">
+                    <span className="font-medium">{t("nfceList.modal.cancelation.code") || "Código"}:</span>{" "}
+                    {cancelamentoData.codigo_status}
+                  </p>
+                )}
+
+                {cancelamentoData.motivo_status && (
+                  <p className="text-xs text-slate-700">
+                    <span className="font-medium">{t("nfceList.modal.cancelation.statusReason") || "Motivo"}:</span>{" "}
+                    {cancelamentoData.motivo_status}
+                  </p>
+                )}
+
+                {cancelamentoData.numero_protocolo && (
+                  <p className="text-xs text-slate-700 break-all">
+                    <span className="font-medium">{t("nfceList.modal.cancelation.protocol") || "Protocolo"}:</span>{" "}
+                    {cancelamentoData.numero_protocolo}
+                  </p>
+                )}
+
+                {cancelamentoData.data_evento && (
+                  <p className="text-xs text-slate-700">
+                    <span className="font-medium">{t("nfceList.modal.cancelation.eventDate") || "Data do evento"}:</span>{" "}
+                    {formatDateTime(cancelamentoData.data_evento)}
+                  </p>
+                )}
+
+                {cancelamentoData.data_recebimento && (
+                  <p className="text-xs text-slate-700">
+                    <span className="font-medium">{t("nfceList.modal.cancelation.receiptDate") || "Recebimento"}:</span>{" "}
+                    {formatDateTime(cancelamentoData.data_recebimento)}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-4 space-y-2">
               <h3 className="font-semibold text-gray-800">
                 {t("nfceList.modal.order.title") || "Detalhes do Pedido"}
@@ -434,6 +613,11 @@ const NfceListPage = () => {
 
               <div>
                 <span className="text-gray-600">{t("nfceList.modal.order.items") || "Itens"}:</span>
+                {loadingPedidoHistorico && getPedidoItens(selectedNfce).length === 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t("nfceList.modal.order.loading") || "Buscando pedido no historico..."}
+                  </p>
+                )}
                 {getPedidoItens(selectedNfce).length > 0 ? (
                   <div className="mt-2 space-y-2">
                     {getPedidoItens(selectedNfce).map((item, index) => (
@@ -459,6 +643,16 @@ const NfceListPage = () => {
             </div>
 
             <div className="pt-2 border-t border-gray-200 flex flex-wrap gap-2">
+              <button
+                onClick={handleConsultarCancelamento}
+                disabled={actionLoading}
+                className="px-3 py-2 text-xs bg-slate-50 text-slate-700 border border-slate-200 rounded-md hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoading
+                  ? (t("nfceList.actions.consultingCancel") || "Consultando cancelamento...")
+                  : (t("nfceList.actions.consultCancel") || "Consultar cancelamento")}
+              </button>
+
               <button
                 onClick={handleSyncDocuments}
                 disabled={actionLoading}
