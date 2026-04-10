@@ -333,6 +333,35 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         }
     };
 
+    const handleFinalizeCanceledOrder = async (pedidoId) => {
+        if (!idRestaurante || !mesaSelecionada?.id || !pedidoId) return;
+
+        setFinalizando((prev) => ({ ...prev, [pedidoId]: true }));
+        try {
+            await finalizarPedidoEspecifico(
+                idRestaurante,
+                mesaSelecionada.id,
+                pedidoId,
+                {},
+                true,
+                {
+                    statusFinal: "cancelado",
+                    syncIfoodStatus: false,
+                }
+            );
+
+            notify(t("messages.success.orderFinished"), "success");
+
+            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
+            setPedidos(dados || []);
+        } catch (error) {
+            console.error("Erro ao finalizar pedido cancelado:", error);
+            notify(t("messages.error.finishOrder"), "error");
+        } finally {
+            setFinalizando((prev) => ({ ...prev, [pedidoId]: false }));
+        }
+    };
+
     const totalSemTaxa = useMemo(() => computeTotalPedidos(pedidos), [pedidos]);
     const percentNormalized = useMemo(
         () => normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT),
@@ -774,7 +803,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                             </div>
                         )}
 
-                        {(pedido.status === 'andamento' || pedido.status === 'entregue') && (
+                        {(pedido.status === 'andamento' || pedido.status === 'entregue' || pedido.status === 'cancelado') && (
                             <div className="space-y-2">
                                 {pedido.status === 'andamento' && nfceDisponivel && (
                                     <p className="text-xs text-emerald-700 text-right">
@@ -783,7 +812,14 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                 )}
                                 <div className="flex justify-end gap-2">
                                 <button
-                                    onClick={() => handleOpenPaymentModal(pedido.id)}
+                                    onClick={() => {
+                                        if (pedido.status === 'cancelado') {
+                                            handleFinalizeCanceledOrder(pedido.id);
+                                            return;
+                                        }
+
+                                        handleOpenPaymentModal(pedido.id);
+                                    }}
                                     disabled={!!finalizando[pedido.id]}
                                     className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
                                 >

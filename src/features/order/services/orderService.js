@@ -289,8 +289,16 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
  * Finaliza um pedido específico (usado no DetailOrderModal)
  * Remove o pedido da subcoleção e mantém apenas no histórico
  */
-export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId, dadosPagamento = {}, removerDaLista = true) => {
+export const finalizarPedidoEspecifico = async (
+    idRestaurante,
+    mesaId,
+    pedidoId,
+    dadosPagamento = {},
+    removerDaLista = true,
+    options = {}
+) => {
     const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null, pagamentoCartao = null } = dadosPagamento;
+    const { statusFinal = "entregue", syncIfoodStatus = true } = options;
     
     const pedidoDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoId);
     const pedidoSnapshot = await getDoc(pedidoDocRef);
@@ -323,7 +331,7 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
                 pagamentoCartao,
             },
             finalizadoEm,
-            status: "entregue",
+            status: statusFinal,
             formaPagamento,
             observacoesPagamento,
             troco,
@@ -333,9 +341,9 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
     }
 
     // Update iFood order status if this is an iFood order
-    if (isIfoodOrder(mesaId)) {
+    if (isIfoodOrder(mesaId) && syncIfoodStatus) {
         try {
-            await updateIfoodOrderStatusFromMesaFacil(idRestaurante, pedidoId, 'entregue');
+            await updateIfoodOrderStatusFromMesaFacil(idRestaurante, pedidoId, statusFinal);
         } catch (error) {
             console.error('Error updating iFood order status:', error);
             // Don't fail the entire operation if iFood update fails
@@ -349,7 +357,7 @@ export const finalizarPedidoEspecifico = async (idRestaurante, mesaId, pedidoId,
     } else {
         // Apenas atualiza o status para entregue
         await updateDoc(pedidoDocRef, {
-            status: "entregue",
+            status: statusFinal,
             finalizadoEm,
             ...(formaPagamento ? { formaPagamento } : {}),
             ...(observacoesPagamento ? { observacoesPagamento } : {}),

@@ -56,7 +56,6 @@ const PlanBadge = ({
     free: '🆓',
     monthly: '📅',
     bimonthly: '📊',
-    quarterly: '📈',
     semiannual: '⭐'
   };
 
@@ -125,7 +124,6 @@ export const CompactPlanIndicator = () => {
     free: 'bg-gray-400',
     monthly: 'bg-blue-500',
     bimonthly: 'bg-green-500',
-    quarterly: 'bg-purple-500',
     semiannual: 'bg-gradient-to-r from-yellow-400 to-amber-500'
   };
 

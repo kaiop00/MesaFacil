@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gift, Calendar, Users, DownloadPackage, TrendingUp, Star, CreditCard01, Settings } from 'react-coolicons';
+import { Gift, Calendar, DownloadPackage, TrendingUp, Star, CreditCard01, Settings } from 'react-coolicons';
 import BaseModalWithHeader from '@/components/BaseModalWithHeader';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { useAuth } from '@/contexts/AuthContext';
@@ -91,7 +91,6 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
       case 'free': return <DownloadPackage size={20} className="text-gray-600" />;
       case 'monthly': return <Star size={20} className="text-blue-600" />;
       case 'bimonthly': return <TrendingUp size={20} className="text-green-600" />;
-      case 'quarterly': return <Users size={20} className="text-purple-600" />;
       case 'semiannual': return <Gift size={20} className="text-yellow-600" />;
       default: return <DownloadPackage size={20} className="text-gray-600" />;
     }
@@ -102,7 +101,6 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
       case 'free': return 'border-gray-200 bg-gray-50';
       case 'monthly': return 'border-blue-200 bg-blue-50';
       case 'bimonthly': return 'border-green-200 bg-green-50';
-      case 'quarterly': return 'border-purple-200 bg-purple-50';
       case 'semiannual': return 'border-yellow-200 bg-yellow-50';
       default: return 'border-gray-200 bg-gray-50';
     }

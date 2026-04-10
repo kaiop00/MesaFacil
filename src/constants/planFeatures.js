@@ -26,7 +26,6 @@ export const FEATURE_FLAGS = {
   WEEKLY_REPORTS: 'weekly_reports',
   MONTHLY_REPORTS: 'monthly_reports',
   BIMONTHLY_REPORTS: 'bimonthly_reports',
-  QUARTERLY_REPORTS: 'quarterly_reports',
   SEMIANNUAL_REPORTS: 'semiannual_reports',
   
   // Advanced Features
@@ -56,11 +55,6 @@ export const PLAN_LIMITS = {
     maxTables: 'unlimited',
     maxEmployees: 'unlimited'
   },
-  quarterly: {
-    maxProducts: 'unlimited',
-    maxTables: 'unlimited',
-    maxEmployees: 'unlimited'
-  },
   semiannual: {
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
@@ -73,6 +67,8 @@ export const PLAN_FEATURE_MAP = {
   free: [
     FEATURE_FLAGS.BASIC_DASHBOARD,
     FEATURE_FLAGS.BASIC_ORDERS,
+    FEATURE_FLAGS.UNLIMITED_PRODUCTS,
+    FEATURE_FLAGS.UNLIMITED_TABLES,
     FEATURE_FLAGS.DAILY_REPORTS,
     FEATURE_FLAGS.PROMOTIONS_ADS  // Promoções disponíveis desde o plano gratuito
   ],
@@ -109,7 +105,7 @@ export const PLAN_FEATURE_MAP = {
     // Plus bimonthly features
     FEATURE_FLAGS.BIMONTHLY_REPORTS
   ],
-  quarterly: [
+  semiannual: [
     // All bimonthly features
     FEATURE_FLAGS.FULL_DASHBOARD,
     FEATURE_FLAGS.ADVANCED_ANALYTICS,
@@ -121,27 +117,6 @@ export const PLAN_FEATURE_MAP = {
     FEATURE_FLAGS.WEEKLY_REPORTS,
     FEATURE_FLAGS.MONTHLY_REPORTS,
     FEATURE_FLAGS.BIMONTHLY_REPORTS,
-    FEATURE_FLAGS.PROMOTIONS_ADS,
-    FEATURE_FLAGS.PRIORITY_SUPPORT,
-    FEATURE_FLAGS.INVENTORY_CONTROL,
-    FEATURE_FLAGS.EMPLOYEE_MANAGEMENT,
-    // Plus quarterly features
-    FEATURE_FLAGS.QUARTERLY_REPORTS,
-    FEATURE_FLAGS.CUSTOM_LAYOUT
-  ],
-  semiannual: [
-    // All quarterly features
-    FEATURE_FLAGS.FULL_DASHBOARD,
-    FEATURE_FLAGS.ADVANCED_ANALYTICS,
-    FEATURE_FLAGS.ADVANCED_ORDERS,
-    FEATURE_FLAGS.ORDER_HISTORY,
-    FEATURE_FLAGS.UNLIMITED_PRODUCTS,
-    FEATURE_FLAGS.UNLIMITED_TABLES,
-    FEATURE_FLAGS.DAILY_REPORTS,
-    FEATURE_FLAGS.WEEKLY_REPORTS,
-    FEATURE_FLAGS.MONTHLY_REPORTS,
-    FEATURE_FLAGS.BIMONTHLY_REPORTS,
-    FEATURE_FLAGS.QUARTERLY_REPORTS,
     FEATURE_FLAGS.PROMOTIONS_ADS,
     FEATURE_FLAGS.PRIORITY_SUPPORT,
     FEATURE_FLAGS.INVENTORY_CONTROL,
@@ -159,8 +134,7 @@ export const PLAN_HIERARCHY = {
   free: 0,
   monthly: 1,
   bimonthly: 2,
-  quarterly: 3,
-  semiannual: 4
+  semiannual: 3
 };
 
 // Plan display names
@@ -168,7 +142,6 @@ export const PLAN_NAMES = {
   free: 'Gratuito',
   monthly: 'Mensal',
   bimonthly: 'Bimestral',
-  quarterly: 'Trimestral',
   semiannual: 'Semestral'
 };
 
@@ -177,7 +150,6 @@ export const PLAN_COLORS = {
   free: 'gray',
   monthly: 'blue',
   bimonthly: 'green',
-  quarterly: 'purple',
   semiannual: 'gold'
 };
 
@@ -187,6 +159,5 @@ export const REPORT_TYPES = [
   { value: 'weekly', label: 'Semanal', requiredPlan: 'monthly' },
   { value: 'monthly', label: 'Mensal', requiredPlan: 'monthly' },
   { value: 'bimonthly', label: 'Bimestral', requiredPlan: 'bimonthly' },
-  { value: 'quarterly', label: 'Trimestral', requiredPlan: 'quarterly' },
   { value: 'semiannual', label: 'Semestral', requiredPlan: 'semiannual' }
 ];

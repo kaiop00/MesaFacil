@@ -1,95 +1,75 @@
 export const PLANS_DATA = [
   {
     id: 'free',
-    name: 'Free',
+    name: 'Teste Grátis',
     price: 0,
-    duration: 'Ilimitada',
+    duration: '30 dias',
     discount: null,
     isPopular: false,
     features: [
-      { text: 'Cadastro de até 5 produtos no cardápio', included: true },
-      { text: 'Cadastro de até 2 mesas', included: true },
-      { text: 'Visualização básica dos pedidos', included: true },
-      { text: 'Relatório simples (apenas pedidos do dia)', included: true },
-      { text: 'Promoções', included: false },
-      { text: 'Cadastro ilimitado de produtos', included: false },
-      { text: 'Relatórios completos', included: false },
-      { text: 'Dashboard completo', included: false },
-      { text: 'Controle de estoque', included: false },
-      { text: 'Personalização de layout', included: false }
+      { text: 'Cadastro ilimitado de produtos', included: true },
+      { text: 'Controle de mesas e pedidos', included: true },
+      { text: 'Emissão de pedidos e comandas', included: true },
+      { text: 'Integração com iFood', included: true },
+      { text: 'Relatórios básicos de vendas', included: true },
+      { text: 'Suporte via WhatsApp', included: true },
+      { text: 'Treinamento inicial guiado', included: true }
     ],
     limitations: [
-      'Acesso a apenas 40% das funcionalidades',
-      'Máximo de 5 produtos no cardápio',
-      'Máximo de 2 mesas'
+      'Sem cobrança durante 30 dias',
+      'Sem necessidade de cartão para começar'
     ]
   },
   {
     id: 'monthly',
     name: 'Mensal',
-    price: 89.90,
+    price: 200,
     duration: '30 dias',
     discount: null,
     isPopular: true,
     stripePriceId: import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID,
     features: [
-      { text: 'Cadastro ilimitado de produtos e mesas', included: true },
-      { text: 'Relatórios completos (diário, semanal e mensal)', included: true },
-      { text: 'Dashboard completo', included: true },
-      { text: 'Visualização avançada dos pedidos', included: true },
-      { text: 'Promoções', included: true },
-      { text: 'Controle de estoque (itens e movimentações)', included: true },
-      { text: 'Gerenciamento de funcionários ilimitado', included: true },
-      { text: 'Suporte técnico prioritário', included: true },
+      { text: 'Tudo do período de teste', included: true },
+      { text: 'Emissão de NFC-e integrada', included: true },
+      { text: 'Controle de estoque automático', included: true },
+      { text: 'Relatórios completos (financeiro e produtos)', included: true },
+      { text: 'Multiusuários (garçom, caixa, gerente)', included: true },
+      { text: 'Atualizações automáticas do sistema', included: true },
+      { text: 'Suporte prioritário', included: true },
     ],
     limitations: []
   },
   {
     id: 'bimonthly',
     name: 'Bimestral',
-    price: 159.90,
+    price: 360,
     duration: '60 dias',
-    discount: 'Economize 11%',
+    discount: 'R$ 180/mês',
     isPopular: false,
     stripePriceId: import.meta.env.VITE_STRIPE_BIMONTHLY_PRICE_ID,
     features: [
-      { text: 'Todas as funcionalidades do Plano Mensal', included: true },
-      { text: 'Relatórios bimestrais', included: true },
-      { text: 'Renovação automática a cada 2 meses', included: true },
-      { text: 'Desconto em relação ao plano mensal', included: true },
-    ],
-    limitations: []
-  },
-  {
-    id: 'quarterly',
-    name: 'Trimestral',
-    price: 224.90,
-    duration: '90 dias',
-    discount: 'Economize 17%',
-    isPopular: false,
-    stripePriceId: import.meta.env.VITE_STRIPE_QUARTERLY_PRICE_ID,
-    features: [
-      { text: 'Todas as funcionalidades do Plano Bimestral', included: true },
-      { text: 'Personalização de layout (cores, logo e fotos)', included: true },
-      { text: 'Relatórios trimestrais', included: true },
-      { text: 'Maior desconto em relação ao bimestral', included: true },
+      { text: 'Tudo do Plano Mensal', included: true },
+      { text: 'Desconto automático na mensalidade', included: true },
+      { text: 'Prioridade maior no suporte', included: true },
+      { text: 'Relatórios avançados de desempenho', included: true },
+      { text: 'Acesso remoto ao sistema', included: true },
     ],
     limitations: []
   },
   {
     id: 'semiannual',
     name: 'Semestral',
-    price: 404.90,
+    price: 960,
     duration: '180 dias',
-    discount: 'Economize 25%',
+    discount: '20% OFF',
     isPopular: false,
     stripePriceId: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades dos planos anteriores', included: true },
-      { text: 'Relatórios semestrais', included: true },
-      { text: 'Backup automático', included: true },
-      { text: 'Suporte técnico premium', included: true },
-      { text: 'Maior desconto entre todos os planos', included: true },
+      { text: 'Maior economia no período (20% OFF)', included: true },
+      { text: 'Ajuda na configuração de cardápio e fluxo', included: true },
+      { text: 'Prioridade máxima no suporte', included: true },
+      { text: 'Acesso antecipado a novas funcionalidades', included: true },
     ],
     limitations: []
   }
@@ -97,11 +77,11 @@ export const PLANS_DATA = [
 
 export const PLAN_BENEFITS = {
   free: {
-    accessLevel: 40, // 40% das funcionalidades
-    maxProducts: 5,
-    maxTables: 2,
+    accessLevel: 70,
+    maxProducts: 'unlimited',
+    maxTables: 'unlimited',
     reports: ['daily'],
-    features: ['basic_orders', 'simple_dashboard', 'promotions_ads']  // Promoções no Free!
+    features: ['basic_orders', 'simple_dashboard', 'promotions_ads', 'unlimited_products', 'unlimited_tables']
   },
   monthly: {
     accessLevel: 100,
@@ -117,18 +97,11 @@ export const PLAN_BENEFITS = {
     reports: ['daily', 'weekly', 'monthly', 'bimonthly'],
     features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads', 'inventory_control', 'employee_management']
   },
-  quarterly: {
-    accessLevel: 100,
-    maxProducts: 'unlimited',
-    maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly', 'bimonthly', 'quarterly'],
-    features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads', 'inventory_control', 'employee_management', 'custom_layout']
-  },
   semiannual: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',
-    reports: ['daily', 'weekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual'],
+    reports: ['daily', 'weekly', 'monthly', 'bimonthly', 'semiannual'],
     features: [
       'advanced_orders', 
       'full_dashboard', 

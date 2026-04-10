@@ -31,7 +31,7 @@ export const hasFeature = (currentPlan, featureFlag) => {
  * @returns {string|null} - Plan name or null if feature doesn't exist
  */
 export const getRequiredPlanForFeature = (featureFlag) => {
-  const plans = ['free', 'monthly', 'bimonthly', 'quarterly', 'semiannual'];
+  const plans = ['free', 'monthly', 'bimonthly', 'semiannual'];
   
   for (const plan of plans) {
     if (PLAN_FEATURE_MAP[plan]?.includes(featureFlag)) {
@@ -189,7 +189,7 @@ export const getUpgradeRecommendation = (usage, currentPlan) => {
   }
   
   if (currentPlan === 'monthly' && employeeCount > 1) {
-    return 'quarterly'; // Need more employees
+    return 'bimonthly'; // Need more advanced reports/support level
   }
   
   return null;
@@ -224,7 +224,6 @@ export const getFeatureName = (featureFlag) => {
     [FEATURE_FLAGS.WEEKLY_REPORTS]: 'Relatórios Semanais',
     [FEATURE_FLAGS.MONTHLY_REPORTS]: 'Relatórios Mensais',
     [FEATURE_FLAGS.BIMONTHLY_REPORTS]: 'Relatórios Bimestrais',
-    [FEATURE_FLAGS.QUARTERLY_REPORTS]: 'Relatórios Trimestrais',
     [FEATURE_FLAGS.SEMIANNUAL_REPORTS]: 'Relatórios Semestrais',
     [FEATURE_FLAGS.INVENTORY_CONTROL]: 'Controle de Estoque',
     [FEATURE_FLAGS.CUSTOM_LAYOUT]: 'Personalização de Layout',
