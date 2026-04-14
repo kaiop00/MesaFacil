@@ -1,12 +1,7 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-// ============================================
-// TEMPORARY: STRIPE DISABLED
-// A conta do Stripe foi temporariamente desativada
-// Este flag desativa as verificações de plano e assinaturas
-// Para reativar, altere para false
-// ============================================
-const STRIPE_TEMPORARILY_DISABLED = true;
+// Stripe toggle for maintenance windows.
+const STRIPE_TEMPORARILY_DISABLED = false;
 
 // Get Stripe publishable key from environment
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -429,14 +424,13 @@ export { STRIPE_TEMPORARILY_DISABLED };
 export const STRIPE_PRICE_IDS = {
   monthly: import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID,
   bimonthly: import.meta.env.VITE_STRIPE_BIMONTHLY_PRICE_ID,
-  quarterly: import.meta.env.VITE_STRIPE_QUARTERLY_PRICE_ID,
   semiannual: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
 };
 
 /**
  * Map Stripe Price ID to internal Plan ID
  * @param {string} stripePriceId - Stripe Price ID from subscription
- * @returns {string} Internal plan ID (free, monthly, bimonthly, quarterly, semiannual)
+ * @returns {string} Internal plan ID (free, monthly, bimonthly, semiannual)
  */
 export const mapStripePriceToPlanId = (stripePriceId) => {
   if (!stripePriceId) return 'free';
