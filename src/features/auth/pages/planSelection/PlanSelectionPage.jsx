@@ -16,9 +16,10 @@ export default function PlanSelectionPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, idRestaurante, stripeCustomerId, loading } = useAuth();
-  const { setUserPlan } = usePlanManagement();
+  const { setUserPlan, currentPlan } = usePlanManagement();
   const { notify } = useToast();
   const resolvedRestaurantId = idRestaurante || location.state?.idRestaurante;
+  const isFreeTrialExpired = Boolean(currentPlan?.planId === 'free' && currentPlan?.isTrialExpired);
 
   // Check if user has an existing subscription in Stripe
   useEffect(() => {
@@ -78,6 +79,11 @@ export default function PlanSelectionPage() {
   }, [stripeCustomerId, notify, resolvedRestaurantId, setUserPlan, navigate]);
 
   const handlePlanSelect = (plan) => {
+    if (plan.id === 'free' && isFreeTrialExpired) {
+      notify('Seu teste grátis já expirou. Escolha um plano pago para continuar.', 'warning');
+      return;
+    }
+
     setSelectedPlan(plan);
   };
 
@@ -100,6 +106,12 @@ export default function PlanSelectionPage() {
       }
       
       if (selectedPlan.id === 'free') {
+        if (isFreeTrialExpired) {
+          notify('O período de teste grátis acabou. Escolha um plano pago.', 'warning');
+          setIsProcessing(false);
+          return;
+        }
+
         await setUserPlan(resolvedRestaurantId, null, null);
         notify('Plano gratuito ativado com sucesso!', 'success');
         navigate('/home', { replace: true });
@@ -180,6 +192,26 @@ export default function PlanSelectionPage() {
             </div>
           </div>
         )}
+
+        {!STRIPE_TEMPORARILY_DISABLED && isFreeTrialExpired && (
+          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-8 max-w-4xl mx-auto">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-red-900 text-lg mb-2">
+                  Seu período de Teste Grátis terminou
+                </h3>
+                <p className="text-red-800">
+                  Para continuar usando o MesaFácil, escolha um dos planos pagos abaixo. O plano Teste Grátis foi desativado para esta conta.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Título da seção */}
         <div className="text-center mb-12">{/* Alert if no restaurant ID */}
@@ -206,15 +238,21 @@ export default function PlanSelectionPage() {
 
         {/* Grid de planos */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {PLANS_DATA.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              isSelected={selectedPlan?.id === plan.id}
-              onSelect={() => handlePlanSelect(plan)}
-              isPopular={plan.isPopular}
-            />
-          ))}
+          {PLANS_DATA.map((plan) => {
+            const isFreePlanBlocked = !STRIPE_TEMPORARILY_DISABLED && isFreeTrialExpired && plan.id === 'free';
+
+            return (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                isSelected={selectedPlan?.id === plan.id}
+                onSelect={() => handlePlanSelect(plan)}
+                isPopular={plan.isPopular}
+                isDisabled={isFreePlanBlocked}
+                disabledReason={isFreePlanBlocked ? 'Teste grátis expirado para esta conta.' : null}
+              />
+            );
+          })}
         </div>
 
         {/* Botão de continuar */}

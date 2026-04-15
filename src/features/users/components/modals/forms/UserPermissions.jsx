@@ -12,9 +12,10 @@ const UserPermissions = ({
   readOnly = false 
 }) => {
   const { t } = useTranslation();
-  const { planId } = usePlan();
+  const { planId, currentPlan } = usePlan();
+  const hasFullTrialAccess = Boolean(currentPlan) && planId === 'free' && !currentPlan?.isTrialExpired;
   const ALL_PERMISSIONS = getPermissions(t);
-  const PERMISSIONS = filterPermissionsByPlan(ALL_PERMISSIONS, planId);
+  const PERMISSIONS = filterPermissionsByPlan(ALL_PERMISSIONS, planId, hasFullTrialAccess);
   
   const ALL_PERMISSION_IDS = Object.values(PERMISSIONS)
     .flatMap(category => category.map(permission => permission.id));
@@ -81,7 +82,7 @@ const UserPermissions = ({
 
   return (
     <div className="space-y-6">
-      {planId === 'free' && !readOnly && (
+      {planId === 'free' && !hasFullTrialAccess && !readOnly && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start">
             <Lock size={20} className="text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
@@ -125,7 +126,7 @@ const UserPermissions = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {perms.map((permission) => {
                 const isPaidOnly = requiresPaidPlan(permission.id);
-                const isLocked = isPaidOnly && planId === 'free';
+                const isLocked = isPaidOnly && planId === 'free' && !hasFullTrialAccess;
                 
                 return (
                   <label

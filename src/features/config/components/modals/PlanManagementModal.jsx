@@ -33,7 +33,7 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
     if (newPlanId === 'free') {
       setChangingPlan(true);
       try {
-        await setUserPlan(idRestaurante, newPlanId);
+        await setUserPlan(idRestaurante, null, null);
         notify(`Alterado para plano gratuito com sucesso!`, 'success');
         setSelectedNewPlan(null);
         onClose();

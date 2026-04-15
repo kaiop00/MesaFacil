@@ -3,11 +3,28 @@ import {
   doc,
   getDoc,
   updateDoc,
+  Timestamp,
   serverTimestamp,
 } from "firebase/firestore";
 import { app } from "@/config/firebaseConfig";
 
 const db = getFirestore(app);
+const FREE_TRIAL_DAYS = 30;
+
+const addDays = (baseDate, days) => {
+  const date = new Date(baseDate);
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
+const normalizeFirestoreDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value.toDate === "function") return value.toDate();
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
 
 /**
  * Restaurant Service
@@ -152,6 +169,108 @@ export async function clearStripeData(idRestaurante) {
     });
   } catch (error) {
     console.error("Error clearing Stripe data:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get free trial metadata from restaurant document
+ * @param {string} idRestaurante - Restaurant ID
+ * @returns {Promise<Object>} Trial metadata
+ */
+export async function getFreeTrialData(idRestaurante) {
+  if (!idRestaurante) {
+    return {
+      startedAt: null,
+      expiresAt: null,
+      isExpired: false,
+      hasStarted: false,
+    };
+  }
+
+  try {
+    const restaurant = await getRestaurant(idRestaurante);
+    const trial = restaurant?.freeTrial || {};
+    const startedAt = normalizeFirestoreDate(trial.startedAt);
+    const expiresAt = normalizeFirestoreDate(trial.expiresAt);
+    const now = new Date();
+    const isExpired = Boolean(trial.isExpired) || (expiresAt ? now > expiresAt : false);
+
+    return {
+      startedAt,
+      expiresAt,
+      isExpired,
+      hasStarted: Boolean(startedAt),
+    };
+  } catch (error) {
+    console.error("Error getting free trial data:", error);
+    return {
+      startedAt: null,
+      expiresAt: null,
+      isExpired: false,
+      hasStarted: false,
+    };
+  }
+}
+
+/**
+ * Initialize free trial data if it doesn't exist yet
+ * @param {string} idRestaurante - Restaurant ID
+ * @returns {Promise<Object>} Initialized or existing trial metadata
+ */
+export async function initializeFreeTrialIfNeeded(idRestaurante) {
+  if (!idRestaurante) {
+    throw new Error("Restaurant ID is required");
+  }
+
+  const existing = await getFreeTrialData(idRestaurante);
+  if (existing.hasStarted) {
+    return existing;
+  }
+
+  try {
+    const restaurantRef = doc(db, "restaurantes", idRestaurante);
+    const expiresAt = addDays(new Date(), FREE_TRIAL_DAYS);
+
+    await updateDoc(restaurantRef, {
+      freeTrial: {
+        startedAt: serverTimestamp(),
+        expiresAt: Timestamp.fromDate(expiresAt),
+        isExpired: false,
+      },
+      updatedAt: serverTimestamp(),
+    });
+
+    return {
+      startedAt: new Date(),
+      expiresAt,
+      isExpired: false,
+      hasStarted: true,
+    };
+  } catch (error) {
+    console.error("Error initializing free trial:", error);
+    throw error;
+  }
+}
+
+/**
+ * Mark free trial as expired in Firestore
+ * @param {string} idRestaurante - Restaurant ID
+ * @returns {Promise<void>}
+ */
+export async function markFreeTrialAsExpired(idRestaurante) {
+  if (!idRestaurante) {
+    throw new Error("Restaurant ID is required");
+  }
+
+  try {
+    const restaurantRef = doc(db, "restaurantes", idRestaurante);
+    await updateDoc(restaurantRef, {
+      "freeTrial.isExpired": true,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Error marking free trial as expired:", error);
     throw error;
   }
 }

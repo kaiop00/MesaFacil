@@ -5,8 +5,6 @@
  * Free plan users cannot assign management permissions to other users.
  */
 
-import { FEATURE_FLAGS } from '@/constants/planFeatures';
-
 /**
  * Permissions that require a paid plan (not available in free plan)
  */
@@ -30,15 +28,19 @@ export const requiresPaidPlan = (permissionId) => {
   return PAID_PLAN_PERMISSIONS.includes(permissionId);
 };
 
+const isFreePlanRestricted = (currentPlan, hasFullTrialAccess = false) => {
+  return currentPlan === 'free' && !hasFullTrialAccess;
+};
+
 /**
  * Filter permissions based on current plan
  * @param {Object} permissions - Object with category -> permissions structure
  * @param {string} currentPlan - Current plan ID (free, monthly, etc.)
  * @returns {Object} - Filtered permissions object
  */
-export const filterPermissionsByPlan = (permissions, currentPlan) => {
+export const filterPermissionsByPlan = (permissions, currentPlan, hasFullTrialAccess = false) => {
   // If on free plan, remove paid permissions
-  if (currentPlan === 'free') {
+  if (isFreePlanRestricted(currentPlan, hasFullTrialAccess)) {
     const filtered = {};
     
     Object.entries(permissions).forEach(([category, perms]) => {
@@ -63,8 +65,8 @@ export const filterPermissionsByPlan = (permissions, currentPlan) => {
  * @param {string} currentPlan - Current plan ID
  * @returns {boolean} - True if permission can be assigned
  */
-export const canAssignPermission = (permissionId, currentPlan) => {
-  if (currentPlan === 'free' && requiresPaidPlan(permissionId)) {
+export const canAssignPermission = (permissionId, currentPlan, hasFullTrialAccess = false) => {
+  if (isFreePlanRestricted(currentPlan, hasFullTrialAccess) && requiresPaidPlan(permissionId)) {
     return false;
   }
   return true;

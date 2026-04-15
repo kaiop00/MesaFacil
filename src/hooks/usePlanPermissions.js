@@ -49,10 +49,19 @@ export const usePlanPermissions = () => {
     return currentPlan?.planId || 'free';
   }, [currentPlan]);
 
+  // During active free trial, grant complete access as premium.
+  const hasFullTrialAccess = useMemo(() => {
+    return Boolean(currentPlan) && planId === 'free' && !currentPlan?.isTrialExpired;
+  }, [planId, currentPlan]);
+
+  const effectivePlanId = useMemo(() => {
+    return hasFullTrialAccess ? 'semiannual' : planId;
+  }, [hasFullTrialAccess, planId]);
+
   // Check if user has access to a specific feature flag
   const hasFeatureAccess = useMemo(() => {
-    return (featureFlag) => hasFeature(planId, featureFlag);
-  }, [planId]);
+    return (featureFlag) => hasFeature(effectivePlanId, featureFlag);
+  }, [effectivePlanId]);
 
   // Get required plan for a feature
   const getRequiredPlan = useMemo(() => {
@@ -61,16 +70,16 @@ export const usePlanPermissions = () => {
 
   // Check if can add more of a resource type
   const checkCanAddMore = useMemo(() => {
-    return (limitType, currentCount) => canAddMore(planId, limitType, currentCount);
-  }, [planId]);
+    return (limitType, currentCount) => canAddMore(effectivePlanId, limitType, currentCount);
+  }, [effectivePlanId]);
 
   // Get usage statistics for a resource
   const getUsageStats = useMemo(() => {
     return (limitType, currentCount) => {
-      const limit = getLimit(planId, limitType);
-      const percentage = getUsagePercentage(planId, limitType, currentCount);
-      const canAdd = canAddMore(planId, limitType, currentCount);
-      const isUnlimited = canExceedLimit(planId, limitType);
+      const limit = getLimit(effectivePlanId, limitType);
+      const percentage = getUsagePercentage(effectivePlanId, limitType, currentCount);
+      const canAdd = canAddMore(effectivePlanId, limitType, currentCount);
+      const isUnlimited = canExceedLimit(effectivePlanId, limitType);
 
       return {
         current: currentCount,
@@ -81,7 +90,7 @@ export const usePlanPermissions = () => {
         formattedLimit: formatLimit(limit)
       };
     };
-  }, [planId]);
+  }, [effectivePlanId]);
 
   // Get plan display information
   const planInfo = useMemo(() => {
@@ -113,13 +122,13 @@ export const usePlanPermissions = () => {
 
   // Get available report types for current plan
   const availableReports = useMemo(() => {
-    return getAvailableReports(planId);
-  }, [planId]);
+    return getAvailableReports(effectivePlanId);
+  }, [effectivePlanId]);
 
   // Check if can generate specific report
   const checkCanGenerateReport = useMemo(() => {
-    return (reportType) => canGenerateReportUtil(planId, reportType);
-  }, [planId]);
+    return (reportType) => canGenerateReportUtil(effectivePlanId, reportType);
+  }, [effectivePlanId]);
 
   // Get upgrade recommendation based on usage
   const getRecommendation = useMemo(() => {
@@ -201,7 +210,7 @@ export const usePlanPermissions = () => {
     canAddProduct,
     canAddTable,
     canAddMore: checkCanAddMore,
-    getLimit: (limitType) => getLimit(planId, limitType),
+    getLimit: (limitType) => getLimit(effectivePlanId, limitType),
     getUsageStats,
     
     // Reports

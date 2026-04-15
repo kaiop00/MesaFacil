@@ -4,21 +4,29 @@ export default function PlanCard({
   plan, 
   isSelected, 
   onSelect,
-  isPopular = false 
+  isPopular = false,
+  isDisabled = false,
+  disabledReason = null
 }) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleSelect = () => {
+    if (isDisabled) return;
+    onSelect();
+  };
 
   return (
     <div 
       className={`
-        relative border-2 rounded-xl p-6 cursor-pointer transition-all duration-300 transform
+        relative border-2 rounded-xl p-6 transition-all duration-300 transform
+        ${isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}
         ${isSelected 
           ? 'border-orange-500 bg-orange-50 shadow-lg scale-105' 
           : 'border-gray-200 bg-white hover:border-orange-300 hover:shadow-md'
         }
-        ${isHovered ? 'scale-105' : ''}
+        ${isHovered && !isDisabled ? 'scale-105' : ''}
       `}
-      onClick={onSelect}
+      onClick={handleSelect}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -99,16 +107,25 @@ export default function PlanCard({
         </div>
       )}
 
+      {isDisabled && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {disabledReason || 'Plano indisponível no momento.'}
+        </div>
+      )}
+
       <button
+        disabled={isDisabled}
         className={`
           w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200
-          ${isSelected
+          ${isDisabled
+            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            : isSelected
             ? 'bg-orange-500 text-white shadow-lg'
             : 'bg-gray-100 text-gray-700 hover:bg-orange-500 hover:text-white'
           }
         `}
       >
-        {isSelected ? 'Selecionado' : 'Selecionar Plano'}
+        {isDisabled ? 'Indisponível' : isSelected ? 'Selecionado' : 'Selecionar Plano'}
       </button>
     </div>
   );
