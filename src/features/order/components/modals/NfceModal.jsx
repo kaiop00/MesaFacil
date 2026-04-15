@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
@@ -60,6 +60,24 @@ const extractRejectionReason = (payload = {}) => {
     "";
 };
 
+const extractCpfCnpjFromOrderData = (orderData = {}) => {
+  if (!orderData) return null;
+
+  const orderOrigin = orderData?.orderOrigin;
+
+  // iFood: customer.documentNumber
+  if (orderOrigin === "ifood" && orderData?.customer?.documentNumber) {
+    return orderData.customer.documentNumber;
+  }
+
+  // WhatsApp: cliente.cpf
+  if (orderOrigin === "whatsapp" && orderData?.cliente?.cpf) {
+    return orderData.cliente.cpf;
+  }
+
+  return null;
+};
+
 const NfceModal = ({
   isOpen,
   onClose,
@@ -100,6 +118,17 @@ const NfceModal = ({
   const handleSkip = () => {
     handleClose();
   };
+
+  // Auto-preencher CPF/CNPJ se vindo de iFood ou WhatsApp
+  useEffect(() => {
+    if (isOpen && orderData && !cpfCnpj) {
+      const extractedCpfCnpj = extractCpfCnpjFromOrderData(orderData);
+      if (extractedCpfCnpj) {
+        const formatted = formatCpfCnpj(extractedCpfCnpj);
+        setCpfCnpj(formatted);
+      }
+    }
+  }, [isOpen, orderData]);
 
   // Máscara CPF/CNPJ
   const formatCpfCnpj = (value) => {

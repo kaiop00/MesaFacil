@@ -7,6 +7,7 @@ import { PLANS_DATA } from '../../constants/plansData';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/useToast';
 import stripeService, { STRIPE_TEMPORARILY_DISABLED } from '@/services/stripeService';
+import { logout } from '@/services/firebase/authService';
 import mesafacil from '@/assets/mesafacil.png';
 
 export default function PlanSelectionPage() {
@@ -140,6 +141,16 @@ export default function PlanSelectionPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/home-page', { replace: true });
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      notify('Não foi possível sair da conta. Tente novamente.', 'error');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
       {/* Show loading while auth context is loading or checking subscription */}
@@ -157,6 +168,15 @@ export default function PlanSelectionPage() {
           {/* Header com slogan */}
           <div className="bg-white shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Sair
+                </button>
+              </div>
+
               <div className="text-center">
                 <img src={mesafacil} alt="MesaFácil Logo" className="h-12 mx-auto mb-4" />
               </div>
