@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useIfoodRetry, formatRetryMessage } from "../hooks/useIfoodRetry";
+import { useIfoodRetry } from "../hooks/useIfoodRetry";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 
 /**
@@ -66,18 +66,12 @@ const IfoodRetryableButton = ({
                     if (onError) onError(error);
                 },
             });
-        } catch (error) {
+        } catch {
             // Error already handled via onError callback
         }
     };
 
     const isDisabled = disabled || isExecuting;
-    const retryMessage = formatRetryMessage({
-        isRetrying,
-        currentAttempt,
-        countdown,
-        maxAttempts,
-    });
 
     // Determine what to display
     const getButtonContent = () => {

@@ -19,7 +19,6 @@ const TableCard = ({
 }) => {
   const { t } = useTranslation('order');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState({ title: "", message: "" });
   const [showOptions, setShowOptions] = useState(false);
   const showOptionsRef = useRef(null);
   const { notify } = useToast();
@@ -59,9 +58,6 @@ const TableCard = ({
   const isIfoodTable = mesa?.id && isIfoodOrder(mesa.id);
   const isWATable = mesa?.id && mesa.id.startsWith('whatsapp');
   
-  // Detecta origem dos pedidos da mesa
-  const [tableOrigin, setTableOrigin] = useState('mesaconvencional');
-
   const handleConfirm = async () => {
     if (mesa?.status === "entregue") {
       try {
@@ -162,8 +158,8 @@ const TableCard = ({
       </div>
       <ConfirmModal
         isOpen={isConfirmModalOpen}
-        title={modalConfig.title}
-        message={modalConfig.message}
+        title={t('messages.confirm.finishOrder')}
+        message={t('messages.confirm.finishOrderDescription')}
         onCancel={() => setIsConfirmModalOpen(false)}
         onConfirm={handleConfirm}
       />

@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useTranslation } from "react-i18next";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/useToast";
 import {
     acceptIfoodDispute,
@@ -232,7 +231,6 @@ function formatIfoodMoney(value, currency = "BRL") {
 // ─── Main Component ─────────────────────────────────────────
 
 const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
-    const { t } = useTranslation();
     const { notify } = useToast();
     const remaining = useCountdown(dispute.expiresAt);
     const isExpired = remaining !== null && remaining <= 0;
@@ -623,6 +621,9 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                         </p>
                         <div className="space-y-2">
                             {alternatives.map((alt) => (
+                                (() => {
+                                    const maxAmountInfo = alt.maxAmount || alt.metadata?.maxAmount;
+                                    return (
                                 <div key={alt.id} className="border rounded-lg overflow-hidden border-blue-200 bg-white">
                                     <button
                                         onClick={() => {
@@ -644,9 +645,9 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                                 <p className="text-xs text-gray-500 mt-0.5">
                                                     {ALTERNATIVE_TYPE_DESCRIPTIONS[alt.type]}
                                                 </p>
-                                                {(alt.maxAmount || alt.metadata?.maxAmount) && (
+                                                {maxAmountInfo && (
                                                     <p className="text-xs text-blue-600 font-medium mt-1">
-                                                        Valor máximo: {formatIfoodMoney((alt.maxAmount || alt.metadata?.maxAmount).value, (alt.maxAmount || alt.metadata?.maxAmount).currency)}
+                                                        Valor máximo: {formatIfoodMoney(maxAmountInfo.value, maxAmountInfo.currency)}
                                                     </p>
                                                 )}
                                             </div>
@@ -655,7 +656,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                     </button>
 
                                     {/* REFUND / BENEFIT form */}
-                                    {showAlternativeForm?.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (() => { // eslint-disable-line no-extra-parens
+                                    {showAlternativeForm?.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (() => {  
                                         const formMaxAmount = alt.maxAmount || alt.metadata?.maxAmount;
                                         return (
                                         <div className="p-3 border-t border-blue-200 bg-blue-50 space-y-3">
@@ -765,6 +766,8 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                         </div>
                                     )}
                                 </div>
+                                    );
+                                })()
                             ))}
                         </div>
                     </div>

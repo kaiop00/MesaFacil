@@ -46,7 +46,6 @@ export default function PedidoClientePage() {
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-        isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     const valorServico = computeServiceFeeAmount(totalPedidos, serviceFeePercent);

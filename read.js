@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 /**
  * read.js — Lê documentos recentes de uma coleção do Firestore
  *
@@ -41,6 +43,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
 
 const require = createRequire(import.meta.url);
+const process = globalThis.process;
 
 // ──────────────────────────────────────────────────────────
 // Carrega firebase-admin a partir de functions/node_modules

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState, useMemo } from "react";
 import { TablesContext } from "@/features/config/context/TablesContext";
 import { getPedidosDaMesa } from "@/features/order/services/orderService";
 
@@ -23,7 +23,10 @@ const computePedidoTotal = (pedido) => {
 
 export const useKitchenOrders = (idRestaurante) => {
   const tablesContext = useContext(TablesContext);
-  const tables = Array.isArray(tablesContext) ? tablesContext : [];
+  const tables = useMemo(
+    () => (Array.isArray(tablesContext) ? tablesContext : []),
+    [tablesContext]
+  );
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

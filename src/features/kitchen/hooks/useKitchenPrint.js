@@ -363,7 +363,6 @@ export const useKitchenPrint = () => {
       const observations =
         sanitize(order?.observacoes) || t("print.noObservations");
       const safeConsumerDocument = sanitize(consumerDocument);
-      const totalLabel = currencyFormatter.format(Number(order?.total || 0));
       const headerLabel = isReceipt ? t("print.receiptHeader") : t("print.header");
       const receiptDisclaimer = t("print.receiptDisclaimer");
 

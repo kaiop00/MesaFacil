@@ -262,7 +262,6 @@ export const verificarEstoqueDisponivel = async (idRestaurante, itensPedido) => 
   }
   
   // Buscar todos os itens necessários de uma vez
-  const itemIds = consumoIngredientes.map(consumo => consumo.itemId);
   const itensRef = collection(db, 'restaurantes', idRestaurante, 'itens');
   const itensSnapshot = await getDocs(itensRef);
   

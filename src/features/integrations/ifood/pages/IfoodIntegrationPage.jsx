@@ -38,7 +38,7 @@ const IfoodIntegrationPage = () => {
     
     // UserCode flow states
     const [userCode, setUserCode] = useState("");
-    const [verificationUrlComplete, setVerificationUrlComplete] = useState("");
+    const [, setVerificationUrlComplete] = useState("");
     const [authorizationCode, setAuthorizationCode] = useState("");
     
     // Retry hooks for iFood API calls

@@ -9,11 +9,7 @@ export const usePromocoes = () => {
   const { promocoes, items } = useClienteCardapio();
 
   const promocoesAtivas = useMemo(() => {
-    return promocoes.filter(promocao => {
-      // Aqui pode-se adicionar validação de datas se necessário
-      // Por exemplo: validar se a promoção está dentro do período ativo
-      return true;
-    });
+    return promocoes;
   }, [promocoes]);
 
   const totalItensComPromocao = useMemo(() => {

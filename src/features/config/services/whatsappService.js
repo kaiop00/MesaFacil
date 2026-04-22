@@ -1,6 +1,6 @@
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/config/firebaseConfig';
-import { create, getAll } from '@/services/firebase/firestoreService';
+import { getAll } from '@/services/firebase/firestoreService';
 import { WHATSAPP_TABLE_ID } from '@/constants/whatsappConstants';
 
 /**

@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import { createContext, useContext, useMemo, useEffect, useRef } from "react";
 import { useLocation, useParams, useSearchParams } from "react-router-dom";
 
@@ -28,7 +30,9 @@ function saveToStorage(data) {
             expiresAt: Date.now() + STORAGE_TTL_MS,
         };
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch { }
+    } catch {
+        return;
+    }
 }
 
 export function ClienteProvider({ children }) {
@@ -73,7 +77,7 @@ export function ClienteProvider({ children }) {
         } else if (saved) {
             initialRef.current = saved;
         }
-    }, []);
+    }, [slug, idRestauranteFromUrl, mesaIdFromUrl, numeroStrFromUrl, location.pathname, location.search, saved]);
 
     useEffect(() => {
         const hasUrlParams = Boolean(slug && idRestauranteFromUrl && mesaIdFromUrl);
@@ -101,7 +105,7 @@ export function ClienteProvider({ children }) {
                 search: location.search,
             };
         }
-    }, [slug, idRestauranteFromUrl, mesaIdFromUrl, location.pathname, location.search]);
+    }, [slug, idRestauranteFromUrl, mesaIdFromUrl, numeroStrFromUrl, location.pathname, location.search, saved]);
 
     const value = useMemo(() => ({
         mesaId,

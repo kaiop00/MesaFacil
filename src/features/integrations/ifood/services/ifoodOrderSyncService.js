@@ -7,10 +7,9 @@ import { getAll } from "@/services/firebase/firestoreService";
  * Create a unified virtual table for all iFood orders
  * All order types (DELIVERY, TAKEOUT) share a single table
  * @param {string} idRestaurante - Restaurant ID
- * @param {string} orderType - Order type (kept for compatibility, not used for table selection)
  * @returns {Promise<string>} - Table ID
  */
-export const getOrCreateIfoodTable = async (idRestaurante, orderType = "DELIVERY") => {
+export const getOrCreateIfoodTable = async (idRestaurante) => {
     const { doc, getDoc, setDoc, serverTimestamp } = await import("firebase/firestore");
     const { db } = await import("@/config/firebaseConfig");
     

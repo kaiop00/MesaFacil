@@ -1,5 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useClientData } from '@/hooks/useClientData';
+
+const isValidCPF = (cpf) => {
+  const cleaned = cpf.replace(/\D/g, '');
+  return cleaned.length === 11;
+};
+
+const isValidPhone = (phone) => {
+  const cleaned = phone.replace(/\D/g, '');
+  return cleaned.length >= 10;
+};
 
 /**
  * Formulário para coletar dados do cliente (WhatsApp orders)
@@ -9,8 +19,9 @@ import { useClientData } from '@/hooks/useClientData';
  * @param {Function} props.onDataChange - Callback quando dados mudam
  * @param {boolean} props.isRequired - Se o preenchimento é obrigatório
  * @param {boolean} props.isRetirada - Se é pedido para retirada (sem endereço)
+ * @param {string[]} props.bairrosDisponiveis - Lista de bairros disponíveis para seleção
  */
-export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = false }) {
+export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = false, bairrosDisponiveis = [] }) {
   const { 
     clientData, 
     enderecos, 
@@ -44,6 +55,14 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
   const [errors, setErrors] = useState({});
   const [showNewEnderecoForm, setShowNewEnderecoForm] = useState(false);
   const [editingEnderecoId, setEditingEnderecoId] = useState(null);
+  const bairrosOptions = Array.from(
+    new Set(
+      (Array.isArray(bairrosDisponiveis) ? bairrosDisponiveis : [])
+        .map((bairro) => (bairro || '').trim())
+        .filter(Boolean)
+    )
+  );
+  const usaSelectDeBairro = bairrosOptions.length > 0;
 
   // Auto-preenche com dados salvos do cliente
   useEffect(() => {
@@ -95,58 +114,11 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
     return partes.join(', ');
   };
 
-  // Notifica componente pai sobre mudanças
-  useEffect(() => {
-    if (onDataChange) {
-      // Para retirada, não precisa de endereço
-      if (isRetirada) {
-        const fullData = {
-          ...formData,
-          endereco: '',
-          enderecoDetalhado: null
-        };
-        onDataChange(fullData, isFormValid());
-      } else {
-        const enderecoAtual = selectedEndereco || enderecoData;
-        const enderecoCompleto = formatEnderecoCompleto(enderecoAtual);
-        const fullData = {
-          ...formData,
-          endereco: enderecoCompleto,
-          enderecoDetalhado: {
-            rua: enderecoAtual.rua || '',
-            numero: enderecoAtual.numero || '',
-            complemento: enderecoAtual.complemento || '',
-            bairro: enderecoAtual.bairro || '',
-            cidade: enderecoAtual.cidade || '',
-            pontoReferencia: enderecoAtual.pontoReferencia || ''
-          }
-        };
-        onDataChange(fullData, isFormValid());
-      }
-    }
-  }, [formData, selectedEndereco, enderecoData, isRetirada]);
-
-  /**
-   * Valida CPF (apenas formato básico)
-   */
-  const isValidCPF = (cpf) => {
-    const cleaned = cpf.replace(/\D/g, '');
-    return cleaned.length === 11;
-  };
-
-  /**
-   * Valida telefone (básico)
-   */
-  const isValidPhone = (phone) => {
-    const cleaned = phone.replace(/\D/g, '');
-    return cleaned.length >= 10;
-  };
-
   /**
    * Valida formulário completo
    * Para retirada, não precisa validar endereço
    */
-  const isFormValid = () => {
+  const isFormValid = useCallback(() => {
     if (!isRequired) return true;
 
     // Validação básica (nome, CPF, telefone) - obrigatória para ambos os modos
@@ -175,7 +147,37 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
       temBairro &&
       temCidade
     );
-  };
+  }, [isRequired, formData, isRetirada, selectedEndereco, enderecoData]);
+
+  // Notifica componente pai sobre mudanças
+  useEffect(() => {
+    if (onDataChange) {
+      if (isRetirada) {
+        const fullData = {
+          ...formData,
+          endereco: '',
+          enderecoDetalhado: null
+        };
+        onDataChange(fullData, isFormValid());
+      } else {
+        const enderecoAtual = selectedEndereco || enderecoData;
+        const enderecoCompleto = formatEnderecoCompleto(enderecoAtual);
+        const fullData = {
+          ...formData,
+          endereco: enderecoCompleto,
+          enderecoDetalhado: {
+            rua: enderecoAtual.rua || '',
+            numero: enderecoAtual.numero || '',
+            complemento: enderecoAtual.complemento || '',
+            bairro: enderecoAtual.bairro || '',
+            cidade: enderecoAtual.cidade || '',
+            pontoReferencia: enderecoAtual.pontoReferencia || ''
+          }
+        };
+        onDataChange(fullData, isFormValid());
+      }
+    }
+  }, [formData, selectedEndereco, enderecoData, isRetirada, onDataChange, isFormValid]);
 
   /**
    * Formata CPF: 000.000.000-00
@@ -680,21 +682,47 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
                 <label htmlFor="bairro" className="block text-sm font-medium mb-1.5 text-gray-700">
                   Bairro *
                 </label>
-                <input
-                  type="text"
-                  id="bairro"
-                  name="bairro"
-                  value={enderecoData.bairro}
-                  onChange={handleEnderecoChange}
-                  onBlur={handleBlur}
-                  placeholder="Centro"
-                  className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
-                    errors.bairro 
-                      ? 'border-red-500 focus:ring-red-500' 
-                      : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
-                  } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
-                  required={isRequired}
-                />
+                {usaSelectDeBairro ? (
+                  <select
+                    id="bairro"
+                    name="bairro"
+                    value={enderecoData.bairro}
+                    onChange={handleEnderecoChange}
+                    onBlur={handleBlur}
+                    className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                      errors.bairro
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                    } focus:outline-none focus:ring-2 focus:ring-opacity-20 bg-white`}
+                    required={isRequired}
+                  >
+                    <option value="">Selecione um bairro</option>
+                    {bairrosOptions.map((bairro) => (
+                      <option key={bairro} value={bairro}>
+                        {bairro}
+                      </option>
+                    ))}
+                    {!!enderecoData.bairro && !bairrosOptions.includes(enderecoData.bairro) && (
+                      <option value={enderecoData.bairro}>{enderecoData.bairro}</option>
+                    )}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    id="bairro"
+                    name="bairro"
+                    value={enderecoData.bairro}
+                    onChange={handleEnderecoChange}
+                    onBlur={handleBlur}
+                    placeholder="Centro"
+                    className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                      errors.bairro 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                    } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
+                    required={isRequired}
+                  />
+                )}
                 {errors.bairro && <span className="block text-red-500 text-xs mt-1">{errors.bairro}</span>}
               </div>
 

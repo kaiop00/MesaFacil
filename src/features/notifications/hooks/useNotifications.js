@@ -195,16 +195,11 @@ export function useNotifications(idRestaurante) {
   
   const markOneAsRead = async (notification) => {
     if (!notification || notification.read === true) return;
-    try {
-      const ref = doc(db, notification.refPath);
-      await (await import("firebase/firestore")).updateDoc(ref, {
-        read: true,
-        lidoEm: Timestamp.now(),
-      });
-    } catch (e) {
-      // noop: deixamos o snapshot refletir estado; erros podem ser tratados pelo caller
-      throw e;
-    }
+    const ref = doc(db, notification.refPath);
+    await (await import("firebase/firestore")).updateDoc(ref, {
+      read: true,
+      lidoEm: Timestamp.now(),
+    });
   };
 
   return {

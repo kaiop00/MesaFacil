@@ -48,5 +48,21 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "vite": "^6.3.1"
-  }
+  },
+  "description": "**MenuWeb** é uma aplicação web responsiva que oferece autoatendimento completo para restaurantes. O sistema permite que clientes acessem o cardápio, façam pedidos, acompanhem o status, solicitem atendimento e realizem pagamentos diretamente de seus dispositivos móveis, sem a necessidade de instalar aplicativos.",
+  "main": "eslint.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaiop00/MesaFacil.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kaiop00/MesaFacil/issues"
+  },
+  "homepage": "https://github.com/kaiop00/MesaFacil#readme"
 }

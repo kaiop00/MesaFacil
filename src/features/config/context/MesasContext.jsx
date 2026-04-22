@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
+/* eslint-disable react-refresh/only-export-components */
+
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { getMesasPorStatus } from "@/features/config/services/mesaService"; // Adapte o caminho conforme necessário
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,7 +11,7 @@ export const MesasProvider = ({ children }) => {
     const [mesas, setMesas] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const carregarMesas = async () => {
+    const carregarMesas = useCallback(async () => {
         try {
             const mesasData = await getMesasPorStatus(idRestaurante); // Buscando mesas do restaurante
             setMesas(mesasData);
@@ -18,13 +20,13 @@ export const MesasProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [idRestaurante]);
 
     useEffect(() => {
         carregarMesas();
-    }, [idRestaurante]); // Recarregar se o idRestaurante mudar
+    }, [carregarMesas]); // Recarregar se o idRestaurante mudar
 
-    const value = useMemo(() => ({ mesas, loading, carregarMesas }), [mesas, loading]);
+    const value = useMemo(() => ({ mesas, loading, carregarMesas }), [mesas, loading, carregarMesas]);
 
     return (
         <MesasContext.Provider value={value}>

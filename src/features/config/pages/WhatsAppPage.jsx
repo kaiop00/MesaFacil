@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -18,19 +18,17 @@ const WhatsAppPage = () => {
   const [enabled, setEnabled] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
   const [taxaEntrega, setTaxaEntrega] = useState('');
+  const [taxasPorBairro, setTaxasPorBairro] = useState([]);
+  const [novoBairro, setNovoBairro] = useState('');
+  const [novoValorBairro, setNovoValorBairro] = useState('');
 
-  useEffect(() => {
-    if (idRestaurante) {
-      loadConfig();
-    }
-  }, [idRestaurante]);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       const config = await getWhatsAppConfig(idRestaurante);
       setEnabled(config?.enabled || false);
       setTaxaEntrega(config?.taxaEntrega?.toString() || '');
+      setTaxasPorBairro(Array.isArray(config?.taxasPorBairro) ? config.taxasPorBairro : []);
       setShowIntro(!config?.enabled);
     } catch (error) {
       console.error('Erro ao carregar configuração WhatsApp:', error);
@@ -38,7 +36,13 @@ const WhatsAppPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [idRestaurante, notify]);
+
+  useEffect(() => {
+    if (idRestaurante) {
+      loadConfig();
+    }
+  }, [idRestaurante, loadConfig]);
 
   const handleToggle = async () => {
     try {
@@ -79,6 +83,58 @@ const WhatsAppPage = () => {
     } catch (error) {
       console.error('Erro ao salvar taxa de entrega:', error);
       notify('Erro ao salvar taxa de entrega', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddTaxaBairro = () => {
+    const bairro = novoBairro.trim();
+    const valor = parseFloat(novoValorBairro.replace(',', '.'));
+
+    if (!bairro) {
+      notify('Informe o bairro', 'error');
+      return;
+    }
+
+    if (Number.isNaN(valor) || valor < 0) {
+      notify('Informe um valor válido para o bairro', 'error');
+      return;
+    }
+
+    const alreadyExists = taxasPorBairro.some(
+      (item) => item.bairro?.trim().toLowerCase() === bairro.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      notify('Esse bairro já foi adicionado', 'error');
+      return;
+    }
+
+    setTaxasPorBairro((prev) => [...prev, { bairro, valor }]);
+    setNovoBairro('');
+    setNovoValorBairro('');
+  };
+
+  const handleRemoveTaxaBairro = (bairroToRemove) => {
+    setTaxasPorBairro((prev) => prev.filter((item) => item.bairro !== bairroToRemove));
+  };
+
+  const handleSaveTaxasPorBairro = async () => {
+    try {
+      setSaving(true);
+      const payload = taxasPorBairro
+        .map((item) => ({
+          bairro: (item?.bairro || '').trim(),
+          valor: parseFloat(String(item?.valor).replace(',', '.')) || 0
+        }))
+        .filter((item) => item.bairro);
+
+      await updateWhatsAppConfig(idRestaurante, { taxasPorBairro: payload });
+      notify('Taxas por bairro atualizadas com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao salvar taxas por bairro:', error);
+      notify('Erro ao salvar taxas por bairro', 'error');
     } finally {
       setSaving(false);
     }
@@ -199,6 +255,88 @@ const WhatsAppPage = () => {
                   >
                     {saving ? 'Salvando...' : 'Salvar'}
                   </button>
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <h5 className="font-medium text-gray-900 mb-2">Taxa por Bairro</h5>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Cadastre bairros com valores fixos. Quando houver bairros cadastrados, o cliente seleciona no checkout e o valor é aplicado automaticamente.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_160px_auto] gap-3 mb-4">
+                    <input
+                      type="text"
+                      value={novoBairro}
+                      onChange={(e) => setNovoBairro(e.target.value)}
+                      placeholder="Ex: Centro"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                      <input
+                        type="text"
+                        value={novoValorBairro}
+                        onChange={(e) => setNovoValorBairro(e.target.value.replace(/[^0-9.,]/g, ''))}
+                        placeholder="0,00"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddTaxaBairro}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-gray-700">
+                        <tr>
+                          <th className="text-left px-4 py-2 font-medium">Bairro</th>
+                          <th className="text-left px-4 py-2 font-medium">Valor</th>
+                          <th className="text-right px-4 py-2 font-medium">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {taxasPorBairro.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="px-4 py-3 text-gray-500">
+                              Nenhum bairro cadastrado.
+                            </td>
+                          </tr>
+                        ) : (
+                          taxasPorBairro.map((item) => (
+                            <tr key={item.bairro} className="border-t border-gray-100">
+                              <td className="px-4 py-2 text-gray-800">{item.bairro}</td>
+                              <td className="px-4 py-2 text-gray-800">R$ {(Number(item.valor) || 0).toFixed(2).replace('.', ',')}</td>
+                              <td className="px-4 py-2 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveTaxaBairro(item.bairro)}
+                                  className="text-red-600 hover:text-red-700 font-medium"
+                                >
+                                  Remover
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleSaveTaxasPorBairro}
+                      disabled={saving}
+                      className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                    >
+                      {saving ? 'Salvando...' : 'Salvar bairros'}
+                    </button>
+                  </div>
                 </div>
               </div>
 

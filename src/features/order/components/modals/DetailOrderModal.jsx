@@ -65,14 +65,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         return null;
     }, [mesaSelecionada, pedidos]);
 
-    // Calcula tipoEntrega (delivery ou retirada) a partir do primeiro pedido WhatsApp
-    const tipoEntrega = useMemo(() => {
-        if (pedidos.length > 0 && pedidos[0]?.tipoEntrega) {
-            return pedidos[0].tipoEntrega;
-        }
-        return 'delivery'; // default para delivery
-    }, [pedidos]);
-    
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
@@ -85,7 +77,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-        isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     // Sincroniza numeroPessoas com a mesa selecionada
@@ -186,8 +177,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             // For each pedido that has an ifoodOrderId, set up a real-time listener
             // on the corresponding ifoodOrders/{ifoodOrderId} doc.
             // Only add listeners for NEW pedidos that don't have one yet.
-            const currentPedidoIds = new Set(dados.map(p => p.ifoodOrderId).filter(Boolean));
-            
             // Build listeners for pedidos we haven't subscribed to yet
             const existingListenerIds = new Set(
                 ifoodUnsubscribersRef.current.map(u => u._ifoodOrderId)
@@ -264,22 +253,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         setShowPaymentModal(false);
         setPedidoParaFinalizar(null);
     };
-
-    const handleOpenNfceModal = useCallback((pedidoId, pedidoData = null) => {
-        if (!mesaSelecionada?.id) return;
-
-        setNfcePedidoInfo({
-            mesaId: mesaSelecionada.id,
-            pedidoId,
-            orderData: pedidoData
-                ? {
-                    ...pedidoData,
-                    mesaNumero: pedidoData?.mesaNumero || mesaSelecionada?.numero || "-",
-                }
-                : null,
-        });
-        setShowNfceModal(true);
-    }, [mesaSelecionada?.id, mesaSelecionada?.numero]);
 
     const handleConfirmPayment = async (dadosPagamento) => {
         if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;

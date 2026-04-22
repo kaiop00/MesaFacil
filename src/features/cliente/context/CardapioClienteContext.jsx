@@ -1,5 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import { useCliente } from "./ClienteContext";
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { getAll } from '@/services/firebase/firestoreService';
 import { getPromocoesAtivas, aplicarPromocoesAosItens } from '../services/promocoesService';
 
@@ -11,7 +13,7 @@ export default function CardapioClienteProvider({ children }) {
     const [items, setItems] = useState([]);
     const [promocoes, setPromocoes] = useState([]);
 
-    const carregarCardapio = async () => {
+    const carregarCardapio = useCallback(async () => {
         try {
             const dados = await getAll(idRestaurante, 'cardapio', {
                 orderByField: 'criadoEm',
@@ -28,16 +30,16 @@ export default function CardapioClienteProvider({ children }) {
         } catch (err) {
             console.error("Erro ao carregar itens do cardápio:", err);
         }
-    };
+    }, [idRestaurante]);
 
-    const carregarPromocoes = async () => {
+    const carregarPromocoes = useCallback(async () => {
         try {
             const promocoesAtivas = await getPromocoesAtivas(idRestaurante);
             setPromocoes(promocoesAtivas);
         } catch (err) {
             console.error("Erro ao carregar promoções:", err);
         }
-    };
+    }, [idRestaurante]);
 
     useEffect(() => {
         if (idRestaurante) {
@@ -52,7 +54,7 @@ export default function CardapioClienteProvider({ children }) {
             
             carregarDados();
         }
-    }, [idRestaurante]);
+    }, [idRestaurante, carregarCardapio, carregarPromocoes]);
 
     // Aplicar promoções aos itens sempre que houver mudança
     const itemsComPromocoes = aplicarPromocoesAosItens(items, promocoes);

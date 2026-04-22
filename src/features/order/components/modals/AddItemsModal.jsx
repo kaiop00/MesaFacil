@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
 import { useOrderContext } from "@/features/order/context/OrderContext";
@@ -36,23 +36,14 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
             setSelectedItemId("");
             clearOrder();
         }
-    }, [isOpen])
+    }, [isOpen, clearOrder])
 
 
     const total = useMemo(() => {
         return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     }, [items]);
 
-    // Verificar estoque sempre que os itens mudarem
-    useEffect(() => {
-        if (items.length > 0) {
-            verificarEstoque();
-        } else {
-            setVerificacaoEstoque(null);
-        }
-    }, [items, idRestaurante]);
-
-    const verificarEstoque = async () => {
+    const verificarEstoque = useCallback(async () => {
         setLoadingEstoque(true);
         try {
             const verificacao = await verificarEstoquePedido(idRestaurante, items);
@@ -63,7 +54,16 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
         } finally {
             setLoadingEstoque(false);
         }
-    };
+    }, [idRestaurante, items]);
+
+    // Verificar estoque sempre que os itens mudarem
+    useEffect(() => {
+        if (items.length > 0) {
+            verificarEstoque();
+        } else {
+            setVerificacaoEstoque(null);
+        }
+    }, [items, verificarEstoque]);
 
     const handleSubmit = async () => {
         if (!selectedTable) {

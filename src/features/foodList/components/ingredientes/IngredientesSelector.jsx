@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddPlus, TrashFull } from 'react-coolicons';
 import { getAll } from '@/services/firebase/firestoreService';
@@ -12,15 +12,7 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
   const [loading, setLoading] = useState(true);
   const [ingredientes, setIngredientes] = useState(value);
 
-  useEffect(() => {
-    loadItensEstoque();
-  }, [idRestaurante]);
-
-  useEffect(() => {
-    setIngredientes(value);
-  }, [value]);
-
-  const loadItensEstoque = async () => {
+  const loadItensEstoque = useCallback(async () => {
     if (!idRestaurante) return;
 
     try {
@@ -35,7 +27,15 @@ const IngredientesSelector = ({ value = [], onChange, disabled = false }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [idRestaurante]);
+
+  useEffect(() => {
+    loadItensEstoque();
+  }, [loadItensEstoque]);
+
+  useEffect(() => {
+    setIngredientes(value);
+  }, [value]);
 
   const adicionarIngrediente = () => {
     const novoIngrediente = {

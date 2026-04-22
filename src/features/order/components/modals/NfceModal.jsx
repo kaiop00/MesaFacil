@@ -128,7 +128,7 @@ const NfceModal = ({
         setCpfCnpj(formatted);
       }
     }
-  }, [isOpen, orderData]);
+  }, [isOpen, orderData, cpfCnpj]);
 
   // Máscara CPF/CNPJ
   const formatCpfCnpj = (value) => {

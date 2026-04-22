@@ -28,8 +28,6 @@ export default function SacolaPage() {
         decrementarQuantidadeCarrinho,
         orderOrigin,
         setOrderOrigin,
-        clientData,
-        setClientData,
     } = useCarrinho();
     const observacoesRef = useRef();
     const [loading, setLoading] = useState(false);
@@ -41,16 +39,19 @@ export default function SacolaPage() {
     const [valorPagamento, setValorPagamento] = useState('');
     const [tipoEntrega, setTipoEntrega] = useState('delivery'); // 'delivery' ou 'retirada'
     const isRetirada = tipoEntrega === 'retirada';
+    const bairroSelecionado = clientFormData?.enderecoDetalhado?.bairro || '';
 
     // Hook para taxa de entrega (somente para WhatsApp delivery)
     const {
         value: deliveryFeeValue,
         loading: deliveryFeeLoading,
         isApplicable: deliveryFeeApplicable,
+        bairrosDisponiveis,
     } = useDeliveryFee(idRestaurante, {
         enabled: Boolean(idRestaurante) && isWhatsApp,
         orderOrigin: origin,
-        tipoEntrega
+        tipoEntrega,
+        bairro: bairroSelecionado
     });
 
     // Calcula o valor da taxa de entrega
@@ -219,6 +220,7 @@ export default function SacolaPage() {
                                 onDataChange={handleClientDataChange}
                                 isRequired={true}
                                 isRetirada={isRetirada}
+                                bairrosDisponiveis={bairrosDisponiveis}
                             />
                             
                             {/* Seletor de Forma de Pagamento */}
@@ -291,7 +293,7 @@ export default function SacolaPage() {
                                                         </div>
                                                     </div>
 
-                                                    {valorPagamento && parseFloat(valorPagamento.replace(',', '.')) >= total && (
+                                                    {valorPagamento && parseFloat(valorPagamento.replace(',', '.')) >= totalComTaxaEntrega && (
                                                         <div className="flex justify-between items-center p-2 bg-green-100 border border-green-300 rounded text-sm">
                                                             <span className="text-green-800 font-medium">Troco:</span>
                                                             <span className="text-green-800 font-bold">
@@ -300,7 +302,7 @@ export default function SacolaPage() {
                                                         </div>
                                                     )}
 
-                                                    {valorPagamento && parseFloat(valorPagamento.replace(',', '.')) < total && (
+                                                    {valorPagamento && parseFloat(valorPagamento.replace(',', '.')) < totalComTaxaEntrega && (
                                                         <div className="p-2 bg-red-100 border border-red-300 rounded text-sm text-red-700">
                                                             O valor deve ser maior ou igual ao total do pedido
                                                         </div>
