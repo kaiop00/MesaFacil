@@ -273,6 +273,7 @@ const IfoodIntegrationPage = () => {
             );
         } catch (error) {
             console.error("Error triggering manual poll:", error);
+            await loadIntegrationStatus();
         }
     };
 

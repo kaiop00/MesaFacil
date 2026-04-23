@@ -1916,13 +1916,17 @@ exports.ifoodPollManual = onCall(
     cors: true,
   },
   async (request) => {
+    let idRestaurante = null;
+    let failureStage = "start";
+
     try {
-      const {idRestaurante} = request.data;
+      ({idRestaurante} = request.data || {});
 
       if (!idRestaurante) {
         throw new HttpsError("invalid-argument", "idRestaurante is required");
       }
 
+      failureStage = "load-integration";
       logger.info("Manual polling triggered", {idRestaurante});
 
       // Get integration for this restaurant
@@ -1943,6 +1947,7 @@ exports.ifoodPollManual = onCall(
 
       let accessToken;
       try {
+        failureStage = "get-access-token";
         // Get valid access token
         accessToken = await getValidAccessToken(credentials);
       } catch (error) {
@@ -1960,6 +1965,7 @@ exports.ifoodPollManual = onCall(
 
       let merchantId = data.merchantId;
       if (!merchantId) {
+        failureStage = "resolve-merchant-id";
         merchantId = await resolveMerchantIdFromIfood(accessToken);
 
         if (merchantId) {
@@ -1981,6 +1987,7 @@ exports.ifoodPollManual = onCall(
 
       let events;
       try {
+        failureStage = "poll-events";
         // Poll events
         events = await pollIfoodEvents([merchantId], accessToken);
       } catch (error) {
@@ -2016,7 +2023,18 @@ exports.ifoodPollManual = onCall(
       });
 
       // Process events
+      failureStage = "process-events";
       await processEventsForRestaurant(idRestaurante, events, accessToken);
+
+      await admin.firestore()
+        .doc(`restaurantes/${idRestaurante}/integrations/ifood`)
+        .set({
+          lastError: admin.firestore.FieldValue.delete(),
+          lastErrorAt: admin.firestore.FieldValue.delete(),
+          lastErrorCode: admin.firestore.FieldValue.delete(),
+          lastErrorStage: admin.firestore.FieldValue.delete(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
 
       return {
         success: true,
@@ -2025,6 +2043,21 @@ exports.ifoodPollManual = onCall(
       };
     } catch (error) {
       logger.error("Error in manual polling", {error: error.message, code: error.code});
+
+      if (idRestaurante) {
+        const normalizedCode = String(error?.code || "").replace(/^functions\//, "") || "internal";
+        const originalMessage = error?.details?.originalMessage || error?.customData?.details?.originalMessage || error?.message || "Unknown error";
+
+        await admin.firestore()
+          .doc(`restaurantes/${idRestaurante}/integrations/ifood`)
+          .set({
+            lastError: `[${failureStage}] ${originalMessage}`,
+            lastErrorCode: normalizedCode,
+            lastErrorStage: failureStage,
+            lastErrorAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, {merge: true});
+      }
 
       if (error instanceof HttpsError) {
         throw error;
