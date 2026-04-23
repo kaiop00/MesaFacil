@@ -6,7 +6,7 @@ const IFOOD_API_BASE_URL = "https://merchant-api.ifood.com.br";
 
 const getCallableErrorMessage = (error, fallbackMessage) => {
     const firebaseCode = error?.code || "";
-    const details = error?.details;
+    const details = error?.details || error?.customData?.details;
     const originalMessage = details?.originalMessage;
 
     if (typeof details === "string" && details.trim()) {
@@ -33,8 +33,15 @@ const getCallableErrorMessage = (error, fallbackMessage) => {
         return "A API do iFood está temporariamente indisponível. Tente novamente em instantes.";
     }
 
-    const rawMessage = error?.message || "";
-    if (rawMessage && !rawMessage.toLowerCase().includes("internal")) {
+    const rawMessage = (error?.message || "").trim();
+    if (rawMessage) {
+        const internalPrefixPattern = /^\[?internal\]?[:\s-]*/i;
+        const withoutInternalPrefix = rawMessage.replace(internalPrefixPattern, "").trim();
+
+        if (withoutInternalPrefix && withoutInternalPrefix !== rawMessage) {
+            return withoutInternalPrefix;
+        }
+
         return rawMessage;
     }
 

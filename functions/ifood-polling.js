@@ -2030,6 +2030,34 @@ exports.ifoodPollManual = onCall(
         throw error;
       }
 
+      const knownHttpsCodes = new Set([
+        "cancelled",
+        "unknown",
+        "invalid-argument",
+        "deadline-exceeded",
+        "not-found",
+        "already-exists",
+        "permission-denied",
+        "resource-exhausted",
+        "failed-precondition",
+        "aborted",
+        "out-of-range",
+        "unimplemented",
+        "internal",
+        "unavailable",
+        "data-loss",
+        "unauthenticated",
+      ]);
+
+      const normalizedCode = String(error?.code || "").replace(/^functions\//, "");
+      if (knownHttpsCodes.has(normalizedCode)) {
+        throw new HttpsError(
+          normalizedCode,
+          error?.message || "Erro ao consultar pedidos do iFood.",
+          error?.details || error?.customData?.details,
+        );
+      }
+
       throw new HttpsError(
         "internal",
         "Erro interno ao consultar pedidos do iFood.",
