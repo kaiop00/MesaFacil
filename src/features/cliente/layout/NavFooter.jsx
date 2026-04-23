@@ -1,14 +1,13 @@
 // NavFooter.jsx
-import { NavLink, useResolvedPath } from "react-router-dom";
+import { NavLink, useLocation, useParams } from "react-router-dom";
 import { ListOrdered, Handbag, EditPencilLine01 } from "react-coolicons";
 import { useCarrinho } from "../context/CarrinhoContext";
+import { useCliente } from "../context/ClienteContext";
 
 function Item({ to, label, icon, badge, end }) {
-    const resolved = useResolvedPath(to);
-
     return (
         <NavLink
-            to={resolved}
+            to={to}
             end={end}
             className={({ isActive }) =>
                 [
@@ -42,6 +41,16 @@ function Item({ to, label, icon, badge, end }) {
 
 export default function NavFooter() {
     const { quantidade } = useCarrinho();
+    const { slug } = useParams();
+    const location = useLocation();
+    const { initialSearch } = useCliente();
+
+    const search = location.search || initialSearch || "";
+    const basePath = slug ? `/mesa/${slug}` : ".";
+
+    const cardapioPath = `${basePath}${search}`;
+    const sacolaPath = `${basePath}/sacola${search}`;
+    const pedidosPath = `${basePath}/pedido${search}`;
 
     return (
         <nav
@@ -50,7 +59,7 @@ export default function NavFooter() {
         border-t border-gray-200 px-4 py-2
         flex items-center justify-center
         shadow-[0_-6px_20px_rgba(0,0,0,0.06)]
-        z-40
+        z-50
 
         /* TABLET/DESKTOP: flutuante e centralizada */
         md:bottom-4 md:left-1/2 md:-translate-x-1/2 md:w-auto md:px-3 md:py-3
@@ -66,19 +75,19 @@ export default function NavFooter() {
         "
             >
                 <Item
-                    to="."
+                    to={cardapioPath}
                     end
                     label="Cardápio"
                     icon={<EditPencilLine01 size={24} />}
                 />
                 <Item
-                    to="sacola"
+                    to={sacolaPath}
                     label="Sacola"
                     icon={<Handbag size={24} />}
                     badge={quantidade}
                 />
                 <Item
-                    to="pedido"
+                    to={pedidosPath}
                     label="Pedidos"
                     icon={<ListOrdered size={24} />}
                 />

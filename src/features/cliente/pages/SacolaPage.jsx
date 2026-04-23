@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
@@ -76,10 +76,10 @@ export default function SacolaPage() {
         setOrderOrigin(origin);
     }, [origin, setOrderOrigin]);
 
-    const handleClientDataChange = (data, isValid) => {
+    const handleClientDataChange = useCallback((data, isValid) => {
         setClientFormData(data);
         setIsClientFormValid(isValid);
-    };
+    }, []);
 
     async function handleSubmit(e) {
         e.preventDefault();
