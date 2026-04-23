@@ -1,12 +1,50 @@
 import { Filter } from "react-coolicons";
 import { useTranslation } from "react-i18next";
-import useCrudCategorias from "@/features/config/hooks/useCrudCategorias";
+import { useEffect, useState } from "react";
+import { getCategorias } from "@/features/config/services/CategoriasService";
 import { useAuth } from "@/contexts/AuthContext";
 
 const CategorySelect = ({ value, onChange }) => {
   const { t } = useTranslation('foodList');
   const { idRestaurante } = useAuth();
-  const { categorias, loading } = useCrudCategorias({ idRestaurante });
+  const [categorias, setCategorias] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const carregarCategorias = async () => {
+      if (!idRestaurante) {
+        if (active) {
+          setCategorias([]);
+          setLoading(false);
+        }
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const list = await getCategorias(idRestaurante);
+        if (active) {
+          setCategorias(list);
+        }
+      } catch {
+        if (active) {
+          setCategorias([]);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    carregarCategorias();
+
+    return () => {
+      active = false;
+    };
+  }, [idRestaurante]);
 
   return (
     <div className="relative w-full md:w-[30%]">

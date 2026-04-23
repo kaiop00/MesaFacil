@@ -14,6 +14,7 @@ import {
     computeServiceFeeAmount,
     computeTotalWithService,
     computeCoverChargeAmount,
+    computeSubtotal,
     normalizeServicePercentage,
     DEFAULT_SERVICE_FEE_PERCENT,
     formatCurrency,
@@ -359,17 +360,22 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         }, 0),
         [pedidos]
     );
+
+    const baseSubtotal = useMemo(
+        () => computeSubtotal(pedidos.flatMap((pedido) => pedido?.items || [])),
+        [pedidos]
+    );
     
     // Total com serviço - NÃO adiciona taxa de entrega pois já está embutida no pedido.total
     const totalComServico = useMemo(
         () => computeTotalWithService(
-            totalSemTaxa,
+            baseSubtotal,
             percentNormalized,
             DEFAULT_SERVICE_FEE_PERCENT,
             valorCouvert,
             0 // Taxa de entrega já está incluída no total dos pedidos
         ),
-        [totalSemTaxa, percentNormalized, valorCouvert]
+        [baseSubtotal, percentNormalized, valorCouvert]
     );
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
@@ -414,7 +420,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         printDetailOrder({
             mesaNumero: mesaSelecionada?.numero || "-",
             pedidos,
-            totalSemTaxa,
+            totalSemTaxa: baseSubtotal,
             serviceFeePercent: percentNormalized,
             valorServico,
             serviceFeeExempt,
@@ -424,7 +430,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             valorCouvert,
             totalComServico,
         });
-    }, [printDetailOrder, mesaSelecionada, pedidos, totalSemTaxa, percentNormalized, valorServico, serviceFeeExempt, coverChargeEnabled, coverChargeValue, numeroPessoas, valorCouvert, totalComServico]);
+    }, [printDetailOrder, mesaSelecionada, pedidos, baseSubtotal, percentNormalized, valorServico, serviceFeeExempt, coverChargeEnabled, coverChargeValue, numeroPessoas, valorCouvert, totalComServico]);
 
     return (
         <BaseModalWithHeader

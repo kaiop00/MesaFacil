@@ -1,5 +1,5 @@
 import TableCard from '@/features/order/components/TableCard'
-import { useEffect } from 'react';
+import { memo } from 'react';
 import { useTranslation } from "react-i18next";
 
 const TableSection = ({
@@ -19,9 +19,6 @@ const TableSection = ({
 
 
   const dotColor = dotColorMap[status] || 'bg-gray-400';
-  useEffect(() => {
-    console.log(items);
-  })
   return (
     <section className="mb-8">
       <header className="flex items-center px-2 mb-4">
@@ -53,4 +50,4 @@ const TableSection = ({
   )
 }
 
-export default TableSection;
+export default memo(TableSection);

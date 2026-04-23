@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   collection,
   onSnapshot,
@@ -27,10 +27,8 @@ const toMillis = (ts) => {
  * - Fornece ação para marcar todos os de hoje como lidos
  */
 export function useNotifications(idRestaurante) {
-  const [notifications, setNotifications] = useState([]);
   const [pedidoNotifications, setPedidoNotifications] = useState([]);
   const [eventoNotifications, setEventoNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const mesaUnsubsRef = useRef({}); // { mesaId: unsubscribe }
   const unsubscribeMesasRef = useRef(null);
@@ -45,10 +43,8 @@ export function useNotifications(idRestaurante) {
     }
 
     if (!idRestaurante) {
-      setNotifications([]);
       setPedidoNotifications([]);
       setEventoNotifications([]);
-      setUnreadCount(0);
       return;
     }
 
@@ -162,17 +158,21 @@ export function useNotifications(idRestaurante) {
     return () => unsubscribe();
   }, [idRestaurante]);
 
-  useEffect(() => {
+  const notifications = useMemo(() => {
     const pedidosNormalizados = pedidoNotifications.map((notif) => ({
       ...notif,
       tipo: notif.tipo || "pedido",
     }));
 
-    const combined = [...pedidosNormalizados, ...eventoNotifications];
-    combined.sort((a, b) => toMillis(b.criadoEm) - toMillis(a.criadoEm));
-    setNotifications(combined);
-    setUnreadCount(combined.filter((n) => n.read === false).length);
+    return [...pedidosNormalizados, ...eventoNotifications].sort(
+      (a, b) => toMillis(b.criadoEm) - toMillis(a.criadoEm)
+    );
   }, [pedidoNotifications, eventoNotifications]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => n.read === false).length,
+    [notifications]
+  );
 
   const markAllAsRead = async () => {
     if (!idRestaurante || notifications.length === 0) return;

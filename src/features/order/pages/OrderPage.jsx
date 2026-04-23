@@ -28,6 +28,7 @@ const OrderPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const mesaIdParam = searchParams.get('mesaId');
 
   const isLoading = tables.length > 0 &&
     (mesasAndamento.length === 0 && mesasEntregues.length === 0 && mesasLivres.length === 0);
@@ -70,14 +71,14 @@ const OrderPage = () => {
 
   // Abrir detalhes via deep-link (?mesaId=...)
   useEffect(() => {
-    const mesaId = searchParams.get('mesaId');
-    if (!mesaId || tables.length === 0) return;
-    const mesa = tables.find((m) => m.id === mesaId);
-    if (mesa) {
-      setMesaDetalhe(mesa);
-      setIsDetailModalOpen(true);
-    }
-  }, [searchParams, tables]);
+    if (!mesaIdParam || tables.length === 0) return;
+
+    const mesa = tables.find((m) => m.id === mesaIdParam);
+    if (!mesa) return;
+
+    setMesaDetalhe((prev) => (prev?.id === mesa.id ? prev : mesa));
+    setIsDetailModalOpen((prev) => (prev ? prev : true));
+  }, [mesaIdParam, tables]);
 
   if (!hasPermission('view_orders')) {
     return (

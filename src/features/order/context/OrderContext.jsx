@@ -3,6 +3,7 @@
 // /features/order/context/OrderContext.jsx
 
 import { createContext, useContext, useState } from "react";
+import { useCallback, useMemo } from "react";
 
 const OrderContext = createContext();
 
@@ -10,11 +11,11 @@ export const OrderProvider = ({ children }) => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [items, setItems] = useState([]);
 
-  const addItem = (item) => {
+  const addItem = useCallback((item) => {
     setItems((prev) => [...prev, { ...item, quantity: 1 }]);
-  };
+  }, []);
 
-  const updateItemQuantity = (itemId, delta) => {
+  const updateItemQuantity = useCallback((itemId, delta) => {
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId
@@ -22,29 +23,32 @@ export const OrderProvider = ({ children }) => {
           : item
       )
     );
-  };
+  }, []);
 
-  const removeItem = (itemId) => {
+  const removeItem = useCallback((itemId) => {
     setItems((prev) => prev.filter((item) => item.id !== itemId));
-  };
+  }, []);
 
-  const clearOrder = () => {
+  const clearOrder = useCallback(() => {
     setSelectedTable(null);
-    setItems([]);
-  };
+    setItems((prev) => (prev.length > 0 ? [] : prev));
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      selectedTable,
+      setSelectedTable,
+      items,
+      addItem,
+      updateItemQuantity,
+      removeItem,
+      clearOrder,
+    }),
+    [selectedTable, items, addItem, updateItemQuantity, removeItem, clearOrder]
+  );
 
   return (
-    <OrderContext.Provider
-      value={{
-        selectedTable,
-        setSelectedTable,
-        items,
-        addItem,
-        updateItemQuantity,
-        removeItem,
-        clearOrder,
-      }}
-    >
+    <OrderContext.Provider value={value}>
       {children}
     </OrderContext.Provider>
   );

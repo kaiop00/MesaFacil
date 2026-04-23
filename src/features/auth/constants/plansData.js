@@ -90,7 +90,7 @@ export const PLAN_BENEFITS = {
     reports: ['daily', 'weekly', 'monthly'],
     features: ['advanced_orders', 'full_dashboard', 'priority_support', 'promotions_ads', 'inventory_control', 'employee_management']
   },
-  bimonthly: {
+  Essbimonthly: {
     accessLevel: 100,
     maxProducts: 'unlimited',
     maxTables: 'unlimited',

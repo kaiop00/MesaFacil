@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { create, getAll, update, remove } from "@/services/firebase/firestoreService";
 import { uploadMenuImage, deleteMenuImage } from "@/services/firebase/storageUpload";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,11 +7,11 @@ import { adicionarIngredientes } from "@/services/ingredientes/ingredientesServi
 export function useFoodService() {
   const { idRestaurante } = useAuth();
 
-  const listarItensCardapio = async () => {
+  const listarItensCardapio = useCallback(async () => {
     return await getAll(idRestaurante, "cardapio", { orderByField: "criadoEm", order: "desc" });
-  };
+  }, [idRestaurante]);
 
-  const salvarNovoItem = async (formData) => {
+  const salvarNovoItem = useCallback(async (formData) => {
     const { nome, categorias, valor, descricao, file, alergias, ingredientes, tipoTributacao } = formData;
     const tipoTributacaoNormalizado = tipoTributacao === "monofasico" ? "monofasico" : "normal";
     const monofasico = tipoTributacaoNormalizado === "monofasico";
@@ -62,9 +63,9 @@ export function useFoodService() {
     }
 
     return docRef;
-  };
+  }, [idRestaurante]);
 
-  const atualizarItemCardapio = async (itemId, dados) => {
+  const atualizarItemCardapio = useCallback(async (itemId, dados) => {
     if (!itemId) throw new Error("ID do item não informado para atualização.");
 
     const tipoTributacaoNormalizado = dados.tipoTributacao === "monofasico" ? "monofasico" : "normal";
@@ -80,9 +81,9 @@ export function useFoodService() {
     };
 
     await update(idRestaurante, "cardapio", itemId, payload);
-  };
+  }, [idRestaurante]);
 
-  const removerItemCardapio = async (itemId, storagePath) => {
+  const removerItemCardapio = useCallback(async (itemId, storagePath) => {
     if (!itemId) throw new Error("ID do item não informado para exclusão.");
 
     await remove(idRestaurante, "cardapio", itemId);
@@ -94,7 +95,7 @@ export function useFoodService() {
         console.warn("Não foi possível remover a imagem do armazenamento:", err);
       }
     }
-  };
+  }, [idRestaurante]);
 
   return { listarItensCardapio, salvarNovoItem, atualizarItemCardapio, removerItemCardapio };
 }
