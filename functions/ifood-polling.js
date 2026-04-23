@@ -32,6 +32,28 @@ const IFOOD_STATUS_PRECEDENCE = {
 const ifoodClientId = defineSecret("IFOOD_CLIENT_ID");
 const ifoodClientSecret = defineSecret("IFOOD_CLIENT_SECRET");
 
+function extractMerchantIdFromResponse(payload) {
+  if (!payload) return null;
+
+  if (Array.isArray(payload)) {
+    return payload[0]?.id || payload[0]?.merchantId || payload[0]?.merchant_id || null;
+  }
+
+  if (Array.isArray(payload.content)) {
+    return payload.content[0]?.id || payload.content[0]?.merchantId || payload.content[0]?.merchant_id || null;
+  }
+
+  if (Array.isArray(payload.merchants)) {
+    return payload.merchants[0]?.id || payload.merchants[0]?.merchantId || payload.merchants[0]?.merchant_id || null;
+  }
+
+  if (Array.isArray(payload.data)) {
+    return payload.data[0]?.id || payload.data[0]?.merchantId || payload.data[0]?.merchant_id || null;
+  }
+
+  return payload.id || payload.merchantId || payload.merchant_id || null;
+}
+
 /**
  * Get OAuth access token using refresh token (for distributed apps)
  * @param {object} credentials - Restaurant credentials with refreshToken
@@ -168,6 +190,41 @@ async function getValidAccessToken(credentials) {
 
   // Token expired or missing, refresh it
   return await refreshIfoodAccessToken(credentials);
+}
+
+/**
+ * Resolve merchant ID from the iFood API when Firestore does not have it yet.
+ * @param {string} accessToken - Valid iFood access token
+ * @return {Promise<string|null>} - Merchant ID or null
+ */
+async function resolveMerchantIdFromIfood(accessToken) {
+  try {
+    const response = await fetch(`${IFOOD_API_BASE_URL}/merchant/v1.0/merchants`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "accept": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      logger.warn("Failed to resolve merchant ID from iFood", {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+      });
+      return null;
+    }
+
+    const payload = await response.json().catch(() => null);
+    return extractMerchantIdFromResponse(payload);
+  } catch (error) {
+    logger.warn("Error resolving merchant ID from iFood", {
+      error: error.message,
+    });
+    return null;
+  }
 }
 
 /**
@@ -1878,8 +1935,8 @@ exports.ifoodPollManual = onCall(
       }
 
       const data = ifoodDoc.data();
-      if (!data.enabled || !data.merchantId || !data.refreshToken) {
-        throw new HttpsError("failed-precondition", "iFood integration not properly configured");
+      if (!data.refreshToken) {
+        throw new HttpsError("failed-precondition", "iFood integration not properly configured: missing refresh token");
       }
 
       const credentials = {...data, restaurantId: idRestaurante};
@@ -1901,15 +1958,36 @@ exports.ifoodPollManual = onCall(
         );
       }
 
+      let merchantId = data.merchantId;
+      if (!merchantId) {
+        merchantId = await resolveMerchantIdFromIfood(accessToken);
+
+        if (merchantId) {
+          await admin.firestore()
+            .doc(`restaurantes/${idRestaurante}/integrations/ifood`)
+            .set({
+              merchantId,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, {merge: true});
+        }
+      }
+
+      if (!merchantId) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Não foi possível identificar o merchant do iFood. Reautorize a integração para gerar o merchantId.",
+        );
+      }
+
       let events;
       try {
         // Poll events
-        events = await pollIfoodEvents([data.merchantId], accessToken);
+        events = await pollIfoodEvents([merchantId], accessToken);
       } catch (error) {
         const message = error?.message || "Error polling iFood events";
         logger.error("Polling error in manual polling", {
           idRestaurante,
-          merchantId: data.merchantId,
+          merchantId,
           error: message,
         });
 
@@ -1933,6 +2011,7 @@ exports.ifoodPollManual = onCall(
 
       logger.info("Received events from manual poll", {
         idRestaurante,
+        merchantId,
         eventCount: events.length,
       });
 

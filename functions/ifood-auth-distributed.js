@@ -12,6 +12,28 @@ const IFOOD_API_BASE_URL = "https://merchant-api.ifood.com.br";
 const ifoodClientId = defineSecret("IFOOD_CLIENT_ID");
 const ifoodClientSecret = defineSecret("IFOOD_CLIENT_SECRET");
 
+function extractMerchantIdFromResponse(payload) {
+  if (!payload) return null;
+
+  if (Array.isArray(payload)) {
+    return payload[0]?.id || payload[0]?.merchantId || payload[0]?.merchant_id || null;
+  }
+
+  if (Array.isArray(payload.content)) {
+    return payload.content[0]?.id || payload.content[0]?.merchantId || payload.content[0]?.merchant_id || null;
+  }
+
+  if (Array.isArray(payload.merchants)) {
+    return payload.merchants[0]?.id || payload.merchants[0]?.merchantId || payload.merchants[0]?.merchant_id || null;
+  }
+
+  if (Array.isArray(payload.data)) {
+    return payload.data[0]?.id || payload.data[0]?.merchantId || payload.data[0]?.merchant_id || null;
+  }
+
+  return payload.id || payload.merchantId || payload.merchant_id || null;
+}
+
 /**
  * Step 1: Request userCode from iFood
  * This is the first step in the distributed app authentication flow
@@ -223,9 +245,15 @@ exports.ifoodExchangeCode = onCall(
 
         if (merchantResponse.ok) {
           const merchants = await merchantResponse.json();
-          if (merchants && merchants.length > 0) {
-            merchantId = merchants[0].id;
+          merchantId = extractMerchantIdFromResponse(merchants);
+
+          if (merchantId) {
             logger.info("Merchant ID obtained", {idRestaurante, merchantId});
+          } else {
+            logger.warn("Merchant response did not contain a usable merchant id", {
+              idRestaurante,
+              responseShape: Array.isArray(merchants) ? "array" : Object.keys(merchants || {}),
+            });
           }
         }
       } catch (error) {
