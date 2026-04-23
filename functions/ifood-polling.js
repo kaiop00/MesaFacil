@@ -1,7 +1,7 @@
 /* eslint-env node */
 /* eslint-disable no-undef */
 const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {onCall} = require("firebase-functions/v2/https");
+const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -205,8 +205,8 @@ async function pollIfoodEvents(merchantIds, accessToken) {
       if (response.status === 403) {
         throw new Error(`iFood API retornou erro 403 (Forbidden). O token pode estar expirado ou o merchant não tem permissão. Detalhes: ${JSON.stringify(error)}`);
       }
-      
-      return [];
+
+      throw new Error(`Falha ao consultar eventos do iFood (${response.status}): ${response.statusText}`);
     }
 
     // Handle 204 No Content - no events available
@@ -223,7 +223,7 @@ async function pollIfoodEvents(merchantIds, accessToken) {
       merchantIds,
       error: error.message,
     });
-    return [];
+    throw error;
   }
 }
 
@@ -1863,7 +1863,7 @@ exports.ifoodPollManual = onCall(
       const {idRestaurante} = request.data;
 
       if (!idRestaurante) {
-        throw new Error("idRestaurante is required");
+        throw new HttpsError("invalid-argument", "idRestaurante is required");
       }
 
       logger.info("Manual polling triggered", {idRestaurante});
@@ -1874,21 +1874,62 @@ exports.ifoodPollManual = onCall(
         .get();
 
       if (!ifoodDoc.exists) {
-        throw new Error("iFood integration not found");
+        throw new HttpsError("failed-precondition", "iFood integration not found");
       }
 
       const data = ifoodDoc.data();
       if (!data.enabled || !data.merchantId || !data.refreshToken) {
-        throw new Error("iFood integration not properly configured");
+        throw new HttpsError("failed-precondition", "iFood integration not properly configured");
       }
 
       const credentials = {...data, restaurantId: idRestaurante};
 
-      // Get valid access token
-      const accessToken = await getValidAccessToken(credentials);
+      let accessToken;
+      try {
+        // Get valid access token
+        accessToken = await getValidAccessToken(credentials);
+      } catch (error) {
+        const message = error?.message || "Failed to authenticate with iFood";
+        logger.error("Authentication error in manual polling", {
+          idRestaurante,
+          error: message,
+        });
+        throw new HttpsError(
+          "unauthenticated",
+          "Falha de autenticacao com o iFood. Reconecte a integracao e tente novamente.",
+          {originalMessage: message}
+        );
+      }
 
-      // Poll events
-      const events = await pollIfoodEvents([data.merchantId], accessToken);
+      let events;
+      try {
+        // Poll events
+        events = await pollIfoodEvents([data.merchantId], accessToken);
+      } catch (error) {
+        const message = error?.message || "Error polling iFood events";
+        logger.error("Polling error in manual polling", {
+          idRestaurante,
+          merchantId: data.merchantId,
+          error: message,
+        });
+
+        const lowerMessage = message.toLowerCase();
+        const isPermissionIssue = lowerMessage.includes("403") || lowerMessage.includes("forbidden");
+
+        if (isPermissionIssue) {
+          throw new HttpsError(
+            "permission-denied",
+            "iFood recusou a requisicao (403). Verifique permissao do merchant e reconecte a integracao.",
+            {originalMessage: message}
+          );
+        }
+
+        throw new HttpsError(
+          "unavailable",
+          "A API do iFood esta temporariamente indisponivel. Tente novamente em instantes.",
+          {originalMessage: message}
+        );
+      }
 
       logger.info("Received events from manual poll", {
         idRestaurante,
@@ -1904,8 +1945,17 @@ exports.ifoodPollManual = onCall(
         message: `Processed ${events.length} events`,
       };
     } catch (error) {
-      logger.error("Error in manual polling", {error: error.message});
-      throw new Error(error.message);
+      logger.error("Error in manual polling", {error: error.message, code: error.code});
+
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        "internal",
+        "Erro interno ao consultar pedidos do iFood.",
+        {originalMessage: error?.message || "Unknown error"}
+      );
     }
   }
 );

@@ -4,6 +4,43 @@ import { db, functions } from "@/config/firebaseConfig";
 
 const IFOOD_API_BASE_URL = "https://merchant-api.ifood.com.br";
 
+const getCallableErrorMessage = (error, fallbackMessage) => {
+    const firebaseCode = error?.code || "";
+    const details = error?.details;
+    const originalMessage = details?.originalMessage;
+
+    if (typeof details === "string" && details.trim()) {
+        return details;
+    }
+
+    if (typeof originalMessage === "string" && originalMessage.trim()) {
+        return originalMessage;
+    }
+
+    if (firebaseCode.includes("failed-precondition")) {
+        return "Integração iFood não configurada corretamente. Reconecte a conta e tente novamente.";
+    }
+
+    if (firebaseCode.includes("permission-denied")) {
+        return "iFood recusou a operação (permissão negada). Verifique o merchant e reconecte a integração.";
+    }
+
+    if (firebaseCode.includes("unauthenticated")) {
+        return "Falha de autenticação com o iFood. Reconecte a integração e tente novamente.";
+    }
+
+    if (firebaseCode.includes("unavailable")) {
+        return "A API do iFood está temporariamente indisponível. Tente novamente em instantes.";
+    }
+
+    const rawMessage = error?.message || "";
+    if (rawMessage && !rawMessage.toLowerCase().includes("internal")) {
+        return rawMessage;
+    }
+
+    return fallbackMessage;
+};
+
 /**
  * Step 1: Request a userCode from iFood
  * This generates a code that the merchant will use in the iFood Partner Portal
@@ -118,10 +155,16 @@ export const clearIfoodErrors = async (idRestaurante) => {
  */
 export const triggerManualIfoodPoll = async (idRestaurante) => {
     const pollManual = httpsCallable(functions, 'ifoodPollManual');
-    
-    const result = await pollManual({ 
-        idRestaurante 
-    });
-    
-    return result.data;
+
+    try {
+        const result = await pollManual({
+            idRestaurante
+        });
+
+        return result.data;
+    } catch (error) {
+        throw new Error(
+            getCallableErrorMessage(error, "Erro interno ao buscar pedidos do iFood. Verifique os logs da função.")
+        );
+    }
 };
