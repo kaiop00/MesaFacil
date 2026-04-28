@@ -42,21 +42,24 @@ export default function SacolaPage() {
     const [tipoEntrega, setTipoEntrega] = useState('delivery'); // 'delivery' ou 'retirada'
     const isRetirada = tipoEntrega === 'retirada';
 
-    // Hook para taxa de entrega (somente para WhatsApp delivery)
+    // Hook para taxa de entrega por bairro (somente para WhatsApp delivery)
     const {
-        value: deliveryFeeValue,
+        bairros,
+        selectedBairro,
+        setSelectedBairro,
         loading: deliveryFeeLoading,
         isApplicable: deliveryFeeApplicable,
+        getDeliveryFeeValue,
     } = useDeliveryFee(idRestaurante, {
         enabled: Boolean(idRestaurante) && isWhatsApp,
         orderOrigin: origin,
         tipoEntrega
     });
 
-    // Calcula o valor da taxa de entrega
+    // Calcula o valor da taxa de entrega baseado no bairro selecionado
     const valorTaxaEntrega = useMemo(
-        () => computeDeliveryFeeAmount(deliveryFeeApplicable, deliveryFeeValue),
-        [deliveryFeeApplicable, deliveryFeeValue]
+        () => computeDeliveryFeeAmount(deliveryFeeApplicable, getDeliveryFeeValue()),
+        [deliveryFeeApplicable, getDeliveryFeeValue]
     );
 
     // Total com taxa de entrega
@@ -99,6 +102,12 @@ export default function SacolaPage() {
             return;
         }
 
+        // Valida seleção de bairro para delivery
+        if (isWhatsApp && tipoEntrega === 'delivery' && !selectedBairro) {
+            notify("Por favor, selecione um bairro para entrega", "error");
+            return;
+        }
+
         setLoading(true);
         try {
             const observacoes = (observacoesRef.current?.value || "").trim();
@@ -125,7 +134,8 @@ export default function SacolaPage() {
                 // Taxa de entrega (apenas para delivery)
                 taxaEntrega: tipoEntrega === 'delivery' ? {
                     valor: valorTaxaEntrega,
-                    aplicada: deliveryFeeApplicable && valorTaxaEntrega > 0
+                    aplicada: deliveryFeeApplicable && valorTaxaEntrega > 0,
+                    bairro: selectedBairro?.nome || ''
                 } : null
             } : {
                 orderOrigin: orderOrigin
@@ -219,6 +229,11 @@ export default function SacolaPage() {
                                 onDataChange={handleClientDataChange}
                                 isRequired={true}
                                 isRetirada={isRetirada}
+                                bairros={bairros}
+                                selectedBairro={selectedBairro}
+                                setSelectedBairro={setSelectedBairro}
+                                deliveryFeeLoading={deliveryFeeLoading}
+                                tipoEntrega={tipoEntrega}
                             />
                             
                             {/* Seletor de Forma de Pagamento */}
@@ -342,16 +357,18 @@ export default function SacolaPage() {
                                         <span>Subtotal</span>
                                         <span>{formatCurrency(total)}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span>Taxa de entrega</span>
-                                        <span>
-                                            {deliveryFeeLoading 
-                                                ? 'Carregando...' 
-                                                : valorTaxaEntrega > 0 
-                                                    ? formatCurrency(valorTaxaEntrega)
-                                                    : 'Grátis'}
-                                        </span>
-                                    </div>
+                                    {selectedBairro && (
+                                        <div className="flex justify-between text-sm">
+                                            <span>Taxa de entrega ({selectedBairro.nome})</span>
+                                            <span>
+                                                {deliveryFeeLoading 
+                                                    ? 'Carregando...' 
+                                                    : valorTaxaEntrega > 0 
+                                                        ? formatCurrency(valorTaxaEntrega)
+                                                        : 'Grátis'}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-200">
                                         <span>Total</span>
                                         <span>{formatCurrency(totalComTaxaEntrega)}</span>

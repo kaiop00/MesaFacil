@@ -11,6 +11,7 @@ import {
     getIfoodIntegrationStatus,
     revokeIfoodAuth,
     setIfoodIntegrationEnabled,
+    saveIfoodMerchantId,
     triggerManualIfoodPoll,
     clearIfoodErrors
 } from "@/features/integrations/ifood/services/ifoodAuthService";
@@ -35,6 +36,7 @@ const IfoodIntegrationPage = () => {
     const [stats, setStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(false);
     const [showMappingModal, setShowMappingModal] = useState(false);
+    const [merchantIdInput, setMerchantIdInput] = useState("");
     
     // UserCode flow states
     const [userCode, setUserCode] = useState("");
@@ -51,6 +53,7 @@ const IfoodIntegrationPage = () => {
     const [integrationStatus, setIntegrationStatus] = useState({
         enabled: false,
         isAuthorized: false,
+        hasMerchantId: false,
         needsReauthorization: false,
     });
     
@@ -85,6 +88,9 @@ const IfoodIntegrationPage = () => {
                     merchantId: data.merchantId || "",
                     enabled: data.enabled ?? true,
                 });
+                if (data.merchantId) {
+                    setMerchantIdInput(data.merchantId);
+                }
             }
         } catch (error) {
             console.error("Error loading credentials:", error);
@@ -99,6 +105,9 @@ const IfoodIntegrationPage = () => {
             const status = await getIfoodIntegrationStatus(idRestaurante);
             console.log('[getIfoodIntegrationStatus] ', status);
             setIntegrationStatus(status);
+            if (status.merchantId) {
+                setMerchantIdInput(status.merchantId);
+            }
         } catch (error) {
             console.error("Error loading integration status:", error);
         }
@@ -165,8 +174,8 @@ const IfoodIntegrationPage = () => {
                 () => exchangeAuthorizationCode(idRestaurante, authorizationCode),
                 {
                     actionName: "troca do código de autorização",
-                    onSuccess: async () => {
-                        notify("Autorização concluída com sucesso!", "success");
+                    onSuccess: async (result) => {
+                        notify(result?.warning || "Autorização concluída com sucesso!", result?.warning ? "warning" : "success");
                         
                         // Reset states
                         setUserCode("");
@@ -319,6 +328,36 @@ const IfoodIntegrationPage = () => {
         }
     };
 
+    const handleSaveMerchantId = async () => {
+        const value = merchantIdInput.trim();
+
+        if (!value) {
+            notify("Informe o Merchant ID para salvar", "warning");
+            return;
+        }
+
+        try {
+            await saveIfoodMerchantId(idRestaurante, value);
+            setIntegrationStatus((current) => ({
+                ...current,
+                merchantId: value,
+                hasMerchantId: true,
+                enabled: true,
+                needsReauthorization: false,
+            }));
+            setCredentials((current) => ({
+                ...current,
+                merchantId: value,
+                enabled: true,
+            }));
+            notify("Merchant ID salvo com sucesso!", "success");
+            await loadIntegrationStatus();
+        } catch (error) {
+            console.error("Error saving Merchant ID:", error);
+            notify(error.message || "Erro ao salvar o Merchant ID", "error");
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
@@ -363,6 +402,15 @@ const IfoodIntegrationPage = () => {
                     </div>
                 )}
 
+                {integrationStatus.isAuthorized && !integrationStatus.hasMerchantId && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-yellow-800">
+                            <strong>Atenção:</strong> A conta foi autorizada, mas o iFood não retornou o Merchant ID desta loja.
+                            Você pode tentar reconectar ou acionar o suporte iFood para liberar os dados da loja.
+                        </p>
+                    </div>
+                )}
+
                 {/* Only show error if not currently authorized or needs reauthorization */}
                 {integrationStatus.lastError && (!integrationStatus.isAuthorized || integrationStatus.needsReauthorization) && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
@@ -373,6 +421,31 @@ const IfoodIntegrationPage = () => {
                 )}
 
                 <div className="space-y-4">
+                    <div className="text-sm">
+                        <span className="text-gray-600">Merchant ID:</span>
+                        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <input
+                                type="text"
+                                value={merchantIdInput}
+                                onChange={(e) => setMerchantIdInput(e.target.value)}
+                                placeholder="Cole aqui o Merchant ID da sua loja"
+                                className="w-full sm:max-w-xl px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-dynamic"
+                            />
+                            <button
+                                onClick={handleSaveMerchantId}
+                                className="inline-flex items-center justify-center px-3 py-2 rounded bg-emerald-700 text-white text-xs font-medium hover:bg-emerald-800"
+                            >
+                                Salvar Merchant ID
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Dica: este valor é salvo em restaurantes/{'{idRestaurante}'}/integrations/ifood.
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Se ao conectar o campo de Merchant ID não estiver preenchido, copie o Merchant ID disponível e cole neste campo antes de continuar.
+                        </p>
+                    </div>
+
                     {integrationStatus.merchantId && (
                         <div className="text-sm">
                             <span className="text-gray-600">Merchant ID:</span>
@@ -648,15 +721,19 @@ const IfoodIntegrationPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                    <h3 className="font-semibold text-gray-900">Como Funciona:</h3>
+                    <h3 className="font-semibold text-gray-900">Passo a Passo da Conexão:</h3>
+                    <p className="text-sm text-gray-600">
+                        A conectividade é feita pelo fluxo oficial de autorização do iFood. Nesta tela, você só precisa gerar o código, autorizar no portal e concluir a conexão.
+                    </p>
                     <ol className="list-decimal list-inside space-y-1 text-sm text-gray-700">
-                        <li>Clique em "Gerar Código de Autorização" para obter um código de verificação</li>
-                        <li>Acesse o Portal do iFood, depois "Apps" e insira o código de verificação fornecido</li>
-                        <li>Autorize o MesaFacil a acessar seus pedidos no Portal do iFood</li>
-                        <li>Copie o código de autorização que o iFood fornece</li>
-                        <li>Cole o código de autorização aqui no MesaFacil e clique em "Conectar"</li>
-                        <li>Pronto! Os pedidos serão automaticamente buscados a cada 2 minutos</li>
-                        <li>Pedidos do iFood aparecem em uma mesa virtual chamada "iFood"</li>
+                        <li>Clique em "Gerar Código de Autorização" para criar o código de verificação.</li>
+                        <li>Acesse o Portal do iFood e faça login com a conta que administra a loja.</li>
+                        <li>No portal, abra a área de Apps/Integrações e escolha a ativação por código.</li>
+                        <li>Digite o código de verificação gerado nesta tela e confirme a autorização.</li>
+                        <li>Copie o código de autorização exibido pelo iFood e cole no campo correspondente no MesaFacil.</li>
+                        <li>Clique em "Conectar" para finalizar a vinculação da conta.</li>
+                        <li>Depois da conexão, use "Buscar Novos Pedidos" para validar o funcionamento imediato.</li>
+                        <li>Se tudo estiver certo, os pedidos passam a ser sincronizados automaticamente.</li>
                     </ol>
                 </div>
             </div>

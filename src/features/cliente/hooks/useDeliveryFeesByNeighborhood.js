@@ -4,38 +4,22 @@ import { db } from "@/config/firebaseConfig";
 
 /**
  * Hook para obter as taxas de entrega por bairro
- * A taxa de entrega só é aplicada a pedidos WhatsApp do tipo delivery
+ * Busca a configuração do WhatsApp e retorna o array de bairros
  * 
  * @param {string} idRestaurante - ID do restaurante
  * @param {Object} options - Opções de configuração
  * @param {boolean} options.enabled - Se o hook deve buscar dados
- * @param {string} options.orderOrigin - Origem do pedido (whatsapp, ifood, mesaconvencional)
- * @param {string} options.tipoEntrega - Tipo de entrega (delivery, retirada)
- * @returns {Object} { bairros, selectedBairro, setSelectedBairro, loading, error, isApplicable, getDeliveryFeeValue }
+ * @returns {Object} { bairros, loading, error, selectedBairro, setSelectedBairro }
  */
-export function useDeliveryFee(idRestaurante, { enabled = true, orderOrigin = null, tipoEntrega = null } = {}) {
+export function useDeliveryFeesByNeighborhood(idRestaurante, { enabled = true } = {}) {
     const [bairros, setBairros] = useState([]);
-    const [selectedBairro, setSelectedBairro] = useState(null);
     const [loading, setLoading] = useState(Boolean(enabled && idRestaurante));
     const [error, setError] = useState(null);
-    const [isApplicable, setIsApplicable] = useState(false);
+    const [selectedBairro, setSelectedBairro] = useState(null);
 
     useEffect(() => {
-        // Taxa de entrega só se aplica a pedidos WhatsApp do tipo delivery
-        const shouldApply = orderOrigin === 'whatsapp' && tipoEntrega === 'delivery';
-        setIsApplicable(shouldApply);
-        
-        if (!shouldApply) {
-            setBairros([]);
-            setSelectedBairro(null);
-            setLoading(false);
-            setError(null);
-            return;
-        }
-
         if (!enabled || !idRestaurante) {
             setBairros([]);
-            setSelectedBairro(null);
             setLoading(false);
             setError(null);
             return;
@@ -51,7 +35,6 @@ export function useDeliveryFee(idRestaurante, { enabled = true, orderOrigin = nu
             (snapshot) => {
                 if (!snapshot.exists()) {
                     setBairros([]);
-                    setSelectedBairro(null);
                     setLoading(false);
                     return;
                 }
@@ -60,33 +43,29 @@ export function useDeliveryFee(idRestaurante, { enabled = true, orderOrigin = nu
                 const bairrosArray = Array.isArray(data?.bairros) ? data.bairros : [];
                 setBairros(bairrosArray);
                 
-                // Não define bairro pré-selecionado - o usuário deve escolher
+                // Define o primeiro bairro como selecionado, se houver
+                if (bairrosArray.length > 0 && !selectedBairro) {
+                    setSelectedBairro(bairrosArray[0]);
+                }
+                
                 setLoading(false);
             },
             (err) => {
                 console.error("Erro ao carregar bairros do restaurante", err);
                 setBairros([]);
-                setSelectedBairro(null);
                 setError("Não foi possível carregar os bairros.");
                 setLoading(false);
             }
         );
 
         return () => unsubscribe();
-    }, [idRestaurante, enabled, orderOrigin, tipoEntrega]);
-
-    // Função para obter o valor da taxa baseado no bairro selecionado
-    const getDeliveryFeeValue = () => {
-        return selectedBairro?.valor || 0;
-    };
+    }, [idRestaurante, enabled]);
 
     return {
         bairros,
-        selectedBairro,
-        setSelectedBairro,
         loading,
         error,
-        isApplicable,
-        getDeliveryFeeValue,
+        selectedBairro,
+        setSelectedBairro,
     };
 }

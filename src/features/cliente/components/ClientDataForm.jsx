@@ -9,8 +9,13 @@ import { useClientData } from '@/hooks/useClientData';
  * @param {Function} props.onDataChange - Callback quando dados mudam
  * @param {boolean} props.isRequired - Se o preenchimento é obrigatório
  * @param {boolean} props.isRetirada - Se é pedido para retirada (sem endereço)
+ * @param {Array} props.bairros - Array de bairros com taxa de entrega
+ * @param {Object} props.selectedBairro - Bairro selecionado
+ * @param {Function} props.setSelectedBairro - Setter para bairro selecionado
+ * @param {boolean} props.deliveryFeeLoading - Se está carregando os bairros
+ * @param {string} props.tipoEntrega - Tipo de entrega (delivery ou retirada)
  */
-export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = false }) {
+export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = false, bairros = [], selectedBairro = null, setSelectedBairro = null, deliveryFeeLoading = false, tipoEntrega = 'delivery' }) {
   const { 
     clientData, 
     enderecos, 
@@ -165,8 +170,17 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
     const enderecoAtual = selectedEndereco || enderecoData;
     const temRua = (enderecoAtual.rua || '').trim().length >= 3;
     const temNumero = (enderecoAtual.numero || '').trim().length >= 1;
-    const temBairro = (enderecoAtual.bairro || '').trim().length >= 2;
     const temCidade = (enderecoAtual.cidade || '').trim().length >= 2;
+    
+    // Valida bairro: se for select, verifica se foi selecionado; se for input, valida texto
+    let temBairro = false;
+    if (!isRetirada && tipoEntrega === 'delivery' && bairros.length > 0) {
+      // É um select
+      temBairro = selectedBairro && selectedBairro.nome;
+    } else {
+      // É um input de texto
+      temBairro = (enderecoAtual.bairro || '').trim().length >= 2;
+    }
 
     return (
       validacaoBasica &&
@@ -258,7 +272,8 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
         newErrors.rua = 'Rua muito curta';
       } else if (name === 'numero' && value.trim().length < 1) {
         newErrors.numero = 'Informe o número';
-      } else if (name === 'bairro' && value.trim().length < 2) {
+      } else if (name === 'bairro' && !(!isRetirada && tipoEntrega === 'delivery' && bairros.length > 0) && value.trim().length < 2) {
+        // Só valida bairro como texto se NÃO for um select
         newErrors.bairro = 'Bairro muito curto';
       } else if (name === 'cidade' && value.trim().length < 2) {
         newErrors.cidade = 'Cidade muito curta';
@@ -320,9 +335,20 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
     if (!enderecoData.numero?.trim()) {
       newErrors.numero = 'Informe o número';
     }
-    if (!enderecoData.bairro?.trim() || enderecoData.bairro.trim().length < 2) {
-      newErrors.bairro = 'Bairro deve ter pelo menos 2 caracteres';
+    
+    // Valida bairro: se for um select (delivery com bairros), verifica se foi selecionado; se for input, valida texto
+    if (!isRetirada && tipoEntrega === 'delivery' && bairros.length > 0) {
+      // É um select
+      if (!selectedBairro || !selectedBairro.nome) {
+        newErrors.bairro = 'Selecione um bairro';
+      }
+    } else {
+      // É um input de texto
+      if (!enderecoData.bairro?.trim() || enderecoData.bairro.trim().length < 2) {
+        newErrors.bairro = 'Bairro deve ter pelo menos 2 caracteres';
+      }
     }
+    
     if (!enderecoData.cidade?.trim() || enderecoData.cidade.trim().length < 2) {
       newErrors.cidade = 'Cidade deve ter pelo menos 2 caracteres';
     }
@@ -680,21 +706,56 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
                 <label htmlFor="bairro" className="block text-sm font-medium mb-1.5 text-gray-700">
                   Bairro *
                 </label>
-                <input
-                  type="text"
-                  id="bairro"
-                  name="bairro"
-                  value={enderecoData.bairro}
-                  onChange={handleEnderecoChange}
-                  onBlur={handleBlur}
-                  placeholder="Centro"
-                  className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
-                    errors.bairro 
-                      ? 'border-red-500 focus:ring-red-500' 
-                      : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
-                  } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
-                  required={isRequired}
-                />
+                {!isRetirada && tipoEntrega === 'delivery' && bairros.length > 0 ? (
+                  deliveryFeeLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-600 p-2">
+                      <span>Carregando bairros...</span>
+                    </div>
+                  ) : (
+                    <select
+                      id="bairro"
+                      name="bairro"
+                      value={selectedBairro?.nome || ''}
+                      onChange={(e) => {
+                        const bairroSelecionado = bairros.find(b => b.nome === e.target.value);
+                        setSelectedBairro(bairroSelecionado);
+                        setEnderecoData(prev => ({
+                          ...prev,
+                          bairro: e.target.value
+                        }));
+                      }}
+                      className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                        errors.bairro 
+                          ? 'border-red-500 focus:ring-red-500' 
+                          : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                      } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
+                      required={isRequired}
+                    >
+                      <option value="">Selecione seu bairro</option>
+                      {bairros.map((bairro, index) => (
+                        <option key={index} value={bairro.nome}>
+                          {bairro.nome}
+                        </option>
+                      ))}
+                    </select>
+                  )
+                ) : (
+                  <input
+                    type="text"
+                    id="bairro"
+                    name="bairro"
+                    value={enderecoData.bairro}
+                    onChange={handleEnderecoChange}
+                    onBlur={handleBlur}
+                    placeholder="Centro"
+                    className={`w-full px-3 py-2.5 border rounded-md text-sm transition-colors ${
+                      errors.bairro 
+                        ? 'border-red-500 focus:ring-red-500' 
+                        : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                    } focus:outline-none focus:ring-2 focus:ring-opacity-20`}
+                    required={isRequired}
+                  />
+                )}
                 {errors.bairro && <span className="block text-red-500 text-xs mt-1">{errors.bairro}</span>}
               </div>
 

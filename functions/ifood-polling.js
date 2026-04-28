@@ -32,6 +32,59 @@ const IFOOD_STATUS_PRECEDENCE = {
 const ifoodClientId = defineSecret("IFOOD_CLIENT_ID");
 const ifoodClientSecret = defineSecret("IFOOD_CLIENT_SECRET");
 
+function extractMerchantId(payload) {
+  if (!payload) {
+    return null;
+  }
+
+  const visited = new Set();
+
+  const visit = (value) => {
+    if (!value || typeof value !== "object") {
+      return null;
+    }
+
+    if (visited.has(value)) {
+      return null;
+    }
+
+    visited.add(value);
+
+    if (typeof value.id === "string" && value.id.trim()) {
+      return value.id.trim();
+    }
+
+    if (typeof value.merchantId === "string" && value.merchantId.trim()) {
+      return value.merchantId.trim();
+    }
+
+    if (typeof value.merchantID === "string" && value.merchantID.trim()) {
+      return value.merchantID.trim();
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const merchantId = visit(item);
+        if (merchantId) {
+          return merchantId;
+        }
+      }
+      return null;
+    }
+
+    for (const nestedValue of Object.values(value)) {
+      const merchantId = visit(nestedValue);
+      if (merchantId) {
+        return merchantId;
+      }
+    }
+
+    return null;
+  };
+
+  return visit(payload);
+}
+
 /**
  * Get OAuth access token using refresh token (for distributed apps)
  * @param {object} credentials - Restaurant credentials with refreshToken
@@ -1863,7 +1916,11 @@ exports.ifoodPollManual = onCall(
       const {idRestaurante} = request.data;
 
       if (!idRestaurante) {
-        throw new Error("idRestaurante is required");
+        logger.warn("Manual polling called without idRestaurante");
+        return {
+          success: false,
+          message: "idRestaurante is required",
+        };
       }
 
       logger.info("Manual polling triggered", {idRestaurante});
@@ -1874,12 +1931,20 @@ exports.ifoodPollManual = onCall(
         .get();
 
       if (!ifoodDoc.exists) {
-        throw new Error("iFood integration not found");
+        logger.warn("iFood integration document not found", {idRestaurante});
+        return {
+          success: false,
+          message: "iFood integration not found",
+        };
       }
 
       const data = ifoodDoc.data();
-      if (!data.enabled || !data.merchantId || !data.refreshToken) {
-        throw new Error("iFood integration not properly configured");
+      if (!data.enabled || !data.refreshToken) {
+        logger.warn("iFood integration not properly configured (missing enabled/refreshToken)", {idRestaurante});
+        return {
+          success: false,
+          message: "iFood integration not properly configured",
+        };
       }
 
       const credentials = {...data, restaurantId: idRestaurante};
@@ -1887,8 +1952,49 @@ exports.ifoodPollManual = onCall(
       // Get valid access token
       const accessToken = await getValidAccessToken(credentials);
 
+      // If merchantId is missing, try to fetch it from iFood and persist it
+      let merchantId = data.merchantId || null;
+      if (!merchantId) {
+        try {
+          const merchantResponse = await fetch(`${IFOOD_API_BASE_URL}/merchant/v1.0/merchants`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "accept": "application/json",
+            },
+          });
+
+          if (merchantResponse.ok) {
+            const merchantPayload = await merchantResponse.json();
+            merchantId = extractMerchantId(merchantPayload);
+
+            if (merchantId) {
+              // Persist merchantId back to Firestore for future calls
+              await admin.firestore()
+                .doc(`restaurantes/${idRestaurante}/integrations/ifood`)
+                .set({ merchantId }, { merge: true });
+              logger.info("Discovered and saved merchantId for iFood integration", { idRestaurante, merchantId });
+            } else {
+              logger.warn("Merchant list empty or malformed when attempting to discover merchantId", { idRestaurante, payloadType: Array.isArray(merchantPayload) ? "array" : typeof merchantPayload, payloadKeys: merchantPayload && typeof merchantPayload === "object" ? Object.keys(merchantPayload) : [], merchantsSample: merchantPayload });
+            }
+          } else {
+            logger.warn("Failed to fetch merchants to discover merchantId", { idRestaurante, status: merchantResponse.status });
+          }
+        } catch (err) {
+          logger.error("Error fetching merchants to discover merchantId", { idRestaurante, error: err.message });
+        }
+      }
+
+      if (!merchantId) {
+        logger.warn("iFood integration missing merchantId after discovery attempt", {idRestaurante});
+        return {
+          success: false,
+          message: "iFood integration missing merchantId; reauthorize or contact support",
+        };
+      }
+
       // Poll events
-      const events = await pollIfoodEvents([data.merchantId], accessToken);
+      const events = await pollIfoodEvents([merchantId], accessToken);
 
       logger.info("Received events from manual poll", {
         idRestaurante,
@@ -1905,7 +2011,11 @@ exports.ifoodPollManual = onCall(
       };
     } catch (error) {
       logger.error("Error in manual polling", {error: error.message});
-      throw new Error(error.message);
+      // For unexpected errors, return structured failure
+      return {
+        success: false,
+        message: error.message || "Internal error during manual polling",
+      };
     }
   }
 );

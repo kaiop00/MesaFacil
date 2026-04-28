@@ -8,6 +8,7 @@ import {
   createWhatsAppTable
 } from '@/features/config/services/whatsappService';
 import WhatsAppLinkGenerator from '@/components/WhatsAppLinkGenerator';
+import DeliveryFeesTable from '@/features/config/components/DeliveryFeesTable';
 
 const WhatsAppPage = () => {
   const { idRestaurante } = useAuth();
@@ -17,7 +18,7 @@ const WhatsAppPage = () => {
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
-  const [taxaEntrega, setTaxaEntrega] = useState('');
+  const [bairros, setBairros] = useState([]);
 
   useEffect(() => {
     if (idRestaurante) {
@@ -30,7 +31,7 @@ const WhatsAppPage = () => {
       setLoading(true);
       const config = await getWhatsAppConfig(idRestaurante);
       setEnabled(config?.enabled || false);
-      setTaxaEntrega(config?.taxaEntrega?.toString() || '');
+      setBairros(Array.isArray(config?.bairros) ? config.bairros : []);
       setShowIntro(!config?.enabled);
     } catch (error) {
       console.error('Erro ao carregar configuração WhatsApp:', error);
@@ -65,20 +66,6 @@ const WhatsAppPage = () => {
     } catch (error) {
       console.error('Erro ao salvar configuração:', error);
       notify(error.message || 'Erro ao salvar configurações', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveTaxaEntrega = async () => {
-    try {
-      setSaving(true);
-      const valor = parseFloat(taxaEntrega.replace(',', '.')) || 0;
-      await updateWhatsAppConfig(idRestaurante, { taxaEntrega: valor });
-      notify('Taxa de entrega atualizada com sucesso!', 'success');
-    } catch (error) {
-      console.error('Erro ao salvar taxa de entrega:', error);
-      notify('Erro ao salvar taxa de entrega', 'error');
     } finally {
       setSaving(false);
     }
@@ -160,46 +147,20 @@ const WhatsAppPage = () => {
           {/* Content shown when enabled */}
           {enabled && (
             <>
-              {/* Taxa de entrega */}
+              {/* Taxa de entrega por bairro */}
               <div className="p-6 bg-white border border-gray-200 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <span>🚚</span>
-                  Taxa de Entrega
+                  Taxas de Entrega por Bairro
                 </h4>
                 <p className="text-sm text-gray-600 mb-4">
-                  Defina uma taxa fixa para pedidos de delivery. A taxa será exibida no resumo do pedido e na comanda impressa.
+                  Configure os valores de taxa de entrega para cada bairro. Os clientes poderão escolher o bairro de entrega e o valor será calculado automaticamente.
                 </p>
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <label htmlFor="taxaEntrega" className="block text-sm font-medium text-gray-700 mb-1">
-                      Valor da taxa (R$)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
-                      <input
-                        id="taxaEntrega"
-                        type="text"
-                        value={taxaEntrega}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9.,]/g, '');
-                          setTaxaEntrega(value);
-                        }}
-                        placeholder="0,00"
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Deixe 0 ou vazio para não cobrar taxa de entrega
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleSaveTaxaEntrega}
-                    disabled={saving}
-                    className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-                  >
-                    {saving ? 'Salvando...' : 'Salvar'}
-                  </button>
-                </div>
+                <DeliveryFeesTable 
+                  idRestaurante={idRestaurante}
+                  bairros={bairros}
+                  onUpdate={setBairros}
+                />
               </div>
 
               {/* Link generator */}

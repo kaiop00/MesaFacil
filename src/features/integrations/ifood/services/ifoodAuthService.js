@@ -8,11 +8,12 @@ const IFOOD_API_BASE_URL = "https://merchant-api.ifood.com.br";
  * Step 1: Request a userCode from iFood
  * This generates a code that the merchant will use in the iFood Partner Portal
  */
-export const requestIfoodUserCode = async (idRestaurante) => {
+export const requestIfoodUserCode = async (idRestaurante, clientId) => {
     const requestUserCode = httpsCallable(functions, 'ifoodRequestUserCode');
     
     const result = await requestUserCode({ 
-        idRestaurante 
+        idRestaurante,
+        clientId,
     });
     
     const data = result.data;
@@ -29,12 +30,13 @@ export const requestIfoodUserCode = async (idRestaurante) => {
  * Step 2: Exchange authorization code for tokens
  * After merchant enters the code in iFood Portal and provides the authorization code
  */
-export const exchangeAuthorizationCode = async (idRestaurante, authorizationCode) => {
+export const exchangeAuthorizationCode = async (idRestaurante, authorizationCode, clientId) => {
     const exchangeCode = httpsCallable(functions, 'ifoodExchangeCode');
     
     const result = await exchangeCode({ 
         idRestaurante,
-        authorizationCode 
+        authorizationCode,
+        clientId,
     });
     
     return result.data;
@@ -57,14 +59,17 @@ export const getIfoodIntegrationStatus = async (idRestaurante) => {
     
     const data = docSnap.data();
     
-    // Check if tokens exist and are valid
+    // Check if tokens exist and integration is not marked for reauth
     const hasTokens = !!(data.accessToken && data.refreshToken);
+    const hasMerchantId = !!data.merchantId;
     const isAuthorized = hasTokens && !data.needsReauthorization;
     
     return {
         enabled: data.enabled ?? false,
         isAuthorized,
+        hasMerchantId,
         needsReauthorization: data.needsReauthorization ?? false,
+        clientId: data.clientId,
         merchantId: data.merchantId,
         authorizedAt: data.authorizedAt,
         lastError: data.lastError,
@@ -113,6 +118,32 @@ export const clearIfoodErrors = async (idRestaurante) => {
 };
 
 /**
+ * Save the Client ID used in the iFood integration flow
+ */
+export const saveIfoodClientId = async (idRestaurante, clientId) => {
+    const docRef = doc(db, "restaurantes", idRestaurante, "integrations", "ifood");
+
+    await setDoc(docRef, {
+        clientId: clientId?.trim() || null,
+        updatedAt: serverTimestamp(),
+    }, { merge: true });
+};
+
+/**
+ * Save merchantId manually (emergency fallback when iFood merchant discovery fails)
+ */
+export const saveIfoodMerchantId = async (idRestaurante, merchantId) => {
+    const docRef = doc(db, "restaurantes", idRestaurante, "integrations", "ifood");
+
+    await setDoc(docRef, {
+        merchantId: merchantId?.trim() || null,
+        enabled: true,
+        needsReauthorization: false,
+        updatedAt: serverTimestamp(),
+    }, { merge: true });
+};
+
+/**
  * Trigger manual polling for iFood orders
  * Calls the Cloud Function to immediately poll for new orders
  */
@@ -122,6 +153,13 @@ export const triggerManualIfoodPoll = async (idRestaurante) => {
     const result = await pollManual({ 
         idRestaurante 
     });
-    
-    return result.data;
+
+    const data = result.data;
+
+    // If the function returned a structured failure, throw to let UI show it
+    if (data && data.success === false) {
+        throw new Error(data.message || 'Erro ao buscar pedidos manualmente');
+    }
+
+    return data;
 };

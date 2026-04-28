@@ -12,6 +12,59 @@ const IFOOD_API_BASE_URL = "https://merchant-api.ifood.com.br";
 const ifoodClientId = defineSecret("IFOOD_CLIENT_ID");
 const ifoodClientSecret = defineSecret("IFOOD_CLIENT_SECRET");
 
+function extractMerchantId(payload) {
+  if (!payload) {
+    return null;
+  }
+
+  const visited = new Set();
+
+  const visit = (value) => {
+    if (!value || typeof value !== "object") {
+      return null;
+    }
+
+    if (visited.has(value)) {
+      return null;
+    }
+
+    visited.add(value);
+
+    if (typeof value.id === "string" && value.id.trim()) {
+      return value.id.trim();
+    }
+
+    if (typeof value.merchantId === "string" && value.merchantId.trim()) {
+      return value.merchantId.trim();
+    }
+
+    if (typeof value.merchantID === "string" && value.merchantID.trim()) {
+      return value.merchantID.trim();
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const merchantId = visit(item);
+        if (merchantId) {
+          return merchantId;
+        }
+      }
+      return null;
+    }
+
+    for (const nestedValue of Object.values(value)) {
+      const merchantId = visit(nestedValue);
+      if (merchantId) {
+        return merchantId;
+      }
+    }
+
+    return null;
+  };
+
+  return visit(payload);
+}
+
 /**
  * Step 1: Request userCode from iFood
  * This is the first step in the distributed app authentication flow
@@ -27,20 +80,26 @@ exports.ifoodRequestUserCode = onCall(
   },
   async (request) => {
     try {
-      const {idRestaurante} = request.data;
+      const {idRestaurante, clientId} = request.data;
 
       if (!idRestaurante) {
         throw new Error("idRestaurante is required");
       }
 
+      const effectiveClientId = (clientId || ifoodClientId.value() || "").trim();
+
+      if (!effectiveClientId) {
+        throw new Error("Client ID is required");
+      }
+
       logger.info("Requesting userCode from iFood", {idRestaurante});
 
       // Request userCode from iFood
-      const requestBody = `clientId=${encodeURIComponent(ifoodClientId.value())}`;
+      const requestBody = `clientId=${encodeURIComponent(effectiveClientId)}`;
       
       logger.info("Request details", {
         url: `${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/userCode`,
-        clientId: ifoodClientId.value().substring(0, 8) + '...', // Log only first 8 chars for security
+        clientId: effectiveClientId.substring(0, 8) + '...', // Log only first 8 chars for security
       });
 
       const response = await fetch(`${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/userCode`, {
@@ -73,7 +132,7 @@ exports.ifoodRequestUserCode = onCall(
           status: response.status,
           statusText: response.statusText,
           error: errorText,
-          clientIdPreview: ifoodClientId.value().substring(0, 8) + '...',
+          clientIdPreview: effectiveClientId.substring(0, 8) + '...',
         });
         
         // Provide more specific error messages
@@ -111,6 +170,7 @@ exports.ifoodRequestUserCode = onCall(
       // Store verification codes in Firestore
       const docRef = admin.firestore().doc(`restaurantes/${idRestaurante}/integrations/ifood`);
       await docRef.set({
+        clientId: effectiveClientId,
         userCode: data.userCode,
         authorizationCodeVerifier: data.authorizationCodeVerifier,
         verificationUrl: data.verificationUrl || null,
@@ -147,7 +207,7 @@ exports.ifoodExchangeCode = onCall(
   },
   async (request) => {
     try {
-      const {idRestaurante, authorizationCode} = request.data;
+      const {idRestaurante, authorizationCode, clientId} = request.data;
 
       if (!idRestaurante || !authorizationCode) {
         throw new Error("idRestaurante and authorizationCode are required");
@@ -163,11 +223,16 @@ exports.ifoodExchangeCode = onCall(
         throw new Error("Verification code not found. Please request a new userCode.");
       }
 
-      const {authorizationCodeVerifier} = docSnap.data();
+      const {authorizationCodeVerifier, clientId: storedClientId} = docSnap.data();
+      const effectiveClientId = (clientId || storedClientId || ifoodClientId.value() || "").trim();
+
+      if (!effectiveClientId) {
+        throw new Error("Client ID is required");
+      }
 
       // Exchange authorization code for tokens
       const requestBody = 
-        `grantType=authorization_code&clientId=${ifoodClientId.value()}&clientSecret=${ifoodClientSecret.value()}&authorizationCode=${authorizationCode}&authorizationCodeVerifier=${authorizationCodeVerifier}`;
+        `grantType=authorization_code&clientId=${effectiveClientId}&clientSecret=${ifoodClientSecret.value()}&authorizationCode=${authorizationCode}&authorizationCodeVerifier=${authorizationCodeVerifier}`;
 
       logger.info("Request details", {
         url: `${IFOOD_API_BASE_URL}/authentication/v1.0/oauth/token`,
@@ -222,24 +287,42 @@ exports.ifoodExchangeCode = onCall(
         });
 
         if (merchantResponse.ok) {
-          const merchants = await merchantResponse.json();
-          if (merchants && merchants.length > 0) {
-            merchantId = merchants[0].id;
+          const merchantPayload = await merchantResponse.json();
+          merchantId = extractMerchantId(merchantPayload);
+
+          if (merchantId) {
             logger.info("Merchant ID obtained", {idRestaurante, merchantId});
+          } else {
+            logger.warn("Merchant response did not contain a merchant id", {
+              idRestaurante,
+              payloadType: Array.isArray(merchantPayload) ? "array" : typeof merchantPayload,
+              payloadKeys: merchantPayload && typeof merchantPayload === "object" ? Object.keys(merchantPayload) : [],
+            });
           }
         }
       } catch (error) {
         logger.warn("Could not fetch merchant ID", {error: error.message});
       }
 
+      const merchantWarning = !merchantId ?
+        "iFood authorization completed, but merchantId was not returned by the iFood API. Please reconnect or contact support." : null;
+
+      if (merchantWarning) {
+        logger.warn("Merchant ID missing after iFood authorization", {
+          idRestaurante,
+          message: merchantWarning,
+        });
+      }
+
       // Save tokens to Firestore
       await docRef.set({
+        clientId: effectiveClientId,
         accessToken: tokenData.accessToken,
         refreshToken: tokenData.refreshToken,
         accessTokenExpiry: admin.firestore.Timestamp.fromDate(
           new Date(Date.now() + (tokenData.expiresIn * 1000))
         ),
-        merchantId: merchantId,
+        merchantId: merchantId || admin.firestore.FieldValue.delete(),
         enabled: true,
         needsReauthorization: false,
         authorizedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -251,8 +334,8 @@ exports.ifoodExchangeCode = onCall(
         verificationUrl: admin.firestore.FieldValue.delete(),
         verificationUrlComplete: admin.firestore.FieldValue.delete(),
         // Clean up error fields since authorization succeeded
-        lastError: admin.firestore.FieldValue.delete(),
-        lastErrorAt: admin.firestore.FieldValue.delete(),
+        lastError: merchantWarning || admin.firestore.FieldValue.delete(),
+        lastErrorAt: merchantWarning ? admin.firestore.FieldValue.serverTimestamp() : admin.firestore.FieldValue.delete(),
       }, {merge: true});
 
       logger.info("iFood integration configured successfully", {idRestaurante, merchantId});
@@ -260,7 +343,8 @@ exports.ifoodExchangeCode = onCall(
       return {
         success: true,
         merchantId,
-        message: "iFood integration configured successfully",
+        message: merchantWarning || "iFood integration configured successfully",
+        warning: merchantWarning,
       };
     } catch (error) {
       logger.error("Error in ifoodExchangeCode", {error: error.message});
