@@ -19,7 +19,8 @@
     "types": {
       "sales": "Rapport de ventes",
       "period": "Rapport de période",
-      "product": "Rapport de produit"
+      "product": "Rapport par Produit",
+      "tips": "Rapport des Pourboires"
     }
   },
   "table": {
@@ -27,7 +28,8 @@
       "sales": "Rapport de ventes",
       "period": "Rapport de période",
       "product": "Rapport de produit", 
-      "waiter": "Rapport des serveurs"
+      "waiter": "Rapport des serveurs",
+      "tips": "Rapport des pourboires"
     },
     "period": "Période",
     "from": "à",
@@ -78,6 +80,16 @@
         "waiter": "Serveur",
         "ordersAttended": "Commandes servies",
         "totalValueGenerated": "Valeur totale générée"
+      }
+    },
+    "tips": {
+      "columns": {
+        "orderNumber": "Nº Commande",
+        "table": "Table",
+        "orderValue": "Valeur Commande",
+        "tipValue": "Pourboire",
+        "paymentMethod": "Mode de Paiement",
+        "finishDate": "Date de Finalisation"
       }
     }
   },

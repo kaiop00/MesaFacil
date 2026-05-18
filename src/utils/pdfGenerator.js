@@ -53,6 +53,9 @@ export const generatePDF = async (reportData, startDate, endDate, t = null) => {
     case 'vendas':
       generateSalesTable(doc, reportData.orders, startY, t);
       break;
+    case 'gorjetas':
+      generateTipsTable(doc, reportData.tips, startY, t);
+      break;
     case 'periodo':
       generatePeriodTable(doc, reportData.data, startY, t);
       break;
@@ -61,6 +64,9 @@ export const generatePDF = async (reportData, startDate, endDate, t = null) => {
       break;
     case 'garcom':
       generateWaiterTable(doc, reportData.waiters, startY, t);
+      break;
+    case 'cancelamentos':
+      generateCancellationsTable(doc, reportData.cancellations, startY, t);
       break;
   }
 
@@ -80,12 +86,16 @@ const getReportTitle = (type, t = null) => {
     switch (type) {
       case "vendas":
         return "Relatório de Vendas";
+      case "gorjetas":
+        return "Relatório de Gorjetas";
       case "periodo":
         return "Relatório por Período";
       case "produto":
         return "Relatório por Produto";
       case "garcom":
         return "Relatório por Garçom";
+      case "cancelamentos":
+        return "Relatório de Cancelamentos";
       default:
         return "Relatório";
     }
@@ -94,12 +104,16 @@ const getReportTitle = (type, t = null) => {
   switch (type) {
     case "vendas":
       return t('table.titles.sales');
+    case "gorjetas":
+      return t('table.titles.tips', { defaultValue: 'Relatório de Gorjetas' });
     case "periodo":
       return t('table.titles.period');
     case "produto":
       return t('table.titles.product');
     case "garcom":
       return t('table.titles.waiter');
+    case "cancelamentos":
+      return t('table.titles.cancellations', { defaultValue: 'Cancelamentos' });
     default:
       return t('table.titles.sales');
   }
@@ -158,6 +172,61 @@ const getPaymentMethodLabel = (method, t = null) => {
   return methodMap[method] || method;
 };
 
+const generateTipsTable = (doc, tips, startY, t = null) => {
+  const tableColumns = t ? [
+    t('tables.tips.columns.orderNumber'),
+    t('tables.tips.columns.table'),
+    t('tables.tips.columns.orderValue'),
+    t('tables.tips.columns.tipValue'),
+    t('tables.tips.columns.paymentMethod'),
+    t('tables.tips.columns.finishDate')
+  ] : ['Nº Pedido', 'Mesa', 'Valor Pedido', 'Gorjeta', 'Forma de Pagamento', 'Data de Finalização'];
+
+  const tableRows = (tips || []).map(tip => [
+    String(tip.pedidoId || '-').slice(-8),
+    String(tip.mesa || '-'),
+    formatCurrency(Number(tip.valorPedido || 0)),
+    formatCurrency(Number(tip.gorjeta || 0)),
+    String(tip.formaPagamento || '-'),
+    String(tip.dataFinalizacao || '-'),
+  ]);
+
+  autoTable(doc, {
+    head: [tableColumns],
+    body: tableRows,
+    startY,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [239, 158, 67],
+      textColor: [255, 255, 255],
+      fontSize: 10,
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [51, 51, 51],
+      halign: 'left'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    margin: { left: 15, right: 15 },
+    tableWidth: 'auto'
+  });
+
+  const totalTips = (tips || []).reduce((sum, tip) => sum + Number(tip.gorjeta || 0), 0);
+  let finalY = doc.lastAutoTable.finalY + 10;
+  finalY = checkPageSpace(doc, finalY, 20);
+
+  doc.setFontSize(12);
+  doc.setTextColor(51, 51, 51);
+  const totalTipsText = t ? t('pdf.summary.totalTips', { defaultValue: 'Total de Gorjetas' }) : 'Total de Gorjetas';
+  const totalOrdersText = t ? t('pdf.summary.totalOrders', { defaultValue: 'Total de Pedidos' }) : 'Total de Pedidos';
+  doc.text(`${totalOrdersText}: ${(tips || []).length}`, 15, finalY);
+  doc.text(`${totalTipsText}: ${formatCurrency(totalTips)}`, 15, finalY + 8);
+};
+
 const generateSalesTable = (doc, orders, startY, t = null) => {
   const tableColumns = t ? [
     t('tables.sales.columns.orderNumber'),
@@ -201,12 +270,36 @@ const generateSalesTable = (doc, orders, startY, t = null) => {
     tableWidth: 'auto'
   });
 
-  // Add summary
-  const totalValue = orders.reduce((sum, order) => sum + order.valor, 0);
-  let finalY = doc.lastAutoTable.finalY + 10;
+  const summaryByMethod = orders.reduce((accumulator, order) => {
+    const method = String(order.formaPagamento || '').toLowerCase();
+    const value = Number(order.valor || 0);
 
-  // Check if we have enough space for summary (2 lines + margin)
-  finalY = checkPageSpace(doc, finalY, 20);
+    if (!method) return accumulator;
+
+    accumulator[method] = (accumulator[method] || 0) + value;
+    accumulator.total = (accumulator.total || 0) + value;
+
+    if (method === 'credito' || method === 'debito') {
+      accumulator.cartao = (accumulator.cartao || 0) + value;
+    }
+
+    return accumulator;
+  }, {});
+
+  const summaryItems = [
+    ['dinheiro', summaryByMethod.dinheiro],
+    ['pix', summaryByMethod.pix],
+    ['credito', summaryByMethod.credito],
+    ['debito', summaryByMethod.debito],
+    ['cartao', summaryByMethod.cartao],
+    ['ifood', summaryByMethod.ifood],
+    ['voucher', summaryByMethod.voucher],
+  ].filter(([, value]) => Number(value || 0) > 0);
+
+  const totalValue = summaryByMethod.total || 0;
+  let finalY = doc.lastAutoTable.finalY + 10;
+  const requiredSpace = 20 + (summaryItems.length * 7);
+  finalY = checkPageSpace(doc, finalY, requiredSpace);
 
   doc.setFontSize(12);
   doc.setTextColor(51, 51, 51);
@@ -214,6 +307,20 @@ const generateSalesTable = (doc, orders, startY, t = null) => {
   const totalValueText = t ? t('pdf.summary.totalValue') : 'Valor Total';
   doc.text(`${totalOrdersText}: ${orders.length}`, 15, finalY);
   doc.text(`${totalValueText}: ${formatCurrency(totalValue)}`, 15, finalY + 8);
+
+  if (summaryItems.length > 0) {
+    const summaryTitle = t ? t('tables.sales.summaryTitle', { defaultValue: 'Resumo por forma de pagamento' }) : 'Resumo por forma de pagamento';
+    const summaryStartY = finalY + 20;
+    doc.setFontSize(11);
+    doc.text(summaryTitle, 15, summaryStartY);
+
+    summaryItems.forEach(([method, value], index) => {
+      const label = method === 'cartao'
+        ? (t ? t('tables.sales.paymentMethods.card', { defaultValue: 'Cartão' }) : 'Cartão')
+        : getPaymentMethodLabel(method, t);
+      doc.text(`${label}: ${formatCurrency(value)}`, 15, summaryStartY + 8 + (index * 7));
+    });
+  }
 };
 
 const generatePeriodTable = (doc, data, startY, t = null) => {
@@ -392,4 +499,60 @@ const addFooter = (doc, t = null) => {
     doc.setPage(i);
     doc.text(`${pageText} ${i} ${ofText} ${pageCount}`, 180, pageHeight - 10);
   }
+};
+
+const generateCancellationsTable = (doc, cancellations, startY, t = null) => {
+  const tableColumns = t ? [
+    t('tables.cancellations.columns.orderNumber', { defaultValue: 'Pedido' }),
+    t('tables.cancellations.columns.table', { defaultValue: 'Mesa' }),
+    t('tables.cancellations.columns.items', { defaultValue: 'Pedido cancelado' }),
+    t('tables.cancellations.columns.cancellationDate', { defaultValue: 'Data do cancelamento' }),
+    t('tables.cancellations.columns.reason', { defaultValue: 'Motivo' }),
+    t('tables.cancellations.columns.value', { defaultValue: 'Valor' }),
+  ] : ['Pedido', 'Mesa', 'Pedido cancelado', 'Data do cancelamento', 'Motivo', 'Valor'];
+
+  const tableRows = (cancellations || []).map((item) => [
+    String(item.pedidoId || '-').slice(-8),
+    String(item.mesa || '-'),
+    String(item.itensCancelados || '-'),
+    String(item.dataCancelamento || '-'),
+    String(item.motivoCancelamento || '-'),
+    formatCurrency(Number(item.valor || 0)),
+  ]);
+
+  autoTable(doc, {
+    head: [tableColumns],
+    body: tableRows,
+    startY,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [239, 158, 67],
+      textColor: [255, 255, 255],
+      fontSize: 10,
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [51, 51, 51],
+      halign: 'left'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    margin: { left: 15, right: 15 },
+    tableWidth: 'auto'
+  });
+
+  const totalCancelamentos = (cancellations || []).length;
+  const totalValue = (cancellations || []).reduce((sum, item) => sum + Number(item.valor || 0), 0);
+  let finalY = doc.lastAutoTable.finalY + 10;
+  finalY = checkPageSpace(doc, finalY, 20);
+
+  doc.setFontSize(12);
+  doc.setTextColor(51, 51, 51);
+  const totalCancellationsText = t ? t('pdf.summary.totalCancellations', { defaultValue: 'Total de Cancelamentos' }) : 'Total de Cancelamentos';
+  const totalValueCancellationsText = t ? t('pdf.summary.totalValueCancellations', { defaultValue: 'Valor Total Cancelado' }) : 'Valor Total Cancelado';
+  doc.text(`${totalCancellationsText}: ${totalCancelamentos}`, 15, finalY);
+  doc.text(`${totalValueCancellationsText}: ${formatCurrency(totalValue)}`, 15, finalY + 8);
 };

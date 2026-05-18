@@ -48,6 +48,9 @@
       "observations": "Observaciones",
       "optional": "opcional",
       "observationsPlaceholder": "Ej: Cliente pagó mitad en efectivo y mitad en PIX...",
+      "tip": "Propina",
+      "tipPlaceholder": "0,00",
+      "tipInfo": "Propina a ser agregada al valor total",
       "warning": "⚠️ Seleccione una forma de pago antes de confirmar",
       "buttons": {
         "cancel": "Cancelar",
@@ -115,7 +118,7 @@
     "searchPlaceholder": "Buscar en el menú...",
     "noResults": "No se encontraron resultados",
     "price": "Precio: $ {{price}}",
-    "ingredients": "Ingredientes: {{ingredients}}",
+    "ingredients": "Ingredientes",
     "outOfStock": "Sin stock",
     "lowStock": "Stock bajo",
     "availableStock": "Stock disponible"

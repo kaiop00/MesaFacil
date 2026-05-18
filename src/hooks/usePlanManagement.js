@@ -222,6 +222,10 @@ export const usePlanManagement = () => {
         }
         
         setPlanLoading(false);
+      } else {
+        setCurrentPlan(null);
+        setHasActivePlan(false);
+        setPlanLoading(false);
       }
     };
 

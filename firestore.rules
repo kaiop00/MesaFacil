@@ -3,17 +3,82 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if true;
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSameRestaurant(restId) {
+      return isAuthenticated() && userDoc().idRestaurante == restId;
+    }
+
+    // Regras para o módulo de Caixa
+    match /restaurantes/{restId}/caixaSessions/{sessionId} {
+      // Somente usuários autenticados do mesmo restaurante podem ler
+      allow read: if isSameRestaurant(restId);
+
+      // Criar apenas se o usuário pertence ao restaurante e campos essenciais corretos
+      allow create: if isSameRestaurant(restId)
+        && request.resource.data.empresaId == restId
+        && request.resource.data.usuarioAberturaId == request.auth.uid
+        && request.resource.data.status == 'ABERTO'
+        && request.resource.data.dataAbertura is string;
+
+      // Atualizar: somente se a sessão está ABERTO (não permitir alterações de caixa fechado)
+      // Permitir fechar definindo status = 'FECHADO' e preenchendo usuarioFechamentoId
+      allow update: if isSameRestaurant(restId)
+        && resource.data.status == 'ABERTO'
+        && (
+          // mudanças parciais que não alterem campos de abertura
+          (request.resource.data.status == resource.data.status && request.resource.data.usuarioAberturaId == resource.data.usuarioAberturaId)
+          ||
+          // fechamento
+          (request.resource.data.status == 'FECHADO' && request.resource.data.usuarioFechamentoId == request.auth.uid)
+        );
+
+      // Não permitir delete pelo cliente
+      allow delete: if false;
+    }
+
+    match /restaurantes/{restId}/caixaPagamentos/{docId} {
+      allow read: if isSameRestaurant(restId);
+      allow create: if isSameRestaurant(restId)
+        && request.resource.data.empresaId == restId
+        && request.resource.data.caixaSessionId is string
+        && request.resource.data.pedidoId is string
+        && request.resource.data.valor is number;
+      allow update, delete: if false;
+    }
+
+    match /restaurantes/{restId}/caixaLancamentos/{docId} {
+      allow read: if isSameRestaurant(restId);
+      allow create: if isSameRestaurant(restId)
+        && request.resource.data.empresaId == restId
+        && request.resource.data.caixaSessionId is string
+        && request.resource.data.usuarioId == request.auth.uid
+        && request.resource.data.valor is number;
+      allow update, delete: if false;
+    }
+
+    match /restaurantes/{restId}/caixaMovimentacoes/{docId} {
+      allow read: if isSameRestaurant(restId);
+      allow create: if isSameRestaurant(restId)
+        && request.resource.data.empresaId == restId
+        && request.resource.data.caixaSessionId is string
+        && request.resource.data.usuarioId == request.auth.uid
+        && request.resource.data.valor is number
+        && request.resource.data.tipo in ['SUPRIMENTO','SANGRIA','ENTRADA_EXTRA'];
+      allow update, delete: if false;
+    }
+
+    // Fallback: outras coleções do restaurante seguem regra de leitura para o mesmo restaurante,
+    // mas restringem escritas (evita abertura de privilégios por erro)
+    match /restaurantes/{restId}/{document=**} {
+      allow read: if isSameRestaurant(restId);
+      allow write: if false;
     }
   }
 }

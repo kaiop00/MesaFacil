@@ -19,7 +19,8 @@
     "types": {
       "sales": "Rapporto Vendite",
       "period": "Rapporto per Periodo",
-      "product": "Rapporto Prodotti"
+      "product": "Rapporto per Prodotto",
+      "tips": "Rapporto delle Mance"
     }
   },
   "table": {
@@ -27,7 +28,8 @@
       "sales": "Rapporto Vendite",
       "period": "Rapporto per Periodo",
       "product": "Rapporto Prodotti", 
-      "waiter": "Rapporto Camerieri"
+      "waiter": "Rapporto Camerieri",
+      "tips": "Rapporto delle Mance"
     },
     "period": "Periodo",
     "from": "a",
@@ -78,6 +80,16 @@
         "waiter": "Cameriere",
         "ordersAttended": "Ordini Serviti",
         "totalValueGenerated": "Valore Totale Generato"
+      }
+    },
+    "tips": {
+      "columns": {
+        "orderNumber": "Nº Ordine",
+        "table": "Tavolo",
+        "orderValue": "Valore Ordine",
+        "tipValue": "Mancia",
+        "paymentMethod": "Metodo di Pagamento",
+        "finishDate": "Data di Finalizzazione"
       }
     }
   },

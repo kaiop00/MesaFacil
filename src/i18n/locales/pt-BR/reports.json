@@ -19,7 +19,8 @@
     "types": {
       "sales": "Relatório de Vendas",
       "period": "Relatório por Período",
-      "product": "Relatório por Produto"
+      "product": "Relatório por Produto",
+      "tips": "Relatório de Gorjetas"
     }
   },
   "table": {
@@ -27,7 +28,8 @@
       "sales": "Relatório de Vendas",
       "period": "Relatório por Período", 
       "product": "Relatório por Produto",
-      "waiter": "Relatório por Garçom"
+      "waiter": "Relatório por Garçom",
+      "tips": "Relatório de Gorjetas"
     },
     "period": "Período",
     "from": "até",
@@ -78,6 +80,16 @@
         "waiter": "Garçom",
         "ordersAttended": "Nº de Pedidos Atendidos",
         "totalValueGenerated": "Valor Total Gerado"
+      }
+    },
+    "tips": {
+      "columns": {
+        "orderNumber": "Nº Pedido",
+        "table": "Mesa",
+        "orderValue": "Valor Pedido",
+        "tipValue": "Gorjeta",
+        "paymentMethod": "Forma de Pagamento",
+        "finishDate": "Data de Finalização"
       }
     }
   },

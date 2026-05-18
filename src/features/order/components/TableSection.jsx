@@ -27,12 +27,12 @@ const TableSection = ({
       <header className="flex items-center px-2 mb-4">
         <span className={`w-2 h-2 rounded-full ${dotColor} mr-2`} />
         <h2 className="text-lg font-semibold">{title}</h2>
-        <a
-          href="#"
+        <button
+          type="button"
           className="ml-auto text-sm text-gray-500 hover:underline"
         >
           {t('common.actions')}
-        </a>
+        </button>
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

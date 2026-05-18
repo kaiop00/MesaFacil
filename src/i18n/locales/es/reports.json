@@ -27,7 +27,8 @@
       "sales": "Informe de Ventas",
       "period": "Informe por Período",
       "product": "Informe de Productos", 
-      "waiter": "Informe de Camareros"
+      "waiter": "Informe de Camareros",
+      "tips": "Informe de Propinas"
     },
     "period": "Período",
     "from": "a",
@@ -78,6 +79,16 @@
         "waiter": "Camarero",
         "ordersAttended": "Pedidos Atendidos",
         "totalValueGenerated": "Valor Total Generado"
+      }
+    },
+    "tips": {
+      "columns": {
+        "orderNumber": "Nº Pedido",
+        "table": "Mesa",
+        "orderValue": "Valor Pedido",
+        "tipValue": "Propina",
+        "paymentMethod": "Forma de Pago",
+        "finishDate": "Fecha de Finalización"
       }
     }
   },

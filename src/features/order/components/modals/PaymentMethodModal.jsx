@@ -40,6 +40,7 @@ const PaymentMethodModal = ({
   totalValue,
   loading = false,
   nfceDisponivel = false,
+  isFinalizacaoMesa = false,
 }) => {
   const { t } = useTranslation('order');
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -49,8 +50,25 @@ const PaymentMethodModal = ({
   const [selectedCardBrand, setSelectedCardBrand] = useState("");
   const [splitPaymentEnabled, setSplitPaymentEnabled] = useState(false);
   const [splitPayments, setSplitPayments] = useState([createEmptySplitPayment()]);
+  const [gorjeta, setGorjeta] = useState("");
+  const [emitirRecibo, setEmitirRecibo] = useState(false);
 
   const totalPedido = Number(totalValue || 0);
+
+  const gorjetaNumerico = useMemo(() => {
+    const valorNormalizado = String(gorjeta || "")
+      .trim()
+      .replace(/\./g, "")
+      .replace(/,/g, ".");
+
+    if (!valorNormalizado) return 0;
+    const parsed = Number(valorNormalizado);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+  }, [gorjeta]);
+
+  const totalComGorjeta = useMemo(() => {
+    return Math.round((totalPedido + gorjetaNumerico) * 100) / 100;
+  }, [totalPedido, gorjetaNumerico]);
 
   const valorPagoNumerico = useMemo(() => {
     const valorNormalizado = String(valorPago || "")
@@ -64,14 +82,14 @@ const PaymentMethodModal = ({
   }, [valorPago]);
 
   const valorTroco = useMemo(() => {
-    if (valorPagoNumerico == null || valorPagoNumerico <= totalPedido) return 0;
-    return Math.round((valorPagoNumerico - totalPedido) * 100) / 100;
-  }, [valorPagoNumerico, totalPedido]);
+    if (valorPagoNumerico == null || valorPagoNumerico <= totalComGorjeta) return 0;
+    return Math.round((valorPagoNumerico - totalComGorjeta) * 100) / 100;
+  }, [valorPagoNumerico, totalComGorjeta]);
 
   const trocoInvalido =
     selectedMethod === "dinheiro" &&
     precisaTroco &&
-    (valorPagoNumerico == null || valorPagoNumerico < totalPedido);
+    (valorPagoNumerico == null || valorPagoNumerico < totalComGorjeta);
 
   const trocoPayload =
     selectedMethod === "dinheiro" && precisaTroco && !trocoInvalido
@@ -156,6 +174,8 @@ const PaymentMethodModal = ({
             ? { card: { brand: entry.cardBrand } }
             : {}),
         })),
+        ...(gorjetaNumerico > 0 ? { gorjeta: Math.round(gorjetaNumerico * 100) / 100 } : {}),
+        ...(isFinalizacaoMesa && nfceDisponivel ? { emitirRecibo } : {}),
       });
       return;
     }
@@ -169,6 +189,8 @@ const PaymentMethodModal = ({
       ...(isCardMethod(selectedMethod) && selectedCardBrand
         ? { pagamentoCartao: { brand: selectedCardBrand } }
         : {}),
+      ...(gorjetaNumerico > 0 ? { gorjeta: Math.round(gorjetaNumerico * 100) / 100 } : {}),
+      ...(isFinalizacaoMesa && nfceDisponivel ? { emitirRecibo } : {}),
     });
   };
 
@@ -180,6 +202,7 @@ const PaymentMethodModal = ({
     setSelectedCardBrand("");
     setSplitPaymentEnabled(false);
     setSplitPayments([createEmptySplitPayment()]);
+    setGorjeta("");
     onClose();
   };
 
@@ -250,9 +273,28 @@ const PaymentMethodModal = ({
               {t('payment.modal.total')}:
             </span>
             <span className="text-2xl font-bold text-primary-dynamic">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue || 0)}
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalComGorjeta)}
             </span>
           </div>
+          {gorjetaNumerico > 0 && (
+            <div className="flex justify-between items-center text-xs text-gray-500 pt-2">
+              <span>({new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPedido)} + {t('payment.modal.tip', { defaultValue: 'gorjeta' })}: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(gorjetaNumerico)})</span>
+            </div>
+          )}
+          {/* Opcao de emitir recibo só para finalização de mesa */}
+          {isFinalizacaoMesa && nfceDisponivel && (
+            <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={emitirRecibo}
+                  onChange={(e) => setEmitirRecibo(e.target.checked)}
+                  className="w-4 h-4 text-primary-dynamic focus:ring-primary-dynamic rounded"
+                />
+                <span className="text-sm font-medium text-gray-700">{t('modals.orderDetail.buttons.emitNfce')}</span>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Formas de Pagamento */}
@@ -486,6 +528,34 @@ const PaymentMethodModal = ({
             )}
           </div>
         )}
+
+        {/* Campo de Gorjeta */}
+        <div>
+          <label htmlFor="gorjeta-pagamento" className="block text-sm font-medium text-gray-700 mb-2">
+            {t('payment.modal.tip', { defaultValue: 'Gorjeta' })}
+            <span className="text-gray-400 ml-1">({t('payment.modal.optional')})</span>
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
+            <input
+              id="gorjeta-pagamento"
+              type="text"
+              inputMode="decimal"
+              value={gorjeta}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9,.]/g, "");
+                setGorjeta(value);
+              }}
+              placeholder={t('payment.modal.tipPlaceholder', { defaultValue: '0,00' })}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-dynamic focus:border-transparent"
+            />
+          </div>
+          {gorjetaNumerico > 0 && (
+            <p className="text-xs text-gray-600 mt-1">
+              {t('payment.modal.tipInfo', { defaultValue: 'Gorjeta a ser adicionada ao valor total' })}
+            </p>
+          )}
+        </div>
 
         {/* Campo de Observações */}
         <div>

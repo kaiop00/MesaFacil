@@ -117,7 +117,7 @@
     "searchPlaceholder": "Search menu...",
     "noResults": "No results found",
     "price": "Price: $ {{price}}",
-    "ingredients": "Ingredients: {{ingredients}}",
+    "ingredients": "Ingredients",
     "outOfStock": "Out of stock",
     "lowStock": "Low stock",
     "availableStock": "Available stock"
@@ -214,6 +214,9 @@
       "observations": "Observations",
       "optional": "optional",
       "observationsPlaceholder": "Ex: Customer paid half cash and half via PIX...",
+      "tip": "Tip",
+      "tipPlaceholder": "0.00",
+      "tipInfo": "Tip to be added to the total amount",
       "warning": "⚠️ Select a payment method before confirming",
       "buttons": {
         "cancel": "Cancel",

@@ -27,6 +27,8 @@ const ReportFilter = ({
     { value: 'vendas', label: t('filter.types.sales'), feature: 'daily_reports', plan: 'free' },
     { value: 'periodo', label: t('filter.types.period'), feature: 'monthly_reports', plan: 'monthly' },
     { value: 'produto', label: t('filter.types.product'), feature: 'monthly_reports', plan: 'monthly' },
+    { value: 'cancelamentos', label: t('filter.types.cancellations', { defaultValue: 'Cancelamentos' }), feature: 'monthly_reports', plan: 'monthly' },
+    { value: 'gorjetas', label: t('filter.types.tips', { defaultValue: 'Gorjetas' }), feature: 'monthly_reports', plan: 'monthly' },
   ];
 
   const handleReportTypeChange = (e) => {
