@@ -427,14 +427,26 @@ function sanitizeFileName(value) {
 app.listen(PORT, HOST, () => {
   console.log(`MesaFacil Print Service rodando em http://${HOST}:${PORT}`);
 });
-  // Exibe instrução rápida sobre credenciais quando não fornecidas
+  // Exibe instrução rápida sobre credenciais quando não fornecidas (rate-limited)
   if (!process.env.FIREBASE_SERVICE_ACCOUNT_PATH && !process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    console.log('[print-service] Nota: nenhuma credencial explícita fornecida. Use FIREBASE_SERVICE_ACCOUNT_PATH ou gcloud ADC se necessário.');
+    // rate-limit this notice to avoid spam in environments where the worker is restarted frequently
+    if (!global.__mesaFacil_printservice_cred_notice_at || (Date.now() - global.__mesaFacil_printservice_cred_notice_at) > 5 * 60 * 1000) {
+      console.log('[print-service] Nota: nenhuma credencial explícita fornecida. Use FIREBASE_SERVICE_ACCOUNT_PATH ou gcloud ADC se necessário.');
+      global.__mesaFacil_printservice_cred_notice_at = Date.now();
+    }
   }
 
 // --- optional Firestore queue worker ---
 let admin = null;
 let firestore = null;
+// Firebase init state to rate-limit error logs and allow periodic retry
+const firebaseInitState = {
+  attempted: false,
+  success: false,
+  lastFailedAt: 0,
+  lastNotifiedAt: 0,
+  notifyIntervalMs: 5 * 60 * 1000, // 5 minutes
+};
 
 function resolveFirebaseProjectId(serviceAccount = null) {
   const envProjectId =
@@ -498,6 +510,14 @@ function applyProjectIdToEnv(projectId) {
 function tryInitFirebaseAdmin() {
   if (admin) return true;
 
+  const now = Date.now();
+  // If we attempted recently and failed, skip re-attempt to avoid log spam
+  if (firebaseInitState.attempted && !firebaseInitState.success && (now - firebaseInitState.lastFailedAt) < firebaseInitState.notifyIntervalMs) {
+    return false;
+  }
+
+  firebaseInitState.attempted = true;
+
   try {
     // Prefer explicit service account path or GOOGLE_APPLICATION_CREDENTIALS
     const credPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -511,25 +531,37 @@ function tryInitFirebaseAdmin() {
       } catch {
         try {
           serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-        } catch {
-          console.warn('[print-service] FIREBASE_SERVICE_ACCOUNT_JSON inválido');
+        } catch (innerErr) {
+          if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+            console.warn('[print-service] FIREBASE_SERVICE_ACCOUNT_JSON inválido');
+            firebaseInitState.lastNotifiedAt = now;
+          }
         }
       }
     } else if (credPath) {
       try {
         serviceAccount = require(credPath);
-      } catch {
-        console.warn('[print-service] Não foi possível carregar credencial do caminho via require:', credPath);
+      } catch (reqErr) {
+        if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+          console.warn('[print-service] Não foi possível carregar credencial do caminho via require:', credPath);
+          firebaseInitState.lastNotifiedAt = now;
+        }
         try {
           const fs = require('fs');
           const raw = fs.readFileSync(credPath, 'utf8');
           try {
             serviceAccount = JSON.parse(raw);
           } catch (parseErr) {
-            console.warn('[print-service] Falha ao parsear JSON da credencial lida do caminho:', parseErr?.message || parseErr);
+            if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+              console.warn('[print-service] Falha ao parsear JSON da credencial lida do caminho:', parseErr?.message || parseErr);
+              firebaseInitState.lastNotifiedAt = now;
+            }
           }
         } catch (fsErr) {
-          console.warn('[print-service] Não foi possível ler arquivo de credencial do caminho:', fsErr?.message || fsErr);
+          if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+            console.warn('[print-service] Não foi possível ler arquivo de credencial do caminho:', fsErr?.message || fsErr);
+            firebaseInitState.lastNotifiedAt = now;
+          }
         }
       }
     }
@@ -546,10 +578,15 @@ function tryInitFirebaseAdmin() {
         if (projectId) initOpts.projectId = projectId;
         admin.initializeApp(initOpts);
         firestore = admin.firestore();
+        firebaseInitState.success = true;
         console.log(`[print-service] Firebase Admin inicializado via serviceAccount${projectId ? ` (projectId=${projectId})` : ''}`);
         return true;
       } catch (certErr) {
-        console.warn('[print-service] Falha ao inicializar Firebase Admin com serviceAccount cert():', certErr?.message || certErr);
+        firebaseInitState.lastFailedAt = Date.now();
+        if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+          console.warn('[print-service] Falha ao inicializar Firebase Admin com serviceAccount cert():', certErr?.message || certErr);
+          firebaseInitState.lastNotifiedAt = now;
+        }
         // continue to ADC fallback
       }
     }
@@ -573,17 +610,26 @@ function tryInitFirebaseAdmin() {
           }
 
           firestore = admin.firestore();
+          firebaseInitState.success = true;
           return true;
         } catch (adcErr) {
-          console.warn('[print-service] Credenciais do Firebase não encontradas. Worker de fila não será iniciado.');
-          console.warn('[print-service] Para habilitar o worker, exporte FIREBASE_SERVICE_ACCOUNT_PATH ou rode `gcloud auth application-default login` para fornecer ADC.');
-          console.warn('[print-service] Erro ADC:', adcErr?.message || adcErr);
+          firebaseInitState.lastFailedAt = Date.now();
+          if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+            console.warn('[print-service] Credenciais do Firebase não encontradas. Worker de fila não será iniciado.');
+            console.warn('[print-service] Para habilitar o worker, exporte FIREBASE_SERVICE_ACCOUNT_PATH ou rode `gcloud auth application-default login` para fornecer ADC.');
+            console.warn('[print-service] Erro ADC:', adcErr?.message || adcErr);
+            firebaseInitState.lastNotifiedAt = now;
+          }
           return false;
         }
     }
 
   } catch (error) {
-    console.error('[print-service] Falha ao inicializar Firebase Admin:', error?.message || error);
+    firebaseInitState.lastFailedAt = Date.now();
+    if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+      console.error('[print-service] Falha ao inicializar Firebase Admin:', error?.message || error);
+      firebaseInitState.lastNotifiedAt = now;
+    }
     return false;
   }
 }
