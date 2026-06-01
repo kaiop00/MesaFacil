@@ -10,6 +10,16 @@ import {
 } from '@/services/firebase/restaurantService';
 
 const FREE_TRIAL_DAYS = 30;
+const PLAN_DATA_TIMEOUT_MS = 5000;
+
+const withTimeout = (promise, timeoutMs = PLAN_DATA_TIMEOUT_MS, label = 'operation') => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]);
+};
 
 const isPaidPlanActive = (plan) => {
   if (!plan) return false;
@@ -46,7 +56,7 @@ export const usePlanManagement = () => {
   const { idRestaurante, stripeCustomerId, plan: authPlan } = useAuth();
 
   const loadFreeTrialPlan = useCallback(async (restaurantId, basePlan = null) => {
-    const trialData = await initializeFreeTrialIfNeeded(restaurantId);
+    const trialData = await withTimeout(initializeFreeTrialIfNeeded(restaurantId), PLAN_DATA_TIMEOUT_MS, 'initializeFreeTrialIfNeeded');
     const trialPlan = buildTrialState(basePlan || { planId: 'free' }, trialData);
 
     if (trialPlan.isTrialExpired && !trialData?.isExpired) {
@@ -75,7 +85,7 @@ export const usePlanManagement = () => {
       }
 
       // Fetch plan from Stripe (will return mock premium plan if Stripe is disabled)
-      const plan = await stripeService.getCurrentPlan(customerId);
+      const plan = await withTimeout(stripeService.getCurrentPlan(customerId), PLAN_DATA_TIMEOUT_MS + 5000, 'getCurrentPlan');
 
       if (isPaidPlanActive(plan)) {
         setCurrentPlan(plan);
@@ -198,16 +208,16 @@ export const usePlanManagement = () => {
             setCurrentPlan(authPlan);
             setHasActivePlan(true);
           } else {
-            let trialData = await getFreeTrialData(idRestaurante);
+            let trialData = await withTimeout(getFreeTrialData(idRestaurante), PLAN_DATA_TIMEOUT_MS, 'getFreeTrialData');
             if (!trialData.hasStarted) {
-              trialData = await initializeFreeTrialIfNeeded(idRestaurante);
+              trialData = await withTimeout(initializeFreeTrialIfNeeded(idRestaurante), PLAN_DATA_TIMEOUT_MS, 'initializeFreeTrialIfNeeded');
             }
 
             const trialPlan = buildTrialState(authPlan || { planId: 'free' }, trialData);
 
             if (trialPlan.isTrialExpired && !trialData?.isExpired) {
               try {
-                await markFreeTrialAsExpired(idRestaurante);
+                await withTimeout(markFreeTrialAsExpired(idRestaurante), PLAN_DATA_TIMEOUT_MS, 'markFreeTrialAsExpired');
               } catch (markError) {
                 console.error('Erro ao persistir status expirado do teste grátis:', markError);
               }
@@ -218,7 +228,14 @@ export const usePlanManagement = () => {
           }
         } catch (error) {
           console.error('Erro ao carregar plano do restaurante:', error);
-          await checkUserPlan(idRestaurante);
+          try {
+            await checkUserPlan(idRestaurante);
+          } catch (planErr) {
+            console.error('Erro ao validar plano via fallback:', planErr);
+            const fallbackPlan = authPlan || { planId: 'free', status: 'active', expiresAt: null };
+            setCurrentPlan(fallbackPlan);
+            setHasActivePlan(isPaidPlanActive(fallbackPlan));
+          }
         }
         
         setPlanLoading(false);
