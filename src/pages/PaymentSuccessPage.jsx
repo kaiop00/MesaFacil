@@ -107,6 +107,35 @@ const PaymentSuccessPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, user]); // notify and setUserPlan are stable functions
 
+  // Fallbacks: se houver erro ou timeout, redireciona automaticamente para /home
+  useEffect(() => {
+    let timer;
+
+    if (verificationStatus === 'error') {
+      // Após 5s em erro, retorna para a aplicação principal
+      timer = setTimeout(() => {
+        navigate('/home', { replace: true });
+      }, 5000);
+    }
+
+    if (verificationStatus === 'loading') {
+      // Se o status ficar em loading por mais de 20s, marca como erro e deixa o usuário voltar
+      timer = setTimeout(() => {
+        setError('Tempo de verificação esgotado. Redirecionando ao sistema.');
+        setVerificationStatus('error');
+      }, 20000);
+    }
+
+    if (verificationStatus === 'success') {
+      // Após confirmação automática, segue para o dashboard em 2s
+      timer = setTimeout(() => {
+        navigate('/home', { replace: true });
+      }, 2000);
+    }
+
+    return () => clearTimeout(timer);
+  }, [verificationStatus, navigate]);
+
   const manualVerifyPayment = async () => {
     // Reset and immediately set verification flag
     hasVerified.current = true;

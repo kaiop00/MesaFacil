@@ -1,4 +1,5 @@
-import { loadStripe } from '@stripe/stripe-js';
+// Import Stripe lazily inside init() to avoid blocking app load when
+// external resources (m.stripe.com) are unreachable.
 
 // Stripe toggle for maintenance windows.
 // Set to `true` in development to avoid opening the external Stripe Billing portal
@@ -13,8 +14,8 @@ if (!stripePublishableKey && !STRIPE_TEMPORARILY_DISABLED) {
   console.error('⚠️ VITE_STRIPE_PUBLISHABLE_KEY is not configured in .env file');
 }
 
-// Initialize Stripe with publishable key
-const stripePromise = (stripePublishableKey && !STRIPE_TEMPORARILY_DISABLED) ? loadStripe(stripePublishableKey) : null;
+// Note: do not initialize stripePromise at module load — use lazy import inside init()
+let stripePromise = null;
 
 if (STRIPE_TEMPORARILY_DISABLED) {
   console.warn('⚠️ STRIPE TEMPORARIAMENTE DESATIVADO - Todas as funcionalidades de plano estão liberadas');
@@ -37,16 +38,20 @@ class StripeService {
       return;
     }
     
-    if (!stripePromise) {
+    if (!stripePublishableKey) {
       console.error('Stripe cannot be initialized: Missing VITE_STRIPE_PUBLISHABLE_KEY');
       return;
     }
-    
+
     try {
+      // dynamic import ensures network requests are only attempted when needed
+      const mod = await import(/* webpackChunkName: "stripe-js" */ '@stripe/stripe-js');
+      stripePromise = mod.loadStripe(stripePublishableKey);
       this.stripe = await stripePromise;
     } catch (error) {
-      console.error('❌ Error initializing Stripe:', error);
-      throw new Error('Failed to initialize Stripe payment system');
+      console.error('❌ Error initializing Stripe (lazy):', error);
+      // don't throw to avoid unhandled rejections that block app load
+      this.stripe = null;
     }
   }
 
@@ -178,9 +183,9 @@ class StripeService {
         throw new Error('Failed to get checkout URL from session');
       }
       
-      // Redirect directly to the Stripe Checkout URL
-      // This is the new recommended approach in Stripe.js v8+
-      window.location.href = session.url;
+      // Open Stripe Checkout in a new tab to avoid replacing the single-page app
+      // and causing navigation issues when returning from Stripe.
+      window.open(session.url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('❌ Error redirecting to checkout:', error);
       throw error;
@@ -226,8 +231,9 @@ class StripeService {
     try {
       const session = await this.createBillingPortalSession(customerId);
       
-      // Redirect to the portal URL
-      window.location.href = session.url;
+      // Open the Stripe Billing Portal in a new tab to avoid replacing the app
+      // and allow users to close the portal without breaking the SPA state.
+      window.open(session.url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Error redirecting to billing portal:', error);
       throw error;
