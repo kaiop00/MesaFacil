@@ -2,14 +2,12 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
-import { cancelarItemPedido, cancelarPedido, getPedidosDaMesa, finalizarPedidoEspecifico } from "@/features/order/services/orderService";
+import { getPedidosDaMesa, finalizarPedidoEspecifico } from "@/features/order/services/orderService";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
-import { useAuth } from "@/contexts/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
 import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
-import { doc, updateDoc, collection, onSnapshot, query, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 import {
     computeTotalPedidos,
@@ -34,13 +32,9 @@ import IfoodAdditionalFeesDetails from "@/features/integrations/ifood/components
 import IfoodCustomerDetails from "@/features/integrations/ifood/components/IfoodCustomerDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import NfceModal from "@/features/order/components/modals/NfceModal";
-import AdvancePaymentModal from "@/features/order/components/modals/AdvancePaymentModal";
-import CancelOrderModal from "@/features/order/components/modals/CancelOrderModal";
-import CancelOrderItemModal from "@/features/order/components/modals/CancelOrderItemModal";
 import { buscarConfigFiscal } from "@/features/fiscal/services/configFiscalService";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 import { useDetailOrderPrint } from "@/features/order/hooks/useDetailOrderPrint";
-import { finalizarPedido } from "@/features/order/services/orderService";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onMesaUpdate }) => {
     const { t } = useTranslation('order');
@@ -49,36 +43,14 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     const [finalizando, setFinalizando] = useState({}); // { [pedidoId]: boolean }
     const [ifoodOrdersInfo, setIfoodOrdersInfo] = useState({}); // { [pedidoId]: ifoodOrderData }
     const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [paymentOpenedForFinalizacaoMesa, setPaymentOpenedForFinalizacaoMesa] = useState(false);
-    const [finalizandoMesa, setFinalizandoMesa] = useState(false);
+    const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
     const [showNfceModal, setShowNfceModal] = useState(false);
     const [nfcePedidoInfo, setNfcePedidoInfo] = useState(null);
     const [nfceDisponivel, setNfceDisponivel] = useState(false);
     const [configFiscal, setConfigFiscal] = useState(null);
-    const [showAdvanceModal, setShowAdvanceModal] = useState(false);
-    const [savingAdvance, setSavingAdvance] = useState(false);
-    const [showCancelModal, setShowCancelModal] = useState(false);
-    const [pedidoParaCancelar, setPedidoParaCancelar] = useState(null);
-    const [cancelandoPedido, setCancelandoPedido] = useState(false);
-    const [showCancelItemModal, setShowCancelItemModal] = useState(false);
-    const [itemParaCancelar, setItemParaCancelar] = useState(null);
-    const [pedidoParaCancelarItem, setPedidoParaCancelarItem] = useState(null);
-    const [itemCancelando, setItemCancelando] = useState(false);
     const [numeroPessoas, setNumeroPessoas] = useState(1);
-    const auth = useAuth() || {};
-    const user = auth.user || null;
-    const permissions = usePermissions() || {};
-    const hasPermission = permissions.hasPermission || (() => false);
-    const isAdmin = permissions.isAdmin || (() => false);
-    const toastApi = useToast() || {};
-    const notify = toastApi.notify || (() => {});
-    const printApi = useDetailOrderPrint() || {};
-    const printDetailOrder = printApi.printDetailOrder || (() => {});
-
-    const pedidosAtivos = useMemo(
-        () => pedidos.filter((pedido) => (pedido.status || "").toLowerCase() !== "cancelado"),
-        [pedidos]
-    );
+    const { notify } = useToast();
+    const { printDetailOrder } = useDetailOrderPrint();
     
     // Calcular orderOrigin a partir da mesa ou do primeiro pedido
     const orderOrigin = useMemo(() => {
@@ -87,20 +59,20 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             return mesaSelecionada.orderOrigin;
         }
         // Verificar se há pedidos com origem
-        if (pedidosAtivos.length > 0 && pedidosAtivos[0]?.orderOrigin) {
-            return pedidosAtivos[0].orderOrigin;
+        if (pedidos.length > 0 && pedidos[0]?.orderOrigin) {
+            return pedidos[0].orderOrigin;
         }
         return null;
-    }, [mesaSelecionada, pedidosAtivos]);
+    }, [mesaSelecionada, pedidos]);
 
     // Calcula tipoEntrega (delivery ou retirada) a partir do primeiro pedido WhatsApp
     const tipoEntrega = useMemo(() => {
-        if (pedidosAtivos.length > 0 && pedidosAtivos[0]?.tipoEntrega) {
-            return pedidosAtivos[0].tipoEntrega;
+        if (pedidos.length > 0 && pedidos[0]?.tipoEntrega) {
+            return pedidos[0].tipoEntrega;
         }
         return 'delivery'; // default para delivery
-    }, [pedidosAtivos]);
-
+    }, [pedidos]);
+    
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
@@ -283,33 +255,14 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         };
     }, [isOpen, mesaSelecionada?.id, idRestaurante, cleanupIfoodListeners]);
 
+    const handleOpenPaymentModal = (pedidoId) => {
+        setPedidoParaFinalizar(pedidoId);
+        setShowPaymentModal(true);
+    };
+
     const handleClosePaymentModal = () => {
         setShowPaymentModal(false);
-    };
-
-    const handleOpenAdvanceModal = () => setShowAdvanceModal(true);
-    const handleCloseAdvanceModal = () => setShowAdvanceModal(false);
-
-    const handleOpenCancelModal = (pedido) => {
-        setPedidoParaCancelar(pedido);
-        setShowCancelModal(true);
-    };
-
-    const handleCloseCancelModal = () => {
-        setShowCancelModal(false);
-        setPedidoParaCancelar(null);
-    };
-
-    const handleOpenCancelItemModal = (pedido, item, index) => {
-        setPedidoParaCancelarItem({ pedidoId: pedido.id, itemIndex: index });
-        setItemParaCancelar(item);
-        setShowCancelItemModal(true);
-    };
-
-    const handleCloseCancelItemModal = () => {
-        setShowCancelItemModal(false);
-        setItemParaCancelar(null);
-        setPedidoParaCancelarItem(null);
+        setPedidoParaFinalizar(null);
     };
 
     const handleOpenNfceModal = useCallback((pedidoId, pedidoData = null) => {
@@ -329,120 +282,54 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     }, [mesaSelecionada?.id, mesaSelecionada?.numero]);
 
     const handleConfirmPayment = async (dadosPagamento) => {
-        console.debug('[DetailOrderModal] handleConfirmPayment called', { idRestaurante, mesaId: mesaSelecionada?.id, dadosPagamento, pedidoUnicoAtivo, pedidosAtivosLength: pedidosAtivos.length });
-        if (!idRestaurante || !mesaSelecionada?.id) {
-            console.warn('[DetailOrderModal] missing idRestaurante or mesaSelecionada');
-            notify('Parâmetros insuficientes para finalizar (dev)', 'error');
-            return;
-        }
-        // captura estado atual de pedidos ativos para usar na abertura do modal NFC-e
-        const pedidosAntesDaFinalizacao = pedidosAtivos.slice();
-        // Feedback visual imediato para o usuário
+        if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;
+        const pedidoIdFinalizado = pedidoParaFinalizar;
+        const pedidoEmAndamento = pedidos.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
+        
+        setFinalizando(prev => ({ ...prev, [pedidoParaFinalizar]: true }));
         try {
-            notify('Iniciando finalização...', 'info');
-        } catch (e) {
-            console.debug('[DetailOrderModal] notify failed', e);
-        }
-        const pedidoIdFinalizado = pedidoUnicoAtivo?.id || null;
-        const pedidoEmAndamento = pedidoIdFinalizado
-            ? (pedidos.find((pedido) => pedido.id === pedidoIdFinalizado) || null)
-            : null;
-
-        setFinalizandoMesa(true);
-        try {
-            if (isFinalizacaoMesa) {
-                console.debug('[DetailOrderModal] finalizando mesa inteira', { idRestaurante, mesaId: mesaSelecionada.id });
-                await finalizarPedido(idRestaurante, mesaSelecionada.id, dadosPagamento);
-            } else if (pedidoIdFinalizado) {
-                console.debug('[DetailOrderModal] finalizando pedido específico', { idRestaurante, mesaId: mesaSelecionada.id, pedidoIdFinalizado, dadosPagamento });
-                await finalizarPedidoEspecifico(
-                    idRestaurante,
-                    mesaSelecionada.id,
-                    pedidoIdFinalizado,
-                    dadosPagamento
-                );
-            } else {
-                console.warn('[DetailOrderModal] nenhum pedido para finalizar', { pedidosAtivosLength: pedidosAtivos.length });
-                notify('Nenhum pedido disponível para finalização', 'warning');
-            }
+            await finalizarPedidoEspecifico(
+                idRestaurante, 
+                mesaSelecionada.id, 
+                pedidoIdFinalizado,
+                dadosPagamento
+            );
             notify(t('messages.success.paymentConfirmed'), "success");
             
             // Recarregar a lista
             const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
             setPedidos(dados || []);
-
+            
             // Fechar modal de pagamento
             handleClosePaymentModal();
 
-            // Preparar dados para emissão fiscal
-            let orderDataForFiscalModal = null;
-            let nfcePedidoId = pedidoIdFinalizado;
-
-            if (!isFinalizacaoMesa) {
-                // fluxo anterior: pedido único
-                const pedidoFinalizado = dados?.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
-                orderDataForFiscalModal = pedidoFinalizado
+            // Sempre abre a modal após finalizar. A emissão de NFC-e é habilitada/desabilitada dentro da modal.
+            const pedidoFinalizado = dados?.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
+            const orderDataForFiscalModal = pedidoFinalizado
+                ? {
+                    ...pedidoFinalizado,
+                    mesaNumero: pedidoFinalizado?.mesaNumero || mesaSelecionada?.numero || "-",
+                }
+                : pedidoEmAndamento
                     ? {
-                        ...pedidoFinalizado,
-                        mesaNumero: pedidoFinalizado?.mesaNumero || mesaSelecionada?.numero || "-",
-                    }
-                    : pedidoEmAndamento
-                        ? {
-                            ...pedidoEmAndamento,
-                            ...dadosPagamento,
-                            status: "entregue",
-                            mesaNumero: pedidoEmAndamento?.mesaNumero || mesaSelecionada?.numero || "-",
-                        }
-                        : null;
-            } else {
-                // Ao finalizar a mesa inteira, usamos o pedido em andamento que foi realmente finalizado.
-                const pedidoParaFiscal = pedidosAntesDaFinalizacao.find((pedido) => String(pedido?.status || '').toLowerCase() === 'andamento')
-                    || pedidosAntesDaFinalizacao[0]
-                    || null;
-
-                if (pedidoParaFiscal) {
-                    nfcePedidoId = pedidoParaFiscal.id;
-                    orderDataForFiscalModal = {
-                        ...pedidoParaFiscal,
+                        ...pedidoEmAndamento,
                         ...dadosPagamento,
                         status: "entregue",
-                        mesaNumero: pedidoParaFiscal?.mesaNumero || mesaSelecionada?.numero || "-",
-                    };
-                }
-            }
+                        mesaNumero: pedidoEmAndamento?.mesaNumero || mesaSelecionada?.numero || "-",
+                    }
+                    : null;
 
-            console.debug('[DetailOrderModal] after finalization dados:', { dadosLength: (dados || []).length, pedidosAntesLength: pedidosAntesDaFinalizacao.length, nfcePedidoId, orderDataForFiscalModal, emitirRecibo: dadosPagamento?.emitirRecibo });
-            try {
-                if (isFinalizacaoMesa && dadosPagamento?.emitirRecibo) {
-                    notify('Recibo solicitado. Preparando emissão de NFC-e...', 'info');
-                } else if (dadosPagamento?.emitirRecibo) {
-                    notify('Recibo solicitado, mas não estamos finalizando a mesa inteira. NFC-e será ignorada.', 'warning');
-                }
-            } catch (e) {
-                console.debug('[DetailOrderModal] notify emit status failed', e);
-            }
-            // Abrir modal NFC-e apenas se o usuário pediu para emitir o recibo e estamos finalizando a MESA inteira
-            if (isFinalizacaoMesa && dadosPagamento?.emitirRecibo) {
-                if (orderDataForFiscalModal && nfcePedidoId) {
-                    try { notify('Abrindo modal de emissão fiscal...', 'info'); } catch {};
-                    setNfcePedidoInfo({
-                        mesaId: mesaSelecionada.id,
-                        pedidoId: nfcePedidoId,
-                        orderData: orderDataForFiscalModal,
-                    });
-                    setShowNfceModal(true);
-                } else {
-                    console.warn('[DetailOrderModal] NFC-e modal not opened - no target order data', { nfcePedidoId, orderDataForFiscalModal });
-                    try { notify('Recibo solicitado, porém nenhum pedido foi encontrado para emissão.', 'error'); } catch {};
-                }
-            } else {
-                console.debug('[DetailOrderModal] NFC-e not requested or not a mesa finalization', { isFinalizacaoMesa, emitirRecibo: dadosPagamento?.emitirRecibo });
-            }
+            setNfcePedidoInfo({
+                mesaId: mesaSelecionada.id,
+                pedidoId: pedidoIdFinalizado,
+                orderData: orderDataForFiscalModal,
+            });
+            setShowNfceModal(true);
         } catch (error) {
             console.error("Erro ao finalizar pedido:", error);
             notify(t('messages.error.finishOrder'), "error");
         } finally {
-            setFinalizandoMesa(false);
+            setFinalizando(prev => ({ ...prev, [pedidoParaFinalizar]: false }));
         }
     };
 
@@ -475,31 +362,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         }
     };
 
-    const totalAdiantado = useMemo(
-        () => pedidosAtivos.reduce((acc, pedido) => {
-            if (!Array.isArray(pedido?.adiantamentos)) {
-                return acc;
-            }
-
-            return (
-                acc +
-                pedido.adiantamentos.reduce(
-                    (sum, adv) => sum + Number(adv?.valor || 0),
-                    0
-                )
-            );
-        }, 0),
-        [pedidosAtivos]
-    );
-
-    const allAdvances = useMemo(
-        () => pedidosAtivos.flatMap((pedido) => (Array.isArray(pedido?.adiantamentos)
-            ? pedido.adiantamentos.map((adv) => ({ ...adv, pedidoId: pedido.id }))
-            : [])),
-        [pedidosAtivos]
-    );
-
-    const totalSemTaxa = useMemo(() => computeTotalPedidos(pedidosAtivos), [pedidosAtivos]);
+    const totalSemTaxa = useMemo(() => computeTotalPedidos(pedidos), [pedidos]);
     const percentNormalized = useMemo(
         () => normalizeServicePercentage(serviceFeePercent, DEFAULT_SERVICE_FEE_PERCENT),
         [serviceFeePercent]
@@ -515,13 +378,13 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     );
     // Calcula a taxa de entrega embutida nos pedidos (para exibição)
     const valorTaxaEntregaEmbutida = useMemo(
-        () => pedidosAtivos.reduce((acc, pedido) => {
+        () => pedidos.reduce((acc, pedido) => {
             if (pedido.taxaEntrega?.aplicada && pedido.taxaEntrega?.valor > 0) {
                 return acc + Number(pedido.taxaEntrega.valor);
             }
             return acc;
         }, 0),
-        [pedidosAtivos]
+        [pedidos]
     );
     
     // Total com serviço - NÃO adiciona taxa de entrega pois já está embutida no pedido.total
@@ -535,30 +398,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         ),
         [totalSemTaxa, percentNormalized, valorCouvert]
     );
-    const pedidoEmAndamentoAtivo = pedidos.find((pedido) => String(pedido?.status || '').toLowerCase() === 'andamento') || null;
-    const pedidoUnicoAtivo = pedidoEmAndamentoAtivo || pedidosAtivos[0] || null;
-    const totalPedidoParaFinalizar = useMemo(() => {
-        return Number(pedidoUnicoAtivo?.total || 0);
-    }, [pedidoUnicoAtivo]);
-    const isFinalizacaoMesa = pedidosAtivos.length > 1;
-    const totalLiquido = useMemo(() => {
-        const totalAdiantamentos = pedidosAtivos.reduce((acc, pedido) => {
-            if (!Array.isArray(pedido?.adiantamentos)) {
-                return acc;
-            }
-
-            return (
-                acc +
-                pedido.adiantamentos.reduce(
-                    (sum, adv) => sum + Number(adv?.valor || 0),
-                    0
-                )
-            );
-        }, 0);
-
-        return Math.max(0, totalComServico - totalAdiantamentos);
-    }, [pedidosAtivos, totalComServico]);
-    const totalParaFinalizacao = isFinalizacaoMesa ? totalLiquido : totalPedidoParaFinalizar;
     const formattedPercent = percentNormalized.toLocaleString("pt-BR", {
         minimumFractionDigits: percentNormalized % 1 === 0 ? 0 : 2,
         maximumFractionDigits: 2,
@@ -590,16 +429,18 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         ? t("page.loading")
         : formatCurrency(totalComServico);
 
-    const canCancelOrder = useMemo(
-        () => isAdmin() || hasPermission("cancel_orders"),
-        [hasPermission, isAdmin]
-    );
+    // Calcula o total do pedido específico que está sendo finalizado
+    const totalPedidoParaFinalizar = useMemo(() => {
+        if (!pedidoParaFinalizar) return 0;
+        const pedido = pedidos.find(p => p.id === pedidoParaFinalizar);
+        return pedido?.total || 0;
+    }, [pedidoParaFinalizar, pedidos]);
 
     // Handler para imprimir comanda
     const handlePrintComanda = useCallback(() => {
         printDetailOrder({
             mesaNumero: mesaSelecionada?.numero || "-",
-            pedidos: pedidosAtivos,
+            pedidos,
             totalSemTaxa,
             serviceFeePercent: percentNormalized,
             valorServico,
@@ -609,120 +450,8 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             numeroPessoas,
             valorCouvert,
             totalComServico,
-            totalAdiantado,
-            totalLiquido,
         });
-    }, [printDetailOrder, mesaSelecionada, pedidosAtivos, totalSemTaxa, percentNormalized, valorServico, serviceFeeExempt, coverChargeEnabled, coverChargeValue, numeroPessoas, valorCouvert, totalComServico, totalAdiantado, totalLiquido]);
-
-    const handleConfirmAdvance = useCallback(async (novoAdiantamento) => {
-        if (!idRestaurante || !mesaSelecionada?.id || pedidosAtivos.length === 0) return;
-
-        const pedidoAndamento = pedidosAtivos.find((pedido) => pedido.status === "andamento") || pedidosAtivos[0];
-        if (!pedidoAndamento?.id) {
-            notify("Nenhum pedido em andamento para receber adiantamento", "error");
-            return;
-        }
-
-        setSavingAdvance(true);
-        try {
-            const pedidoRef = doc(
-                db,
-                "restaurantes",
-                idRestaurante,
-                "mesas",
-                mesaSelecionada.id,
-                "pedidos",
-                pedidoAndamento.id
-            );
-
-            const adiantamentosAtuais = Array.isArray(pedidoAndamento.adiantamentos)
-                ? pedidoAndamento.adiantamentos
-                : [];
-
-            const novoRegistro = {
-                ...novoAdiantamento,
-                id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                registradoPor: user?.displayName || user?.email || "Usuário",
-                registradoEm: new Date().toISOString(),
-            };
-
-            await updateDoc(pedidoRef, {
-                adiantamentos: [...adiantamentosAtuais, novoRegistro],
-                atualizadoEm: serverTimestamp(),
-            });
-
-            notify("Adiantamento registrado com sucesso", "success");
-            handleCloseAdvanceModal();
-
-            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
-            setPedidos(dados || []);
-        } catch (error) {
-            console.error("Erro ao registrar adiantamento:", error);
-            notify("Erro ao registrar adiantamento", "error");
-        } finally {
-            setSavingAdvance(false);
-        }
-    }, [idRestaurante, mesaSelecionada, pedidosAtivos, notify, user, handleCloseAdvanceModal]);
-
-    const handleConfirmCancelOrder = useCallback(async (motivoCancelamento) => {
-        if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaCancelar?.id) return;
-
-        setCancelandoPedido(true);
-        try {
-            await cancelarPedido(
-                idRestaurante,
-                mesaSelecionada.id,
-                pedidoParaCancelar.id,
-                {
-                    motivoCancelamento,
-                    canceladoPor: user?.email || user?.displayName || user?.uid || "Usuário",
-                }
-            );
-
-            notify("Pedido cancelado com sucesso", "success");
-            handleCloseCancelModal();
-
-            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
-            setPedidos(dados || []);
-        } catch (error) {
-            console.error("Erro ao cancelar pedido:", error);
-            notify(error?.message || "Erro ao cancelar pedido", "error");
-        } finally {
-            setCancelandoPedido(false);
-        }
-    }, [idRestaurante, mesaSelecionada, pedidoParaCancelar, notify, user]);
-
-    const handleConfirmCancelItem = useCallback(async ({ quantidade, motivoCancelamento }) => {
-        if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaCancelarItem?.pedidoId || itemParaCancelar === null) {
-            return;
-        }
-
-        setItemCancelando(true);
-        try {
-            await cancelarItemPedido(
-                idRestaurante,
-                mesaSelecionada.id,
-                pedidoParaCancelarItem.pedidoId,
-                {
-                    itemIndex: pedidoParaCancelarItem.itemIndex,
-                    quantidade,
-                    motivoCancelamento,
-                    canceladoPor: user?.email || user?.displayName || user?.uid || "Usuário",
-                }
-            );
-
-            notify("Item cancelado com sucesso", "success");
-            handleCloseCancelItemModal();
-
-            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
-            setPedidos(dados || []);
-        } catch (error) {
-            console.error("Erro ao cancelar item:", error);
-            notify(error?.message || "Erro ao cancelar item", "error");
-        } finally {
-            setItemCancelando(false);
-        }
-    }, [idRestaurante, mesaSelecionada, pedidoParaCancelarItem, itemParaCancelar, notify, user]);
+    }, [printDetailOrder, mesaSelecionada, pedidos, totalSemTaxa, percentNormalized, valorServico, serviceFeeExempt, coverChargeEnabled, coverChargeValue, numeroPessoas, valorCouvert, totalComServico]);
 
     return (
         <BaseModalWithHeader
@@ -739,11 +468,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                     </div>
                 )}
 
-                {!loading && pedidosAtivos.length === 0 && (
+                {!loading && pedidos.length === 0 && (
                     <p className="text-center text-gray-500">{t('modals.orderDetail.noItems')}</p>
                 )}
 
-                {!loading && pedidosAtivos.map((pedido) => (
+                {!loading && pedidos.map((pedido) => (
                     <div
                         key={pedido.id}
                         className="border border-gray-200 rounded-lg p-4 space-y-4"
@@ -994,25 +723,8 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                             items={pedido.items || []}
                             updateItemQuantity={() => { }} // Desativado
                             removeItem={() => { }}         // Desativado
-                            onCancelItem={(item, index) => handleOpenCancelItemModal(pedido, item, index)}
                             readOnly                       // Flag de só leitura
                         />
-
-                        {Array.isArray(pedido.itensCancelados) && pedido.itensCancelados.length > 0 && (
-                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
-                                <p className="text-sm font-semibold text-red-700">Itens cancelados</p>
-                                {pedido.itensCancelados.map((itemCancelado, index) => (
-                                    <div key={`item-cancelado-${pedido.id}-${index}`} className="flex justify-between text-sm text-red-800">
-                                        <span>
-                                            {itemCancelado.quantidade || 1}x {itemCancelado.nome}
-                                        </span>
-                                        <span className="font-semibold">
-                                            - {formatCurrency(Number(itemCancelado.total || 0))}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
 
                         {Array.isArray(pedido.pagamentos) && pedido.pagamentos.length > 0 && (
                             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
@@ -1025,18 +737,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                         <span className="font-medium">
                                             {formatCurrency(Number(pagamento.valor || 0))}
                                         </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {Array.isArray(pedido.adiantamentos) && pedido.adiantamentos.length > 0 && (
-                            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-2">
-                                <p className="text-sm font-semibold text-emerald-700">Adiantamentos</p>
-                                {pedido.adiantamentos.map((adiantamento, index) => (
-                                    <div key={`adiantamento-${pedido.id}-${index}`} className="flex justify-between text-sm text-emerald-800">
-                                        <span className="capitalize">{adiantamento.metodo || 'Pagamento'}</span>
-                                        <span className="font-semibold">{formatCurrency(Number(adiantamento.valor || 0))}</span>
                                     </div>
                                 ))}
                             </div>
@@ -1103,7 +803,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                             </div>
                         )}
 
-                        {(pedido.status === 'andamento' || pedido.status === 'entregue') && (
+                        {(pedido.status === 'andamento' || pedido.status === 'entregue' || pedido.status === 'cancelado') && (
                             <div className="space-y-2">
                                 {pedido.status === 'andamento' && nfceDisponivel && (
                                     <p className="text-xs text-emerald-700 text-right">
@@ -1111,24 +811,20 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     </p>
                                 )}
                                 <div className="flex justify-end gap-2">
-                                {pedido.status === 'andamento' && canCancelOrder && (
-                                    <button
-                                        onClick={() => handleOpenCancelModal({
-                                            id: pedido.id,
-                                            numeroPedido: pedido.id,
-                                            nomeCliente:
-                                                pedido?.cliente?.nome ||
-                                                ifoodOrdersInfo[pedido.id]?.name ||
-                                                'Cliente',
-                                            total: Number(pedido.total || 0),
-                                        })}
-                                        disabled={cancelandoPedido}
-                                        className="px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded hover:bg-red-100 disabled:bg-gray-200 cursor-pointer"
-                                    >
-                                        Cancelar
-                                    </button>
-                                )}
-                                
+                                <button
+                                    onClick={() => {
+                                        if (pedido.status === 'cancelado') {
+                                            handleFinalizeCanceledOrder(pedido.id);
+                                            return;
+                                        }
+
+                                        handleOpenPaymentModal(pedido.id);
+                                    }}
+                                    disabled={!!finalizando[pedido.id]}
+                                    className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
+                                >
+                                    {finalizando[pedido.id] ? t('page.loading') : t('modals.orderDetail.buttons.finishOrder')}
+                                </button>
                                 </div>
                             </div>
                         )}
@@ -1136,7 +832,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 ))}
             </div>
 
-            {!loading && pedidosAtivos.length > 0 && (
+            {!loading && pedidos.length > 0 && (
                 <div className="mt-6 border border-gray-200 rounded-lg bg-slate-50 p-4 space-y-3 text-gray-900">
                     {/* Seletor de número de pessoas - apenas para mesas convencionais com couvert ativo */}
                     {!isDelivery && coverChargeEnabled && (
@@ -1190,10 +886,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                         <span>{coverLabel}{!isDelivery && coverChargeEnabled && numeroPessoas > 1 ? ` (${numeroPessoas}x)` : ''}</span>
                         <span>{coverValueLabel}</span>
                     </div>
-                    <div className="flex justify-between text-sm font-medium text-emerald-700">
-                        <span>Adiantamentos</span>
-                        <span>- {formatCurrency(totalAdiantado)}</span>
-                    </div>
                     {/* Taxa de entrega - mostra quando há taxa embutida nos pedidos */}
                     {valorTaxaEntregaEmbutida > 0 && (
                         <div className="flex justify-between text-sm font-medium text-gray-500">
@@ -1205,42 +897,17 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                         <span>Total com taxa</span>
                         <span>{totalComServicoLabel}</span>
                     </div>
-                    <div className="flex justify-between font-bold text-emerald-700 border-t border-emerald-200 pt-2">
-                        <span>Saldo da comanda</span>
-                        <span>{formatCurrency(totalLiquido)}</span>
-                    </div>
                 </div>
             )}
 
             <div className="flex justify-end gap-2 mt-6">
-                {!loading && pedidosAtivos.length > 0 && (
-                    <button
-                        onClick={handleOpenAdvanceModal}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-300 rounded hover:bg-emerald-100 text-emerald-700 font-semibold cursor-pointer"
-                    >
-                        Adiantamento
-                    </button>
-                )}
-                {!loading && pedidosAtivos.length > 0 && !isDelivery && (
+                {!loading && pedidos.length > 0 && !isDelivery && (
                     <button
                         onClick={handlePrintComanda}
                         className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-300 rounded hover:bg-amber-100 text-amber-600 font-semibold cursor-pointer"
                     >
                         <Printer size={18} />
                         {t('modals.orderDetail.buttons.print') || 'Imprimir'}
-                    </button>
-                )}
-                {!loading && pedidosAtivos.length > 0 && (
-                    <button
-                        onClick={() => { setPaymentOpenedForFinalizacaoMesa(isFinalizacaoMesa); setShowPaymentModal(true); }}
-                        disabled={finalizandoMesa}
-                        className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
-                    >
-                        {finalizandoMesa
-                            ? t('page.loading')
-                            : isFinalizacaoMesa
-                                ? 'Finalizar Mesa'
-                                : t('modals.orderDetail.buttons.finishOrder')}
                     </button>
                 )}
                 <button
@@ -1257,36 +924,9 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 onClose={handleClosePaymentModal}
                 onConfirm={handleConfirmPayment}
                 mesaNumero={mesaSelecionada?.numero}
-                totalValue={totalParaFinalizacao}
-                loading={finalizandoMesa}
+                totalValue={totalPedidoParaFinalizar}
+                loading={!!finalizando[pedidoParaFinalizar]}
                 nfceDisponivel={nfceDisponivel}
-                isFinalizacaoMesa={paymentOpenedForFinalizacaoMesa}
-            />
-
-            <AdvancePaymentModal
-                isOpen={showAdvanceModal}
-                onClose={handleCloseAdvanceModal}
-                onConfirm={handleConfirmAdvance}
-                mesaNumero={mesaSelecionada?.numero}
-                totalValue={totalComServico}
-                currentAdvances={allAdvances}
-                loading={savingAdvance}
-            />
-
-            <CancelOrderModal
-                isOpen={showCancelModal}
-                onClose={handleCloseCancelModal}
-                pedido={pedidoParaCancelar}
-                onConfirm={handleConfirmCancelOrder}
-                loading={cancelandoPedido}
-            />
-
-            <CancelOrderItemModal
-                isOpen={showCancelItemModal}
-                onClose={handleCloseCancelItemModal}
-                item={itemParaCancelar}
-                onConfirm={handleConfirmCancelItem}
-                loading={itemCancelando}
             />
 
             {/* Modal de NFC-e */}

@@ -2,7 +2,6 @@ import { useState } from "react";
 import CardHeader from "@/components/CardHeader";
 import NfceTable from "@/features/fiscal/components/NfceTable";
 import NfceModal from "@/features/order/components/modals/NfceModal";
-import { visualizarPreviaDanfce } from "@/features/fiscal/services/nfceService";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   NFCE_MOCKS,
@@ -157,27 +156,6 @@ const NfceDemoPage = () => {
             className="px-4 py-2 rounded-md font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
           >
             📝 Testar Emissão
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                console.debug('Running real preview (demo) with', demoPedidoId, demoMesaId, idRestaurante);
-                const sampleOrder = {
-                  id: demoPedidoId,
-                  items: [ { id: 'demo-item-1', nome: 'Item Demo', price: 10.0, quantity: 1 } ],
-                  pagamentos: [ { formaPagamento: 'dinheiro', valor: 10.0 } ],
-                };
-                const res = await visualizarPreviaDanfce({ idRestaurante, mesaId: demoMesaId, pedidoId: demoPedidoId, cpfConsumidor: null, orderData: sampleOrder });
-                console.debug('visualizarPreviaDanfce response (demo):', res);
-                alert('Prévia chamada. Veja console e functions emulator logs.');
-              } catch (err) {
-                console.error('Erro ao chamar visualizarPreviaDanfce (demo):', err);
-                alert('Erro ao chamar prévia. Veja console.');
-              }
-            }}
-            className="px-4 py-2 rounded-md font-medium transition-colors bg-yellow-600 text-white hover:bg-yellow-700"
-          >
-            🚨 Chamar Prévia Real (debug)
           </button>
           <div className="px-3 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
             Modal em modo visual (mock)

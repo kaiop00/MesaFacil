@@ -220,20 +220,13 @@ export async function deletarCertificadoDigital({ idRestaurante }) {
  * @param {{ idRestaurante: string, mesaId: string, pedidoId: string, cpfConsumidor?: string }} params
  * @returns {Promise<object>} { success, nfceId, chaveAcesso, status }
  */
-export async function emitirNfce({ idRestaurante, mesaId, pedidoId, cpfConsumidor, orderData = null, formaPagamentoResolvida = "" }) {
+export async function emitirNfce({ idRestaurante, mesaId, pedidoId, cpfConsumidor }) {
   if (shouldUseNfceMocks()) {
     return simulateEmission(cpfConsumidor);
   }
 
   const fn = httpsCallable(functions, "nfceEmitir");
-  const payload = { idRestaurante, mesaId, pedidoId, cpfConsumidor: cpfConsumidor || null, orderData, formaPagamentoResolvida: formaPagamentoResolvida || "" };
-  try {
-    console.debug("[nfceService] emitirNfce payload:", payload);
-    try { if (typeof window !== 'undefined') window.__lastNfceCall = { callable: 'nfceEmitir', payload }; } catch (e) {}
-  } catch (e) {
-    // ignore
-  }
-  const result = await fn(payload);
+  const result = await fn({ idRestaurante, mesaId, pedidoId, cpfConsumidor: cpfConsumidor || null });
   return result.data;
 }
 
@@ -295,7 +288,7 @@ export async function baixarPdfDanfce({ idRestaurante, nfceId, options = {} }) {
  * @param {{ idRestaurante: string, mesaId: string, pedidoId: string, cpfConsumidor?: string, options?: object }} params
  * @returns {Promise<{success:boolean, pedidoId:string, fileName:string, contentType:string, pdfBase64:string, bytes:number}>}
  */
-export async function visualizarPreviaDanfce({ idRestaurante, mesaId, pedidoId, cpfConsumidor, orderData = null, formaPagamentoResolvida = "", options = {} }) {
+export async function visualizarPreviaDanfce({ idRestaurante, mesaId, pedidoId, cpfConsumidor, options = {} }) {
   if (shouldUseNfceMocks()) {
     return {
       success: true,
@@ -309,14 +302,7 @@ export async function visualizarPreviaDanfce({ idRestaurante, mesaId, pedidoId, 
   }
 
   const fn = httpsCallable(functions, "nfcePreviaPdfDanfce");
-  const payload = { idRestaurante, mesaId, pedidoId, cpfConsumidor: cpfConsumidor || null, orderData, formaPagamentoResolvida: formaPagamentoResolvida || "", options };
-  try {
-    console.debug("[nfceService] visualizarPreviaDanfce payload:", payload);
-    try { if (typeof window !== 'undefined') window.__lastNfceCall = { callable: 'nfcePreviaPdfDanfce', payload }; } catch (e) {}
-  } catch (e) {
-    // ignore
-  }
-  const result = await fn(payload);
+  const result = await fn({ idRestaurante, mesaId, pedidoId, cpfConsumidor: cpfConsumidor || null, options });
   return result.data;
 }
 

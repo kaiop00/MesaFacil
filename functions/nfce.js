@@ -523,7 +523,7 @@ function extractFilenameFromContentDisposition(contentDisposition = "") {
   return plainMatch[1].replace(/"/g, "").trim();
 }
 
-async function loadNfcePreviewContext(idRestaurante, mesaId, pedidoId, pedidoOverride = null, formaPagamentoResolvida = "") {
+async function loadNfcePreviewContext(idRestaurante, mesaId, pedidoId) {
   const pedidoMesaRef = db.collection("restaurantes").doc(idRestaurante)
     .collection("mesas").doc(mesaId)
     .collection("pedidos").doc(pedidoId);
@@ -539,35 +539,22 @@ async function loadNfcePreviewContext(idRestaurante, mesaId, pedidoId, pedidoOve
   if (!restSnap.exists) {
     throw new HttpsError("not-found", "Restaurant not found");
   }
-  const configFiscal = restSnap.data()?.configFiscal;
-  if (!pedidoMesaSnap.exists && !pedidoHistoricoSnap.exists && !pedidoOverride) {
+  if (!pedidoMesaSnap.exists && !pedidoHistoricoSnap.exists) {
     throw new HttpsError("not-found", "Pedido not found");
   }
+
+  const configFiscal = restSnap.data()?.configFiscal;
   if (!configFiscal?.ativo) {
     throw new HttpsError("failed-precondition", "Configuração fiscal não ativa");
   }
 
-  let pedido = null;
-  if (pedidoMesaSnap.exists) {
-    const pedidoSnap = pedidoMesaSnap;
-    pedido = { id: pedidoSnap.id, ...pedidoSnap.data(), ...(pedidoOverride || {}) };
-  } else if (pedidoHistoricoSnap.exists) {
-    const pedidoSnap = pedidoHistoricoSnap;
-    pedido = { id: pedidoSnap.id, ...pedidoSnap.data(), ...(pedidoOverride || {}) };
-  } else {
-    // Use provided override payload when DB doesn't have the pedido (useful for previews)
-    pedido = { id: pedidoId, ...(pedidoOverride || {}) };
-  }
-
-  if (!pedido.formaPagamento && formaPagamentoResolvida) {
-    pedido.formaPagamento = formaPagamentoResolvida;
-  }
+  const pedidoSnap = pedidoMesaSnap.exists ? pedidoMesaSnap : pedidoHistoricoSnap;
+  const pedido = {id: pedidoSnap.id, ...pedidoSnap.data()};
   if (!pedido.items || pedido.items.length === 0) {
     throw new HttpsError("failed-precondition", "Pedido sem itens");
   }
 
-  // Validate and normalize CNPJ from restaurant config
-  const cnpj = getCnpjDigitsFromConfig(configFiscal);
+  const cnpj = configFiscal.cnpj.replace(/\D/g, "");
   const endereco = configFiscal.endereco || {};
   const cUF = UF_TO_CUF[endereco.uf];
   if (!cUF) {
@@ -1099,37 +1086,16 @@ function normalizeSplitPaymentEntries(pedido = {}) {
     .filter(Boolean);
 }
 
-function resolvePedidoFormaPagamento(pedido = {}) {
-  const candidates = [
-    pedido?.formaPagamento,
-    pedido?.paymentMethod,
-    pedido?.metodoPagamento,
-    pedido?.payment?.method,
-    pedido?.payment?.formaPagamento,
-    pedido?.pagamentos?.[0]?.formaPagamento,
-    pedido?.pagamentos?.[0]?.method,
-    pedido?.pagamentos?.[0]?.metodo,
-    pedido?.pagamentos?.[0]?.tipo,
-  ];
-
-  for (const candidate of candidates) {
-    const value = String(candidate || '').trim();
-    if (value) return value;
-  }
-
-  return '';
-}
-
 function resolveDetPagList(pedido = {}, vNF = 0, configFiscal = {}) {
   const splitEntries = normalizeSplitPaymentEntries(pedido);
 
   if (splitEntries.length === 0) {
-    let formaPagamento = resolvePedidoFormaPagamento(pedido);
+    const formaPagamento = String(pedido.formaPagamento || "").trim();
     if (!formaPagamento) {
-      // Fallback: some flows (preview/visualização) may not provide a payment method.
-      // Instead of failing with 500, we log a warning and use a neutral payment type.
-      logger.warn("Missing payment method for pedido, falling back to 'sem_pagamento'", { pedidoId: pedido?.id || null });
-      formaPagamento = 'sem_pagamento';
+      throw new HttpsError(
+        "failed-precondition",
+        "Forma de pagamento é obrigatória para emissão de NFC-e.",
+      );
     }
 
     const {detPag, vTroco} = resolveSingleDetPag({
@@ -2481,7 +2447,7 @@ exports.nfceEmitir = onCall(
     timeoutSeconds: 60,
   },
   async (request) => {
-    const {idRestaurante, mesaId, pedidoId, cpfConsumidor, orderData, formaPagamentoResolvida} = request.data;
+    const {idRestaurante, mesaId, pedidoId, cpfConsumidor} = request.data;
 
     if (!idRestaurante || !mesaId || !pedidoId) {
       throw new HttpsError("invalid-argument", "idRestaurante, mesaId, and pedidoId are required");
@@ -2551,24 +2517,8 @@ exports.nfceEmitir = onCall(
 
     const pedidoSnap = pedidoMesaSnap.exists ? pedidoMesaSnap : pedidoHistoricoSnap;
     const pedidoOrigem = pedidoMesaSnap.exists ? "mesa" : "historico";
-    const pedido = {
-      id: pedidoSnap.id,
-      ...pedidoSnap.data(),
-      ...(orderData || {}),
-    };
-    if (!pedido.formaPagamento && formaPagamentoResolvida) {
-      pedido.formaPagamento = formaPagamentoResolvida;
-    }
+    const pedido = {id: pedidoSnap.id, ...pedidoSnap.data()};
     logger.info("Pedido loaded for NFC-e", {pedidoId, pedidoOrigem});
-    logger.info("Pedido payment debug before NFC-e validation", {
-      pedidoId,
-      pedidoOrigem,
-      formaPagamento: pedido.formaPagamento || null,
-      pagamentos: Array.isArray(pedido.pagamentos) ? pedido.pagamentos : null,
-      troco: pedido.troco || null,
-      pagamentoCartao: pedido.pagamentoCartao || null,
-      gorjeta: pedido.gorjeta || null,
-    });
     if (!pedido.items || pedido.items.length === 0) {
       throw new HttpsError("failed-precondition", "Pedido sem itens");
     }
@@ -2950,7 +2900,7 @@ exports.nfceConsultar = onCall(
 exports.nfcePreviaPdfDanfce = onCall(
   {secrets: [nuvemFiscalClientId, nuvemFiscalClientSecret, nuvemFiscalEnvironment], maxInstances: 5},
   async (request) => {
-    const {idRestaurante, mesaId, pedidoId, cpfConsumidor, orderData, formaPagamentoResolvida, options} = request.data || {};
+    const {idRestaurante, mesaId, pedidoId, cpfConsumidor, options} = request.data || {};
 
     if (!idRestaurante || !mesaId || !pedidoId) {
       throw new HttpsError("invalid-argument", "idRestaurante, mesaId, and pedidoId are required");
@@ -2959,7 +2909,7 @@ exports.nfcePreviaPdfDanfce = onCall(
     const {uid} = await validateRestaurantAccess(request, idRestaurante, ["view_fiscal", "edit_orders"]);
 
     try {
-      const previewContext = await loadNfcePreviewContext(idRestaurante, mesaId, pedidoId, orderData, formaPagamentoResolvida);
+      const previewContext = await loadNfcePreviewContext(idRestaurante, mesaId, pedidoId);
       const nfcePayload = buildNfcePayloadFromContext(previewContext, cpfConsumidor || null);
       const token = await getAccessToken("nfce");
       const parsedOptions = parseDanfceOptions(options);

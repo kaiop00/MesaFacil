@@ -10,7 +10,6 @@ import {
 } from "@/features/fiscal/services/nfceService";
 import { getFriendlyNfceError } from "@/features/fiscal/utils/nfceErrorParser";
 import { useKitchenPrint } from "@/features/kitchen/hooks/useKitchenPrint";
-import { useToast } from '@/hooks/useToast';
 
 const STEPS = {
   FORM: "form",
@@ -61,27 +60,6 @@ const extractRejectionReason = (payload = {}) => {
     "";
 };
 
-const resolveFormaPagamentoPayload = (orderData = {}) => {
-  const candidates = [
-    orderData?.formaPagamento,
-    orderData?.paymentMethod,
-    orderData?.metodoPagamento,
-    orderData?.payment?.method,
-    orderData?.payment?.formaPagamento,
-    orderData?.pagamentos?.[0]?.formaPagamento,
-    orderData?.pagamentos?.[0]?.method,
-    orderData?.pagamentos?.[0]?.metodo,
-    orderData?.pagamentos?.[0]?.tipo,
-  ];
-
-  for (const candidate of candidates) {
-    const value = String(candidate || "").trim();
-    if (value) return value;
-  }
-
-  return "";
-};
-
 const NfceModal = ({
   isOpen,
   onClose,
@@ -94,8 +72,6 @@ const NfceModal = ({
 }) => {
   const { t } = useTranslation("order");
   const { printReceipt } = useKitchenPrint();
-  const toastApi = useToast() || {};
-  const notify = toastApi.notify || (() => {});
   const [step, setStep] = useState(STEPS.FORM);
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [resultado, setResultado] = useState(null);
@@ -157,17 +133,13 @@ const NfceModal = ({
     setRejectionCode(null);
 
     try {
-      console.debug('[NfceModal] handleEmitir params:', { idRestaurante, mesaId, pedidoId, cpfConsumidor: cpfCnpj.replace(/\D/g, "") || null });
       const cpfLimpo = cpfCnpj.replace(/\D/g, "") || null;
       const result = await emitirNfce({
         idRestaurante,
         mesaId,
         pedidoId,
         cpfConsumidor: cpfLimpo,
-        orderData,
-        formaPagamentoResolvida: resolveFormaPagamentoPayload(orderData),
       });
-      console.debug('[NfceModal] emitirNfce result:', result);
 
       if (result?.success && isAuthorizedStatus(result?.nfceStatus)) {
         setPendingNfceId(null);
@@ -193,7 +165,6 @@ const NfceModal = ({
       }
     } catch (error) {
       console.error("Erro ao emitir NFC-e:", error);
-      // Show only a single error toast; modal shows detailed info.
       const msg = getFriendlyNfceError(error, t("nfce.modal.errors.generic"));
       setErro(msg);
       setPendingNfceId(null);
@@ -233,13 +204,7 @@ const NfceModal = ({
     if (!pendingNfceId || step === STEPS.LOADING) return;
     setStep(STEPS.LOADING);
     setErro(null);
-    try {
-      await pollStatus(pendingNfceId);
-    } catch (err) {
-      console.error('[NfceModal] erro ao consultar status:', err);
-      // keep modal error state only
-      setStep(STEPS.ERROR);
-    }
+    await pollStatus(pendingNfceId);
   };
 
   const handleRetry = () => {
@@ -321,13 +286,8 @@ const NfceModal = ({
       }
 
       if (resultado?.linkDanfce) {
-        // Links externos podem estar indisponíveis em ambientes de teste;
-        // evitamos abrir uma URL que pode retornar 404 e preferimos manter o modal aberto.
-        const isHttpLink = /^https?:\/\//i.test(String(resultado.linkDanfce));
-        if (isHttpLink) {
-          openPdfAndPrint(resultado.linkDanfce);
-          return;
-        }
+        openPdfAndPrint(resultado.linkDanfce);
+        return;
       }
 
       throw new Error(t("nfce.modal.errors.generic"));
@@ -349,8 +309,6 @@ const NfceModal = ({
         mesaId,
         pedidoId,
         cpfConsumidor: cpfCnpj.replace(/\D/g, "") || null,
-        orderData,
-        formaPagamentoResolvida: resolveFormaPagamentoPayload(orderData),
         options: danfceOptions,
       });
 
@@ -368,12 +326,8 @@ const NfceModal = ({
 
       throw new Error(t("nfce.modal.errors.generic"));
     } catch (error) {
-      console.warn('[NfceModal] prévia do DANFC-e falhou, mantendo modal aberto para emissão:', error);
-      // Não derruba o fluxo principal da NFC-e por causa da prévia.
-      setErro(null);
-      if (step !== STEPS.SUCCESS) {
-        setStep(STEPS.FORM);
-      }
+      setErro(getFriendlyNfceError(error, t("nfce.modal.errors.generic")));
+      setStep(STEPS.ERROR);
     } finally {
       setIsPreviewingDanfce(false);
     }
