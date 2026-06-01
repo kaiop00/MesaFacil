@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Navigate } from 'react-router-dom';
 import PermissionDeniedPage from './PermissionDeniedPage';
 
 /**
@@ -20,8 +21,6 @@ import PermissionDeniedPage from './PermissionDeniedPage';
 const RequirePermission = ({ 
   permission, 
   requireAll = false,
-  title,
-  message,
   children,
   fallback 
 }) => {
@@ -35,7 +34,7 @@ const RequirePermission = ({
   // Verifica permissão única
   if (typeof permission === 'string') {
     if (!hasPermission(permission)) {
-      return fallback || <PermissionDeniedPage title={title} message={message} />;
+      return fallback || <Navigate to="/home" replace />;
     }
     return <>{children}</>;
   }
@@ -47,13 +46,13 @@ const RequirePermission = ({
       : hasAnyPermission(permission);
     
     if (!hasAccess) {
-      return fallback || <PermissionDeniedPage title={title} message={message} />;
+      return fallback || <Navigate to="/home" replace />;
     }
     return <>{children}</>;
   }
 
   // Sem permissão especificada, nega acesso
-  return fallback || <PermissionDeniedPage title={title} message={message} />;
+  return fallback || <Navigate to="/home" replace />;
 };
 
 export default RequirePermission;

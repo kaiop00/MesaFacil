@@ -23,7 +23,8 @@
       "newOrder": "New Order",
       "viewOrder": "View Order",
       "finish": "Finish",
-      "free": "Free Table"
+      "free": "Free Table",
+      "transfer": "Transfer Order"
     }
   },
   "modals": {
@@ -60,6 +61,14 @@
       "title": "Add Items",
       "searchItems": "Search items...",
       "noItems": "No items found",
+      "itemObservation": "Item observation (optional)",
+      "itemObservationPlaceholder": "Ex: medium rare, no onion, no ice...",
+      "shortcuts": {
+        "mediumRare": "Medium rare",
+        "noOnion": "No onion",
+        "noIce": "No ice",
+        "lessSalt": "Less salt"
+      },
       "categories": {
         "all": "All",
         "food": "Food",
@@ -89,6 +98,17 @@
       "orderItems": "Order Items",
       "noItems": "No items in order",
       "total": "Total:",
+      "transfer": {
+        "title": "Transfer order",
+        "subtitle": "Move this order to another table",
+        "currentTable": "Current table",
+        "targetTable": "Destination table",
+        "placeholder": "Select a table",
+        "buttons": {
+          "transfer": "Transfer",
+          "processing": "Transferring..."
+        }
+      },
       "buttons": {
         "addItems": "Add Items",
         "finishOrder": "Finish Order", 
@@ -140,7 +160,8 @@
       "itemRemoved": "Item removed from order!",
       "orderFinished": "Order finished successfully!",
       "tableFreed": "Table freed successfully!",
-      "paymentConfirmed": "Payment confirmed and table finished!"
+      "paymentConfirmed": "Payment confirmed and table finished!",
+      "orderTransferred": "Order transferred successfully!"
     },
     "error": {
       "createOrder": "Error creating order",
@@ -150,7 +171,9 @@
       "finishOrder": "Error finishing order",
       "freeTable": "Error freeing table",
       "loadData": "Error loading data",
-      "stockNotAvailable": "Insufficient stock for this item"
+      "stockNotAvailable": "Insufficient stock for this item",
+      "transferOrder": "Error transferring order",
+      "selectTransferTable": "Select a destination table"
     },
     "confirm": {
       "removeItem": "Are you sure you want to remove this item?",
@@ -167,6 +190,7 @@
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
+    "clear": "Clear",
     "edit": "Edit",
     "remove": "Remove",
     "add": "Add",

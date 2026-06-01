@@ -7,7 +7,8 @@ const ItemFormModal = ({
   isOpen, 
   onClose, 
   item = null, 
-  onSave 
+  onSave,
+  setores = [],
 }) => {
   const { t } = useTranslation("items");
   const [formData, setFormData] = useState({
@@ -19,7 +20,8 @@ const ItemFormModal = ({
     estoqueAtual: "",
     estoqueBaixo: "",
     estoqueMedio: "",
-    estoqueAlto: ""
+    estoqueAlto: "",
+    setorId: ""
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -50,7 +52,8 @@ const ItemFormModal = ({
         estoqueAtual: item.estoqueAtual || "",
         estoqueBaixo: item.estoqueBaixo || "",
         estoqueMedio: item.estoqueMedio || "",
-        estoqueAlto: item.estoqueAlto || ""
+        estoqueAlto: item.estoqueAlto || "",
+        setorId: item.setorId || ""
       });
     } else {
       setFormData({
@@ -62,11 +65,12 @@ const ItemFormModal = ({
         estoqueAtual: "",
         estoqueBaixo: "",
         estoqueMedio: "",
-        estoqueAlto: ""
+        estoqueAlto: "",
+        setorId: setores?.[0]?.id || ""
       });
     }
     setFormErrors({});
-  }, [item, isOpen]);
+  }, [item, isOpen, setores]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -95,6 +99,10 @@ const ItemFormModal = ({
     } else if (isNaN(formData.estoqueAtual) || parseInt(formData.estoqueAtual) < 0) {
       errors.estoqueAtual = t("form.fields.currentStockInvalid");
     }
+
+    if (!formData.setorId) {
+      errors.setorId = "Selecione um setor de produção";
+    }
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -111,7 +119,8 @@ const ItemFormModal = ({
         estoqueAlto: parseInt(formData.estoqueAlto || 0, 10),
         fatorTransformacaoPadrao: formData.fatorTransformacaoPadrao 
           ? parseFloat(formData.fatorTransformacaoPadrao)
-          : null
+          : null,
+        setorId: formData.setorId,
       });
     }
   };
@@ -199,6 +208,33 @@ const ItemFormModal = ({
               {t("form.help.storageUnit")}
             </p>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Setor de Produção {t("form.required")}
+          </label>
+          <select
+            name="setorId"
+            className={`w-full px-3 py-2 border ${
+              formErrors.setorId ? 'border-red-500' : 'border-gray-300'
+            } rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500`}
+            value={formData.setorId}
+            onChange={handleInputChange}
+          >
+            <option value="">Selecione</option>
+            {setores.map((setor) => (
+              <option key={setor.id} value={setor.id}>
+                {setor.nome}
+              </option>
+            ))}
+          </select>
+          {formErrors.setorId && (
+            <p className="mt-1 text-sm text-red-600">{formErrors.setorId}</p>
+          )}
+          <p className="mt-1 text-xs text-gray-500">
+            Todo produto deve estar vinculado a um setor de produção.
+          </p>
         </div>
 
         {/* Transformation Factor */}

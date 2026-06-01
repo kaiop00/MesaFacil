@@ -27,9 +27,6 @@ const KitchenOrderCard = ({ order, onFinalize, onPrint, finalizing }) => {
   }, [order?.criadoEm, t]);
 
   const totalLabel = formatCurrency(order?.total);
-  const observation =
-    order?.observacoes?.trim() || t("cards.noObservations");
-
   // Check if is a pickup order (retirada)
   const isPickup = order?.tipoEntrega === 'retirada';
 
@@ -103,12 +100,7 @@ const KitchenOrderCard = ({ order, onFinalize, onPrint, finalizing }) => {
         </div>
       </section>
 
-      <section>
-        <h4 className="text-sm font-semibold text-gray-800 mb-1">
-          {t("cards.observations")}
-        </h4>
-        <p className="text-sm text-gray-600">{observation}</p>
-      </section>
+      {/* Observações gerais removidas: usar observações por item exibidas em cada item */}
     </article>
   );
 };

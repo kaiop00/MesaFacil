@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useClientData } from '@/hooks/useClientData';
 
 /**
@@ -129,7 +129,7 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
         onDataChange(fullData, isFormValid());
       }
     }
-  }, [formData, selectedEndereco, enderecoData, isRetirada]);
+  }, [formData, selectedEndereco, enderecoData, isRetirada, onDataChange, isFormValid]);
 
   /**
    * Valida CPF (apenas formato básico)
@@ -151,7 +151,7 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
    * Valida formulário completo
    * Para retirada, não precisa validar endereço
    */
-  const isFormValid = () => {
+  const isFormValid = useCallback(() => {
     if (!isRequired) return true;
 
     // Validação básica (nome, CPF, telefone) - obrigatória para ambos os modos
@@ -189,7 +189,7 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
       temBairro &&
       temCidade
     );
-  };
+  }, [formData, selectedEndereco, enderecoData, isRequired, isRetirada, tipoEntrega, bairros, selectedBairro]);
 
   /**
    * Formata CPF: 000.000.000-00

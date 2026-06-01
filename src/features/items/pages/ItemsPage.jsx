@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useToast } from "@/hooks/useToast";
 import { create, getAll, update, remove } from "@/services/firebase/firestoreService";
 import CardHeader from "@/components/CardHeader";
 import PermissionDeniedPage from "@/components/PermissionDeniedPage";
@@ -10,11 +11,13 @@ import ItemsTable from "@/features/items/components/ItemsTable";
 import ItemFormModal from "@/features/items/components/ItemFormModal";
 import ItemDetailsModal from "@/features/items/components/ItemDetailsModal";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
+import { getSetoresProducao } from "@/features/config/services/producaoService";
 
 const ItemsPage = () => {
   const { t } = useTranslation("items");
   const { idRestaurante } = useAuth();
   const { hasPermission } = usePermissions();
+  const { notify } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -24,6 +27,7 @@ const ItemsPage = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
+  const [setores, setSetores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,14 +37,18 @@ const ItemsPage = () => {
 
       try {
         setIsLoading(true);
-        const itemsData = await getAll(idRestaurante, 'itens', {
-          orderByField: 'nome',
-          order: 'asc'
-        });
+        const [itemsData, setoresData] = await Promise.all([
+          getAll(idRestaurante, 'itens', {
+            orderByField: 'nome',
+            order: 'asc'
+          }),
+          getSetoresProducao(idRestaurante),
+        ]);
 
         setItems(itemsData);
         setFilteredItems(itemsData);
         setTotalItems(itemsData.length);
+        setSetores(setoresData || []);
       } catch (error) {
         setError(error);
       } finally {
@@ -70,6 +78,10 @@ const ItemsPage = () => {
   }, [filteredItems]);
 
   const handleNewItem = () => {
+    if (setores.length === 0) {
+      notify("Cadastre pelo menos um setor de produção antes de criar produtos.", "warning");
+      return;
+    }
     setSelectedItem(null);
     setIsFormModalOpen(true);
   };
@@ -235,6 +247,7 @@ const ItemsPage = () => {
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSaveItem}
         item={selectedItem}
+        setores={setores}
       />
 
       <ItemDetailsModal

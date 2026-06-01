@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useEffect, useRef } from "react";
 import { useLocation, useParams, useSearchParams } from "react-router-dom";
 
-const ClienteContext = createContext(null);
+export const ClienteContext = createContext(null);
 
 const STORAGE_KEY = "cliente:initial";
 const STORAGE_TTL_MS = 6 * 60 * 60 * 1000; // 6h
@@ -28,7 +28,9 @@ function saveToStorage(data) {
             expiresAt: Date.now() + STORAGE_TTL_MS,
         };
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch { }
+    } catch {
+        return;
+    }
 }
 
 export function ClienteProvider({ children }) {
@@ -44,12 +46,18 @@ export function ClienteProvider({ children }) {
     const numero = numeroStrFromUrl ?? saved?.numero ?? undefined;
     const mesaId = mesaIdFromUrl ?? saved?.mesaId ?? undefined;
     const idRestaurante = idRestauranteFromUrl ?? saved?.idRestaurante ?? undefined;
+    const defaultRestaurante = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_DEFAULT_RESTAURANTE_ID)
+        ? import.meta.env.VITE_DEFAULT_RESTAURANTE_ID
+        : undefined;
+    const finalIdRestaurante = idRestaurante ?? defaultRestaurante;
 
     const initialSearch = (idRestauranteFromUrl ? location.search : saved?.search) || "";
     const initialHref = (slug && idRestauranteFromUrl)
         ? (location.pathname + location.search)
         : (saved?.href || "");
 
+    // Intencional: lógica de boot deve rodar apenas no mount
+     
     useEffect(() => {
         if (bootedRef.current) return;
         bootedRef.current = true;
@@ -70,10 +78,26 @@ export function ClienteProvider({ children }) {
                 href: location.pathname + location.search,
                 search: location.search,
             };
+        } else if (!saved && defaultRestaurante) {
+            // Persistir fallback em sessionStorage para evitar perda entre reloads
+            saveToStorage({
+                numero: numeroStrFromUrl ?? undefined,
+                mesaId: mesaIdFromUrl ?? undefined,
+                idRestaurante: defaultRestaurante,
+                href: location.pathname + location.search,
+                search: location.search,
+            });
+            initialRef.current = {
+                numero: numeroStrFromUrl ?? undefined,
+                mesaId: mesaIdFromUrl ?? undefined,
+                idRestaurante: defaultRestaurante,
+                href: location.pathname + location.search,
+                search: location.search,
+            };
         } else if (saved) {
             initialRef.current = saved;
         }
-    }, []);
+    }, [slug, idRestauranteFromUrl, mesaIdFromUrl, location.pathname, location.search, numeroStrFromUrl, saved, defaultRestaurante]);
 
     useEffect(() => {
         const hasUrlParams = Boolean(slug && idRestauranteFromUrl && mesaIdFromUrl);
@@ -101,16 +125,27 @@ export function ClienteProvider({ children }) {
                 search: location.search,
             };
         }
-    }, [slug, idRestauranteFromUrl, mesaIdFromUrl, location.pathname, location.search]);
+    }, [slug, idRestauranteFromUrl, mesaIdFromUrl, location.pathname, location.search, numeroStrFromUrl, saved]);
 
     const value = useMemo(() => ({
         mesaId,
         numero,
-        idRestaurante,
+        idRestaurante: finalIdRestaurante,
         initialHref: initialHref || (initialRef.current?.href ?? ""),
         initialSearch: initialSearch || (initialRef.current?.search ?? ""),
         clearInitial: () => sessionStorage.removeItem(STORAGE_KEY),
-    }), [mesaId, numero, idRestaurante, initialHref, initialSearch]);
+    }), [mesaId, numero, finalIdRestaurante, initialHref, initialSearch]);
+
+    // DEBUG: logar valores que influenciam carregamento do cardápio (útil em dev)
+    useEffect(() => {
+        try {
+            const debugPayload = { mesaId, numero, idRestaurante: finalIdRestaurante, initialHref, initialSearch };
+            if (!idRestaurante && finalIdRestaurante) debugPayload._note = 'using VITE_DEFAULT_RESTAURANTE_ID fallback';
+            console.debug("DEBUG ClienteContext:", debugPayload);
+        } catch {
+            // não quebrar a app caso console esteja indisponível
+        }
+    }, [mesaId, numero, idRestaurante, initialHref, initialSearch, finalIdRestaurante]);
 
     return (
         <ClienteContext.Provider value={value}>

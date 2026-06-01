@@ -2,6 +2,7 @@ import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import { Coffee } from "react-coolicons";
 import { QRCodeSVG } from "qrcode.react";
 import { useTranslation } from "react-i18next";
+import { resolveQrCodeUrl } from "@/features/config/utils/qrCodeUrl";
 
 export function QrCodeModal({
     isOpen,
@@ -11,7 +12,10 @@ export function QrCodeModal({
     const { t } = useTranslation();
     if (!isOpen || !mesa) return null;
 
-    const url = mesa.qrCodeUrl;
+    const url = resolveQrCodeUrl(
+        mesa.qrCodeUrl,
+        mesa?.id ? `/mesa/${mesa?.numero ?? "-"}-${mesa.id}?restaurante=${mesa?.idRestaurante || ""}` : ""
+    );
     const tableNumber = mesa?.numero ?? "-";
 
     return (

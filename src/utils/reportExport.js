@@ -5,7 +5,7 @@ const formatDateForFile = (value) => {
 
   try {
     return new Date(value).toISOString().slice(0, 10);
-  } catch (error) {
+  } catch {
     return String(value).replaceAll("/", "-");
   }
 };

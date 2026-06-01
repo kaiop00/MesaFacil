@@ -220,7 +220,7 @@ const NfceListPage = () => {
     return () => {
       isCancelled = true;
     };
-  }, [showDetailsModal, selectedNfce?.id, idRestaurante]);
+  }, [showDetailsModal, selectedNfce, idRestaurante]);
 
   const refreshList = async () => {
     const skip = currentPage * ITEMS_PER_PAGE;

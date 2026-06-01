@@ -339,6 +339,7 @@ const NfceModal = ({
       onClose={handleClose}
       title={t("nfce.modal.title")}
       subTitle={t("nfce.modal.subtitle")}
+      zIndex={60}
     >
       <div className="space-y-5">
         {/* STEP: FORM */}

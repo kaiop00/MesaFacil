@@ -5,6 +5,8 @@ export default function ActionButtons({
   sessionOpen, 
   onMovimentacao, 
   onFechar,
+  onPrintReport,
+  closureReport,
   loading 
 }) {
   const buttonClasses = 'flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all text-sm md:text-base';
@@ -20,12 +22,22 @@ export default function ActionButtons({
         <h3 className="text-lg font-bold text-gray-800 mb-4">Ações Principais</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {!sessionOpen ? (
-            <Link to="/home/caixa/abrir" className="w-full">
-              <button className={`w-full ${buttonClasses} ${successClass}`}>
-                <Plus size={20} />
-                Abrir Caixa
-              </button>
-            </Link>
+            <>
+              <Link to="/home/caixa/abrir" className="w-full">
+                <button className={`w-full ${buttonClasses} ${successClass}`}>
+                  ➕ Abrir Caixa
+                </button>
+              </Link>
+              {closureReport?.report && (
+                <button
+                  type="button"
+                  onClick={onPrintReport}
+                  className={`w-full ${buttonClasses} bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50`}
+                >
+                  🖨️ Imprimir Relatório
+                </button>
+              )}
+            </>
           ) : (
             <button 
               onClick={onFechar} 

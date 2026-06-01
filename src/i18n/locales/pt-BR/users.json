@@ -93,7 +93,16 @@
     "manage_cover_charge": "Gerenciar Couvert Artístico",
     "manage_whatsapp_menu": "Gerenciar Cardápio WhatsApp",
     "manage_billing": "Gerenciar Assinatura",
+    "view_cash": "Visualizar Caixa",
+    "manage_cash": "Gerenciar Caixa",
+    "manage_printers": "Gerenciar Impressoras",
     "manage_ifood_integration": "Gerenciar Integração iFood"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "garcom": "Garçom",
+    "caixa": "Caixa",
+    "custom": "Personalizado"
   },
   "planRestriction": {
     "title": "Plano Gratuito",

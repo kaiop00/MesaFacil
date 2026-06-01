@@ -7,6 +7,24 @@ const PAGAMENTOS_COLL = 'caixaPagamentos';
 const LANCAMENTOS_COLL = 'caixaLancamentos';
 const MOVIMENTOS_COLL = 'caixaMovimentacoes';
 
+const FORMA_PAGAMENTO_CANONICA = {
+  dinheiro: 'DINHEIRO',
+  pix: 'PIX',
+  credito: 'CREDITO',
+  débito: 'DEBITO',
+  debito: 'DEBITO',
+  voucher: 'VOUCHER',
+  ifood: 'IFOOD'
+};
+
+function normalizarFormaPagamento(formaPagamento) {
+  const valor = String(formaPagamento || '').trim();
+  if (!valor) return null;
+
+  const chaveNormalizada = valor.toLowerCase();
+  return FORMA_PAGAMENTO_CANONICA[chaveNormalizada] || valor.toUpperCase();
+}
+
 /**
  * Verifica se existe sessão de caixa aberta para a empresa
  */
@@ -51,13 +69,14 @@ export async function registrarPagamentoPedido({ empresaId, pedidoId, formaPagam
     pedidoId,
     caixaSessionId: session.id,
     empresaId,
-    formaPagamento,
+    formaPagamento: normalizarFormaPagamento(formaPagamento),
     valor: Number((valorBase + gorjetaNumerica).toFixed(2)),
     gorjeta: gorjetaNumerica,
     taxaCartao: taxaCartao ? Number(taxaCartao) : 0,
     dataHora: new Date().toISOString()
   };
 
+  console.log('[caixaService] registrarPagamentoPedido payload', payload);
   await firestore.create(empresaId, PAGAMENTOS_COLL, payload);
   return payload;
 }
@@ -74,13 +93,14 @@ export async function criarLancamentoManual({ empresaId, usuarioId, formaPagamen
     caixaSessionId: session.id,
     empresaId,
     usuarioId,
-    formaPagamento,
+    formaPagamento: normalizarFormaPagamento(formaPagamento),
     valor: Number(valor) || 0,
     descricao: descricao || '',
     origem: origem || 'OUTROS',
     dataHora: new Date().toISOString()
   };
 
+  console.log('[caixaService] criarLancamentoManual payload', payload);
   await firestore.create(empresaId, LANCAMENTOS_COLL, payload);
   return payload;
 }
@@ -103,6 +123,7 @@ export async function criarMovimentacao({ empresaId, usuarioId, tipo, valor, des
     dataHora: new Date().toISOString()
   };
 
+  console.log('[caixaService] criarMovimentacao payload', payload);
   await firestore.create(empresaId, MOVIMENTOS_COLL, payload);
   return payload;
 }
@@ -119,12 +140,21 @@ export async function calcularTotaisSessao(empresaId, caixaSessionId) {
   const lancamentosSessao = lancamentos.filter(l => l.caixaSessionId === caixaSessionId);
   const movimentosSessao = movimentos.filter(m => m.caixaSessionId === caixaSessionId);
 
-  const formas = ['DINHEIRO','PIX','CREDITO','DEBITO','VR','VA'];
+  const formas = ['DINHEIRO','PIX','CREDITO','DEBITO','VOUCHER','IFOOD'];
   const porForma = {};
   formas.forEach(f => { porForma[f] = 0; });
 
-  pagamentosSessao.forEach(p => { porForma[p.formaPagamento] = (porForma[p.formaPagamento]||0) + Number(p.valor || 0); });
-  lancamentosSessao.forEach(l => { porForma[l.formaPagamento] = (porForma[l.formaPagamento]||0) + Number(l.valor || 0); });
+  const acumularPorForma = (item) => {
+    const forma = normalizarFormaPagamento(item?.formaPagamento);
+    if (!forma) return;
+    if (!Object.prototype.hasOwnProperty.call(porForma, forma)) {
+      porForma[forma] = 0;
+    }
+    porForma[forma] += Number(item?.valor || 0);
+  };
+
+  pagamentosSessao.forEach(acumularPorForma);
+  lancamentosSessao.forEach(acumularPorForma);
 
   const suprimentos = movimentosSessao.filter(m => m.tipo === 'SUPRIMENTO').reduce((s, m) => s + Number(m.valor||0), 0);
   const entradasExtras = movimentosSessao.filter(m => m.tipo === 'ENTRADA_EXTRA').reduce((s, m) => s + Number(m.valor||0), 0);
@@ -132,6 +162,7 @@ export async function calcularTotaisSessao(empresaId, caixaSessionId) {
 
   const vendasDinheiro = porForma['DINHEIRO'] || 0;
 
+  console.log('[caixaService] calcularTotaisSessao', { caixaSessionId, porForma, suprimentos, entradasExtras, sangrias, vendasDinheiro });
   return {
     porForma,
     suprimentos,
@@ -145,6 +176,7 @@ export async function calcularTotaisSessao(empresaId, caixaSessionId) {
  * Fecha a sessão de caixa calculando diferença e atualizando a sessão
  */
 export async function fecharCaixa({ empresaId, usuarioId, caixaSessionId, valorInformadoFechamento }) {
+  console.log('[caixaService] fecharCaixa called with', { empresaId, usuarioId, caixaSessionId, valorInformadoFechamento });
   const session = await firestore.getById(empresaId, SESSIONS_COLL, caixaSessionId);
   if (!session) throw new Error('Sessão não encontrada');
   if (session.status === 'FECHADO') throw new Error('Caixa já está fechado');
@@ -155,16 +187,99 @@ export async function fecharCaixa({ empresaId, usuarioId, caixaSessionId, valorI
   const informado = Number(valorInformadoFechamento||0);
   const diferenca = informado - esperado;
 
+  // atualiza sessão com valores calculados (sem relatorio ainda)
   const updatePayload = {
     status: 'FECHADO',
     usuarioFechamentoId: usuarioId,
     dataFechamento: new Date().toISOString(),
     valorInformadoFechamento: informado,
-    diferenca
+    diferenca,
+    valoresZerados: true
   };
 
   await firestore.update(empresaId, SESSIONS_COLL, caixaSessionId, updatePayload);
-  return { esperado, informado, diferenca, updatePayload };
+  console.log('[caixaService] fecharCaixa updated session (partial)', { sessionId: caixaSessionId, updatePayload });
+
+  // gera relatório textual agora que a sessão está atualizada (usa os campos persistidos)
+  const relatorio = await gerarRelatorioFechamento(empresaId, caixaSessionId);
+
+  // persiste relatório final
+  await firestore.update(empresaId, SESSIONS_COLL, caixaSessionId, { relatorioFechamento: relatorio });
+
+  console.log('[caixaService] fecharCaixa updated session (relatorio)', { sessionId: caixaSessionId });
+  return { esperado, informado, diferenca, relatorio };
+}
+
+/**
+ * Força fechamento da sessão (debug)
+ * Atualiza o status para FECHADO e persiste relatório sem validar pré-condições
+ */
+export async function forceCloseSessionDebug({ empresaId, usuarioId, caixaSessionId, valorInformadoFechamento = 0 }) {
+  console.log('[caixaService] forceCloseSessionDebug called', { empresaId, usuarioId, caixaSessionId, valorInformadoFechamento });
+  const session = await firestore.getById(empresaId, SESSIONS_COLL, caixaSessionId);
+  if (!session) throw new Error('Sessão não encontrada (debug)');
+
+  const totais = await calcularTotaisSessao(empresaId, caixaSessionId);
+  const esperado = (Number(session.valorInicial||0) + Number(totais.vendasDinheiro||0) + Number(totais.suprimentos||0) + Number(totais.entradasExtras||0) - Number(totais.sangrias||0));
+  const informado = Number(valorInformadoFechamento||0);
+  const diferenca = informado - esperado;
+
+  const updatePayload = {
+    status: 'FECHADO',
+    usuarioFechamentoId: usuarioId || session.usuarioAberturaId || 'debug',
+    dataFechamento: new Date().toISOString(),
+    valorInformadoFechamento: informado,
+    diferenca,
+    valoresZerados: true
+  };
+
+  await firestore.update(empresaId, SESSIONS_COLL, caixaSessionId, updatePayload);
+  console.log('[caixaService] forceCloseSessionDebug updated session (partial)', { sessionId: caixaSessionId, updatePayload });
+
+  const relatorio = await gerarRelatorioFechamento(empresaId, caixaSessionId);
+  await firestore.update(empresaId, SESSIONS_COLL, caixaSessionId, { relatorioFechamento: relatorio });
+
+  console.log('[caixaService] forceCloseSessionDebug updated session (relatorio)', { sessionId: caixaSessionId });
+  return { esperado, informado, diferenca, relatorio };
+}
+
+export async function getLastClosedSessionWithReport(empresaId) {
+  const sessions = await firestore.getAll(empresaId, SESSIONS_COLL, { orderByField: 'dataFechamento', order: 'desc' });
+  const closed = sessions.find(s => s.status === 'FECHADO' && s.relatorioFechamento);
+  if (!closed) return null;
+  return {
+    sessionId: closed.id,
+    relatorio: closed.relatorioFechamento,
+    informado: closed.valorInformadoFechamento,
+    diferenca: closed.diferenca
+  };
+}
+
+/**
+ * Remove sessões de caixa mais antigas que `days` dias (por padrão 60 dias).
+ * Retorna a quantidade de sessões removidas.
+ */
+export async function cleanupOldSessions(empresaId, days = 60) {
+  if (!empresaId) return 0;
+  const sessions = await firestore.getAll(empresaId, SESSIONS_COLL);
+  if (!sessions || sessions.length === 0) return 0;
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - Number(days));
+
+  const toDelete = sessions.filter(s => {
+    const dateStr = s.dataFechamento || s.dataAbertura || s.criadoEm || null;
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return d < cutoff;
+  });
+
+  if (toDelete.length === 0) return 0;
+
+  const ids = toDelete.map(s => s.id);
+  await firestore.removeMultiple(empresaId, SESSIONS_COLL, ids);
+  console.log(`[caixaService] cleanupOldSessions removed ${ids.length} sessions older than ${days} days`);
+  return ids.length;
 }
 
 /**
@@ -189,7 +304,7 @@ export async function gerarRelatorioFechamento(empresaId, caixaSessionId, option
   const formatValue = (v) => {
     try {
       return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    } catch (e) { return (v || '').toString(); }
+    } catch { return (v || '').toString(); }
   };
 
   const padRight = (label, value, valueWidth = 16) => {
@@ -203,9 +318,18 @@ export async function gerarRelatorioFechamento(empresaId, caixaSessionId, option
 
   const line = (ch = '-') => ch.repeat(WIDTH);
 
+  const sectionTitle = (text) => [line('='), padCenter(text), line('=')];
+
+  const kv = (label, value) => padRight(label, value);
+
+  const formatStatus = (diff) => {
+    if (Math.abs(diff) < 0.01) return 'OK';
+    return diff > 0 ? 'SOBRA' : 'QUEBRA';
+  };
+
   // tenta buscar dados do restaurante para cabeçalho
   let restaurant = null;
-  try { restaurant = await getRestaurant(empresaId); } catch (e) { restaurant = null; }
+  try { restaurant = await getRestaurant(empresaId); } catch { restaurant = null; }
 
   const header = [];
   header.push(padCenter(restaurant?.nome || ('Restaurante ' + empresaId)));
@@ -215,37 +339,41 @@ export async function gerarRelatorioFechamento(empresaId, caixaSessionId, option
   header.push(line());
 
   const body = [];
-  body.push(padRight('Operador abertura:', session.usuarioAberturaId || '-'));
-  body.push(padRight('Operador fechamento:', session.usuarioFechamentoId || '-'));
-  body.push(padRight('Abertura:', session.dataAbertura || '-'));
-  body.push(padRight('Fechamento:', session.dataFechamento || '-'));
+  body.push(...sectionTitle('DADOS DA SESSAO'));
+  body.push(kv('Operador abertura', session.usuarioAberturaId || '-'));
+  body.push(kv('Operador fechamento', session.usuarioFechamentoId || '-'));
+  body.push(kv('Abertura', session.dataAbertura || '-'));
+  body.push(kv('Fechamento', session.dataFechamento || '-'));
   body.push(line());
-  body.push(padRight('VALOR INICIAL', Number(session.valorInicial || 0)));
+
+  body.push(...sectionTitle('RESUMO FINANCEIRO'));
+  body.push(kv('Valor inicial', Number(session.valorInicial || 0)));
+  body.push(kv('Vendas no dinheiro', Number(totais.vendasDinheiro || 0)));
+  body.push(kv('Suprimentos', Number(totais.suprimentos || 0)));
+  body.push(kv('Entradas extras', Number(totais.entradasExtras || 0)));
+  body.push(kv('Sangrias', Number(totais.sangrias || 0)));
   body.push(line());
-  body.push(padCenter('VENDAS POR FORMA'));
-  Object.keys(totais.porForma).forEach(fp => {
-    body.push(padRight(fp, Number(totais.porForma[fp] || 0)));
-  });
-  body.push(line());
-  const totalFinanceiro = Object.values(totais.porForma).reduce((s, v) => s + Number(v || 0), 0);
-  body.push(padRight('TOTAL FINANCEIRO', totalFinanceiro));
-  body.push(line());
-  body.push(padCenter('MOVIMENTAÇÕES'));
-  body.push(padRight('Suprimentos', Number(totais.suprimentos || 0)));
-  body.push(padRight('Sangrias', Number(totais.sangrias || 0)));
-  body.push(padRight('Entradas extras', Number(totais.entradasExtras || 0)));
-  body.push(line());
+
+  const formasComValor = Object.entries(totais.porForma)
+    .filter(([, valor]) => Number(valor || 0) > 0);
+
+  if (formasComValor.length > 0) {
+    body.push(...sectionTitle('PAGAMENTOS POR FORMA'));
+    formasComValor.forEach(([forma, valor]) => {
+      body.push(kv(forma, Number(valor || 0)));
+    });
+    body.push(line());
+  }
 
   const esperado = (Number(session.valorInicial || 0) + Number(totais.vendasDinheiro || 0) + Number(totais.suprimentos || 0) + Number(totais.entradasExtras || 0) - Number(totais.sangrias || 0));
   const informado = Number(session.valorInformadoFechamento || 0);
   const diff = Number(session.diferenca || (informado - esperado));
 
-  body.push(padCenter('CONFERÊNCIA DO DINHEIRO'));
-  body.push(padRight('Esperado', esperado));
-  body.push(padRight('Informado', informado));
-  body.push(padRight('Diferença', diff));
-  const status = diff === 0 ? 'OK' : (diff > 0 ? 'SOBRA' : 'QUEBRA');
-  body.push(padRight('Status', status));
+  body.push(...sectionTitle('CONFERENCIA DA GAVETA'));
+  body.push(kv('Esperado', esperado));
+  body.push(kv('Informado', informado));
+  body.push(kv('Diferença', diff));
+  body.push(kv('Status', formatStatus(diff)));
   body.push(line());
   if (restaurant?.observacao) body.push(padCenter(restaurant.observacao));
   body.push(padCenter('Obrigado pela preferência'));
@@ -260,6 +388,7 @@ export default {
   criarLancamentoManual,
   criarMovimentacao,
   fecharCaixa,
+  forceCloseSessionDebug,
   gerarRelatorioFechamento,
   calcularTotaisSessao
 };

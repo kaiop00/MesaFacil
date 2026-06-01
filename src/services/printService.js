@@ -1,0 +1,97 @@
+const normalizeBaseUrl = (value) => {
+  const text = String(value || '').trim();
+  return text.endsWith('/') ? text.slice(0, -1) : text;
+};
+
+const resolveCandidateBaseUrls = () => {
+  const configuredUrl = normalizeBaseUrl(import.meta.env.VITE_PRINT_SERVICE_URL || '/print-service');
+  const candidates = [configuredUrl];
+
+  // When the app runs locally over HTTP, allow a direct fallback to the service.
+  if (typeof window !== 'undefined' && window.location?.protocol === 'http:') {
+    candidates.push('http://127.0.0.1:4891');
+  }
+
+  return Array.from(new Set(candidates.filter(Boolean)));
+};
+
+const buildUrl = (baseUrl, path) => `${baseUrl}${path}`;
+
+const requestJson = async (path, options = {}) => {
+  const candidates = resolveCandidateBaseUrls();
+  let lastError = null;
+
+  for (const baseUrl of candidates) {
+    try {
+      const response = await fetch(buildUrl(baseUrl, path), {
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+        ...options,
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || payload?.message || `Erro HTTP ${response.status}`);
+      }
+
+      return payload;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('Falha ao conectar impressora');
+};
+
+export const getPrintServiceBaseUrl = () => resolveCandidateBaseUrls()[0] || '/print-service';
+
+export const isPrintServiceReachable = async (timeoutMs = 1200) => {
+  if (typeof window === 'undefined' || !window.fetch) return false;
+
+  const candidates = resolveCandidateBaseUrls();
+
+  for (const base of candidates) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(buildUrl(base, '/health'), {
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      clearTimeout(id);
+
+      if (response.ok) {
+        return true;
+      }
+    } catch {
+      // Try the next candidate URL.
+    } finally {
+      clearTimeout(id);
+    }
+  }
+
+  return false;
+};
+
+export const fetchAvailablePrinters = async () => {
+  const printers = await requestJson('/printers');
+  return Array.isArray(printers) ? printers : [];
+};
+
+export const testSystemPrinter = async (printerName) => {
+  return await requestJson('/test-print', {
+    method: 'POST',
+    body: JSON.stringify({ printerName }),
+  });
+};
+
+export const printToSystemPrinter = async ({ printerName, content, jobId }) => {
+  return await requestJson('/print', {
+    method: 'POST',
+    body: JSON.stringify({ printerName, content, jobId }),
+  });
+};

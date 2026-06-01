@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
@@ -26,12 +26,11 @@ export default function SacolaPage() {
         total,
         incrementarQuantidadeCarrinho,
         decrementarQuantidadeCarrinho,
+        atualizarObservacaoCarrinho,
         orderOrigin,
         setOrderOrigin,
-        clientData,
-        setClientData,
     } = useCarrinho();
-    const observacoesRef = useRef();
+    
     const [loading, setLoading] = useState(false);
     const { origin, isWhatsApp } = useOrderOrigin();
     const [clientFormData, setClientFormData] = useState(null);
@@ -40,6 +39,8 @@ export default function SacolaPage() {
     const [precisaTroco, setPrecisaTroco] = useState(false);
     const [valorPagamento, setValorPagamento] = useState('');
     const [tipoEntrega, setTipoEntrega] = useState('delivery'); // 'delivery' ou 'retirada'
+    const [observacaoGeral, setObservacaoGeral] = useState('');
+    const [pedidoFinalizado, setPedidoFinalizado] = useState(false);
     const isRetirada = tipoEntrega === 'retirada';
 
     // Hook para taxa de entrega por bairro (somente para WhatsApp delivery)
@@ -110,7 +111,39 @@ export default function SacolaPage() {
 
         setLoading(true);
         try {
-            const observacoes = (observacoesRef.current?.value || "").trim();
+            const observacoes = observacaoGeral.trim();
+            const textareas = Array.from(document.querySelectorAll('textarea[data-cartid]'));
+
+            // Garantia: leia textareas por item antes de enviar, para salvar observações não salvas via botão
+            try {
+                textareas.forEach((ta) => {
+                    const cartId = ta.getAttribute('data-cartid');
+                    const value = ta.value || "";
+                    if (cartId) atualizarObservacaoCarrinho(cartId, value);
+                });
+            } catch (err) {
+                console.debug('Erro ao sincronizar observações dos textareas:', err);
+            }
+
+            // Debug: log estado do carrinho antes de criar o pedido
+            try {
+                console.debug('Carrinho antes do envio:', JSON.parse(JSON.stringify(carrinhoItems.map(i=>({ id: i.id, cartItemId: i.cartItemId, descricao: i.descricao, observacao: i.observacao })))));
+            } catch {
+                // ignore
+            }
+
+            const itensParaEnviar = carrinhoItems.map((item) => {
+                const cartId = item.cartItemId || item.id;
+                const textarea = textareas.find((ta) => ta.getAttribute('data-cartid') === cartId);
+                const descricaoItem = String(textarea?.value ?? item.itemObservation ?? item.observacao ?? item.observacoes ?? '').trim();
+
+                return {
+                    ...item,
+                    descricao: item.descricao || "",
+                    observacao: descricaoItem,
+                    itemObservation: descricaoItem,
+                };
+            });
             
             // Prepara dados extras para pedidos WhatsApp
             const extraData = isWhatsApp ? {
@@ -138,22 +171,21 @@ export default function SacolaPage() {
                     bairro: selectedBairro?.nome || ''
                 } : null
             } : {
-                orderOrigin: orderOrigin
+                orderOrigin: orderOrigin,
             };
 
             await createPedido(
                 idRestaurante,
                 mesaId,
-                carrinhoItems,
+                itensParaEnviar,
                 totalComTaxaEntrega, // Usa o total com a taxa de entrega
                 observacoes,
                 extraData
             );
+            setLoading(false);
+            setPedidoFinalizado(true);
             notify(t("sacola.orderSent"), "success");
             limparCarrinho();
-            const search = location.search || "";
-            const target = slug ? `/mesa/${slug}/pedido${search}` : `../pedido${search}`;
-            navigate(target, { replace: true });
         } catch (error) {
             console.error("Erro ao enviar pedido: ", error);
             notify(t("sacola.orderError"), "error");
@@ -164,9 +196,41 @@ export default function SacolaPage() {
 
     const vazio = carrinhoItems.length === 0;
 
+    if (pedidoFinalizado) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-4 p-6 min-h-[60vh] text-center max-w-2xl mx-auto">
+                <div className="text-5xl">✅</div>
+                <h1 className="text-2xl font-semibold text-gray-900">
+                    {t("sacola.orderSent") || "Pedido enviado com sucesso"}
+                </h1>
+                <p className="text-sm text-gray-600 max-w-md">
+                    Seu pedido foi recebido e já entrou na fila da cozinha. As observações por item também foram enviadas.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <button
+                        type="button"
+                        onClick={() => navigate(slug ? `/mesa/${slug}/pedido${location.search || ""}` : `../pedido${location.search || ""}`)}
+                        className="rounded-md bg-[#D9A23B] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                    >
+                        Ver pedidos
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => navigate(slug ? `/mesa/${slug}${location.search || ""}` : `../${location.search || ""}`)}
+                        className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                        Voltar ao cardápio
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col p-4 gap-4 pb-48 md:px-6 lg:px-8 max-w-6xl mx-auto">
             <h1 className="text-lg font-semibold md:text-xl">{t("sacola.title")}</h1>
+
+            {/* Aviso de observações por item removido conforme solicitação */}
 
             {vazio ? (
                 <p className="text-sm text-gray-600">
@@ -178,12 +242,28 @@ export default function SacolaPage() {
                     <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
                         {carrinhoItems.map((item) => (
                             <CardCarrinho
-                                key={item.id}
+                                key={item.cartItemId || item.id}
                                 item={item}
-                                onIncrement={() => incrementarQuantidadeCarrinho(item.id)}
-                                onDecrement={() => decrementarQuantidadeCarrinho(item.id)}
+                                onIncrement={() => incrementarQuantidadeCarrinho(item.cartItemId || item.id)}
+                                onDecrement={() => decrementarQuantidadeCarrinho(item.cartItemId || item.id)}
+                                onUpdateObservation={atualizarObservacaoCarrinho}
                             />
                         ))}
+                    </div>
+
+                    <div className="p-4 border border-gray-300 rounded-md bg-gray-50">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Observação geral do pedido
+                        </label>
+                        <p className="text-xs text-gray-500 mb-2">
+                            Esta observação vale para o pedido inteiro. As observações abaixo continuam sendo por item.
+                        </p>
+                        <textarea
+                            value={observacaoGeral}
+                            onChange={(e) => setObservacaoGeral(e.target.value)}
+                            placeholder="Ex.: sem talher, tocar a campainha, pedir sem gelo..."
+                            className="w-full min-h-24 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B]"
+                        />
                     </div>
 
                     {/* Seção WhatsApp: Tipo de entrega, dados e pagamento */}
@@ -378,21 +458,7 @@ export default function SacolaPage() {
                         </>
                     )}
 
-                    <div className="flex flex-col gap-2">
-                        <label
-                            htmlFor="observacoes"
-                            className="text-sm font-medium text-gray-700"
-                        >
-                            {t("sacola.observations")}
-                        </label>
-                        <textarea
-                            id="observacoes"
-                            ref={observacoesRef}
-                            rows={3}
-                            placeholder={t("sacola.observationsPlaceholder")}
-                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                        />
-                    </div>
+                    {/* Campo de observação geral removido — utilizar observações por item */}
 
                     <button
                         type="submit"

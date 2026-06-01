@@ -23,7 +23,8 @@
       "newOrder": "Nuevo Pedido",
       "viewOrder": "Ver Pedido",
       "finish": "Finalizar",
-      "free": "Liberar Mesa"
+      "free": "Liberar Mesa",
+      "transfer": "Transferir Pedido"
     }
   },
   "modals": {
@@ -61,6 +62,14 @@
       "title": "Agregar Artículos",
       "searchItems": "Buscar artículos...",
       "noItems": "No se encontraron artículos",
+      "itemObservation": "Observación del ítem (opcional)",
+      "itemObservationPlaceholder": "Ej: término medio, sin cebolla, sin hielo...",
+      "shortcuts": {
+        "mediumRare": "Término medio",
+        "noOnion": "Sin cebolla",
+        "noIce": "Sin hielo",
+        "lessSalt": "Poca sal"
+      },
       "categories": {
         "all": "Todos",
         "food": "Comida",
@@ -90,11 +99,22 @@
       "orderItems": "Artículos del Pedido",
       "noItems": "No hay artículos en el pedido",
       "total": "Total:",
+      "transfer": {
+        "title": "Transferir pedido",
+        "subtitle": "Mueve este pedido a otra mesa",
+        "currentTable": "Mesa actual",
+        "targetTable": "Mesa de destino",
+        "placeholder": "Selecciona una mesa",
         "buttons": {
-          "addItems": "Agregar Artículos",
-          "finishOrder": "Finalizar Pedido",
-          "emitNfce": "Emitir NFC-e/recibo",
-          "retryNfce": "Reemitir NFC-e/recibo",
+          "transfer": "Transferir",
+          "processing": "Transfiriendo..."
+        }
+      },
+      "buttons": {
+        "addItems": "Agregar Artículos",
+        "finishOrder": "Finalizar Pedido",
+        "emitNfce": "Emitir NFC-e/recibo",
+        "retryNfce": "Reemitir NFC-e/recibo",
         "close": "Cerrar"
       }
     }
@@ -141,7 +161,8 @@
       "itemRemoved": "¡Artículo eliminado del pedido!",
       "orderFinished": "¡Pedido finalizado con éxito!",
       "tableFreed": "¡Mesa liberada con éxito!",
-      "paymentConfirmed": "¡Pago confirmado y mesa finalizada!"
+      "paymentConfirmed": "¡Pago confirmado y mesa finalizada!",
+      "orderTransferred": "¡Pedido transferido con éxito!"
     },
     "error": {
       "createOrder": "Error al crear el pedido",
@@ -151,7 +172,9 @@
       "finishOrder": "Error al finalizar el pedido",
       "freeTable": "Error al liberar la mesa",
       "loadData": "Error al cargar datos",
-      "stockNotAvailable": "Stock insuficiente para este artículo"
+      "stockNotAvailable": "Stock insuficiente para este artículo",
+      "transferOrder": "Error al transferir el pedido",
+      "selectTransferTable": "Selecciona una mesa de destino"
     },
     "confirm": {
       "removeItem": "¿Estás seguro de que deseas eliminar este artículo?",
@@ -168,6 +191,7 @@
     "loading": "Cargando...",
     "save": "Guardar",
     "cancel": "Cancelar",
+    "clear": "Limpiar",
     "edit": "Editar",
     "remove": "Eliminar",
     "add": "Agregar",

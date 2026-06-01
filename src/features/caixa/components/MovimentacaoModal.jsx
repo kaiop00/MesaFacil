@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { parseCurrencyToNumber, formatCurrencyToString } from '@/utils/currency';
 
 export default function MovimentacaoModal({ isOpen, onClose, onSubmit, tipoMovimentacao, loading }) {
   const [valor, setValor] = useState('');
@@ -6,11 +7,12 @@ export default function MovimentacaoModal({ isOpen, onClose, onSubmit, tipoMovim
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!valor || parseFloat(valor) <= 0) {
+    const valorNum = parseCurrencyToNumber(valor);
+    if (!valor || valorNum <= 0) {
       alert('Digite um valor válido');
       return;
     }
-    onSubmit(parseFloat(valor), descricao);
+    onSubmit(valorNum, descricao);
     setValor('');
     setDescricao('');
   };
@@ -49,12 +51,16 @@ export default function MovimentacaoModal({ isOpen, onClose, onSubmit, tipoMovim
               Valor (R$)
             </label>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={valor}
               onChange={(e) => setValor(e.target.value)}
-              placeholder="0.00"
+              onFocus={() => { if (parseCurrencyToNumber(valor) === 0) setValor(''); }}
+              onBlur={(e) => {
+                const v = (e.target.value || '').toString().trim();
+                if (v === '') setValor('0,00'); else setValor(formatCurrencyToString(v));
+              }}
+              placeholder="0,00 ou 1.000,00"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={loading}
               autoFocus

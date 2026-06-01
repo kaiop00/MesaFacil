@@ -18,7 +18,7 @@ export const useMesa = () => {
                     setError("Mesa não encontrada");
                 }
                 setMesa(m);
-            } catch (err) {
+            } catch {
                 setError("Erro ao buscar a mesa");
             } finally {
                 setLoading(false);

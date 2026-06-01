@@ -38,6 +38,8 @@ export const getPermissions = (t) => ({
   ],
   [t('users:permissionCategories.config')]: [
     { id: 'view_config', label: t('users:permissionLabels.view_config') },
+    { id: 'view_cash', label: t('users:permissionLabels.view_cash') },
+    { id: 'manage_cash', label: t('users:permissionLabels.manage_cash') },
     { id: 'view_fiscal', label: t('users:permissionLabels.view_fiscal') },
     { id: 'edit_config', label: t('users:permissionLabels.edit_config') },
     { id: 'manage_tables', label: t('users:permissionLabels.manage_tables') },
@@ -47,6 +49,7 @@ export const getPermissions = (t) => ({
     { id: 'manage_cover_charge', label: t('users:permissionLabels.manage_cover_charge') },
     { id: 'manage_whatsapp_menu', label: t('users:permissionLabels.manage_whatsapp_menu') },
     { id: 'manage_billing', label: t('users:permissionLabels.manage_billing') },
+    { id: 'manage_printers', label: t('users:permissionLabels.manage_printers') },
   ],
   [t('users:permissionCategories.integrations')]: [
     { id: 'manage_ifood_integration', label: t('users:permissionLabels.manage_ifood_integration') },

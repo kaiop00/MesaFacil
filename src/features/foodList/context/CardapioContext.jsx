@@ -1,16 +1,14 @@
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { useFoodService } from "@/features/foodList/hooks/useFoodService";
-import { useAuth } from "@/contexts/AuthContext";
 
 const CardapioContext = createContext();
 
 export const CardapioProvider = ({ children }) => {
-  const { idRestaurante } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const { listarItensCardapio } = useFoodService();
 
-  const carregarItens = async () => {
+  const carregarItens = useCallback(async () => {
     try {
       const dados = await listarItensCardapio();
 
@@ -39,11 +37,11 @@ export const CardapioProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [listarItensCardapio]);
 
   useEffect(() => {
     carregarItens();
-  }, [listarItensCardapio]);
+  }, [carregarItens]);
 
   const value = useMemo(
     () => ({
@@ -51,7 +49,7 @@ export const CardapioProvider = ({ children }) => {
       loading,
       carregarItens,
     }),
-    [items, loading]
+    [items, loading, carregarItens]
   );
 
   return (

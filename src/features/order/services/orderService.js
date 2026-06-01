@@ -11,6 +11,7 @@ import {
     writeBatch,
 } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
+import caixaService from "@/services/caixa/caixaService";
 import { 
     calcularConsumoIngredientes, 
     processarBaixaEstoque, 
@@ -20,6 +21,12 @@ import {
     isIfoodOrder, 
     updateIfoodOrderStatusFromMesaFacil 
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
+import {
+    enqueueCancelamentoItemPedido,
+    enqueuePrintJobsForPedido,
+} from "@/features/config/services/printQueueService";
+import { printQueueItemsNow } from "@/features/config/services/printDispatchService";
+import { isPrintServiceReachable } from '@/services/printService';
 
 const historicoCollection = (idRestaurante) =>
     collection(db, "restaurantes", idRestaurante, "historicoPedidos");
@@ -39,6 +46,136 @@ const calcularTotalPedido = (pedidoData = {}) => {
 const sanitizeMesaNumero = (mesa = {}, mesaId) => {
     if (!mesa) return mesaId;
     return mesa.numero ?? mesa.nome ?? mesaId;
+};
+
+const calcularResumoMesa = (pedidos = []) => {
+    const pedidosAndamento = pedidos.filter((pedido) => pedido.status === "andamento");
+    const pedidosEntregues = pedidos.filter((pedido) => pedido.status === "entregue");
+
+    if (pedidosAndamento.length > 0) {
+        return {
+            status: "andamento",
+            total: pedidosAndamento.reduce((acc, pedido) => acc + Number(pedido?.total || 0), 0),
+        };
+    }
+
+    if (pedidosEntregues.length > 0) {
+        return {
+            status: "entregue",
+            total: pedidosEntregues.reduce((acc, pedido) => acc + Number(pedido?.total || 0), 0),
+        };
+    }
+
+    return {
+        status: "livre",
+        total: 0,
+    };
+};
+
+const runWithTimeout = async (promise, timeoutMs = 2500) => {
+    let timeoutId;
+
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Tempo limite da impressão excedido")), timeoutMs);
+    });
+
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
+const runPostSaveTasks = async ({ idRestaurante, pedidoId, mesaId, mesaData, pedidoItems, total, observacoes, extraData }) => {
+    const consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, pedidoItems);
+
+    if (consumoIngredientes.length > 0) {
+        await processarBaixaEstoque(idRestaurante, consumoIngredientes, pedidoId);
+    }
+
+    const printJobs = await enqueuePrintJobsForPedido({
+        idRestaurante,
+        pedidoId,
+        mesaId,
+        mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+        pedidoData: {
+            items: pedidoItems,
+            total,
+            observacoes,
+            ...extraData,
+        },
+    });
+
+    console.debug('DEBUG createPedido: printJobs created count', { pedidoId, count: printJobs.length });
+
+    const originVal = String(extraData?.orderOrigin || 'mesaconvencional');
+    const shouldTryImmediatePrint = ['mesaconvencional', 'admin', 'operador', 'whatsapp', 'cliente'].includes(originVal);
+
+    if (shouldTryImmediatePrint && printJobs.length > 0) {
+        try {
+            const available = await isPrintServiceReachable();
+            console.debug('DEBUG createPedido: print-service available?', { pedidoId, available });
+            if (available) {
+                runWithTimeout(printQueueItemsNow(idRestaurante, printJobs)).catch((err) => {
+                    console.debug('Impressão local finalizada com aviso:', err?.message || err);
+                });
+            } else {
+                console.debug('Local print-service not reachable; leaving print jobs in Firestore for worker');
+            }
+        } catch (err) {
+            console.debug('Error checking print-service availability:', err?.message || err);
+        }
+    }
+
+    return { estoqueProcessado: consumoIngredientes.length > 0 };
+};
+
+const registrarPagamentoAutomaticoNoCaixa = async ({
+    idRestaurante,
+    pedidoId,
+    formaPagamento,
+    pagamentos,
+    pagamentoCartao,
+    valorTotal,
+    gorjeta = 0,
+}) => {
+    try {
+        const pagamentosNormalizados = Array.isArray(pagamentos) && pagamentos.length > 0
+            ? pagamentos
+            : null;
+
+        if (pagamentosNormalizados) {
+            await Promise.all(pagamentosNormalizados.map((pagamento) => {
+                const forma = pagamento?.formaPagamento || pagamento?.method || pagamento?.tipo || formaPagamento;
+                const valor = Number(pagamento?.valor || pagamento?.amount || 0);
+
+                if (!forma || valor <= 0) return Promise.resolve();
+
+                return caixaService.registrarPagamentoPedido({
+                    empresaId: idRestaurante,
+                    pedidoId,
+                    formaPagamento: forma,
+                    valor,
+                    taxaCartao: pagamento?.card ? 0 : (pagamentoCartao ? pagamentoCartao.taxa : 0),
+                    gorjeta: 0,
+                });
+            }));
+            return;
+        }
+
+        if (!formaPagamento) return;
+
+        await caixaService.registrarPagamentoPedido({
+            empresaId: idRestaurante,
+            pedidoId,
+            formaPagamento,
+            valor: Number(valorTotal || 0),
+            taxaCartao: pagamentoCartao ? pagamentoCartao.taxa : 0,
+            gorjeta: Number(gorjeta || 0),
+        });
+    } catch (error) {
+        console.warn('Não foi possível registrar pagamento no caixa:', error?.message || error);
+    }
 };
 
 const salvarPedidoNoHistorico = async ({
@@ -109,31 +246,49 @@ export const getMesasPorStatus = async (idRestaurante) => {
  * Integra com controle de estoque.
  */
 export const createPedido = async (idRestaurante, mesaId, items, total, observacoes = "", extraData = {}) => {
-    const pedidoItems = items.map((item) => ({
-        id: item.id,
-        nome: item.nome,
-        price: item.price,
-        quantity: item.quantity,
-        categorias: item.categorias || [],
-        alergias: item.alergias || [],
-        descricao: item.descricao || "",
-        imagemUrl: item.imagemUrl || "",
-        ncm: item.ncm || null,
-        tipoTributacao: item.tipoTributacao || (item.monofasico ? "monofasico" : "normal"),
-        monofasico: Boolean(item.monofasico || item.isMonofasico || item.tipoTributacao === "monofasico"),
-    }));
+    const originVal = String(extraData?.orderOrigin || 'mesaconvencional');
+    const isFastClientOrigin = ['whatsapp', 'cliente', 'admin', 'operador'].includes(originVal);
 
-    // 1. Verificar estoque disponível antes de processar o pedido
-    const verificacaoEstoque = await verificarEstoqueDisponivel(idRestaurante, pedidoItems);
+    const pedidoItems = items.map((item) => {
+        const itemObs = (item.itemObservation || item.observacao || item.observacoes || "").toString().trim();
+
+        return {
+            id: item.id,
+            nome: item.nome,
+            price: item.price,
+            quantity: item.quantity,
+            setorId: item.setorId || item.setor?.id || "",
+            setorNome: item.setorNome || item.setor?.nome || "",
+            categorias: item.categorias || [],
+            alergias: item.alergias || [],
+            descricao: itemObs,
+            observacao: itemObs,
+            itemObservation: itemObs,
+            imagemUrl: item.imagemUrl || "",
+            ncm: item.ncm || null,
+            tipoTributacao: item.tipoTributacao || (item.monofasico ? "monofasico" : "normal"),
+            monofasico: Boolean(item.monofasico || item.isMonofasico || item.tipoTributacao === "monofasico"),
+        };
+    });
+
+    // 1. Verificar estoque disponível apenas nos fluxos que precisam travar a confirmação.
+    // Admin/operador/cliente/WhatsApp seguem resposta rápida e fazem o pós-processamento em background.
+    if (!isFastClientOrigin) {
+        const verificacaoEstoque = await verificarEstoqueDisponivel(idRestaurante, pedidoItems);
     
-    if (!verificacaoEstoque.podeProcessar) {
-        const itensProblema = verificacaoEstoque.verificacoes
-            .filter(v => !v.disponivel)
-            .map(v => `${v.itemNome}: ${v.motivo}`)
-            .join('\n');
+        if (!verificacaoEstoque.podeProcessar) {
+            const itensProblema = verificacaoEstoque.verificacoes
+                .filter(v => !v.disponivel)
+                .map(v => `${v.itemNome}: ${v.motivo}`)
+                .join('\n');
         
-        throw new Error(`Estoque insuficiente para processar o pedido:\n\n${itensProblema}`);
+            throw new Error(`Estoque insuficiente para processar o pedido:\n\n${itensProblema}`);
+        }
     }
+
+    const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
+    const mesaSnapshot = await getDoc(mesaDocRef);
+    const mesaData = mesaSnapshot.exists() ? mesaSnapshot.data() : {};
 
     return await runTransaction(db, async (transaction) => {
         const pedidosRef = collection(
@@ -150,6 +305,10 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
         
         // Monta o payload do pedido com dados extras (origem, cliente, etc)
         const pedidoPayload = {
+            // Campo adicionado para permitir consultas por collectionGroup / filtros por restaurante
+            restauranteId: idRestaurante,
+            mesaId: mesaId,
+            mesaNumero: mesaData.numero ?? mesaData.nome ?? mesaId,
             items: pedidoItems,
             total,
             status: "andamento",
@@ -168,25 +327,48 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
         transaction.set(newPedidoRef, pedidoPayload);
 
         // Atualiza status da mesa
-        const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
         transaction.update(mesaDocRef, {
             status: "andamento",
         });
 
         return newPedidoRef.id;
     }).then(async (pedidoId) => {
-        // 2. Processar baixa no estoque após salvar o pedido
+        if (isFastClientOrigin) {
+            void (async () => {
+                try {
+                    await runPostSaveTasks({
+                        idRestaurante,
+                        pedidoId,
+                        mesaId,
+                        mesaData,
+                        pedidoItems,
+                        total,
+                        observacoes,
+                        extraData,
+                    });
+                } catch (error) {
+                    console.error('Erro no pós-processamento assíncrono do pedido:', error);
+                }
+            })();
+
+            return { pedidoId, estoqueProcessado: null, backgroundProcessing: true };
+        }
+
         try {
-            const consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, pedidoItems);
-            
-            if (consumoIngredientes.length > 0) {
-                await processarBaixaEstoque(idRestaurante, consumoIngredientes, pedidoId);
-            }
-            
-            return { pedidoId, estoqueProcessado: consumoIngredientes.length > 0 };
+            const result = await runPostSaveTasks({
+                idRestaurante,
+                pedidoId,
+                mesaId,
+                mesaData,
+                pedidoItems,
+                total,
+                observacoes,
+                extraData,
+            });
+
+            return { pedidoId, ...result };
         } catch (estoqueError) {
             console.error("Erro ao processar baixa no estoque:", estoqueError);
-            // O pedido foi salvo, mas houve erro no estoque
             throw new Error(`Pedido criado, mas houve erro ao processar estoque: ${estoqueError.message}`);
         }
     });
@@ -214,7 +396,8 @@ export const getPedidosDaMesa = async (idRestaurante, mesaId) => {
  * Finaliza o pedido e atualiza o status da mesa para 'entregue'
  */
 export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}) => {
-    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null, pagamentoCartao = null } = dadosPagamento;
+    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null, pagamentoCartao = null, gorjeta = null } = dadosPagamento;
+    const gorjetaTotal = Number(gorjeta || 0);
     
     const pedidosRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos");
     const snapshot = await getDocs(pedidosRef);
@@ -258,6 +441,9 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
             if (pagamentoCartao && typeof pagamentoCartao === "object") {
                 updateData.pagamentoCartao = pagamentoCartao;
             }
+            if (gorjetaTotal > 0) {
+                updateData.gorjeta = gorjetaTotal;
+            }
             
             await updateDoc(pedidoDocRef, updateData);
             
@@ -274,6 +460,17 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
                 troco,
                 pagamentos,
                 pagamentoCartao,
+                ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
+            });
+
+            await registrarPagamentoAutomaticoNoCaixa({
+                idRestaurante,
+                pedidoId: docSnap.id,
+                formaPagamento,
+                pagamentos,
+                pagamentoCartao,
+                valorTotal: docSnap.data().total || 0,
+                gorjeta: gorjetaTotal,
             });
         })
     );
@@ -297,8 +494,9 @@ export const finalizarPedidoEspecifico = async (
     removerDaLista = true,
     options = {}
 ) => {
-    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null, pagamentoCartao = null } = dadosPagamento;
+    const { formaPagamento = null, observacoesPagamento = null, troco = null, pagamentos = null, pagamentoCartao = null, gorjeta = null } = dadosPagamento;
     const { statusFinal = "entregue", syncIfoodStatus = true } = options;
+    const gorjetaTotal = Number(gorjeta || 0);
     
     const pedidoDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoId);
     const pedidoSnapshot = await getDoc(pedidoDocRef);
@@ -329,6 +527,7 @@ export const finalizarPedidoEspecifico = async (
                 troco,
                 pagamentos,
                 pagamentoCartao,
+                ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
             },
             finalizadoEm,
             status: statusFinal,
@@ -337,6 +536,17 @@ export const finalizarPedidoEspecifico = async (
             troco,
             pagamentos,
             pagamentoCartao,
+            ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
+        });
+
+        await registrarPagamentoAutomaticoNoCaixa({
+            idRestaurante,
+            pedidoId,
+            formaPagamento,
+            pagamentos,
+            pagamentoCartao,
+            valorTotal: pedidoData.total || 0,
+            gorjeta: gorjetaTotal,
         });
     }
 
@@ -399,6 +609,101 @@ export const finalizarPedidoEspecifico = async (
 };
 
 /**
+ * Transfere um pedido em andamento de uma mesa para outra.
+ */
+export const transferirPedidoEntreMesas = async (idRestaurante, mesaOrigemId, mesaDestinoId, pedidoId) => {
+    if (!idRestaurante || !mesaOrigemId || !mesaDestinoId || !pedidoId) {
+        throw new Error("Parâmetros inválidos para transferir o pedido");
+    }
+
+    if (mesaOrigemId === mesaDestinoId) {
+        throw new Error("Selecione uma mesa de destino diferente da mesa atual");
+    }
+
+    const mesaOrigemRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaOrigemId);
+    const mesaDestinoRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaDestinoId);
+    const pedidoOrigemRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaOrigemId, "pedidos", pedidoId);
+    const pedidoDestinoRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaDestinoId, "pedidos", pedidoId);
+
+    const [pedidoSnapshot, mesaOrigemSnapshot, mesaDestinoSnapshot, pedidosOrigemSnapshot, pedidosDestinoSnapshot] = await Promise.all([
+        getDoc(pedidoOrigemRef),
+        getDoc(mesaOrigemRef),
+        getDoc(mesaDestinoRef),
+        getDocs(collection(db, "restaurantes", idRestaurante, "mesas", mesaOrigemId, "pedidos")),
+        getDocs(collection(db, "restaurantes", idRestaurante, "mesas", mesaDestinoId, "pedidos")),
+    ]);
+
+    if (!pedidoSnapshot.exists()) {
+        throw new Error("Pedido não encontrado");
+    }
+
+    if (!mesaOrigemSnapshot.exists() || !mesaDestinoSnapshot.exists()) {
+        throw new Error("Mesa de origem ou destino não encontrada");
+    }
+
+    const pedidoData = pedidoSnapshot.data() || {};
+    if (pedidoData.status !== "andamento") {
+        throw new Error("Apenas pedidos em andamento podem ser transferidos");
+    }
+
+    const mesaOrigemData = mesaOrigemSnapshot.data() || {};
+    const mesaDestinoData = mesaDestinoSnapshot.data() || {};
+
+    const pedidosOrigem = pedidosOrigemSnapshot.docs
+        .filter((pedidoDoc) => pedidoDoc.id !== pedidoId)
+        .map((pedidoDoc) => ({ id: pedidoDoc.id, ...pedidoDoc.data() }));
+    const pedidosDestino = pedidosDestinoSnapshot.docs
+        .map((pedidoDoc) => ({ id: pedidoDoc.id, ...pedidoDoc.data() }));
+
+    const resumoOrigem = calcularResumoMesa(pedidosOrigem);
+    const resumoDestino = calcularResumoMesa([
+        ...pedidosDestino,
+        {
+            ...pedidoData,
+            id: pedidoId,
+            status: "andamento",
+            total: Number(pedidoData.total || 0),
+        },
+    ]);
+
+    const pedidoTransferido = {
+        ...pedidoData,
+        mesaId: mesaDestinoId,
+        mesaNumero: sanitizeMesaNumero(mesaDestinoData, mesaDestinoId),
+        transferidoDeMesaId: mesaOrigemId,
+        transferidoDeMesaNumero: sanitizeMesaNumero(mesaOrigemData, mesaOrigemId),
+        transferidoEm: serverTimestamp(),
+        atualizadoEm: serverTimestamp(),
+    };
+
+    await runTransaction(db, async (transaction) => {
+        transaction.set(pedidoDestinoRef, pedidoTransferido);
+        transaction.delete(pedidoOrigemRef);
+
+        transaction.update(mesaOrigemRef, {
+            status: resumoOrigem.status,
+            total: resumoOrigem.total,
+            entregueEm: resumoOrigem.status === "entregue" ? serverTimestamp() : null,
+            atualizadoEm: serverTimestamp(),
+        });
+
+        transaction.update(mesaDestinoRef, {
+            status: resumoDestino.status,
+            total: resumoDestino.total,
+            entregueEm: resumoDestino.status === "entregue" ? serverTimestamp() : null,
+            atualizadoEm: serverTimestamp(),
+        });
+    });
+
+    return {
+        sucesso: true,
+        pedidoId,
+        mesaOrigemId,
+        mesaDestinoId,
+    };
+};
+
+/**
  * Cancela um pedido e reverte o estoque se necessário
  */
 export const cancelarPedido = async (idRestaurante, mesaId, pedidoId) => {
@@ -444,19 +749,19 @@ export const cancelarPedido = async (idRestaurante, mesaId, pedidoId) => {
     }).then(async (itensCancelados) => {
         // 5. Reverter estoque após a transação
         try {
-            if (itensCancelados.length > 0) {
-                const consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, itensCancelados);
+                if (itensCancelados.length > 0) {
+                    const consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, itensCancelados);
                 
-                if (consumoIngredientes.length > 0) {
-                    // Reverter = somar de volta ao estoque
-                    const reverterIngredientes = consumoIngredientes.map(consumo => ({
-                        ...consumo,
-                        consumoTotal: -consumo.consumoTotal // Quantidade negativa para reverter
-                    }));
+                    if (consumoIngredientes.length > 0) {
+                        // Reverter = somar de volta ao estoque
+                        const reverterIngredientes = consumoIngredientes.map(consumo => ({
+                            ...consumo,
+                            consumoTotal: -consumo.consumoTotal // Quantidade negativa para reverter
+                        }));
                     
-                    await processarBaixaEstoque(idRestaurante, reverterIngredientes, `CANCELAMENTO-${pedidoId}`);
+                        await processarBaixaEstoque(idRestaurante, reverterIngredientes, `CANCELAMENTO-${pedidoId}`);
+                    }
                 }
-            }
             
             // Update iFood order status if this is an iFood order
             if (isIfoodOrder(mesaId)) {
@@ -482,6 +787,114 @@ export const cancelarPedido = async (idRestaurante, mesaId, pedidoId) => {
  */
 export const verificarEstoquePedido = async (idRestaurante, items) => {
     return await verificarEstoqueDisponivel(idRestaurante, items);
+};
+
+/**
+ * Cancela parte de um pedido em andamento.
+ */
+export const cancelarItemPedido = async (
+    idRestaurante,
+    mesaId,
+    pedidoId,
+    { itemIndex, quantidade = 1, motivoCancelamento = "" } = {}
+) => {
+    return await runTransaction(db, async (transaction) => {
+        const pedidoRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId, "pedidos", pedidoId);
+        const pedidoDoc = await transaction.get(pedidoRef);
+
+        if (!pedidoDoc.exists()) {
+            throw new Error("Pedido não encontrado");
+        }
+
+        const pedidoData = pedidoDoc.data();
+        if (pedidoData.status !== "andamento") {
+            throw new Error("Apenas pedidos em andamento podem receber cancelamento parcial");
+        }
+
+        const items = Array.isArray(pedidoData.items) ? [...pedidoData.items] : [];
+        const targetIndex = Number(itemIndex);
+        const targetItem = items[targetIndex];
+
+        if (!targetItem) {
+            throw new Error("Item não encontrado no pedido");
+        }
+
+        const quantidadeAtual = Number(targetItem.quantity || 0);
+        const quantidadeCancelada = Math.max(1, Math.min(Number(quantidade || 1), quantidadeAtual));
+
+        if (quantidadeAtual <= quantidadeCancelada) {
+            items.splice(targetIndex, 1);
+        } else {
+            items[targetIndex] = {
+                ...targetItem,
+                quantity: quantidadeAtual - quantidadeCancelada,
+            };
+        }
+
+        const novoTotal = items.reduce(
+            (acc, item) => acc + Number(item.price || 0) * Number(item.quantity || 0),
+            0
+        );
+
+        const cancelamento = {
+            itemId: targetItem.id,
+            itemNome: targetItem.nome,
+            quantidade: quantidadeCancelada,
+            valorUnitario: Number(targetItem.price || 0),
+            motivoCancelamento: motivoCancelamento || "",
+            canceladoEm: serverTimestamp(),
+        };
+
+        transaction.update(pedidoRef, {
+            items,
+            total: novoTotal,
+            cancelamentos: [...(pedidoData.cancelamentos || []), cancelamento],
+            atualizadoEm: serverTimestamp(),
+            ...(items.length === 0 ? { status: "cancelado", canceladoEm: serverTimestamp() } : {}),
+        });
+
+        return {
+            pedidoData,
+            targetItem,
+            quantidadeCancelada,
+            itemsRestantes: items,
+            novoTotal,
+        };
+    }).then(async ({ pedidoData, targetItem, quantidadeCancelada, itemsRestantes, novoTotal }) => {
+        try {
+            const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
+            const mesaSnapshot = await getDoc(mesaDocRef);
+            const mesaData = mesaSnapshot.exists() ? mesaSnapshot.data() : {};
+
+            const printJobs = await enqueueCancelamentoItemPedido({
+                idRestaurante,
+                pedidoId,
+                mesaId,
+                mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+                item: {
+                    ...targetItem,
+                    quantity: quantidadeCancelada,
+                },
+                quantidade: quantidadeCancelada,
+                motivoCancelamento,
+            });
+
+            if (printJobs.length > 0) {
+                await printQueueItemsNow(idRestaurante, printJobs);
+            }
+        } catch (printError) {
+            console.warn("Não foi possível enfileirar cancelamento do item:", printError?.message || printError);
+        }
+
+        return {
+            sucesso: true,
+            pedidoData,
+            itemCancelado: targetItem,
+            quantidadeCancelada,
+            itemsRestantes,
+            novoTotal,
+        };
+    });
 };
 
 /**

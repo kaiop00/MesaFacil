@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { parseCurrencyToNumber, formatCurrencyToString } from '@/utils/currency';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import caixaService from '@/services/caixa/caixaService';
@@ -6,7 +7,7 @@ import caixaService from '@/services/caixa/caixaService';
 const AbrirCaixa = () => {
   const navigate = useNavigate();
   const { idRestaurante, user } = useAuth();
-  const [valorInicial, setValorInicial] = useState('0.00');
+  const [valorInicial, setValorInicial] = useState('0,00');
   const [observacoes, setObservacoes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,7 +18,7 @@ const AbrirCaixa = () => {
     setLoading(true);
 
     try {
-      const valor = parseFloat(valorInicial || 0);
+      const valor = parseCurrencyToNumber(valorInicial || 0);
       if (isNaN(valor) || valor < 0) {
         setError('Digite um valor inicial válido');
         setLoading(false);
@@ -76,12 +77,22 @@ const AbrirCaixa = () => {
             </div>
           </label>
           <input
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             value={valorInicial}
             onChange={(e) => setValorInicial(e.target.value)}
-            placeholder="0.00"
+            onFocus={() => {
+              if (parseCurrencyToNumber(valorInicial) === 0) setValorInicial('');
+            }}
+            onBlur={(e) => {
+              const v = (e.target.value || '').toString().trim();
+              if (v === '') {
+                setValorInicial('0,00');
+              } else {
+                setValorInicial(formatCurrencyToString(v));
+              }
+            }}
+            placeholder="0,00 ou 1.000,00"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-lg font-semibold"
             disabled={loading}
             autoFocus

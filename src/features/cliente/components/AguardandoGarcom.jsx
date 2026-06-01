@@ -104,17 +104,22 @@ export default function AguardandoGarcom({
                                                         const price = item.price ?? item.valor ?? 0;
                                                         const quantity = item.quantity ?? item.quantidade ?? 1;
                                                         const subtotal = price * quantity;
+                                                        const itemObservation = String(item.itemObservation || item.observacao || item.descricao || '').trim();
 
                                                         return (
-                                                            <li
-                                                                key={`${pedido.id || "pedido"}-${itemIndex}`}
-                                                                className="flex justify-between text-sm text-gray-700"
-                                                            >
-                                                                <span>
-                                                                    {quantity > 1 ? `${quantity}x ` : ""}
-                                                                    {item.nome || item.name || "Item"}
-                                                                </span>
-                                                                <span>{formatCurrency(subtotal)}</span>
+                                                            <li key={`${pedido.id || "pedido"}-${itemIndex}`} className="space-y-0.5 text-sm text-gray-700">
+                                                                <div className="flex justify-between gap-3">
+                                                                    <span>
+                                                                        {quantity > 1 ? `${quantity}x ` : ""}
+                                                                        {item.nome || item.name || "Item"}
+                                                                    </span>
+                                                                    <span>{formatCurrency(subtotal)}</span>
+                                                                </div>
+                                                                {itemObservation && (
+                                                                    <p className="text-xs text-gray-600 pl-2 border-l border-gray-200">
+                                                                        Obs: {itemObservation}
+                                                                    </p>
+                                                                )}
                                                             </li>
                                                         );
                                                     })}

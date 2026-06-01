@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useTranslation } from "react-i18next";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/useToast";
 import {
     acceptIfoodDispute,
@@ -232,7 +231,6 @@ function formatIfoodMoney(value, currency = "BRL") {
 // ─── Main Component ─────────────────────────────────────────
 
 const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
-    const { t } = useTranslation();
     const { notify } = useToast();
     const remaining = useCountdown(dispute.expiresAt);
     const isExpired = remaining !== null && remaining <= 0;
@@ -626,14 +624,14 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                 <div key={alt.id} className="border rounded-lg overflow-hidden border-blue-200 bg-white">
                                     <button
                                         onClick={() => {
-                                            setShowAlternativeForm(showAlternativeForm?.id === alt.id ? null : alt);
+                                            setShowAlternativeForm(showAlternativeForm && showAlternativeForm.id === alt.id ? null : alt);
                                             setRefundAmount("");
                                             setAdditionalTime(null);
                                             setAdditionalTimeReason("");
                                         }}
                                         disabled={loading}
                                         className={`w-full text-left p-3 hover:bg-blue-50 transition-colors disabled:opacity-50 ${
-                                            showAlternativeForm?.id === alt.id ? "bg-blue-50" : ""
+                                            showAlternativeForm && showAlternativeForm.id === alt.id ? "bg-blue-50" : ""
                                         }`}
                                     >
                                         <div className="flex items-center justify-between">
@@ -644,9 +642,9 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                                 <p className="text-xs text-gray-500 mt-0.5">
                                                     {ALTERNATIVE_TYPE_DESCRIPTIONS[alt.type]}
                                                 </p>
-                                                {(alt.maxAmount || alt.metadata?.maxAmount) && (
+                                                {((alt.maxAmount || (alt.metadata && alt.metadata.maxAmount))) && (
                                                     <p className="text-xs text-blue-600 font-medium mt-1">
-                                                        Valor máximo: {formatIfoodMoney((alt.maxAmount || alt.metadata?.maxAmount).value, (alt.maxAmount || alt.metadata?.maxAmount).currency)}
+                                                        Valor máximo: {formatIfoodMoney((alt.maxAmount || (alt.metadata && alt.metadata.maxAmount)).value, (alt.maxAmount || (alt.metadata && alt.metadata.maxAmount)).currency)}
                                                     </p>
                                                 )}
                                             </div>
@@ -655,8 +653,9 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                     </button>
 
                                     {/* REFUND / BENEFIT form */}
-                                    {showAlternativeForm?.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (() => { // eslint-disable-line no-extra-parens
-                                        const formMaxAmount = alt.maxAmount || alt.metadata?.maxAmount;
+                                    {showAlternativeForm && showAlternativeForm.id === alt.id && (alt.type === "REFUND" || alt.type === "BENEFIT") && (() => {  
+                                        const formMaxAmount = alt.maxAmount || (alt.metadata && alt.metadata.maxAmount);
+                                        const maxAmountValue = formMaxAmount?.value;
                                         return (
                                         <div className="p-3 border-t border-blue-200 bg-blue-50 space-y-3">
                                             <label className="block text-sm font-medium text-gray-700">
@@ -666,7 +665,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                                 type="number"
                                                 min="0.01"
                                                 step="0.01"
-                                                max={formMaxAmount ? Number(formMaxAmount.value) / 100 : undefined}
+                                                max={maxAmountValue ? Number(maxAmountValue) / 100 : undefined}
                                                 value={refundAmount ? Number(refundAmount) / 100 : ""}
                                                 onChange={(e) => {
                                                     const val = e.target.value;
@@ -705,7 +704,7 @@ const IfoodDisputeCard = ({ dispute, idRestaurante, onResolved }) => {
                                     })()}
 
                                     {/* ADDITIONAL_TIME form (also handles iFood API typo "ADDTIONAL_TIME") */}
-                                    {showAlternativeForm?.id === alt.id && (alt.type === "ADDITIONAL_TIME" || alt.type === "ADDTIONAL_TIME") && (
+                                    {showAlternativeForm && showAlternativeForm.id === alt.id && (alt.type === "ADDITIONAL_TIME" || alt.type === "ADDTIONAL_TIME") && (
                                         <div className="p-3 border-t border-blue-200 bg-blue-50 space-y-3">
                                             <label className="block text-sm font-medium text-gray-700">Quanto tempo adicional você precisa?</label>
                                             <div className="flex gap-2 flex-wrap">

@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
+import { parseCurrencyToNumber, formatCurrencyToString } from '@/utils/currency';
 
 export default function CloseCaixaModal({ isOpen, onClose, onSubmit, loading, valorEsperado }) {
   const [valorContado, setValorContado] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!valorContado || parseFloat(valorContado) < 0) {
+    const valorNum = parseCurrencyToNumber(valorContado);
+    if (valorNum < 0) {
       alert('Digite um valor válido');
       return;
     }
 
-    await onSubmit(parseFloat(valorContado));
+    await onSubmit(valorNum);
     setValorContado('');
   };
 
   if (!isOpen) return null;
 
-  const diferenca = (parseFloat(valorContado || 0) - parseFloat(valorEsperado || 0)).toFixed(2);
+  const diferenca = (parseCurrencyToNumber(valorContado || 0) - parseCurrencyToNumber(valorEsperado || 0)).toFixed(2);
   const isDiferenca = Math.abs(diferenca) > 0.01;
 
   return (
@@ -43,12 +45,16 @@ export default function CloseCaixaModal({ isOpen, onClose, onSubmit, loading, va
               Valor Contado em Gaveta (R$)
             </label>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={valorContado}
               onChange={(e) => setValorContado(e.target.value)}
-              placeholder="0.00"
+              onFocus={() => { if (parseCurrencyToNumber(valorContado) === 0) setValorContado(''); }}
+              onBlur={(e) => {
+                const v = (e.target.value || '').toString().trim();
+                if (v === '') setValorContado('0,00'); else setValorContado(formatCurrencyToString(v));
+              }}
+              placeholder="0,00 ou 1.000,00"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg font-semibold"
               disabled={loading}
               autoFocus

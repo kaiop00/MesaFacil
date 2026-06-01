@@ -10,7 +10,7 @@ import { getAll } from "@/services/firebase/firestoreService";
  * @param {string} orderType - Order type (kept for compatibility, not used for table selection)
  * @returns {Promise<string>} - Table ID
  */
-export const getOrCreateIfoodTable = async (idRestaurante, orderType = "DELIVERY") => {
+export const getOrCreateIfoodTable = async (idRestaurante) => {
     const { doc, getDoc, setDoc, serverTimestamp } = await import("firebase/firestore");
     const { db } = await import("@/config/firebaseConfig");
     

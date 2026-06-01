@@ -23,7 +23,8 @@
       "newOrder": "Nova Comanda",
       "viewOrder": "Ver Comanda",
       "finish": "Finalizar",
-      "free": "Liberar Mesa"
+      "free": "Liberar Mesa",
+      "transfer": "Transferir pedido"
     }
   },
   "modals": {
@@ -60,6 +61,14 @@
       "title": "Adicionar Itens",
       "searchItems": "Pesquisar itens...",
       "noItems": "Nenhum item encontrado",
+      "itemObservation": "Observação do item (opcional)",
+      "itemObservationPlaceholder": "Ex: bem passado, sem alho, sem gelo...",
+      "shortcuts": {
+        "mediumRare": "Ao ponto para mal",
+        "noOnion": "Sem cebola",
+        "noIce": "Sem gelo",
+        "lessSalt": "Pouco sal"
+      },
       "categories": {
         "all": "Todos",
         "food": "Comida",
@@ -89,6 +98,17 @@
       "orderItems": "Itens da Comanda",
       "noItems": "Nenhum item na comanda",
       "total": "Total:",
+      "transfer": {
+        "title": "Transferir pedido",
+        "subtitle": "Mova este pedido para outra mesa",
+        "currentTable": "Mesa atual",
+        "targetTable": "Mesa de destino",
+        "placeholder": "Selecione uma mesa",
+        "buttons": {
+          "transfer": "Transferir",
+          "processing": "Transferindo..."
+        }
+      },
       "buttons": {
         "addItems": "Adicionar Itens",
         "finishOrder": "Finalizar Comanda", 
@@ -141,7 +161,8 @@
       "itemRemoved": "Item removido da comanda!",
       "orderFinished": "Comanda finalizada com sucesso!",
       "tableFreed": "Mesa liberada com sucesso!",
-      "paymentConfirmed": "Pagamento confirmado e mesa finalizada!"
+      "paymentConfirmed": "Pagamento confirmado e mesa finalizada!",
+      "orderTransferred": "Pedido transferido com sucesso!"
     },
     "error": {
       "createOrder": "Erro ao criar comanda",
@@ -151,7 +172,9 @@
       "finishOrder": "Erro ao finalizar comanda",
       "freeTable": "Erro ao liberar mesa",
       "loadData": "Erro ao carregar dados",
-      "stockNotAvailable": "Estoque insuficiente para este item"
+      "stockNotAvailable": "Estoque insuficiente para este item",
+      "transferOrder": "Erro ao transferir pedido",
+      "selectTransferTable": "Selecione uma mesa de destino"
     },
     "confirm": {
       "removeItem": "Tem certeza que deseja remover este item?",
@@ -168,6 +191,7 @@
     "loading": "Carregando...",
     "save": "Salvar",
     "cancel": "Cancelar",
+    "clear": "Limpar",
     "edit": "Editar",
     "remove": "Remover",
     "add": "Adicionar",

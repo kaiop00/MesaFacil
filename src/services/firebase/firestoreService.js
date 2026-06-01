@@ -41,7 +41,12 @@ export async function getAll(idRestaurante, subcollectionName, options = {}) {
   }
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() || {};
+    // Ensure returned `id` is the Firestore document id and not overridden by an internal `id` field
+    if (Object.prototype.hasOwnProperty.call(data, 'id')) delete data.id;
+    return { id: doc.id, ...data };
+  });
 }
 
 /**
@@ -53,7 +58,10 @@ export async function getAll(idRestaurante, subcollectionName, options = {}) {
 export async function getById(idRestaurante, subcollectionName, docId) {
   const docRef = doc(db, 'restaurantes', idRestaurante, subcollectionName, docId);
   const snapshot = await getDoc(docRef);
-  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data() || {};
+  if (Object.prototype.hasOwnProperty.call(data, 'id')) delete data.id;
+  return { id: snapshot.id, ...data };
 }
 
 /**

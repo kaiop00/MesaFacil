@@ -97,8 +97,6 @@ export function usePDFGenerator() {
       // Generate content for each category
       Object.entries(itemsByCategory).forEach(([categoria, items]) => {
         const currentY = currentColumn === 'left' ? leftColumnY : rightColumnY;
-        const currentX = currentColumn === 'left' ? leftColumnX : rightColumnX;
-        
         // Check if we need to switch columns or add new page
         if (currentY + 40 > pageHeight - 30) {
           if (currentColumn === 'left') {

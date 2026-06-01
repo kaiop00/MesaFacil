@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import * as firestore from '@/services/firebase/firestoreService';
+import caixaService from '@/services/caixa/caixaService';
 
 const HistoricoCaixas = () => {
   const navigate = useNavigate();
@@ -14,6 +15,14 @@ const HistoricoCaixas = () => {
       setLoading(true);
       try {
         if (!idRestaurante) return;
+        // Cleanup sessões antigas (mais de 60 dias) antes de carregar o histórico
+        try {
+          await caixaService.cleanupOldSessions(idRestaurante, 60);
+        } catch (cleanupErr) {
+          // não interrompe o carregamento se a limpeza falhar
+          console.warn('Erro ao limpar sessões antigas:', cleanupErr);
+        }
+
         const all = await firestore.getAll(idRestaurante, 'caixaSessions', { orderByField: 'dataAbertura', order: 'desc' });
         setSessions(all || []);
       } finally {

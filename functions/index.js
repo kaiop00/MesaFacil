@@ -2,6 +2,7 @@
 /* eslint-disable no-undef */
 const {setGlobalOptions} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
+const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -53,6 +54,208 @@ const corsHandler = (req, res) => {
   
   return false; // Return false to continue processing
 };
+
+const normalizeText = (value) => String(value ?? "").trim();
+
+const safeLower = (value) => normalizeText(value).toLowerCase();
+
+const resolveSetorFromItem = (item = {}, setores = []) => {
+  const setorId = normalizeText(item?.setorId || item?.setor?.id || "");
+  const setorNomeFallback = normalizeText(item?.setorNome || item?.setor?.nome || item?.setor || "Sem setor");
+
+  if (setorId) {
+    const setorPorId = setores.find((setor) => setor.id === setorId);
+    if (setorPorId) {
+      return {
+        setorId: setorPorId.id,
+        setorNome: normalizeText(setorPorId.nome || setorNomeFallback),
+      };
+    }
+  }
+
+  const categoriasItem = Array.isArray(item?.categorias)
+    ? item.categorias.map((categoria) => safeLower(categoria)).filter(Boolean)
+    : [];
+
+  if (categoriasItem.length > 0) {
+    const setorEncontrado = setores.find((setor) => {
+      const categoriasSetor = Array.isArray(setor?.categorias)
+        ? setor.categorias.map((categoria) => safeLower(categoria)).filter(Boolean)
+        : [];
+      return categoriasSetor.some((categoria) => categoriasItem.includes(categoria));
+    });
+
+    if (setorEncontrado) {
+      return {
+        setorId: setorEncontrado.id,
+        setorNome: normalizeText(setorEncontrado.nome || setorNomeFallback),
+      };
+    }
+  }
+
+  return {
+    setorId: setorId || "sem-setor",
+    setorNome: setorNomeFallback,
+  };
+};
+
+const groupItemsBySetor = (items = [], setores = []) => {
+  const grupos = new Map();
+
+  items.forEach((item, index) => {
+    const resolved = resolveSetorFromItem(item, setores);
+    const key = `${resolved.setorId}::${resolved.setorNome}`;
+
+    if (!grupos.has(key)) {
+      grupos.set(key, {
+        setorId: resolved.setorId,
+        setorNome: resolved.setorNome,
+        items: [],
+      });
+    }
+
+    grupos.get(key).items.push({
+      ...item,
+      __index: index,
+      setorId: resolved.setorId,
+      setorNome: resolved.setorNome,
+    });
+  });
+
+  return Array.from(grupos.values());
+};
+
+const resolvePrinterName = (impressoras = [], setorId = "") => {
+  const linkedPrinter = impressoras.find((item) => item?.setorId === setorId && item?.ativa !== false);
+  const linkedName = normalizeText(linkedPrinter?.printerSystemName || linkedPrinter?.systemPrinter);
+  if (linkedName) {
+    return linkedName;
+  }
+
+  const fallbackPrinter = impressoras.find((item) => item?.ativa !== false);
+  return normalizeText(fallbackPrinter?.printerSystemName || fallbackPrinter?.systemPrinter || "");
+};
+
+const buildPrintQueuePayload = ({
+  pedidoId,
+  mesaId,
+  mesaNumero,
+  setorId,
+  setorNome,
+  estabelecimentoNome,
+  printerSystemName,
+  items,
+  observacoes,
+}) => {
+  const lines = [
+    "------------------------------------------------",
+    "MESA FACIL",
+    estabelecimentoNome || "-",
+    "TIPO: PEDIDO",
+    `MESA: ${mesaNumero || mesaId || "-"}`,
+    `SETOR: ${setorNome || "Sem setor"}`,
+    "------------------------------------------------",
+    ...(items || []).flatMap((item, index) => {
+      const quantity = Number(item?.quantity || 0);
+      const name = normalizeText(item?.nome || "Item").toUpperCase();
+      const observation = normalizeText(item?.descricao || item?.itemObservation || item?.observacao || item?.observacoes || "");
+      const rows = [`${String(index + 1).padStart(2, "0")}. ${quantity}X ${name}`];
+      if (observation) {
+        rows.push(`   OBS: ${observation.toUpperCase()}`);
+      }
+      return rows;
+    }),
+    "------------------------------------------------",
+  ];
+
+  if (observacoes) {
+    lines.push(`OBS: ${normalizeText(observacoes).toUpperCase()}`);
+  }
+
+  return {
+    pedidoId,
+    mesaId,
+    mesaNumero: mesaNumero || mesaId || "-",
+    setorId,
+    setorNome,
+    printerSystemName: printerSystemName || "",
+    total: Number((items || []).reduce((acc, item) => acc + Number(item.price || 0) * Number(item.quantity || 0), 0)),
+    observacoes: observacoes || "",
+    items: (items || []).map((item) => ({
+      id: item.id,
+      nome: item.nome,
+      price: Number(item.price || 0),
+      quantity: Number(item.quantity || 0),
+      descricao: item.descricao || item.itemObservation || item.observacao || item.observacoes || "",
+      itemObservation: item.itemObservation || item.observacao || item.observacoes || "",
+      setorId: item.setorId || "",
+      setorNome: item.setorNome || "",
+    })),
+    ticketText: lines.join("\n"),
+  };
+};
+
+const isAutoPrintEligible = (pedidoData = {}) => {
+  const orderOrigin = safeLower(pedidoData?.orderOrigin || "mesaconvencional");
+  return orderOrigin !== "mesaconvencional";
+};
+
+async function enqueuePrintJobsForPedidoDoc({ idRestaurante, pedidoId, mesaId, mesaNumero, pedidoData = {} }) {
+  const pedidoItems = Array.isArray(pedidoData.items) ? pedidoData.items : [];
+  const [setoresSnapshot, impressorasSnapshot, restauranteSnapshot] = await Promise.all([
+    admin.firestore().collection("restaurantes").doc(idRestaurante).collection("setoresProducao").get(),
+    admin.firestore().collection("restaurantes").doc(idRestaurante).collection("impressorasSetor").get(),
+    admin.firestore().collection("restaurantes").doc(idRestaurante).get(),
+  ]);
+
+  const setores = setoresSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const impressoras = impressorasSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const estabelecimentoNome = restauranteSnapshot.exists ? normalizeText(restauranteSnapshot.data()?.nome || "") : "";
+  const grupos = groupItemsBySetor(pedidoItems, setores);
+
+  if (grupos.length === 0) {
+    logger.info("Pedido sem grupos de impressão", { idRestaurante, pedidoId });
+    return [];
+  }
+
+  const queueCollection = admin.firestore().collection("restaurantes").doc(idRestaurante).collection("printQueue");
+  const jobs = [];
+
+  for (const grupo of grupos) {
+    const setor = setores.find((item) => item.id === grupo.setorId);
+    const printerSystemName = resolvePrinterName(impressoras, grupo.setorId);
+    const payload = buildPrintQueuePayload({
+      pedidoId,
+      mesaId,
+      mesaNumero,
+      setorId: grupo.setorId,
+      setorNome: setor?.nome || grupo.setorNome || "Sem setor",
+      estabelecimentoNome,
+      printerSystemName,
+      items: grupo.items,
+      observacoes: pedidoData.observacoes || "",
+    });
+
+    const queueId = `${pedidoId}_${grupo.setorId}`;
+    await queueCollection.doc(queueId).set({
+      pedidoId,
+      mesaId,
+      mesaNumero: mesaNumero || mesaId || "-",
+      setorId: grupo.setorId,
+      setorNome: setor?.nome || grupo.setorNome || "Sem setor",
+      printerSystemName,
+      tipo: "PEDIDO",
+      status: "PENDENTE",
+      tentativas: 0,
+      payload,
+      criadoEm: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    jobs.push({ id: queueId, ...payload });
+  }
+
+  return jobs;
+}
 
 /**
  * Create Stripe Checkout Session
@@ -456,3 +659,54 @@ exports.nfceCancelar = nfceCancelar;
 exports.nfceConsultarCancelamento = nfceConsultarCancelamento;
 exports.nfceSincronizarCrt = nfceSincronizarCrt;
 exports.nfceSincronizarDocumentos = nfceSincronizarDocumentos;
+
+exports.enqueuePrintJobsForPedido = onDocumentCreated(
+  "restaurantes/{idRestaurante}/mesas/{mesaId}/pedidos/{pedidoId}",
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) {
+      return;
+    }
+
+    const pedidoData = snapshot.data() || {};
+    if (!isAutoPrintEligible(pedidoData)) {
+      logger.info("Pedido administrativo não requer auto-impressão no backend", {
+        idRestaurante: event.params.idRestaurante,
+        mesaId: event.params.mesaId,
+        pedidoId: event.params.pedidoId,
+        orderOrigin: pedidoData.orderOrigin || "mesaconvencional",
+      });
+      return;
+    }
+
+    try {
+      const jobs = await enqueuePrintJobsForPedidoDoc({
+        idRestaurante: event.params.idRestaurante,
+        mesaId: event.params.mesaId,
+        pedidoId: event.params.pedidoId,
+        mesaNumero: pedidoData?.mesaNumero || pedidoData?.mesaId || event.params.mesaId,
+        pedidoData,
+      });
+
+      await snapshot.ref.set({
+        backendPrintQueuedAt: FieldValue.serverTimestamp(),
+        backendPrintJobsCount: jobs.length,
+      }, { merge: true });
+
+      logger.info("Pedido enfileirado para impressão automática", {
+        idRestaurante: event.params.idRestaurante,
+        mesaId: event.params.mesaId,
+        pedidoId: event.params.pedidoId,
+        jobs: jobs.length,
+      });
+    } catch (error) {
+      logger.error("Falha ao enfileirar impressão automática", {
+        idRestaurante: event.params.idRestaurante,
+        mesaId: event.params.mesaId,
+        pedidoId: event.params.pedidoId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+);
