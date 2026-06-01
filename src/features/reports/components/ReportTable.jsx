@@ -2,7 +2,9 @@ import {
   SalesReportTable,
   PeriodReportTable,
   ProductReportTable,
-  WaiterReportTable
+  WaiterReportTable,
+  CancellationsReportTable,
+  TipsReportTable
 } from "./tables";
 import { generatePDF } from "@/utils/pdfGenerator";
 import { useState } from "react";
@@ -10,6 +12,7 @@ import { Download } from "react-coolicons";
 import { useTranslation } from "react-i18next";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
+import { exportReportToExcel } from "@/utils/reportExport";
 
 const ReportTable = ({ reportData, startDate, endDate }) => {
   const { t } = useTranslation('reports');
@@ -30,6 +33,10 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
         return t('table.titles.product');
       case "garcom":
         return t('table.titles.waiter');
+      case "cancelamentos":
+        return t('table.titles.cancellations', { defaultValue: 'Cancelamentos' });
+      case "gorjetas":
+        return t('table.titles.tips', { defaultValue: 'Gorjetas' });
       default:
         return t('table.titles.sales');
     }
@@ -45,6 +52,10 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
         return reportData.products && reportData.products.length > 0;
       case "garcom":
         return reportData.waiters && reportData.waiters.length > 0;
+      case "cancelamentos":
+        return reportData.cancellations && reportData.cancellations.length > 0;
+      case "gorjetas":
+        return reportData.tips && reportData.tips.length > 0;
       default:
         return false;
     }
@@ -63,6 +74,16 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
     }
   };
 
+  const handleExportExcel = () => {
+    try {
+      exportReportToExcel({ reportData, startDate, endDate });
+      notify(t('table.xlsxSuccess', { defaultValue: 'Excel gerado com sucesso' }), 'success');
+    } catch (error) {
+      console.error('Erro ao gerar Excel:', error);
+      notify(t('table.xlsxError', { defaultValue: 'Erro ao gerar Excel' }), 'error');
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg p-6 shadow-md w-full">
       <div className="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -75,7 +96,7 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
           </p>
         </div>
         {hasData() && (
-          <div className="flex justify-end sm:justify-start">
+          <div className="flex flex-wrap justify-end gap-2 sm:justify-start">
             <button
               onClick={handleExportPDF}
               disabled={isGeneratingPDF}
@@ -96,6 +117,14 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
                   <Download className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </>
               )}
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-emerald-600 text-white font-medium rounded-md cursor-pointer hover:bg-emerald-700 text-sm sm:text-base whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">Excel</span>
+              <span className="sm:hidden">XLSX</span>
+              <Download className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         )}
@@ -126,6 +155,20 @@ const ReportTable = ({ reportData, startDate, endDate }) => {
         {reportData.type === "garcom" && (
           <WaiterReportTable
             waiters={reportData.waiters}
+            formatCurrency={formatCurrency}
+          />
+        )}
+
+        {reportData.type === "cancelamentos" && (
+          <CancellationsReportTable
+            cancellations={reportData.cancellations}
+            formatCurrency={formatCurrency}
+          />
+        )}
+
+        {reportData.type === "gorjetas" && (
+          <TipsReportTable
+            tips={reportData.tips}
             formatCurrency={formatCurrency}
           />
         )}

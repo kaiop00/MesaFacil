@@ -157,6 +157,8 @@ export const useDetailOrderPrint = () => {
     numeroPessoas,
     valorCouvert,
     totalComServico,
+    totalAdiantado = 0,
+    totalLiquido = null,
   }) => {
     let html = '';
 
@@ -201,6 +203,26 @@ export const useDetailOrderPrint = () => {
       <div class="row" style="font-weight: 700; font-size: 14px;">
         <span>TOTAL</span>
         <span>${currencyFormatter.format(totalComServico)}</span>
+      </div>
+    `;
+
+    if (Number(totalAdiantado) > 0) {
+      html += `
+        <div class="row">
+          <span>Adiantamentos</span>
+          <span>- ${currencyFormatter.format(Number(totalAdiantado || 0))}</span>
+        </div>
+      `;
+    }
+
+    const saldoFinal = totalLiquido === null
+      ? Math.max(0, Number(totalComServico || 0) - Number(totalAdiantado || 0))
+      : Number(totalLiquido || 0);
+
+    html += `
+      <div class="row" style="font-weight: 700; font-size: 14px;">
+        <span>SALDO</span>
+        <span>${currencyFormatter.format(saldoFinal)}</span>
       </div>
     `;
 
@@ -290,6 +312,8 @@ export const useDetailOrderPrint = () => {
       numeroPessoas,
       valorCouvert,
       totalComServico,
+      totalAdiantado,
+      totalLiquido,
     }) => {
       const now = formatDate(new Date()) ?? "";
 
@@ -475,6 +499,8 @@ export const useDetailOrderPrint = () => {
                 numeroPessoas,
                 valorCouvert,
                 totalComServico,
+                totalAdiantado,
+                totalLiquido,
               })}
 
               ${buildPaymentSection(pedidos)}

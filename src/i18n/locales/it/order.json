@@ -48,6 +48,9 @@
       "observations": "Osservazioni",
       "optional": "opzionale",
       "observationsPlaceholder": "Es: Cliente ha pagato metà in contanti e metà con PIX...",
+      "tip": "Mancia",
+      "tipPlaceholder": "0,00",
+      "tipInfo": "Mancia da aggiungere all'importo totale",
       "warning": "⚠️ Seleziona un metodo di pagamento prima di confermare",
       "buttons": {
         "cancel": "Annulla",
@@ -115,7 +118,7 @@
     "searchPlaceholder": "Cerca nel menù...",
     "noResults": "Nessun risultato trovato",
     "price": "Prezzo: $ {{price}}",
-    "ingredients": "Ingredienti: {{ingredients}}",
+    "ingredients": "Ingredienti",
     "outOfStock": "Esaurito",
     "lowStock": "Scorte basse",
     "availableStock": "Scorte disponibili"

@@ -4,8 +4,12 @@ import { usePlanManagement } from "@/hooks/usePlanManagement";
 import LoadingSpinner from "./LoadingSpinner";
 
 const PrivateRoute = () => {
-    const { user, loading } = useAuth();
-    const { hasActivePlan, planLoading } = usePlanManagement();
+    const auth = useAuth();
+    const planState = usePlanManagement();
+    const user = auth?.user ?? null;
+    const loading = auth?.loading ?? true;
+    const hasActivePlan = planState?.hasActivePlan ?? false;
+    const planLoading = planState?.planLoading ?? true;
 
     if (loading || planLoading) {
         return (

@@ -19,7 +19,7 @@ const BaseModalWithHeader = ({ isOpen, onClose, title, subTitle, icon: Icon, chi
               </div>
             </div>
 
-            <button onClick={onClose}>
+            <button type="button" onClick={onClose}>
               <CloseLg className="text-white cursor-pointer" />
             </button>
           </div>

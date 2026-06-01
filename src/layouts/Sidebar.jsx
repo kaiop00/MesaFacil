@@ -49,6 +49,7 @@ const Sidebar = () => {
   const navLinks = [
     { name: t("common:sidebar.dashboard"), icon: <House03 size={20} />, path: "/home", feature: null },
     { name: t("common:sidebar.orders"), icon: <ListUnordered size={20} />, path: "/home/pedidos", feature: null },
+    { name: t("common:sidebar.cash", { defaultValue: 'Caixa' }), icon: <ShoppingBag01 size={20} />, path: "/home/caixa", feature: null },
     { name: t("common:sidebar.kitchen"), icon: <Building03 size={20} />, path: "/home/cozinha", feature: null },
     { name: t("common:sidebar.menu"), icon: <Coffee size={20} />, path: "/home/cardapio", feature: null },
     {

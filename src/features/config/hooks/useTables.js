@@ -14,6 +14,58 @@ function timeAgoString(date) {
   });
 }
 
+function getPedidoDate(pedido, fieldName) {
+  const value = pedido?.[fieldName];
+
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  return null;
+}
+
+function getPedidosSummary(pedidos, status, dateField) {
+  const pedidosFiltrados = pedidos.filter((pedido) => pedido.status === status);
+
+  const totalBruto = pedidosFiltrados.reduce((acc, pedido) => acc + Number(pedido?.total ?? 0), 0);
+  const totalAdiantado = pedidosFiltrados.reduce((acc, pedido) => {
+    if (!Array.isArray(pedido?.adiantamentos)) {
+      return acc;
+    }
+
+    return acc + pedido.adiantamentos.reduce((sum, adv) => sum + Number(adv?.valor ?? 0), 0);
+  }, 0);
+
+  const total = Math.max(0, totalBruto - totalAdiantado);
+
+  const latestDate = pedidosFiltrados.reduce((latest, pedido) => {
+    const pedidoDate = getPedidoDate(pedido, dateField);
+
+    if (!pedidoDate) {
+      return latest;
+    }
+
+    if (!latest || pedidoDate > latest) {
+      return pedidoDate;
+    }
+
+    return latest;
+  }, null);
+
+  return {
+    total,
+    timeAgo: latestDate ? timeAgoString(latestDate) : "-",
+  };
+}
+
 /**
  * Hook para acessar as mesas com informações de pedidos
  * - mesasLivres: status "livre"
@@ -39,13 +91,11 @@ export const useTables = (idRestaurante) => {
       const andamentoEnriched = await Promise.all(
         andamento.map(async (mesa) => {
           const pedidos = await getPedidosDaMesa(idRestaurante, mesa.id);
-          const pedido = pedidos.find(p => p.status === "andamento");
+          const { total, timeAgo } = getPedidosSummary(pedidos, "andamento", "criadoEm");
           return {
             ...mesa,
-            total: pedido?.total ?? 0,
-            timeAgo: pedido?.criadoEm?.toDate
-              ? timeAgoString(pedido.criadoEm.toDate())
-              : "-",
+            total,
+            timeAgo,
           };
         })
       );
@@ -53,13 +103,11 @@ export const useTables = (idRestaurante) => {
       const entreguesEnriched = await Promise.all(
         entregues.map(async (mesa) => {
           const pedidos = await getPedidosDaMesa(idRestaurante, mesa.id);
-          const pedido = pedidos.find(p => p.status === "entregue");
+          const { total, timeAgo } = getPedidosSummary(pedidos, "entregue", "finalizadoEm");
           return {
             ...mesa,
-            total: pedido?.total ?? 0,
-            timeAgo: pedido?.finalizadoEm?.toDate
-              ? timeAgoString(pedido.finalizadoEm.toDate())
-              : "-",
+            total,
+            timeAgo,
           };
         })
       );

@@ -75,7 +75,8 @@ const TableCard = ({
     setIsConfirmModalOpen(false);
   };
 
-  const handleFinalize = () => {
+  const handleFinalize = (event) => {
+    event?.preventDefault?.();
     if (mesa?.status === "andamento") {
       // Em andamento: abrir detalhes para escolher qual pedido finalizar
       onOpenDetail?.(mesa);

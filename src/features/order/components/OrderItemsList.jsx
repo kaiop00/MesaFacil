@@ -3,7 +3,13 @@ import React, { useState } from "react";
 import { TrashFull, CaretDownMd } from "react-coolicons";
 import { useTranslation } from "react-i18next";
 
-const OrderItemsList = ({ items, updateItemQuantity, removeItem, readOnly = false }) => {
+const OrderItemsList = ({
+    items,
+    updateItemQuantity,
+    removeItem,
+    onCancelItem,
+    readOnly = false,
+}) => {
     const { t } = useTranslation('order');
     const [expandedItemIds, setExpandedItemIds] = useState([]);
 
@@ -17,11 +23,12 @@ const OrderItemsList = ({ items, updateItemQuantity, removeItem, readOnly = fals
 
     return (
         <div className="space-y-4">
-            {items.map((item) => {
-                const isExpanded = expandedItemIds.includes(item.id);
+            {items.map((item, index) => {
+                const itemKey = item.lineId || item.cartItemId || `${item.id}-${index}`;
+                const isExpanded = expandedItemIds.includes(itemKey);
                 return (
                     <div
-                        key={item.id}
+                        key={itemKey}
                         className="border border-gray-200 p-4 rounded-xl"
                     >
                         <div className="flex items-center justify-between">
@@ -65,8 +72,18 @@ const OrderItemsList = ({ items, updateItemQuantity, removeItem, readOnly = fals
                             <CaretDownMd
                                 className={`ml-5 mr-5 cursor-pointer transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
                                     }`}
-                                onClick={() => toggleExpand(item.id)}
+                                onClick={() => toggleExpand(itemKey)}
                             />
+
+                            {/* Cancelar item da comanda */}
+                            {typeof onCancelItem === "function" && (
+                                <button
+                                    onClick={() => onCancelItem(item, index)}
+                                    className="mr-2 px-3 py-1.5 text-xs font-semibold rounded-md bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 cursor-pointer"
+                                >
+                                    Cancelar item
+                                </button>
+                            )}
 
                             {/* Remover */}
                             {!readOnly && (

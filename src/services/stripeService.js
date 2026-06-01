@@ -1,7 +1,9 @@
 import { loadStripe } from '@stripe/stripe-js';
 
 // Stripe toggle for maintenance windows.
-const STRIPE_TEMPORARILY_DISABLED = false;
+// Set to `true` in development to avoid opening the external Stripe Billing portal
+// while testing local features.
+const STRIPE_TEMPORARILY_DISABLED = true;
 
 // Get Stripe publishable key from environment
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;

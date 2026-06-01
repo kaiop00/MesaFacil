@@ -17,6 +17,42 @@ const toDate = (timestamp) => {
   return null;
 };
 
+const formatCanceledItems = (items = []) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "-";
+  }
+
+  return items
+    .map((item) => {
+      const quantity = Number(item?.quantity || 0);
+      const name = item?.nome || "Item";
+      return quantity > 1 ? `${quantity}x ${name}` : `1x ${name}`;
+    })
+    .join(", ");
+};
+
+const derivePaymentMethod = (order = {}) => {
+  if (!order) return null;
+  if (order.formaPagamento) return order.formaPagamento;
+
+  if (Array.isArray(order.pagamentos) && order.pagamentos.length > 0) {
+    const methods = order.pagamentos
+      .map((p) => p?.formaPagamento || p?.method || null)
+      .filter(Boolean);
+    const uniq = [...new Set(methods)];
+    if (uniq.length === 0) return null;
+    if (uniq.length === 1) return uniq[0];
+    return uniq.join(" + ");
+  }
+
+  if (order.pagamentoCartao && typeof order.pagamentoCartao === "object") {
+    // If we only have card info, prefer to mark as cartão (UI will split credito/debito in summaries)
+    return order.pagamentoCartao.type || order.pagamentoCartao.method || "cartao";
+  }
+
+  return null;
+};
+
 /**
  * Hook para geração de relatórios otimizado com filtragem no banco de dados
  * @param {string} idRestaurante - ID do restaurante
@@ -75,7 +111,7 @@ export const useReports = (idRestaurante, tables) => {
           order.status ||
           (order.finalizadoEm ? "Finalizado" : "Em andamento"),
         mesa: order.mesaNumero,
-        formaPagamento: order.formaPagamento || null,
+        formaPagamento: derivePaymentMethod(order) || null,
       })),
     };
   };
@@ -272,6 +308,113 @@ export const useReports = (idRestaurante, tables) => {
   };
 
   /**
+   * Gera relatório de cancelamentos para auditoria
+   * @param {string} startDate - Data de início
+   * @param {string} endDate - Data de fim
+   * @returns {Object} Relatório de pedidos cancelados
+   */
+  const generateCancellationsReport = async (startDate, endDate) => {
+    const ordersPromises = tables.map(async (table) => {
+      const orders = await showAllOrdersFromTable(
+        idRestaurante,
+        table.id,
+        null,
+        startDate,
+        endDate,
+      );
+
+      return orders.map((order) => ({
+        ...order,
+        mesaNumero: order.mesaNumero ?? table.numero,
+      }));
+    });
+
+    const allOrdersArrays = await Promise.all(ordersPromises);
+    const allOrders = allOrdersArrays.flat();
+
+    const cancellations = allOrders
+      .filter((order) => (order.status || "").toLowerCase() === "cancelado")
+      .map((order) => {
+        const cancelDate = toDate(order.canceladoEm) || toDate(order.finalizadoEm) || toDate(order.criadoEm);
+
+        return {
+          pedidoId: order.pedidoId || order.id,
+          mesa: order.mesaNumero ?? "-",
+          dataCancelamento: cancelDate ? cancelDate.toLocaleString("pt-BR") : "-",
+          dataCancelamentoRaw: cancelDate,
+          itensCancelados: formatCanceledItems(order.items),
+          motivoCancelamento: order.motivoCancelamento || "Não informado",
+          canceladoPor: order.canceladoPor || "Não informado",
+          valor: Number(order.total || 0),
+        };
+      })
+      .sort((a, b) => {
+        const aDate = a.dataCancelamentoRaw ? a.dataCancelamentoRaw.getTime() : 0;
+        const bDate = b.dataCancelamentoRaw ? b.dataCancelamentoRaw.getTime() : 0;
+        return bDate - aDate;
+      })
+      .map(({ dataCancelamentoRaw, ...rest }) => rest);
+
+    return {
+      type: "cancelamentos",
+      cancellations,
+    };
+  };
+
+  const generateTipsReport = async (startDate, endDate) => {
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const start = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+    const end = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
+
+    const ordersPromises = tables.map(async (table) => {
+      const orders = await showAllOrdersFromTable(idRestaurante, table.id);
+
+      return orders.map((order) => ({
+        ...order,
+        mesaNumero: order.mesaNumero ?? table.numero,
+      }));
+    });
+
+    const allOrdersArrays = await Promise.all(ordersPromises);
+    const allOrders = allOrdersArrays.flat();
+
+    const tips = allOrders
+      .filter((order) => {
+        if (Number(order.gorjeta || 0) <= 0) return false;
+
+        const finishDate = toDate(order.finalizadoEm) || toDate(order.criadoEm);
+        if (!finishDate) return false;
+
+        return finishDate >= start && finishDate <= end;
+      })
+      .map((order) => {
+        const finishDate = toDate(order.finalizadoEm) || toDate(order.criadoEm);
+
+        return {
+          pedidoId: order.pedidoId || order.id,
+          mesa: order.mesaNumero ?? "-",
+          dataFinalizacao: finishDate ? finishDate.toLocaleString("pt-BR") : "-",
+          dataFinalizacaoRaw: finishDate,
+          gorjeta: Number(order.gorjeta || 0),
+          formaPagamento: derivePaymentMethod(order) || "-",
+          valorPedido: Number(order.total || 0),
+        };
+      })
+      .sort((a, b) => {
+        const aDate = a.dataFinalizacaoRaw ? a.dataFinalizacaoRaw.getTime() : 0;
+        const bDate = b.dataFinalizacaoRaw ? b.dataFinalizacaoRaw.getTime() : 0;
+        return bDate - aDate;
+      })
+      .map(({ dataFinalizacaoRaw, ...rest }) => rest);
+
+    return {
+      type: "gorjetas",
+      tips,
+    };
+  };
+
+  /**
    * Função principal para geração de relatórios com controle de cancelamento
    * @param {string} reportType - Tipo do relatório: 'vendas', 'periodo', 'produto', 'garcom'
    * @param {string} startDate - Data de início
@@ -316,6 +459,12 @@ export const useReports = (idRestaurante, tables) => {
           break;
         case "garcom":
           data = await generateWaiterReport(startDate, endDate);
+          break;
+        case "cancelamentos":
+          data = await generateCancellationsReport(startDate, endDate);
+          break;
+        case "gorjetas":
+          data = await generateTipsReport(startDate, endDate);
           break;
         default:
           throw new Error("Tipo de relatório não suportado");

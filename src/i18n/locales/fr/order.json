@@ -48,6 +48,9 @@
       "observations": "Observations",
       "optional": "optionnel",
       "observationsPlaceholder": "Ex: Client a payé moitié en espèces et moitié par PIX...",
+      "tip": "Pourboire",
+      "tipPlaceholder": "0,00",
+      "tipInfo": "Pourboire à ajouter au montant total",
       "warning": "⚠️ Sélectionnez un mode de paiement avant de confirmer",
       "buttons": {
         "cancel": "Annuler",
@@ -115,7 +118,7 @@
     "searchPlaceholder": "Rechercher dans le menu...",
     "noResults": "Aucun résultat trouvé",
     "price": "Prix : $ {{price}}",
-    "ingredients": "Ingrédients : {{ingredients}}",
+    "ingredients": "Ingrédients",
     "outOfStock": "Rupture de stock",
     "lowStock": "Stock faible",
     "availableStock": "Stock disponible"

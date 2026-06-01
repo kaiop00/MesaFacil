@@ -118,7 +118,7 @@
     "searchPlaceholder": "Pesquisar no cardápio...",
     "noResults": "Nenhum resultado encontrado",
     "price": "Preço: R$ {{price}}",
-    "ingredients": "Ingredientes: {{ingredients}}",
+    "ingredients": "Ingredientes",
     "outOfStock": "Fora de estoque",
     "lowStock": "Estoque baixo",
     "availableStock": "Estoque disponível"
@@ -216,6 +216,9 @@
       "observations": "Observações",
       "optional": "opcional",
       "observationsPlaceholder": "Ex: Cliente pagou metade em dinheiro e metade no PIX...",
+      "tip": "Gorjeta",
+      "tipPlaceholder": "0,00",
+      "tipInfo": "Gorjeta a ser adicionada ao valor total",
       "warning": "⚠️ Selecione uma forma de pagamento antes de confirmar",
       "buttons": {
         "cancel": "Cancelar",

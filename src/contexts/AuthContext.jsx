@@ -6,7 +6,14 @@ import stripeService, { STRIPE_TEMPORARILY_DISABLED } from "@/services/stripeSer
 import { getStripeCustomerId } from "@/services/firebase/restaurantService";
 
 // ✅ Cria o contexto
-const AuthContext = createContext();
+const AuthContext = createContext({
+  user: null,
+  role: null,
+  idRestaurante: null,
+  plan: null,
+  stripeCustomerId: null,
+  loading: true,
+});
 
 // ✅ Provider que centraliza user, role, idRestaurante, plan e loading
 export const AuthProvider = ({ children }) => {
@@ -18,7 +25,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let didResolve = false;
+    const fallbackTimer = window.setTimeout(() => {
+      if (!didResolve) {
+        console.warn("[AuthContext] Auth state timeout reached; releasing UI to avoid infinite spinner.");
+        setLoading(false);
+      }
+    }, 3000);
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      didResolve = true;
+      window.clearTimeout(fallbackTimer);
+
       if (firebaseUser) {
         setUser(firebaseUser);
 
@@ -96,7 +114,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      didResolve = true;
+      window.clearTimeout(fallbackTimer);
+      unsubscribe();
+    };
   }, []);
 
   return (

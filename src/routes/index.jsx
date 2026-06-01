@@ -40,6 +40,11 @@ import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
 import ConfigFiscalPage from "@/features/fiscal/pages/ConfigFiscalPage";
 import NfceListPage from "@/features/fiscal/pages/NfceListPage";
 import NfceDemoPage from "@/features/fiscal/pages/NfceDemoPage";
+import CaixaAtual from "@/features/caixa/pages/CaixaAtual";
+import AbrirCaixa from "@/features/caixa/pages/AbrirCaixa";
+import LancamentoManual from "@/features/caixa/pages/LancamentoManual";
+import Movimentacoes from "@/features/caixa/pages/Movimentacoes";
+import HistoricoCaixas from "@/features/caixa/pages/HistoricoCaixas";
 
 //providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
@@ -214,6 +219,26 @@ const router = createBrowserRouter([
           {
             path: "nfce-demo",
             element: <NfceDemoPage />,
+          },
+          {
+            path: "caixa",
+            element: <CaixaAtual />,
+          },
+          {
+            path: "caixa/abrir",
+            element: <AbrirCaixa />,
+          },
+          {
+            path: "caixa/lancamento",
+            element: <LancamentoManual />,
+          },
+          {
+            path: "caixa/movimentacoes",
+            element: <Movimentacoes />,
+          },
+          {
+            path: "caixa/historico",
+            element: <HistoricoCaixas />,
           },
         ],
       }

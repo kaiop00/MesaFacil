@@ -19,7 +19,8 @@
     "types": {
       "sales": "Sales Report",
       "period": "Period Report",
-      "product": "Product Report"
+      "product": "Product Report",
+      "tips": "Tips Report"
     }
   },
   "table": {
@@ -27,7 +28,8 @@
       "sales": "Sales Report",
       "period": "Period Report",
       "product": "Product Report", 
-      "waiter": "Waiter Report"
+      "waiter": "Waiter Report",
+      "tips": "Tips Report"
     },
     "period": "Period",
     "from": "to",
@@ -78,6 +80,16 @@
         "waiter": "Waiter",
         "ordersAttended": "Orders Attended",
         "totalValueGenerated": "Total Value Generated"
+      }
+    },
+    "tips": {
+      "columns": {
+        "orderNumber": "Order #",
+        "table": "Table",
+        "orderValue": "Order Value",
+        "tipValue": "Tip",
+        "paymentMethod": "Payment Method",
+        "finishDate": "Finish Date"
       }
     }
   },
