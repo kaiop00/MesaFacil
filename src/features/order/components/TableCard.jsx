@@ -60,8 +60,6 @@ const TableCard = ({
   const isWATable = mesa?.id && mesa.id.startsWith('whatsapp');
   
   // Detecta origem dos pedidos da mesa
-  const [tableOrigin, setTableOrigin] = useState('mesaconvencional');
-
   const handleConfirm = async () => {
     if (mesa?.status === "entregue") {
       try {
@@ -83,10 +81,10 @@ const TableCard = ({
       setShowOptions(false);
       return;
     } else if (mesa?.status === "entregue") {
-      // setModalConfig({
-      //   title: t('messages.confirm.finishOrder'),
-      //   message: t('messages.confirm.finishOrderDescription'),
-      // });
+      setModalConfig({
+        title: t('messages.confirm.finishOrder'),
+        message: t('messages.confirm.finishOrderDescription'),
+      });
       onOpenDetail?.(mesa);
       setShowOptions(false);
     }
@@ -121,6 +119,10 @@ const TableCard = ({
                     setShowOptions(false);
                   }}
                   onFinalize={handleFinalize}
+                  onTransfer={() => {
+                    onOpenDetail?.(mesa);
+                    setShowOptions(false);
+                  }}
                 />
               )}
             </div>

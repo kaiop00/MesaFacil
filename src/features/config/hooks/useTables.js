@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useMemo } from "react";
 import { TablesContext } from "@/features/config/context/TablesContext";
 import { getPedidosDaMesa } from "@/features/order/services/orderService";
 import { formatDistanceToNow } from "date-fns";
@@ -73,8 +73,8 @@ function getPedidosSummary(pedidos, status, dateField) {
  * - mesasEntregues: idem para entregues
  */
 export const useTables = (idRestaurante) => {
-  const tables = useContext(TablesContext) || []; // fallback seguro
-  console.log("[useTables] TablesContext:", tables);
+  const tablesFromCtx = useContext(TablesContext);
+  const tables = useMemo(() => tablesFromCtx || [], [tablesFromCtx]);
 
   const [mesasLivres, setMesasLivres] = useState([]);
   const [mesasAndamento, setMesasAndamento] = useState([]);

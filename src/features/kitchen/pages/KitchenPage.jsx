@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import CardHeader from "@/components/CardHeader";
 import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
@@ -19,6 +19,12 @@ const KitchenPage = () => {
   const { orders, loading, error, refetch } = useKitchenOrders(idRestaurante);
   const { printOrder } = useKitchenPrint();
   const [finalizingId, setFinalizingId] = useState(null);
+  const [hiddenOrderIds, setHiddenOrderIds] = useState([]);
+
+  const visibleOrders = useMemo(
+    () => orders.filter((order) => !hiddenOrderIds.includes(order.id)),
+    [orders, hiddenOrderIds],
+  );
 
   const handleFinalize = async (order) => {
     if (!idRestaurante || !order?.mesaId || !order?.id) {
@@ -26,16 +32,26 @@ const KitchenPage = () => {
     }
 
     setFinalizingId(order.id);
-    try {
-      await finalizarPedidoEspecifico(idRestaurante, order.mesaId, order.id, {}, false);
-      notify(t("messages.success"), "success");
-      await refetch();
-    } catch (err) {
-      console.error("[KitchenPage] Erro ao finalizar pedido:", err);
-      notify(t("messages.error"), "error");
-    } finally {
-      setFinalizingId(null);
-    }
+    setHiddenOrderIds((prev) => (prev.includes(order.id) ? prev : [...prev, order.id]));
+    const finalizePromise = finalizarPedidoEspecifico(idRestaurante, order.mesaId, order.id, {}, false)
+      .then(async () => {
+        try {
+          await refetch();
+        } catch (refetchErr) {
+          console.warn("[KitchenPage] Falha ao atualizar pedidos após finalizacao:", refetchErr);
+        }
+      })
+      .catch((err) => {
+        console.error("[KitchenPage] Erro ao finalizar pedido:", err);
+        notify(t("messages.error"), "error");
+        setHiddenOrderIds((prev) => prev.filter((id) => id !== order.id));
+      })
+      .finally(() => {
+        setFinalizingId(null);
+      });
+
+    notify(t("messages.success"), "success");
+    return finalizePromise;
   };
 
   if (!hasPermission('view_kitchen')) {
@@ -84,15 +100,15 @@ const KitchenPage = () => {
         </div>
       )}
 
-      {!loading && !error && orders.length === 0 && (
+      {!loading && !error && visibleOrders.length === 0 && (
         <div className="rounded-xl border border-dashed border-gray-300 bg-white py-16 text-center text-gray-500">
           {t("states.empty")}
         </div>
       )}
 
-      {!loading && !error && orders.length > 0 && (
+      {!loading && !error && visibleOrders.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {orders.map((order) => (
+          {visibleOrders.map((order) => (
             <KitchenOrderCard
               key={order.id}
               order={order}

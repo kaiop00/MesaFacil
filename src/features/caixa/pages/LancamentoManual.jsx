@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import caixaService from '@/services/caixa/caixaService';
+import { parseCurrencyToNumber, formatCurrencyToString } from '@/utils/currency';
 
 const LancamentoManual = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const LancamentoManual = () => {
     e.preventDefault();
     setError(null);
 
-    const valorNum = parseFloat(valor || 0);
+    const valorNum = parseCurrencyToNumber(valor || 0);
     if (isNaN(valorNum) || valorNum <= 0) {
       setError('Digite um valor válido');
       return;
@@ -78,12 +79,16 @@ const LancamentoManual = () => {
             </div>
           </label>
           <input
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
-            placeholder="0.00"
+            onFocus={() => { if (parseCurrencyToNumber(valor) === 0) setValor(''); }}
+            onBlur={(e) => {
+              const v = (e.target.value || '').toString().trim();
+              if (v === '') setValor('0,00'); else setValor(formatCurrencyToString(v));
+            }}
+            placeholder="0,00 ou 1.000,00"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-semibold"
             disabled={loading}
             autoFocus
@@ -106,8 +111,8 @@ const LancamentoManual = () => {
             <option value="PIX">📱 PIX</option>
             <option value="CREDITO">💳 Crédito</option>
             <option value="DEBITO">💳 Débito</option>
-            <option value="VR">🎟️ Vale Refeição</option>
-            <option value="VA">🎟️ Vale Alimentação</option>
+            <option value="VOUCHER">🎫 Voucher</option>
+            <option value="IFOOD">🛵 iFood</option>
           </select>
         </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   collection,
+  collectionGroup,
   onSnapshot,
   query,
   where,
@@ -32,18 +33,8 @@ export function useNotifications(idRestaurante) {
   const [eventoNotifications, setEventoNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const mesaUnsubsRef = useRef({}); // { mesaId: unsubscribe }
-  const unsubscribeMesasRef = useRef(null);
-
+  const mesaUnsubsRef = useRef({});
   useEffect(() => {
-    // Limpar listeners quando idRestaurante mudar
-    Object.values(mesaUnsubsRef.current).forEach((fn) => fn && fn());
-    mesaUnsubsRef.current = {};
-    if (unsubscribeMesasRef.current) {
-      unsubscribeMesasRef.current();
-      unsubscribeMesasRef.current = null;
-    }
-
     if (!idRestaurante) {
       setNotifications([]);
       setPedidoNotifications([]);
@@ -52,69 +43,115 @@ export function useNotifications(idRestaurante) {
       return;
     }
 
-    // 1) Assina as mesas do restaurante
-    const mesasCol = collection(db, "restaurantes", idRestaurante, "mesas");
-    unsubscribeMesasRef.current = onSnapshot(mesasCol, (snapshot) => {
-      const mesas = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const start = startOfDay(new Date());
+    const end = endOfDay(new Date());
+    const qStart = Timestamp.fromDate(start);
+    const qEnd = Timestamp.fromDate(end);
 
-      // 2) Para cada mesa, assinar os pedidos de hoje
-      const start = startOfDay(new Date());
-      const end = endOfDay(new Date());
-      const qStart = Timestamp.fromDate(start);
-      const qEnd = Timestamp.fromDate(end);
+    // Usa collectionGroup('pedidos') para ter apenas um listener em vez de um por mesa
+    const pedidosGroup = collectionGroup(db, "pedidos");
+    const pedidosQuery = query(
+      pedidosGroup,
+      where("criadoEm", ">=", qStart),
+      where("criadoEm", "<=", qEnd),
+      orderBy("criadoEm", "desc")
+    );
 
-      // Cancelar listeners antigos que não estão mais presentes
-      const currentIds = new Set(mesas.map((m) => m.id));
-      Object.keys(mesaUnsubsRef.current).forEach((mesaId) => {
-        if (!currentIds.has(mesaId)) {
-          mesaUnsubsRef.current[mesaId]?.();
-          delete mesaUnsubsRef.current[mesaId];
+    let unsubscribe = null;
+    try {
+      unsubscribe = onSnapshot(
+        pedidosQuery,
+        (snapshot) => {
+          const items = snapshot.docs
+            .map((docSnap) => {
+              const data = docSnap.data();
+
+              // Se o documento tiver campo restauranteId, use-o (mais eficiente).
+              if (data.restauranteId && data.restauranteId !== idRestaurante) return null;
+
+              // Garantir que o pedido pertence ao restaurante verificando o caminho do documento
+              const path = docSnap.ref.path; // restaurantes/{idRestaurante}/mesas/{mesaId}/pedidos/{pedidoId}
+              if (!path.startsWith(`restaurantes/${idRestaurante}/`)) return null;
+
+              const parts = path.split("/");
+              const mesaId = parts[3] || null;
+
+              return {
+                id: docSnap.id,
+                mesaId,
+                mesaNumero: data.mesaNumero || null,
+                refPath: docSnap.ref.path,
+                ...data,
+              };
+            })
+            .filter(Boolean);
+
+          // já estão ordenados por criadoEm desc devido ao orderBy
+          setPedidoNotifications(items);
         }
-      });
+      );
+    } catch (err) {
+      console.warn('useNotifications: collectionGroup onSnapshot failed, falling back to per-mesa listeners', err);
 
-      // Para acumular todas as notificações e depois unificar
-      const tempByMesa = {};
+      // Fallback: assina mesas e, para cada mesa, assina pedidos do dia (original behavior)
+      const mesasCol = collection(db, "restaurantes", idRestaurante, "mesas");
+      unsubscribe = onSnapshot(mesasCol, (snapshot) => {
+        const mesas = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      mesas.forEach((mesa) => {
-        const pedidosCol = collection(
-          db,
-          "restaurantes",
-          idRestaurante,
-          "mesas",
-          mesa.id,
-          "pedidos"
-        );
-        const qPed = query(
-          pedidosCol,
-          where("criadoEm", ">=", qStart),
-          where("criadoEm", "<=", qEnd),
-          orderBy("criadoEm", "desc")
-        );
+        // Cancelar listeners antigos que não estão mais presentes
+        const currentIds = new Set(mesas.map((m) => m.id));
+        Object.keys(mesaUnsubsRef.current).forEach((mesaId) => {
+          if (!currentIds.has(mesaId)) {
+            mesaUnsubsRef.current[mesaId]?.();
+            delete mesaUnsubsRef.current[mesaId];
+          }
+        });
 
-        // Unsubscribe anterior, se existir
-        mesaUnsubsRef.current[mesa.id]?.();
-        mesaUnsubsRef.current[mesa.id] = onSnapshot(qPed, (snap) => {
-          const items = snap.docs.map((d) => ({
-            id: d.id,
-            mesaId: mesa.id,
-            mesaNumero: mesa.numero || mesa.nome || mesa.id,
-            refPath: d.ref.path,
-            ...d.data(),
-          }));
-          tempByMesa[mesa.id] = items;
+        const tempByMesa = {};
+        const start = startOfDay(new Date());
+        const end = endOfDay(new Date());
+        const qStart = Timestamp.fromDate(start);
+        const qEnd = Timestamp.fromDate(end);
 
-          // Unificar todas as mesas sempre que um listener atualizar
-          const all = Object.values(tempByMesa).flat();
-          all.sort((a, b) => toMillis(b.criadoEm) - toMillis(a.criadoEm));
-          setPedidoNotifications(all);
+        mesas.forEach((mesa) => {
+          const pedidosCol = collection(
+            db,
+            "restaurantes",
+            idRestaurante,
+            "mesas",
+            mesa.id,
+            "pedidos"
+          );
+          const qPed = query(
+            pedidosCol,
+            where("criadoEm", ">=", qStart),
+            where("criadoEm", "<=", qEnd),
+            orderBy("criadoEm", "desc")
+          );
+
+          // Unsubscribe anterior, se existir
+          mesaUnsubsRef.current[mesa.id]?.();
+          mesaUnsubsRef.current[mesa.id] = onSnapshot(qPed, (snap) => {
+            const items = snap.docs.map((d) => ({
+              id: d.id,
+              mesaId: mesa.id,
+              mesaNumero: mesa.numero || mesa.nome || mesa.id,
+              refPath: d.ref.path,
+              ...d.data(),
+            }));
+            tempByMesa[mesa.id] = items;
+
+            // Unificar todas as mesas sempre que um listener atualizar
+            const all = Object.values(tempByMesa).flat();
+            all.sort((a, b) => toMillis(b.criadoEm) - toMillis(a.criadoEm));
+            setPedidoNotifications(all);
+          });
         });
       });
-    });
+    }
 
     return () => {
-      Object.values(mesaUnsubsRef.current).forEach((fn) => fn && fn());
-      mesaUnsubsRef.current = {};
-      if (unsubscribeMesasRef.current) unsubscribeMesasRef.current();
+      if (unsubscribe) unsubscribe();
     };
   }, [idRestaurante]);
 
@@ -195,16 +232,11 @@ export function useNotifications(idRestaurante) {
   
   const markOneAsRead = async (notification) => {
     if (!notification || notification.read === true) return;
-    try {
-      const ref = doc(db, notification.refPath);
-      await (await import("firebase/firestore")).updateDoc(ref, {
-        read: true,
-        lidoEm: Timestamp.now(),
-      });
-    } catch (e) {
-      // noop: deixamos o snapshot refletir estado; erros podem ser tratados pelo caller
-      throw e;
-    }
+    const ref = doc(db, notification.refPath);
+    await (await import("firebase/firestore")).updateDoc(ref, {
+      read: true,
+      lidoEm: Timestamp.now(),
+    });
   };
 
   return {

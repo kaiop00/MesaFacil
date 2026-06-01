@@ -1,5 +1,5 @@
 // routes/index.jsx
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider, useLocation } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 import PrivateRoute from "@/components/PrivateRoute";
 import RequireFeature from "@/components/RequireFeature";
@@ -37,6 +37,7 @@ import MovementsPage from "@/features/movements/pages/MovementsPage";
 import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
 import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
+import ImpressoraSetorPage from "@/features/config/pages/ImpressoraSetorPage";
 import ConfigFiscalPage from "@/features/fiscal/pages/ConfigFiscalPage";
 import NfceListPage from "@/features/fiscal/pages/NfceListPage";
 import NfceDemoPage from "@/features/fiscal/pages/NfceDemoPage";
@@ -54,7 +55,54 @@ import ClienteLayout from "@/features/cliente/layout/ClienteLayout";
 import SacolaPage from "@/features/cliente/pages/SacolaPage";
 import PedidoClientePage from "@/features/cliente/pages/PedidoClientePage";
 
+const LegacyRedirect = ({ to }) => {
+  const location = useLocation();
+
+  return <Navigate to={`${to}${location.search}${location.hash}`} replace />;
+};
+
+const legacyRouteMap = {
+  "/dashboard": "/home",
+  "/pedidos": "/home/pedidos",
+  "/cardapio": "/home/cardapio",
+  "/relatorios": "/home/relatorios",
+  "/promocoes": "/home/promocoes",
+  "/usuarios": "/home/usuarios",
+  "/itens": "/home/itens",
+  "/movimentacao": "/home/movimentacao",
+  "/movimentacoes": "/home/movimentacao",
+  "/integracoes": "/home/integracoes/ifood",
+  "/ifood": "/home/integracoes/ifood",
+  "/whatsapp": "/home/whatsapp",
+  "/impressoras-setor": "/home/impressoras-setor",
+  "/fiscal": "/home/fiscal",
+  "/nfce-emitidas": "/home/nfce-emitidas",
+  "/nfce-demo": "/home/nfce-demo",
+  "/caixa": "/home/caixa",
+  "/caixa/abrir": "/home/caixa/abrir",
+  "/caixa/lancamento": "/home/caixa/lancamento",
+  "/caixa/movimentacoes": "/home/caixa/movimentacoes",
+  "/caixa/historico": "/home/caixa/historico",
+};
+
+const LegacyRouteResolver = () => {
+  const location = useLocation();
+  const normalizedPath = location.pathname.toLowerCase();
+  const redirectTo = legacyRouteMap[normalizedPath];
+
+  if (redirectTo) {
+    return <Navigate to={`${redirectTo}${location.search}${location.hash}`} replace />;
+  }
+
+  return <NotFoundPage />;
+};
+
 const router = createBrowserRouter([
+  ...Object.entries(legacyRouteMap).map(([path, to]) => ({
+    path,
+    element: <LegacyRedirect to={to} />,
+  })),
+
   // redireciona para /home ou /login
   {
     path: "/",
@@ -209,6 +257,14 @@ const router = createBrowserRouter([
             element: <WhatsAppPage />
           },
           {
+            path: "impressoras-setor",
+            element: (
+              <RequirePermission permission="manage_printers">
+                <ImpressoraSetorPage />
+              </RequirePermission>
+            )
+          },
+          {
             path: "fiscal",
             element: <ConfigFiscalPage />,
           },
@@ -222,23 +278,43 @@ const router = createBrowserRouter([
           },
           {
             path: "caixa",
-            element: <CaixaAtual />,
+            element: (
+              <RequirePermission permission="view_cash">
+                <CaixaAtual />
+              </RequirePermission>
+            ),
           },
           {
             path: "caixa/abrir",
-            element: <AbrirCaixa />,
+            element: (
+              <RequirePermission permission="manage_cash">
+                <AbrirCaixa />
+              </RequirePermission>
+            ),
           },
           {
             path: "caixa/lancamento",
-            element: <LancamentoManual />,
+            element: (
+              <RequirePermission permission="manage_cash">
+                <LancamentoManual />
+              </RequirePermission>
+            ),
           },
           {
             path: "caixa/movimentacoes",
-            element: <Movimentacoes />,
+            element: (
+              <RequirePermission permission="view_cash">
+                <Movimentacoes />
+              </RequirePermission>
+            ),
           },
           {
             path: "caixa/historico",
-            element: <HistoricoCaixas />,
+            element: (
+              <RequirePermission permission="view_cash">
+                <HistoricoCaixas />
+              </RequirePermission>
+            ),
           },
         ],
       }
@@ -248,7 +324,7 @@ const router = createBrowserRouter([
   //redirecionamento de rota errada
   {
     path: "*",
-    element: <NotFoundPage />,
+    element: <LegacyRouteResolver />,
   }
 ]);
 

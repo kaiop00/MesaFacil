@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+// removed useItemObservationPreference: always apply item observation by default
 import { useTranslation } from "react-i18next";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
 import { useOrderContext } from "@/features/order/context/OrderContext";
@@ -15,28 +16,43 @@ import { TriangleWarning, CheckboxCheck } from "react-coolicons";
 const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
     const { t } = useTranslation('order');
     const { items: cardapioItems } = useCardapioContext();
-    const { items, addItem, updateItemQuantity, removeItem, clearOrder } = useOrderContext();
+    const { items, addItem, updateItemQuantity, updateItemObservation, removeItem, clearOrder } = useOrderContext();
     const [selectedItemId, setSelectedItemId] = useState("");
+    const [itemObservation, setItemObservation] = useState("");
     const { idRestaurante } = useAuth();
     const { notify } = useToast();
     const [loading, setLoading] = useState(false);
     const [verificacaoEstoque, setVerificacaoEstoque] = useState(null);
     const [loadingEstoque, setLoadingEstoque] = useState(false);
 
+    const observationShortcuts = [
+        t('modals.addItems.shortcuts.mediumRare'),
+        t('modals.addItems.shortcuts.noOnion'),
+        t('modals.addItems.shortcuts.noIce'),
+        t('modals.addItems.shortcuts.lessSalt'),
+    ];
+
     const handleAdd = () => {
         const item = cardapioItems.find((i) => i.id === selectedItemId);
         if (item) {
-            addItem(item);
+            const observacao = itemObservation.trim();
+            addItem({
+                ...item,
+                descricao: observacao,
+                observacao: observacao,
+            });
             setSelectedItemId("");
+            setItemObservation("");
         }
     };
 
     useEffect(() => {
         if (!isOpen) {
             setSelectedItemId("");
+            setItemObservation("");
             clearOrder();
         }
-    }, [isOpen])
+    }, [isOpen, clearOrder])
 
 
     const total = useMemo(() => {
@@ -44,15 +60,7 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
     }, [items]);
 
     // Verificar estoque sempre que os itens mudarem
-    useEffect(() => {
-        if (items.length > 0) {
-            verificarEstoque();
-        } else {
-            setVerificacaoEstoque(null);
-        }
-    }, [items, idRestaurante]);
-
-    const verificarEstoque = async () => {
+    const verificarEstoque = useCallback(async () => {
         setLoadingEstoque(true);
         try {
             const verificacao = await verificarEstoquePedido(idRestaurante, items);
@@ -63,7 +71,15 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
         } finally {
             setLoadingEstoque(false);
         }
-    };
+    }, [idRestaurante, items]);
+
+    useEffect(() => {
+        if (items.length > 0) {
+            verificarEstoque();
+        } else {
+            setVerificacaoEstoque(null);
+        }
+    }, [items, verificarEstoque]);
 
     const handleSubmit = async () => {
         if (!selectedTable) {
@@ -79,7 +95,9 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
 
         setLoading(true);
         try {
-            const resultado = await createPedido(idRestaurante, selectedTable.id, items, total);
+            const resultado = await createPedido(idRestaurante, selectedTable.id, items, total, "", {
+                orderOrigin: 'admin',
+            });
             clearOrder();
             onClose();
 
@@ -121,9 +139,47 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
                     </button>
                 </div>
 
+                <div className="mb-4 flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <label htmlFor="item-observation" className="text-sm font-medium text-gray-700">
+                                {t('modals.addItems.itemObservation')}
+                            </label>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setItemObservation("")}
+                            className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+                        >
+                            {t('common.clear')}
+                        </button>
+                    </div>
+                    <textarea
+                        id="item-observation"
+                        value={itemObservation}
+                        onChange={(e) => setItemObservation(e.target.value)}
+                        placeholder={t('modals.addItems.itemObservationPlaceholder')}
+                        className="min-h-24 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-dynamic focus:ring-1 focus:ring-primary-dynamic"
+                    />
+
+                    <div className="flex flex-wrap gap-2">
+                        {observationShortcuts.map((shortcut) => (
+                            <button
+                                key={shortcut}
+                                type="button"
+                                onClick={() => setItemObservation(shortcut)}
+                                className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 transition hover:border-primary-dynamic hover:text-primary-dynamic"
+                            >
+                                {shortcut}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <OrderItemsList
                     items={items}
                     updateItemQuantity={updateItemQuantity}
+                    updateItemObservation={updateItemObservation}
                     removeItem={removeItem}
                 />
 

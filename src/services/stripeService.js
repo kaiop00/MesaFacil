@@ -55,6 +55,24 @@ class StripeService {
     }
   }
 
+  // Helper: fetch with timeout using AbortController
+  async _fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const resp = await fetch(url, { signal: controller.signal, ...options });
+      clearTimeout(id);
+      return resp;
+    } catch (err) {
+      clearTimeout(id);
+      if (err.name === 'AbortError') {
+        console.error(`Request to ${url} aborted after ${timeoutMs}ms`);
+        throw new Error('Request timed out');
+      }
+      throw err;
+    }
+  }
+
   /**
    * Create a checkout session for subscription
    * @param {string} priceId - Stripe Price ID
@@ -85,13 +103,11 @@ class StripeService {
         cancelUrl: `${window.location.origin}/selecionar-plano?checkout_canceled=true`,
       };
 
-      const response = await fetch(`${this.apiBaseUrl}/createCheckoutSession`, {
+      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/createCheckoutSession`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
-      });
+      }, 10000);
 
       const session = await response.json();
 
@@ -141,12 +157,10 @@ class StripeService {
     }
     
     try {
-      const response = await fetch(`${this.apiBaseUrl}/verifySession/${sessionId}`, {
+      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/verifySession/${sessionId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+        headers: { 'Content-Type': 'application/json' },
+      }, 10000);
 
       const sessionData = await response.json();
 
@@ -199,16 +213,11 @@ class StripeService {
    */
   async createBillingPortalSession(customerId) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/createPortalSession`, {
+      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/createPortalSession`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          customerId,
-          returnUrl: `${window.location.origin}/home`,
-        }),
-      });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, returnUrl: `${window.location.origin}/home` }),
+      }, 10000);
 
       const session = await response.json();
 
@@ -265,12 +274,10 @@ class StripeService {
     }
     
     try {
-      const response = await fetch(`${this.apiBaseUrl}/getCustomerSubscription/${customerId}`, {
+      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/getCustomerSubscription/${customerId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+        headers: { 'Content-Type': 'application/json' },
+      }, 10000);
 
       const data = await response.json();
 
@@ -332,12 +339,10 @@ class StripeService {
    */
   async cancelSubscription(subscriptionId) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/cancelSubscription/${subscriptionId}`, {
+      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/cancelSubscription/${subscriptionId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+        headers: { 'Content-Type': 'application/json' },
+      }, 10000);
 
       const data = await response.json();
 
@@ -358,12 +363,10 @@ class StripeService {
    */
   async getProducts() {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/api/stripe/products`, {
+      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/api/stripe/products`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+        headers: { 'Content-Type': 'application/json' },
+      }, 10000);
 
       const products = await response.json();
 
@@ -388,17 +391,11 @@ class StripeService {
    */
   async activateUserPlan(idRestaurante, stripeCustomerId, stripeSubscriptionId) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/activatePlan`, {
+      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/activatePlan`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idRestaurante,
-          stripeCustomerId,
-          stripeSubscriptionId
-        }),
-      });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idRestaurante, stripeCustomerId, stripeSubscriptionId }),
+      }, 10000);
 
       const result = await response.json();
 

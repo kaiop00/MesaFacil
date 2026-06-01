@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 export default function ItemModal({ item, onClose, onAdicionar }) {
     const { t } = useTranslation("cliente");
     const [quantidade, setQuantidade] = useState(1);
+    const [observacao, setObservacao] = useState("");
     const temPromocao = item.temPromocao && item.promocao;
 
     const aumentar = () => setQuantidade((q) => q + 1);
@@ -73,6 +74,19 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
                     <p className="text-gray-600 text-base">{item.descricao}</p>
                 </div>
 
+                <div className="flex flex-col gap-2">
+                    <label htmlFor="observacao-item" className="text-sm font-semibold text-gray-700">
+                        Observação do item (opcional)
+                    </label>
+                    <textarea
+                        id="observacao-item"
+                        value={observacao}
+                        onChange={(e) => setObservacao(e.target.value)}
+                        placeholder="Ex: bem passado, sem cebola, pouco sal..."
+                        className="w-full min-h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B]"
+                    />
+                </div>
+
                 {Array.isArray(item.alergias) && item.alergias.length > 0 && (
                     <div>
                         <h2 className="text-2xl mb-1">{t("itemModal.allergies")}</h2>
@@ -98,7 +112,7 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
 
                 {/* Botão adicionar */}
                 <button
-                    onClick={() => onAdicionar({ ...item, quantidade })}
+                    onClick={() => onAdicionar({ ...item, quantity: quantidade, descricao: observacao.trim(), observacao: observacao.trim() })}
                     className="bg-[#D9A23B] text-white font-medium px-4 py-2 rounded-md hover:opacity-90 transition flex items-center gap-3"
                 >
                     {t("itemModal.add")}

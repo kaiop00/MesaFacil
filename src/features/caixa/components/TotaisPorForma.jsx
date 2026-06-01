@@ -5,8 +5,8 @@ const FORMA_ICONS = {
   PIX: '📱',
   CREDITO: '💳',
   DEBITO: '💳',
-  VR: '🎟️',
-  VA: '🎟️',
+  VOUCHER: '🎫',
+  IFOOD: '🛵',
 };
 
 const FORMA_COLORS = {
@@ -14,8 +14,8 @@ const FORMA_COLORS = {
   PIX: 'bg-purple-50 border-purple-200 text-purple-700',
   CREDITO: 'bg-blue-50 border-blue-200 text-blue-700',
   DEBITO: 'bg-orange-50 border-orange-200 text-orange-700',
-  VR: 'bg-red-50 border-red-200 text-red-700',
-  VA: 'bg-pink-50 border-pink-200 text-pink-700',
+  VOUCHER: 'bg-gray-50 border-gray-200 text-gray-700',
+  IFOOD: 'bg-slate-50 border-slate-200 text-slate-700',
 };
 
 export default function TotaisPorForma({ totais }) {

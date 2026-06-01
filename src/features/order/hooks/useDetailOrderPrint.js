@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useTranslation } from "react-i18next";
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -85,8 +84,6 @@ const getPaymentEntriesFromPedido = (pedido) => {
  * Hook para impressão de comanda com detalhes do pedido incluindo couvert e taxas
  */
 export const useDetailOrderPrint = () => {
-  const { t } = useTranslation("order");
-
   /**
    * Constrói a seção de itens
    */

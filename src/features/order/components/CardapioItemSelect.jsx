@@ -22,8 +22,6 @@ export default function CardapioItemSelect({
             .slice(0, 50); // limite máximo de resultados
     }, [items, query]);
 
-    const selectedItem = items.find((item) => item.id === selectedItemId);
-
     return (
         <Combobox value={selectedItemId} onChange={setSelectedItemId}>
             <div className="relative w-full">

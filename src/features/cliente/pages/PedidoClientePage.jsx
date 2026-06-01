@@ -24,9 +24,11 @@ import {
     DEFAULT_SERVICE_FEE_PERCENT,
 } from "../utils/pedidos";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom";
 
 export default function PedidoClientePage() {
     const { t } = useTranslation("cliente");
+    const location = useLocation();
     const [step, setStep] = useState(0);
     const { mesaId, idRestaurante, numero } = useCliente();
     const { pedidos, loading, error, totalPedidos } = usePedidosCliente();
@@ -46,7 +48,6 @@ export default function PedidoClientePage() {
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-        isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     const valorServico = computeServiceFeeAmount(totalPedidos, serviceFeePercent);
@@ -57,6 +58,10 @@ export default function PedidoClientePage() {
         DEFAULT_SERVICE_FEE_PERCENT,
         valorCouvert
     );
+    const pedidoEnviado = useMemo(() => {
+        const params = new URLSearchParams(location.search || "");
+        return params.get("pedidoEnviado") === "1";
+    }, [location.search]);
 
     const pedidoAtual = useMemo(() => {
         if (!pedidos || pedidos.length === 0) return null;
@@ -167,16 +172,20 @@ export default function PedidoClientePage() {
 
         setConfirmandoRecebimento(true);
 
-        try {
-            await finalizarPedidoEspecifico(idRestaurante, mesaId, pedidoAtual.id, {}, false);
-            notify(t("pedido.delivery.confirmSuccess"), "success");
-            setStep(0);
-        } catch (err) {
-            console.error("Erro ao confirmar recebimento", err);
-            notify(t("pedido.delivery.confirmError"), "error");
-        } finally {
-            setConfirmandoRecebimento(false);
-        }
+        const finalizePromise = finalizarPedidoEspecifico(idRestaurante, mesaId, pedidoAtual.id, {}, false)
+            .then(() => {
+                setStep(0);
+            })
+            .catch((err) => {
+                console.error("Erro ao confirmar recebimento", err);
+                notify(t("pedido.delivery.confirmError"), "error");
+            })
+            .finally(() => {
+                setConfirmandoRecebimento(false);
+            });
+
+        notify(t("pedido.delivery.confirmSuccess"), "success");
+        return finalizePromise;
     };
 
     const handleChamarGarcom = async () => {
@@ -231,7 +240,17 @@ export default function PedidoClientePage() {
 
     return (
         <div className="flex flex-col justify-center items-center gap-3 mt-10">
-            {loading ? (
+            {pedidoEnviado && !pedidoAtual ? (
+                <div className="text-center px-7 max-w-md">
+                    <div className="mb-4 text-4xl">✅</div>
+                    <p className="text-gray-900 text-xl font-semibold">
+                        {t("sacola.orderSent") || "Pedido enviado com sucesso"}
+                    </p>
+                    <p className="text-gray-600 mt-2">
+                        Assim que a cozinha registrar o pedido, ele aparecerá nesta tela.
+                    </p>
+                </div>
+            ) : loading ? (
                 <div className="text-center">
                     <p className="text-gray-600">{t("common.loading") || "Carregando..."}</p>
                 </div>

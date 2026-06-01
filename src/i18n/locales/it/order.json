@@ -16,14 +16,15 @@
     "addTable": "Aggiungi Tavolo",
     "status": {
       "livre": "Disponibile",
-      "andamento": "In Corso", 
+      "andamento": "In Corso",
       "entregue": "Consegnato"
     },
     "actions": {
       "newOrder": "Nuovo Ordine",
       "viewOrder": "Vedi Ordine",
       "finish": "Completa",
-      "free": "Libera Tavolo"
+      "free": "Libera Tavolo",
+      "transfer": "Trasferisci Ordine"
     }
   },
   "modals": {
@@ -39,7 +40,8 @@
         "cancel": "Annulla",
         "create": "Crea Ordine"
       }
-    },    "payment": {
+    },
+    "payment": {
       "title": "Finalizza Tavolo - Metodo di Pagamento",
       "subtitle": "Seleziona il metodo di pagamento",
       "table": "Tavolo",
@@ -57,10 +59,19 @@
         "confirm": "Conferma Pagamento",
         "processing": "Elaborazione..."
       }
-    },    "addItems": {
+    },
+    "addItems": {
       "title": "Aggiungi Articoli",
       "searchItems": "Cerca articoli...",
       "noItems": "Nessun articolo trovato",
+      "itemObservation": "Nota dell'articolo (opzionale)",
+      "itemObservationPlaceholder": "Es: al sangue, senza cipolla, senza ghiaccio...",
+      "shortcuts": {
+        "mediumRare": "Al sangue",
+        "noOnion": "Senza cipolla",
+        "noIce": "Senza ghiaccio",
+        "lessSalt": "Poco sale"
+      },
       "categories": {
         "all": "Tutti",
         "food": "Cibo",
@@ -90,12 +101,23 @@
       "orderItems": "Articoli dell'Ordine",
       "noItems": "Nessun articolo nell'ordine",
       "total": "Totale:",
+      "transfer": {
+        "title": "Trasferisci ordine",
+        "subtitle": "Sposta questo ordine su un altro tavolo",
+        "currentTable": "Tavolo attuale",
+        "targetTable": "Tavolo di destinazione",
+        "placeholder": "Seleziona un tavolo",
+        "buttons": {
+          "transfer": "Trasferisci",
+          "processing": "Trasferimento..."
+        }
+      },
       "buttons": {
         "addItems": "Aggiungi Articoli",
-        "finishOrder": "Completa Ordine", 
-          "close": "Chiudi",
-          "emitNfce": "Emetti NFC-e/ricevuta",
-          "retryNfce": "Riemetti NFC-e/ricevuta"
+        "finishOrder": "Completa Ordine",
+        "close": "Chiudi",
+        "emitNfce": "Emetti NFC-e/ricevuta",
+        "retryNfce": "Riemetti NFC-e/ricevuta"
       }
     }
   },
@@ -141,17 +163,20 @@
       "itemRemoved": "Articolo rimosso dall'ordine!",
       "orderFinished": "Ordine completato con successo!",
       "tableFreed": "Tavolo liberato con successo!",
-      "paymentConfirmed": "Pagamento confermato e tavolo finalizzato!"
+      "paymentConfirmed": "Pagamento confermato e tavolo finalizzato!",
+      "orderTransferred": "Ordine trasferito con successo!"
     },
     "error": {
       "createOrder": "Errore nella creazione dell'ordine",
       "addItem": "Errore nell'aggiunta dell'articolo",
-      "updateItem": "Errore nell'aggiornamento dell'articolo", 
+      "updateItem": "Errore nell'aggiornamento dell'articolo",
       "removeItem": "Errore nella rimozione dell'articolo",
       "finishOrder": "Errore nel completamento dell'ordine",
       "freeTable": "Errore nella liberazione del tavolo",
       "loadData": "Errore nel caricamento dei dati",
-      "stockNotAvailable": "Scorte insufficienti per questo articolo"
+      "stockNotAvailable": "Scorte insufficienti per questo articolo",
+      "transferOrder": "Errore durante il trasferimento dell'ordine",
+      "selectTransferTable": "Seleziona un tavolo di destinazione"
     },
     "confirm": {
       "removeItem": "Sei sicuro di voler rimuovere questo articolo?",
@@ -168,6 +193,7 @@
     "loading": "Caricamento...",
     "save": "Salva",
     "cancel": "Annulla",
+    "clear": "Pulisci",
     "edit": "Modifica",
     "remove": "Rimuovi",
     "add": "Aggiungi",
@@ -177,7 +203,8 @@
     "total": "Totale",
     "quantity": "Quantità",
     "price": "Prezzo",
-    "actions": "Vedi tutti"  },
+    "actions": "Vedi tutti"
+  },
   "payment": {
     "methods": {
       "cash": "Contanti",
@@ -189,7 +216,7 @@
     },
     "modal": {
       "title": "Metodo di Pagamento",
-      "subtitle": "Seleziona il metodo di pagamento",
+      "subtitle": "Seleziona la forma di pagamento",
       "table": "Tavolo",
       "total": "Importo Totale",
       "selectMethod": "Seleziona il metodo di pagamento",
@@ -215,6 +242,9 @@
       "observations": "Osservazioni",
       "optional": "opzionale",
       "observationsPlaceholder": "Es: Cliente ha pagato metà in contanti e metà con PIX...",
+      "tip": "Mancia",
+      "tipPlaceholder": "0,00",
+      "tipInfo": "Mancia da aggiungere all'importo totale",
       "warning": "⚠️ Seleziona un metodo di pagamento prima di confermare",
       "buttons": {
         "cancel": "Annulla",

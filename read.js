@@ -1,3 +1,4 @@
+/* eslint-env node */
 /**
  * read.js — Lê documentos recentes de uma coleção do Firestore
  *
@@ -39,6 +40,7 @@ import { createRequire } from 'module';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
+import process from 'node:process';
 
 const require = createRequire(import.meta.url);
 

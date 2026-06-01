@@ -3,6 +3,10 @@ import { useOrderOrigin } from '@/hooks/useOrderOrigin';
 
 const CarrinhoContext = createContext(null);
 
+function buildCartItemKey(item) {
+    return `${item.cartItemId || item.id}`;
+}
+
 export default function CarrinhoProvider({ children }) {
     const [carrinhoItems, setCarrinhoItems] = useState([]);
     const { origin } = useOrderOrigin();
@@ -15,14 +19,24 @@ export default function CarrinhoProvider({ children }) {
     }, [origin]);
 
     function adicionarItemCarrinho(item) {
+        console.debug('[Carrinho] adicionarItemCarrinho chamada', {
+            id: item.id,
+            cartItemId: item.cartItemId,
+            descricao: item.descricao,
+            observacao: item.observacao,
+            quantity: item.quantity ?? item.quantidade ?? 1,
+        });
         setCarrinhoItems((prev) => {
-            const index = prev.findIndex((i) => i.id === item.id);
+            const itemKey = buildCartItemKey(item);
+            const index = prev.findIndex((i) => (i.cartItemKey || buildCartItemKey(i)) === itemKey);
+            const quantityToAdd = item.quantity ?? item.quantidade ?? 1;
 
             if (index !== -1) {
+                console.debug('[Carrinho] item já existe no carrinho, incrementando quantidade', { index, itemKey, quantityToAdd });
                 const atualizados = [...prev];
                 atualizados[index] = {
                     ...atualizados[index],
-                    quantity: (atualizados[index].quantity || 1) + (item.quantity || 1),
+                    quantity: (atualizados[index].quantity || 1) + quantityToAdd,
                 };
                 return atualizados;
             }
@@ -30,20 +44,28 @@ export default function CarrinhoProvider({ children }) {
             // Garante que o preço promocional seja usado se houver promoção
             const priceToUse = item.temPromocao ? item.valor : (item.price ?? item.valor ?? 0);
 
-            return [...prev, {
+            const newItem = {
                 ...item,
+                cartItemId: item.cartItemId || `${item.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                cartItemKey: itemKey,
                 price: priceToUse,
-                quantity: item.quantity ?? 1,
+                quantity: quantityToAdd,
                 // Preserva informações de promoção no carrinho
                 temPromocao: item.temPromocao || false,
                 promocao: item.promocao || null,
-                valorOriginal: item.valorOriginal || item.valor || item.price
-            }];
+                valorOriginal: item.valorOriginal || item.valor || item.price,
+                descricao: (item.descricao || "").trim(),
+                observacao: (item.observacao || item.observacoes || "").trim(),
+                itemObservation: (item.itemObservation || item.observacao || item.observacoes || "").trim(),
+            };
+            console.debug('[Carrinho] adicionando novo item ao carrinho', { cartItemId: newItem.cartItemId, id: newItem.id, descricao: newItem.descricao, quantity: newItem.quantity });
+
+            return [...prev, newItem];
         });
     }
 
     function removerItemCarrinho(id) {
-        setCarrinhoItems((prev) => prev.filter((item) => item.id !== id));
+        setCarrinhoItems((prev) => prev.filter((item) => (item.cartItemId || item.id) !== id));
     }
 
     function atualizarQuantidadeCarrinho(id, updater) {
@@ -51,7 +73,7 @@ export default function CarrinhoProvider({ children }) {
             let itemEncontrado = false;
 
             const atualizados = prev.reduce((acc, item) => {
-                if (item.id !== id) {
+                if ((item.cartItemId || item.id) !== id) {
                     acc.push(item);
                     return acc;
                 }
@@ -90,6 +112,28 @@ export default function CarrinhoProvider({ children }) {
         atualizarQuantidadeCarrinho(id, (quantidadeAtual) => quantidadeAtual - 1);
     }
 
+    function atualizarObservacaoCarrinho(id, observation) {
+        const descricao = (observation || "").trim();
+
+        setCarrinhoItems((prev) =>
+            prev.map((item) => {
+                if ((item.cartItemId || item.id) !== id) {
+                    return item;
+                }
+
+                const updatedItem = {
+                    ...item,
+                    descricao: item.descricao || "",
+                    observacao: descricao,
+                    itemObservation: descricao,
+                };
+
+                updatedItem.cartItemKey = buildCartItemKey(updatedItem);
+                return updatedItem;
+            })
+        );
+    }
+
     function limparCarrinho() {
         setCarrinhoItems([]);
     }
@@ -113,6 +157,7 @@ export default function CarrinhoProvider({ children }) {
             atualizarQuantidadeCarrinho,
             incrementarQuantidadeCarrinho,
             decrementarQuantidadeCarrinho,
+            atualizarObservacaoCarrinho,
             total,
             quantidade,
             orderOrigin,

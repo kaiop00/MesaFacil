@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -20,13 +20,7 @@ const WhatsAppPage = () => {
   const [showIntro, setShowIntro] = useState(true);
   const [bairros, setBairros] = useState([]);
 
-  useEffect(() => {
-    if (idRestaurante) {
-      loadConfig();
-    }
-  }, [idRestaurante]);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       const config = await getWhatsAppConfig(idRestaurante);
@@ -39,7 +33,13 @@ const WhatsAppPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [idRestaurante, notify]);
+
+  useEffect(() => {
+    if (idRestaurante) {
+      loadConfig();
+    }
+  }, [idRestaurante, loadConfig]);
 
   const handleToggle = async () => {
     try {

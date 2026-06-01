@@ -15,7 +15,7 @@ const mockEmissionState = {
   emittedNfces: [],
 };
 
-const simulateEmission = async (cpfConsumidor) => {
+const simulateEmission = async () => {
   await sleep(500);
   
   const numero = Math.floor(Math.random() * 999999) + 1;

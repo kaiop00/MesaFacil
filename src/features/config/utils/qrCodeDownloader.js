@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import JSZip from "jszip";
 import i18n from "@/i18n";
 import { getAllTables } from "../services/tableService";
+import { resolveQrCodeUrl } from "@/features/config/utils/qrCodeUrl";
 
 const getTranslator = () => {
     if (typeof i18n.getFixedT === "function") {
@@ -199,7 +200,10 @@ export const downloadAllQRCodes = async (idRestaurante) => {
 
     for(const mesa of mesas){
         const tableNumber = mesa?.numero ?? "-";
-        const url = mesa.qrCodeUrl || `${window.location.origin}/mesa/${tableNumber}-${mesa.id}`;
+        const url = resolveQrCodeUrl(
+            mesa.qrCodeUrl,
+            `/mesa/${tableNumber}-${mesa.id}`
+        );
         const tableLabel = t("modals.qrCode.tableLabel", { number: tableNumber });
         const scanTitle = t("modals.qrCode.scanTitle");
         const instructions = t("modals.qrCode.instructions");

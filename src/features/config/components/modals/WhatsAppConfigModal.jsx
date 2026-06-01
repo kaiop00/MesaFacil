@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect, useCallback } from 'react';
 import BaseModalWithHeader from '@/components/BaseModalWithHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -16,7 +15,6 @@ import WhatsAppLinkGenerator from '@/components/WhatsAppLinkGenerator';
  * Ao ativar, cria uma mesa virtual "WhatsApp" para receber os pedidos
  */
 const WhatsAppConfigModal = ({ isOpen, onClose }) => {
-  const { t } = useTranslation('common');
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
   
@@ -26,13 +24,7 @@ const WhatsAppConfigModal = ({ isOpen, onClose }) => {
   const [showIntro, setShowIntro] = useState(true);
   const [taxaEntrega, setTaxaEntrega] = useState('');
 
-  useEffect(() => {
-    if (isOpen && idRestaurante) {
-      loadConfig();
-    }
-  }, [isOpen, idRestaurante]);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       const config = await getWhatsAppConfig(idRestaurante);
@@ -45,7 +37,13 @@ const WhatsAppConfigModal = ({ isOpen, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [idRestaurante, notify]);
+
+  useEffect(() => {
+    if (isOpen && idRestaurante) {
+      loadConfig();
+    }
+  }, [isOpen, idRestaurante, loadConfig]);
 
   const handleSave = async () => {
     try {

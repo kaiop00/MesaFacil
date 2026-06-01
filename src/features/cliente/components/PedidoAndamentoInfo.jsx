@@ -23,11 +23,18 @@ export default function PedidoAndamentoInfo({ pedido, numeroMesa }) {
                 <p className="font-medium text-gray-800 mb-1">Itens</p>
                 <ul className="space-y-1">
                     {pedido.items?.map((item, idx) => (
-                        <li key={idx} className="flex justify-between">
-                            <span>{item.nome}</span>
-                            <span>
-                                R$ {(item.price ?? item.valor ?? 0).toFixed(2).replace('.', ',')}
-                            </span>
+                        <li key={idx} className="space-y-0.5">
+                            <div className="flex justify-between gap-3">
+                                <span>{item.nome}</span>
+                                <span>
+                                    R$ {(item.price ?? item.valor ?? 0).toFixed(2).replace('.', ',')}
+                                </span>
+                            </div>
+                            {String(item.itemObservation || item.observacao || item.descricao || '').trim() && (
+                                <p className="text-xs text-gray-600 pl-2 border-l border-gray-200">
+                                    Obs: {String(item.itemObservation || item.observacao || item.descricao || '').trim()}
+                                </p>
+                            )}
                         </li>
                     ))}
                 </ul>

@@ -341,7 +341,6 @@ export const useReports = (idRestaurante, tables) => {
           pedidoId: order.pedidoId || order.id,
           mesa: order.mesaNumero ?? "-",
           dataCancelamento: cancelDate ? cancelDate.toLocaleString("pt-BR") : "-",
-          dataCancelamentoRaw: cancelDate,
           itensCancelados: formatCanceledItems(order.items),
           motivoCancelamento: order.motivoCancelamento || "Não informado",
           canceladoPor: order.canceladoPor || "Não informado",
@@ -349,11 +348,11 @@ export const useReports = (idRestaurante, tables) => {
         };
       })
       .sort((a, b) => {
-        const aDate = a.dataCancelamentoRaw ? a.dataCancelamentoRaw.getTime() : 0;
-        const bDate = b.dataCancelamentoRaw ? b.dataCancelamentoRaw.getTime() : 0;
+        const aDate = a.dataCancelamento ? new Date(a.dataCancelamento).getTime() : 0;
+        const bDate = b.dataCancelamento ? new Date(b.dataCancelamento).getTime() : 0;
         return bDate - aDate;
       })
-      .map(({ dataCancelamentoRaw, ...rest }) => rest);
+      ;
 
     return {
       type: "cancelamentos",
@@ -395,18 +394,17 @@ export const useReports = (idRestaurante, tables) => {
           pedidoId: order.pedidoId || order.id,
           mesa: order.mesaNumero ?? "-",
           dataFinalizacao: finishDate ? finishDate.toLocaleString("pt-BR") : "-",
-          dataFinalizacaoRaw: finishDate,
           gorjeta: Number(order.gorjeta || 0),
           formaPagamento: derivePaymentMethod(order) || "-",
           valorPedido: Number(order.total || 0),
         };
       })
       .sort((a, b) => {
-        const aDate = a.dataFinalizacaoRaw ? a.dataFinalizacaoRaw.getTime() : 0;
-        const bDate = b.dataFinalizacaoRaw ? b.dataFinalizacaoRaw.getTime() : 0;
+        const aDate = a.dataFinalizacao ? new Date(a.dataFinalizacao).getTime() : 0;
+        const bDate = b.dataFinalizacao ? new Date(b.dataFinalizacao).getTime() : 0;
         return bDate - aDate;
       })
-      .map(({ dataFinalizacaoRaw, ...rest }) => rest);
+      ;
 
     return {
       type: "gorjetas",

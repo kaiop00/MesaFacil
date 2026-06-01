@@ -4,6 +4,7 @@ import { FileDocument, Slider01 } from "react-coolicons";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import UserForm from "./forms/UserForm";
 import UserPermissions from "./forms/UserPermissions";
+import { getPresetRoles, PRESET_KEYS } from "@/features/users/constants/defaultRoles";
 
 const UserModal = ({
   isOpen,
@@ -22,6 +23,7 @@ const UserModal = ({
   const [activeTab, setActiveTab] = useState('dados-gerais');
   const [permissions, setPermissions] = useState({});
   const [selectAll, setSelectAll] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState('custom');
   const [formData, setFormData] = useState({ name: '', email: '', password: '', status: '' });
   const isViewMode = mode === 'view';
   const isCreateMode = mode === 'create';
@@ -36,12 +38,20 @@ const UserModal = ({
         password: '', // Senha esta vazia para edicao/visualizacao
         status: user.status || '',
       });
-      setPermissions(user.role || {});
+      // If user.role is a string 'admin', keep permissions empty but mark preset
+      if (user.role === 'admin') {
+        setSelectedPreset('admin');
+        setPermissions({});
+      } else {
+        setPermissions(user.role || {});
+        setSelectedPreset('custom');
+      }
     } else if (isCreateMode) {
       // Reseta form para novo usuário
       setFormData({ name: '', email: '', password: '', status: '' });
       setPermissions({});
       setSelectAll(false);
+      setSelectedPreset('custom');
     }
   }, [user, isCreateMode]);
 
@@ -54,7 +64,17 @@ const UserModal = ({
     }
 
     if (typeof onSubmit === 'function') {
-      await onSubmit({ formData, permissions });
+      // Determine what to send as role: if preset admin, send string 'admin', else if preset selected send that object, else send custom permissions
+      const presetMap = getPresetRoles(t);
+      let roleToSend = permissions;
+      if (selectedPreset && selectedPreset !== 'custom') {
+        const preset = presetMap[selectedPreset];
+        if (preset) {
+          roleToSend = preset.role;
+        }
+      }
+
+      await onSubmit({ formData, permissions: roleToSend });
       if (typeof onSuccess === 'function') {
         onSuccess();
       }
@@ -97,11 +117,43 @@ const UserModal = ({
         );
       }
       return (
-        <UserForm
-          formData={formData}
-          setFormData={setFormData}
-          isEditing={isEditMode}
-        />
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("users:form.role", "Perfil")}</label>
+            <div>
+              <select
+                value={selectedPreset}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedPreset(val);
+                  const preset = getPresetRoles(t)[val];
+                  if (preset) {
+                    if (preset.role === 'admin') {
+                      setPermissions({});
+                    } else {
+                      setPermissions(preset.role);
+                    }
+                  } else {
+                    // custom
+                    setPermissions({});
+                  }
+                }}
+                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+              >
+                <option value="custom">{t('users:roles.custom', 'Personalizado')}</option>
+                {PRESET_KEYS.map((key) => (
+                  <option key={key} value={key}>{getPresetRoles(t)[key].label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <UserForm
+            formData={formData}
+            setFormData={setFormData}
+            isEditing={isEditMode}
+          />
+        </>
       );
     }
 

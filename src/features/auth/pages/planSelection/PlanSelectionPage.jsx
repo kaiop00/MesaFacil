@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
@@ -20,6 +20,8 @@ export default function PlanSelectionPage() {
   const { notify } = useToast();
   const resolvedRestaurantId = idRestaurante || location.state?.idRestaurante;
   const isFreeTrialExpired = Boolean(currentPlan?.planId === 'free' && currentPlan?.isTrialExpired);
+  const grantedRef = useRef(false);
+  const billingRedirectedRef = useRef(false);
 
   // Check if user has an existing subscription in Stripe
   useEffect(() => {
@@ -27,17 +29,21 @@ export default function PlanSelectionPage() {
       // TEMPORARY: If Stripe is disabled, skip subscription check and redirect to home
       if (STRIPE_TEMPORARILY_DISABLED) {
         if (resolvedRestaurantId) {
-          notify('Sistema de pagamento desativado. Acesso premium concedido automaticamente!', 'info');
-          // Grant premium plan and redirect
-          try {
-            await setUserPlan(resolvedRestaurantId, null, null);
-          } catch (error) {
-            console.error('Error setting user plan:', error);
+          // Guard to avoid repeated grants/navigations when component re-renders
+          if (!grantedRef.current) {
+            grantedRef.current = true;
+            notify('Sistema de pagamento desativado. Acesso premium concedido automaticamente!', 'info');
+            // Grant premium plan and redirect
+            try {
+              await setUserPlan(resolvedRestaurantId, null, null);
+            } catch (error) {
+              console.error('Error setting user plan:', error);
+            }
+            // Redirect to home after short delay
+            setTimeout(() => {
+              navigate('/home', { replace: true });
+            }, 1500);
           }
-          // Redirect to home after short delay
-          setTimeout(() => {
-            navigate('/home', { replace: true });
-          }, 1500);
         } else {
           setIsCheckingSubscription(false);
         }
@@ -56,13 +62,21 @@ export default function PlanSelectionPage() {
         
         // If subscription exists (active or inactive), redirect to Billing Portal
         if (subscriptionData.subscription) {
-          notify('Você já possui uma assinatura. Redirecionando para o portal de gerenciamento...', 'info');
-          
-          // Redirect to Billing Portal after short delay
-          setTimeout(async () => {
-            await stripeService.redirectToBillingPortal(stripeCustomerId);
-          }, 1500);
-          
+          // Guard to ensure we only redirect once per mount
+          if (!billingRedirectedRef.current) {
+            billingRedirectedRef.current = true;
+            notify('Você já possui uma assinatura. Redirecionando para o portal de gerenciamento...', 'info');
+
+            // Redirect to Billing Portal after short delay
+            setTimeout(async () => {
+              try {
+                await stripeService.redirectToBillingPortal(stripeCustomerId);
+              } catch (err) {
+                console.error('Erro ao redirecionar para o portal de faturamento:', err);
+              }
+            }, 1500);
+          }
+
           return; // Don't set isCheckingSubscription to false, keep loading state
         }
         

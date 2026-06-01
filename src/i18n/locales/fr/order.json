@@ -23,7 +23,8 @@
       "newOrder": "Nouvelle commande",
       "viewOrder": "Voir la commande",
       "finish": "Terminer",
-      "free": "Libérer la table"
+      "free": "Libérer la table",
+      "transfer": "Transférer la commande"
     }
   },
   "modals": {
@@ -35,6 +36,14 @@
       "customerPlaceholder": "Entrez le nom du client...",
       "observations": "Observations",
       "observationsPlaceholder": "Observations supplémentaires...",
+       "itemObservation": "Note de l'article (facultatif)",
+       "itemObservationPlaceholder": "Ex: saignant, sans oignon, sans glace...",
+       "shortcuts": {
+         "mediumRare": "Saignant",
+         "noOnion": "Sans oignon",
+         "noIce": "Sans glace",
+         "lessSalt": "Peu salé"
+       },
       "buttons": {
         "cancel": "Annuler",
         "create": "Créer la commande"
@@ -90,6 +99,17 @@
       "orderItems": "Articles de la commande",
       "noItems": "Aucun article dans la commande",
       "total": "Total :",
+      "transfer": {
+        "title": "Transférer la commande",
+        "subtitle": "Déplacer cette commande vers une autre table",
+        "currentTable": "Table actuelle",
+        "targetTable": "Table de destination",
+        "placeholder": "Sélectionnez une table",
+        "buttons": {
+          "transfer": "Transférer",
+          "processing": "Transfert..."
+        }
+      },
       "buttons": {
         "addItems": "Ajouter des articles",
         "finishOrder": "Terminer la commande",
@@ -141,7 +161,8 @@
       "itemRemoved": "Article supprimé de la commande !",
       "orderFinished": "Commande terminée avec succès !",
       "tableFreed": "Table libérée avec succès!",
-      "paymentConfirmed": "Paiement confirmé et table finalisée!"
+      "paymentConfirmed": "Paiement confirmé et table finalisée!",
+      "orderTransferred": "Commande transférée avec succès !"
     },
     "error": {
       "createOrder": "Erreur lors de la création de la commande",
@@ -151,7 +172,9 @@
       "finishOrder": "Erreur lors de la finalisation de la commande",
       "freeTable": "Erreur lors de la libération de la table",
       "loadData": "Erreur lors du chargement des données",
-      "stockNotAvailable": "Stock insuffisant pour cet article"
+      "stockNotAvailable": "Stock insuffisant pour cet article",
+      "transferOrder": "Erreur lors du transfert de la commande",
+      "selectTransferTable": "Sélectionnez une table de destination"
     },
     "confirm": {
       "removeItem": "Êtes-vous sûr de vouloir supprimer cet article ?",
@@ -170,6 +193,7 @@
     "cancel": "Annuler",
     "edit": "Modifier",
     "remove": "Supprimer",
+    "clear": "Effacer",
     "add": "Ajouter",
     "close": "Fermer",
     "yes": "Oui",

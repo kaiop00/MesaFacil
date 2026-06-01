@@ -44,8 +44,9 @@ export function useDeliveryFeesByNeighborhood(idRestaurante, { enabled = true } 
                 setBairros(bairrosArray);
                 
                 // Define o primeiro bairro como selecionado, se houver
-                if (bairrosArray.length > 0 && !selectedBairro) {
-                    setSelectedBairro(bairrosArray[0]);
+                // Usa atualização funcional para evitar dependência direta de selectedBairro
+                if (bairrosArray.length > 0) {
+                    setSelectedBairro((prev) => prev ?? bairrosArray[0]);
                 }
                 
                 setLoading(false);

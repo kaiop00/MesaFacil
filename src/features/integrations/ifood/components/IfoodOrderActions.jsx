@@ -9,7 +9,7 @@ import {
 } from "../services/ifoodActionsService";
 import { CheckboxCheck, Save, DownloadPackage, DeleteRow } from "react-coolicons";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
-import { useIfoodRetry, formatRetryMessage } from "../hooks/useIfoodRetry";
+import { useIfoodRetry } from "../hooks/useIfoodRetry";
 
 /**
  * Component to display action buttons for iFood orders
@@ -167,7 +167,7 @@ const IfoodOrderActions = ({
                     },
                 }
             );
-        } catch (error) {
+        } catch {
             setLoadingReasons(false);
         }
     };

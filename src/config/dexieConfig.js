@@ -85,7 +85,7 @@ db.version(3).stores({
 export async function saveClienteData(clienteData) {
   try {
     // Remove endereco do objeto se existir (agora vai para outra store)
-    const { endereco, ...clienteWithoutEndereco } = clienteData;
+    const { endereco: _endereco, ...clienteWithoutEndereco } = clienteData;
     const id = await db.clientes.put({
       id: 1, // Single user device
       ...clienteWithoutEndereco

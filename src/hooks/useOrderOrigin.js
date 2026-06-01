@@ -23,6 +23,18 @@ export function useOrderOrigin() {
       return;
     }
 
+    // Detecta acesso via QR Code (/mesa/...) — trata como pedido realizado pelo cliente
+    try {
+      const path = (window.location && window.location.pathname) || "";
+      if (path && path.includes('/mesa/')) {
+        setOrigin('cliente');
+        sessionStorage.setItem('orderOrigin', 'cliente');
+        return;
+      }
+    } catch {
+      // ignore if window is not available or any error occurs
+    }
+
     // Captura origem da URL (para compatibilidade com iFood ou outros)
     const url = new URL(window.location.href);
     const origemParam = url.searchParams.get('origem');
