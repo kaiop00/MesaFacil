@@ -102,6 +102,10 @@ const router = createBrowserRouter([
     path,
     element: <LegacyRedirect to={to} />,
   })),
+  {
+    path: "/Dashboard",
+    element: <Navigate to="/home" replace />,
+  },
 
   // redireciona para /home ou /login
   {

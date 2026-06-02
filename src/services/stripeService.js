@@ -2,9 +2,9 @@
 // external resources (m.stripe.com) are unreachable.
 
 // Stripe toggle for maintenance windows.
-// Set to `true` in development to avoid opening the external Stripe Billing portal
-// while testing local features.
-const STRIPE_TEMPORARILY_DISABLED = true;
+// Set to `true` only for local maintenance windows or offline testing.
+// Production keeps Stripe enabled so subscriptions can be managed normally.
+const STRIPE_TEMPORARILY_DISABLED = false;
 
 // Get Stripe publishable key from environment
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
