@@ -21,7 +21,6 @@ export default function PlanSelectionPage() {
   const resolvedRestaurantId = idRestaurante || location.state?.idRestaurante;
   const isFreeTrialExpired = Boolean(currentPlan?.planId === 'free' && currentPlan?.isTrialExpired);
   const grantedRef = useRef(false);
-  const billingRedirectedRef = useRef(false);
 
   // Check if user has an existing subscription in Stripe
   useEffect(() => {
@@ -60,24 +59,25 @@ export default function PlanSelectionPage() {
         // Fetch subscription from Stripe
         const subscriptionData = await stripeService.getCustomerSubscription(stripeCustomerId);
         
-        // If subscription exists (active or inactive), redirect to Billing Portal
+        // If subscription exists (active or inactive), restore access instead of
+        // auto-opening the billing portal. Billing management remains available
+        // from explicit user actions elsewhere in the app.
         if (subscriptionData.subscription) {
-          // Guard to ensure we only redirect once per mount
-          if (!billingRedirectedRef.current) {
-            billingRedirectedRef.current = true;
-            notify('Você já possui uma assinatura. Redirecionando para o portal de gerenciamento...', 'info');
-
-            // Redirect to Billing Portal after short delay
-            setTimeout(async () => {
-              try {
-                await stripeService.redirectToBillingPortal(stripeCustomerId);
-              } catch (err) {
-                console.error('Erro ao redirecionar para o portal de faturamento:', err);
-              }
-            }, 1500);
+          try {
+            if (resolvedRestaurantId) {
+              await setUserPlan(
+                resolvedRestaurantId,
+                stripeCustomerId,
+                subscriptionData.subscription.id
+              );
+            }
+          } catch (err) {
+            console.error('Erro ao restaurar o plano da assinatura existente:', err);
           }
 
-          return; // Don't set isCheckingSubscription to false, keep loading state
+          notify('Assinatura reconhecida. Acesso liberado automaticamente.', 'success');
+          navigate('/home', { replace: true });
+          return;
         }
         
         // No subscription found, show plan selection
