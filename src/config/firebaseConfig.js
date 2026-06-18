@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
@@ -34,9 +34,15 @@ if (typeof measurementId === "string" && measurementId.trim()) {
 
 const app = initializeApp(firebaseConfig);
 
-const db = getFirestore(app);
+// Safari (especialmente no modo privado) pode falhar no transporte padrão do Firestore.
+// Auto-detect long polling reduz erros "Listen/channel ... 400" em redes/navegadores restritivos.
+const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  useFetchStreams: false,
+});
+
 const auth = getAuth(app);
 const storage = getStorage(app);
-const functions = getFunctions(app, 'us-central1'); // Specify region
+const functions = getFunctions(app, "us-central1"); // Specify region
 
 export { app, db, auth, storage, functions };
