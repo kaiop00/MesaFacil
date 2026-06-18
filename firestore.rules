@@ -15,6 +15,14 @@ service cloud.firestore {
       return isAuthenticated() && userDoc().idRestaurante == restId;
     }
 
+    // Usuários podem ler/escrever seu próprio documento
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
     // Regras para o módulo de Caixa
     match /restaurantes/{restId}/caixaSessions/{sessionId} {
       // Somente usuários autenticados do mesmo restaurante podem ler
