@@ -49,6 +49,11 @@ const queueWorkerState = {
 };
 
 const app = express();
+app.use((req, res, next) => {
+  // Permite que o app em HTTPS acesse o agente local em rede privada (localhost/127.0.0.1).
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  next();
+});
 app.use(cors({ origin: true, methods: ['GET', 'POST', 'OPTIONS'] }));
 app.use(express.json({ limit: '2mb' }));
 
