@@ -6,7 +6,8 @@
     "loading": "Carregando...",
     "errorLoading": "Erro ao carregar dados",
     "noPermission": "Sem Permissão",
-    "noPermissionMessage": "Você não tem permissão para acessar os pedidos. Entre em contato com o administrador."
+    "noPermissionMessage": "Você não tem permissão para acessar os pedidos. Entre em contato com o administrador.",
+    "contactAdmin": "Entre em contato com o administrador do sistema para solicitar acesso."
   },
   "tables": {
     "title": "Mesas",

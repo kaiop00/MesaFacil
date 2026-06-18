@@ -8,6 +8,9 @@ export const usePermissions = () => {
   const { role } = useAuth();
 
   const isLegacyRoleObject = role && typeof role === 'object';
+  const isEmptyRoleObject = isLegacyRoleObject && Object.keys(role).length === 0;
+  const isLegacyRoleString = typeof role === 'string' && role !== 'admin';
+  const hasLegacyFullAccess = isLegacyRoleString || isEmptyRoleObject;
 
   /**
    * Check if user has a specific permission
@@ -18,9 +21,9 @@ export const usePermissions = () => {
     if (!role) return false;
     if (role === "admin") return true;
 
-    // Compatibilidade: em estruturas legadas, o usuário pode ter role objeto
-    // sem a chave 'view_dashboard'. Nesse caso, libera o dashboard.
-    if (permission === 'view_dashboard' && (isLegacyRoleObject || typeof role === 'string')) {
+    // Compatibilidade para contas legadas (role string antigo ou objeto vazio)
+    // que ficariam totalmente bloqueadas após migração de permissões.
+    if (hasLegacyFullAccess) {
       return true;
     }
 
@@ -35,6 +38,7 @@ export const usePermissions = () => {
   const hasAnyPermission = (permissions) => {
     if (!role) return false;
     if (role === "admin") return true;
+    if (hasLegacyFullAccess) return true;
     return permissions.some(permission => role[permission] === true);
   };
 
@@ -46,6 +50,7 @@ export const usePermissions = () => {
   const hasAllPermissions = (permissions) => {
     if (!role) return false;
     if (role === "admin") return true;
+    if (hasLegacyFullAccess) return true;
     return permissions.every(permission => role[permission] === true);
   };
 
@@ -54,7 +59,7 @@ export const usePermissions = () => {
    * @returns {boolean} True if user is admin
    */
   const isAdmin = () => {
-    return role === "admin";
+    return role === "admin" || hasLegacyFullAccess;
   };
 
   return {

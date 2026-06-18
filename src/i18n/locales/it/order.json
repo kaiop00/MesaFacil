@@ -6,7 +6,8 @@
     "loading": "Caricamento...",
     "errorLoading": "Errore nel caricamento dei dati",
     "noPermission": "Nessun Permesso",
-    "noPermissionMessage": "Non hai il permesso per accedere agli ordini. Contatta l'amministratore."
+    "noPermissionMessage": "Non hai il permesso per accedere agli ordini. Contatta l'amministratore.",
+    "contactAdmin": "Contatta l'amministratore di sistema per richiedere l'accesso."
   },
   "tables": {
     "title": "Tavoli",

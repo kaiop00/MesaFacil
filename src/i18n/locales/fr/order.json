@@ -6,7 +6,8 @@
     "loading": "Chargement...",
     "errorLoading": "Erreur lors du chargement des données",
     "noPermission": "Pas d'autorisation",
-    "noPermissionMessage": "Vous n'avez pas la permission d'accéder aux commandes. Veuillez contacter l'administrateur."
+    "noPermissionMessage": "Vous n'avez pas la permission d'accéder aux commandes. Veuillez contacter l'administrateur.",
+    "contactAdmin": "Contactez l'administrateur du système pour demander l'accès."
   },
   "tables": {
     "title": "Tables",
