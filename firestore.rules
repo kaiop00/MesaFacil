@@ -23,6 +23,23 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Coleções públicas/compartilhadas - usuários autenticados podem ler
+    match /categorias/{catId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /configuracoesGerais/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // Dados do restaurante - leitura permissiva para autenticados
+    match /restaurantes/{restId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
     // Regras para o módulo de Caixa
     match /restaurantes/{restId}/caixaSessions/{sessionId} {
       // Somente usuários autenticados do mesmo restaurante podem ler
@@ -35,19 +52,15 @@ service cloud.firestore {
         && request.resource.data.status == 'ABERTO'
         && request.resource.data.dataAbertura is string;
 
-      // Atualizar: somente se a sessão está ABERTO (não permitir alterações de caixa fechado)
-      // Permitir fechar definindo status = 'FECHADO' e preenchendo usuarioFechamentoId
+      // Atualizar: somente se a sessão está ABERTO
       allow update: if isSameRestaurant(restId)
         && resource.data.status == 'ABERTO'
         && (
-          // mudanças parciais que não alterem campos de abertura
           (request.resource.data.status == resource.data.status && request.resource.data.usuarioAberturaId == resource.data.usuarioAberturaId)
           ||
-          // fechamento
           (request.resource.data.status == 'FECHADO' && request.resource.data.usuarioFechamentoId == request.auth.uid)
         );
 
-      // Não permitir delete pelo cliente
       allow delete: if false;
     }
 
@@ -82,10 +95,46 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Fallback: outras coleções do restaurante seguem regra de leitura para o mesmo restaurante,
-    // mas restringem escritas (evita abertura de privilégios por erro)
-    match /restaurantes/{restId}/{document=**} {
+    // Subcoleções do restaurante - leitura permissiva para autenticados durante inicialização
+    match /restaurantes/{restId}/cardapio/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/mesas/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/pedidos/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/itemsCardapio/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/promocoes/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/usuarios/{docId} {
       allow read: if isSameRestaurant(restId);
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/movimentacoes/{docId} {
+      allow read: if isSameRestaurant(restId);
+      allow write: if isSameRestaurant(restId);
+    }
+
+    // Fallback: outras subcoleções do restaurante
+    match /restaurantes/{restId}/{document=**} {
+      allow read: if isAuthenticated();
       allow write: if false;
     }
   }
