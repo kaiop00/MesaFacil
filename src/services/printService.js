@@ -4,7 +4,7 @@ const normalizeBaseUrl = (value) => {
 };
 
 const resolveCandidateBaseUrls = () => {
-  const configuredUrl = normalizeBaseUrl(import.meta.env.VITE_PRINT_SERVICE_URL || '/print-service');
+  const configuredUrl = normalizeBaseUrl(import.meta.env.VITE_PRINT_SERVICE_URL || '');
   const candidates = [];
 
   // Sempre tentar o agente local da máquina primeiro.
@@ -15,7 +15,9 @@ const resolveCandidateBaseUrls = () => {
     candidates.push('http://localhost:4891');
   }
 
-  candidates.push(configuredUrl);
+  if (configuredUrl) {
+    candidates.push(configuredUrl);
+  }
 
   return Array.from(new Set(candidates.filter(Boolean)));
 };
@@ -36,6 +38,11 @@ const requestJson = async (path, options = {}) => {
         },
         ...options,
       }, 10000);
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.toLowerCase().includes('application/json')) {
+        throw new Error(`Resposta inválida do serviço de impressão em ${baseUrl} (content-type: ${contentType || 'desconhecido'})`);
+      }
 
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
