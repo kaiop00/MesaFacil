@@ -523,11 +523,23 @@ exports.getCustomerSubscription = onRequest(
       const subscriptions = await stripe.subscriptions.list({
         customer: customerId,
         status: "all",
-        limit: 1,
+        limit: 10,
       });
 
       if (subscriptions.data.length > 0) {
-        const subscription = subscriptions.data[0];
+        const statusPriority = ["active", "trialing", "past_due", "incomplete", "unpaid", "canceled", "incomplete_expired"];
+        const sorted = [...subscriptions.data].sort((a, b) => {
+          const aPriority = statusPriority.indexOf(a.status);
+          const bPriority = statusPriority.indexOf(b.status);
+
+          if (aPriority !== bPriority) {
+            return aPriority - bPriority;
+          }
+
+          return (b.created || 0) - (a.created || 0);
+        });
+
+        const subscription = sorted[0];
         res.json({
           subscription,
           status: subscription.status,

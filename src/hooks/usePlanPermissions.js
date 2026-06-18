@@ -51,8 +51,8 @@ export const usePlanPermissions = () => {
   }, [currentPlan]);
 
   const shouldBypassPlanGates = useMemo(() => {
-    return STRIPE_TEMPORARILY_DISABLED || planId === 'free';
-  }, [planId]);
+    return STRIPE_TEMPORARILY_DISABLED;
+  }, []);
 
   // During active free trial (or when Stripe is disabled), grant complete access as premium.
   const hasFullTrialAccess = useMemo(() => {
@@ -103,7 +103,7 @@ export const usePlanPermissions = () => {
 
   // Get plan display information
   const planInfo = useMemo(() => {
-    const displayPlanId = shouldBypassPlanGates ? 'semiannual' : planId;
+    const displayPlanId = planId;
     return {
       id: displayPlanId,
       name: PLAN_NAMES[displayPlanId] || 'Desconhecido',
@@ -112,7 +112,7 @@ export const usePlanPermissions = () => {
       expiresAt: currentPlan?.expiresAt,
       activatedAt: currentPlan?.activatedAt
     };
-  }, [planId, currentPlan, getDaysRemaining, shouldBypassPlanGates]);
+  }, [planId, currentPlan, getDaysRemaining]);
 
   // Check if target plan is an upgrade
   const checkIsUpgrade = useMemo(() => {

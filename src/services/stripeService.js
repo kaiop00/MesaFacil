@@ -431,6 +431,34 @@ export const STRIPE_PRICE_IDS = {
   semiannual: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
 };
 
+const VALID_PLAN_IDS = new Set(['free', 'monthly', 'bimonthly', 'semiannual']);
+
+const normalizePlanId = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  return VALID_PLAN_IDS.has(normalized) ? normalized : null;
+};
+
+const containsPlanKeyword = (value = '') => {
+  const text = String(value).toLowerCase();
+  if (text.includes('bimestral') || text.includes('bimonthly') || text.includes('bi-monthly')) return 'bimonthly';
+  if (text.includes('semestral') || text.includes('semiannual') || text.includes('semi-annual')) return 'semiannual';
+  if (text.includes('mensal') || text.includes('monthly')) return 'monthly';
+  if (text.includes('teste') || text.includes('trial') || text.includes('free')) return 'free';
+  return null;
+};
+
+const inferPlanFromRecurring = (price) => {
+  const interval = price?.recurring?.interval;
+  const intervalCount = Number(price?.recurring?.interval_count || 1);
+
+  if (interval === 'month' && intervalCount === 1) return 'monthly';
+  if (interval === 'month' && intervalCount === 2) return 'bimonthly';
+  if (interval === 'month' && intervalCount === 6) return 'semiannual';
+
+  return null;
+};
+
 /**
  * Map Stripe Price ID to internal Plan ID
  * @param {string} stripePriceId - Stripe Price ID from subscription
@@ -467,10 +495,32 @@ export const extractPlanFromSubscription = (subscription) => {
   }
 
   // Get the price ID from the subscription
-  const stripePriceId = subscription.items?.data?.[0]?.price?.id || subscription.plan?.id;
-  
-  // Map to internal plan ID
-  const planId = mapStripePriceToPlanId(stripePriceId);
+  const primaryPrice = subscription.items?.data?.[0]?.price || null;
+  const stripePriceId = primaryPrice?.id || subscription.plan?.id || null;
+
+  // Priority 1: explicit metadata planId from subscription/price
+  const metadataPlanId =
+    normalizePlanId(subscription?.metadata?.planId) ||
+    normalizePlanId(primaryPrice?.metadata?.planId);
+
+  // Priority 2: exact env mapping from price id
+  const mappedByPriceId = mapStripePriceToPlanId(stripePriceId);
+
+  // Priority 3: infer from recurring interval
+  const inferredByRecurring = inferPlanFromRecurring(primaryPrice);
+
+  // Priority 4: infer from lookup_key / nickname / product name hints
+  const inferredByText =
+    containsPlanKeyword(primaryPrice?.lookup_key) ||
+    containsPlanKeyword(primaryPrice?.nickname) ||
+    containsPlanKeyword(subscription?.metadata?.planName);
+
+  const planId =
+    metadataPlanId ||
+    (mappedByPriceId !== 'free' ? mappedByPriceId : null) ||
+    inferredByRecurring ||
+    inferredByText ||
+    'free';
   
   return {
     planId,

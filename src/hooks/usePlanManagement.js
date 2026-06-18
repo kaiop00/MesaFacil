@@ -227,7 +227,7 @@ export const usePlanManagement = () => {
       } else {
         // Fallback de compatibilidade para contas legadas que autenticam
         // mas estão com idRestaurante inconsistente no momento.
-        const fallbackPlan = authPlan || { planId: 'semiannual', status: 'active', expiresAt: null };
+        const fallbackPlan = authPlan || { planId: 'free', status: 'active', expiresAt: null };
         setCurrentPlan(fallbackPlan);
         setHasActivePlan(
           fallbackPlan?.status === 'active' ||
