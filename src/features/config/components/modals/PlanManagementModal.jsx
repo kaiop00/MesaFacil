@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PLANS_DATA } from '@/features/auth/constants/plansData';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/useToast';
-import stripeService from '@/services/stripeService';
+import stripeService, { STRIPE_TEMPORARILY_DISABLED } from '@/services/stripeService';
 
 const PlanManagementModal = ({ isOpen, onClose }) => {
   const { 
@@ -70,6 +70,11 @@ const PlanManagementModal = ({ isOpen, onClose }) => {
   };
 
   const handleBillingPortal = async () => {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      onClose();
+      return;
+    }
+
     if (!stripeCustomerId) {
       notify('Nenhuma informação de faturamento encontrada.', 'warning');
       return;

@@ -170,35 +170,19 @@ export const getTableStatsOptimized = async (idRestaurante, tables, dateFilter =
     };
   }
 
-  // Execute all queries in parallel but with the same filter
-  const promises = tables.map(async (table) => {
-    const orders = await showAllOrdersFromTable(idRestaurante, table.id, dateFilter, startDate, endDate);
-    return calculateStats(orders);
-  });
+  const tableIds = new Set(tables.map((table) => table.id));
+  const { start, end } = resolvePeriodRange(dateFilter, startDate, endDate);
+  const orders = await getOrdersForPeriod(idRestaurante, start, end);
+  const filtered = orders.filter((order) => tableIds.has(order.mesaId));
 
-  const allStats = await Promise.all(promises);
-
-  // Aggregate results
-  let totalSales = 0;
-  let totalOrders = 0;
-  let totalServiceTime = 0;
-  let totalCompletedOrders = 0;
-
-  allStats.forEach((stat) => {
-    totalSales += stat.totalSales;
-    totalOrders += stat.totalOrders;
-    totalServiceTime += stat.averageServiceTime * stat.completedOrders;
-    totalCompletedOrders += stat.completedOrders;
-  });
-
-  const averageServiceTime = totalCompletedOrders > 0 ? totalServiceTime / totalCompletedOrders : 0;
+  const stat = calculateStats(filtered);
 
   return {
-    totalSales,
-    totalOrders,
-    totalServiceTime,
-    completedOrders: totalCompletedOrders,
-    averageServiceTime: Math.round(averageServiceTime)
+    totalSales: stat.totalSales,
+    totalOrders: stat.totalOrders,
+    totalServiceTime: stat.averageServiceTime * stat.completedOrders,
+    completedOrders: stat.completedOrders,
+    averageServiceTime: Math.round(stat.averageServiceTime)
   };
 };
 
@@ -273,20 +257,29 @@ export const getMonthlySalesData = async (idRestaurante, tables, filter = "Mensa
 const getMonthlySalesDataInternal = async (idRestaurante, tables, category = "Todas") => {
   const now = new Date();
   const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-  const monthlyData = [];
+  const tableIds = new Set(tables.map((table) => table.id));
+  const rangeStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-  // Get data for each of the last 12 months
+  const deliveredOrders = await getDeliveredOrdersForPeriod(idRestaurante, tableIds, rangeStart, rangeEnd);
+
+  const monthlyTotals = new Map();
+  deliveredOrders.forEach((order) => {
+    const createdAt = timestampToDate(order.criadoEm);
+    if (!createdAt) return;
+
+    const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
+    const value = getOrderValueByCategory(order, category);
+    monthlyTotals.set(key, (monthlyTotals.get(key) || 0) + value);
+  });
+
+  const monthlyData = [];
   for (let i = 11; i >= 0; i--) {
     const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-
-    // Get sales for this specific month
-    const monthlySales = await getMonthlySalesForPeriod(idRestaurante, tables, monthStart, monthEnd, category);
-
+    const key = `${monthDate.getFullYear()}-${monthDate.getMonth()}`;
     monthlyData.push({
       month: monthNames[monthDate.getMonth()],
-      value: monthlySales
+      value: monthlyTotals.get(key) || 0,
     });
   }
 
@@ -298,20 +291,28 @@ const getMonthlySalesDataInternal = async (idRestaurante, tables, category = "To
  */
 const getYearlySalesData = async (idRestaurante, tables, category = "Todas") => {
   const now = new Date();
-  const yearlyData = [];
+  const tableIds = new Set(tables.map((table) => table.id));
+  const rangeStart = new Date(now.getFullYear() - 4, 0, 1);
+  const rangeEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
 
-  // Get data for the last 5 years
+  const deliveredOrders = await getDeliveredOrdersForPeriod(idRestaurante, tableIds, rangeStart, rangeEnd);
+
+  const yearlyTotals = new Map();
+  deliveredOrders.forEach((order) => {
+    const createdAt = timestampToDate(order.criadoEm);
+    if (!createdAt) return;
+
+    const year = createdAt.getFullYear();
+    const value = getOrderValueByCategory(order, category);
+    yearlyTotals.set(year, (yearlyTotals.get(year) || 0) + value);
+  });
+
+  const yearlyData = [];
   for (let i = 4; i >= 0; i--) {
     const year = now.getFullYear() - i;
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31);
-
-    // Get sales for this specific year
-    const yearlySales = await getMonthlySalesForPeriod(idRestaurante, tables, yearStart, yearEnd, category);
-
     yearlyData.push({
       month: year.toString(),
-      value: yearlySales
+      value: yearlyTotals.get(year) || 0,
     });
   }
 
@@ -327,37 +328,10 @@ const toISODate = (date) => {
 };
 
 const getMonthlySalesForPeriod = async (idRestaurante, tables, startDate, endDate, category = "Todas") => {
-  const promises = tables.map(async (table) => {
-    const orders = await showAllOrdersFromTable(
-      idRestaurante,
-      table.id,
-      null,
-      toISODate(startDate),
-      toISODate(endDate)
-    );
+  const tableIds = new Set(tables.map((table) => table.id));
+  const deliveredOrders = await getDeliveredOrdersForPeriod(idRestaurante, tableIds, startDate, endDate);
 
-    const deliveredOrders = orders.filter(
-      (order) => (order.status || "").toLowerCase() === "entregue"
-    );
-
-    return deliveredOrders.reduce((total, order) => {
-      if (category === "Todas") {
-        return total + (order.total || 0);
-      }
-
-      const categoryTotal = (order.items || []).reduce((itemTotal, item) => {
-        if (item.categorias && item.categorias.includes(category)) {
-          return itemTotal + (item.price * item.quantity || 0);
-        }
-        return itemTotal;
-      }, 0);
-
-      return total + categoryTotal;
-    }, 0);
-  });
-
-  const tablesSales = await Promise.all(promises);
-  return tablesSales.reduce((total, sales) => total + sales, 0);
+  return deliveredOrders.reduce((total, order) => total + getOrderValueByCategory(order, category), 0);
 };
 
 /**
@@ -392,33 +366,23 @@ export const getTopSellingProducts = async (idRestaurante, tables, filter = "Men
  */
 const getTopProductsForPeriod = async (idRestaurante, tables, startDate, endDate) => {
   const productSales = {};
+  const tableIds = new Set(tables.map((table) => table.id));
+  const pedidos = await getDeliveredOrdersForPeriod(idRestaurante, tableIds, startDate, endDate);
 
-  const promises = tables.map(async (table) => {
-    const pedidos = (await showAllOrdersFromTable(
-      idRestaurante,
-      table.id,
-      null,
-      toISODate(startDate),
-      toISODate(endDate)
-    )).filter((order) => (order.status || "").toLowerCase() === "entregue");
-    // Process each order's items
-    pedidos.forEach((order) => {
-      if (order.items && Array.isArray(order.items)) {
-        order.items.forEach((item) => {
-          const productName = item.nome || 'Produto Desconhecido';
-          const itemTotal = (item.price || 0) * (item.quantity || 0);
+  pedidos.forEach((order) => {
+    if (order.items && Array.isArray(order.items)) {
+      order.items.forEach((item) => {
+        const productName = item.nome || 'Produto Desconhecido';
+        const itemTotal = (item.price || 0) * (item.quantity || 0);
 
-          if (productSales[productName]) {
-            productSales[productName] += itemTotal;
-          } else {
-            productSales[productName] = itemTotal;
-          }
-        });
-      }
-    });
+        if (productSales[productName]) {
+          productSales[productName] += itemTotal;
+        } else {
+          productSales[productName] = itemTotal;
+        }
+      });
+    }
   });
-
-  await Promise.all(promises);
 
   // Convert to array and sort by sales value
   const sortedProducts = Object.entries(productSales)
@@ -427,4 +391,50 @@ const getTopProductsForPeriod = async (idRestaurante, tables, startDate, endDate
     .slice(0, 10); // Get top 10 products
 
   return sortedProducts;
+};
+
+const resolvePeriodRange = (dateFilter = null, startDate = null, endDate = null) => {
+  const start = normalizeDateInput(startDate, false) || getFilterStartDate(dateFilter);
+  const end = normalizeDateInput(endDate, true);
+  return { start, end };
+};
+
+const getOrdersForPeriod = async (idRestaurante, startDate = null, endDate = null) => {
+  const pedidosRef = collection(db, 'restaurantes', idRestaurante, 'historicoPedidos');
+  const constraints = [];
+
+  if (startDate) {
+    constraints.push(where('criadoEm', '>=', Timestamp.fromDate(startDate)));
+  }
+
+  if (endDate) {
+    constraints.push(where('criadoEm', '<=', Timestamp.fromDate(endDate)));
+  }
+
+  constraints.push(orderBy('criadoEm', 'asc'));
+
+  const pedidosQuery = query(pedidosRef, ...constraints);
+  const snapshot = await getDocs(pedidosQuery);
+  return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+};
+
+const getDeliveredOrdersForPeriod = async (idRestaurante, tableIds, startDate, endDate) => {
+  const orders = await getOrdersForPeriod(idRestaurante, startDate, endDate);
+  return orders.filter((order) => {
+    const status = (order.status || '').toLowerCase();
+    return status === 'entregue' && tableIds.has(order.mesaId);
+  });
+};
+
+const getOrderValueByCategory = (order, category) => {
+  if (category === 'Todas') {
+    return order.total || 0;
+  }
+
+  return (order.items || []).reduce((itemTotal, item) => {
+    if (item.categorias && item.categorias.includes(category)) {
+      return itemTotal + (item.price * item.quantity || 0);
+    }
+    return itemTotal;
+  }, 0);
 };

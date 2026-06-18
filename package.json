@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/dev-with-print-service.mjs",
-    "dev:web": "vite",
+    "dev": "vite",
     "build": "vite build",
     "start": "node dist/server.mjs",
     "postbuild": "node scripts/copy-server.mjs",
@@ -13,8 +12,8 @@
     "preview": "vite preview",
     "test:caixa-report": "node scripts/caixa-print-sample.mjs",
     "print-agent": "node scripts/print-agent/index.js",
-    "print-service": "npm --prefix apps/print-service start",
-    "print-service:run-with-admin": "bash scripts/run-print-service-with-admin.sh"
+    "setup:print-service:macos": "bash scripts/setup-print-service-macos.sh",
+    "setup:print-service:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-print-service-windows.ps1"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -34,7 +33,6 @@
     "jspdf": "^3.0.2",
     "jspdf-autotable": "^5.0.2",
     "jszip": "^3.10.1",
-    "printer": "^0.4.0",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
@@ -43,7 +41,7 @@
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
     "react-i18next": "^15.7.3",
-    "react-router-dom": "^7.5.3",
+    "react-router-dom": "^6.30.1",
     "react-select": "^5.10.1",
     "tailwindcss": "^4.1.5",
     "uuid": "^11.1.0",

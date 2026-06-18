@@ -23,14 +23,14 @@ const requestJson = async (path, options = {}) => {
 
   for (const baseUrl of candidates) {
     try {
-      const response = await fetch(buildUrl(baseUrl, path), {
+      const response = await fetchWithTimeout(buildUrl(baseUrl, path), {
         cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
           ...(options.headers || {}),
         },
         ...options,
-      });
+      }, 10000);
 
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -48,6 +48,8 @@ const requestJson = async (path, options = {}) => {
 
 export const getPrintServiceBaseUrl = () => resolveCandidateBaseUrls()[0] || '/print-service';
 
+import fetchWithTimeout from '@/utils/fetchWithTimeout';
+
 export const isPrintServiceReachable = async (timeoutMs = 1200) => {
   if (typeof window === 'undefined' || !window.fetch) return false;
 
@@ -58,10 +60,9 @@ export const isPrintServiceReachable = async (timeoutMs = 1200) => {
     const id = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const response = await fetch(buildUrl(base, '/health'), {
-        signal: controller.signal,
+      const response = await fetchWithTimeout(buildUrl(base, '/health'), {
         cache: 'no-store',
-      });
+      }, timeoutMs);
       clearTimeout(id);
 
       if (response.ok) {
@@ -80,6 +81,10 @@ export const isPrintServiceReachable = async (timeoutMs = 1200) => {
 export const fetchAvailablePrinters = async () => {
   const printers = await requestJson('/printers');
   return Array.isArray(printers) ? printers : [];
+};
+
+export const fetchPrintServiceConfigStatus = async () => {
+  return await requestJson('/config-status');
 };
 
 export const testSystemPrinter = async (printerName) => {

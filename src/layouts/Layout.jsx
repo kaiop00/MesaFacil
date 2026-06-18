@@ -1,11 +1,31 @@
 import React from "react";
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 
+const LayoutContent = () => {
+  return (
+    <main className="flex-1 overflow-y-auto bg-gray-100 pt-16 pb-20 sm:px-6 md:px-8">
+      <Outlet />
+    </main>
+  );
+};
+
 const Layout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const syncSidebarState = () => {
+      setIsSidebarOpen(window.innerWidth >= 768);
+    };
+
+    syncSidebarState();
+    window.addEventListener("resize", syncSidebarState);
+
+    return () => window.removeEventListener("resize", syncSidebarState);
+  }, []);
 
   return (
     <div className="flex min-h-screen w-full overflow-hidden bg-gray-100">
@@ -22,9 +42,7 @@ const Layout = () => {
         <Header isSidebarOpen={isSidebarOpen} />
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-gray-100 pt-16 pb-20 sm:px-6 md:px-8">
-          <Outlet />
-        </main>
+        <LayoutContent key={location.pathname} />
       </div>
     </div>
   );

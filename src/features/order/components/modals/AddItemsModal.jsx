@@ -124,7 +124,7 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
                 <p className="font-bold">{t('modals.addItems.title')}</p>
                 <p className="pb-2 pt-2">{t('orderItems.item')}</p>
 
-                <div className="flex gap-2 mb-4">
+                <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center">
                     <CardapioItemSelect
                         items={cardapioItems}
                         selectedItemId={selectedItemId}
@@ -133,7 +133,7 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
                     <button
                         onClick={handleAdd}
                         disabled={!selectedItemId}
-                        className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
+                        className="w-full px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer sm:w-auto"
                     >
                         {t('modals.addItems.buttons.add')}
                     </button>
@@ -237,17 +237,17 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
 
                 <div className="mt-4 font-bold">{t('orderItems.total')}: R$ {total.toFixed(2)}</div>
 
-                <div className="flex justify-between gap-2 mt-4">
+                <div className="flex flex-col-reverse gap-2 mt-4 sm:flex-row sm:justify-between">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
+                        className="w-full px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer sm:w-auto"
                     >
                         {t('modals.addItems.buttons.close')}
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={items.length === 0 || loading || (verificacaoEstoque && !verificacaoEstoque.podeProcessar)}
-                        className="px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer"
+                        className="w-full px-4 py-2 bg-primary-dynamic text-white rounded disabled:bg-gray-300 cursor-pointer sm:w-auto"
                         title={verificacaoEstoque && !verificacaoEstoque.podeProcessar ? t('messages.error.stockNotAvailable') : ""}
                     >
                         {loading ? <LoadingSpinner /> : t('modals.addItems.buttons.addToOrder')}

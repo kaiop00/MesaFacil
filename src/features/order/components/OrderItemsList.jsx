@@ -41,6 +41,7 @@ const OrderItemsList = ({
             {items.map((item, index) => {
                 const itemKey = item.lineId || item.cartItemId || `${item.id}-${index}`;
                 const isExpanded = expandedItemIds.includes(itemKey);
+                const itemObservation = item.descricao || item.observacao || item.itemObservation || "";
                 return (
                     <div
                         key={itemKey}
@@ -112,9 +113,9 @@ const OrderItemsList = ({
                         </div>
 
                         {/* Item observations - always visible (important for iFood orders) */}
-                        {item.descricao && (
+                        {itemObservation && (
                             <p className="mt-2 text-xs text-gray-600 font-bold bg-gray-50 px-3 py-1.5 rounded-md">
-                                📝 Observações: {item.descricao}
+                                📝 Observações: {itemObservation}
                             </p>
                         )}
 
@@ -144,7 +145,7 @@ const OrderItemsList = ({
                                             Observação deste item
                                         </label>
                                         <textarea
-                                            value={observationDrafts[itemKey] ?? item.descricao ?? ""}
+                                            value={observationDrafts[itemKey] ?? itemObservation}
                                             onChange={(e) => {
                                                 const value = e.target.value;
                                                 setObservationDrafts((prev) => ({
@@ -152,7 +153,7 @@ const OrderItemsList = ({
                                                     [itemKey]: value,
                                                 }));
                                             }}
-                                            onFocus={() => handleOpenEditor(itemKey, item.descricao)}
+                                            onFocus={() => handleOpenEditor(itemKey, itemObservation)}
                                             placeholder="Ex: gelo e limão, sem cebola, ponto da carne..."
                                             className="min-h-20 w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary-dynamic focus:ring-1 focus:ring-primary-dynamic"
                                         />

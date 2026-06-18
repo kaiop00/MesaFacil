@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlanManagement } from "@/hooks/usePlanManagement";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useState, useEffect } from "react";
+import { STRIPE_TEMPORARILY_DISABLED } from "@/services/stripeService";
 
 const RedirectHandler = () => {
   const { user, loading } = useAuth();
@@ -28,6 +29,10 @@ const RedirectHandler = () => {
 
   if (!user) {
     return <Navigate to="/home-page" replace />;
+  }
+
+  if (STRIPE_TEMPORARILY_DISABLED) {
+    return <Navigate to="/home" replace />;
   }
 
   // Se ainda não deve verificar planos ou está carregando, aguarda

@@ -63,13 +63,14 @@ export const getIfoodAccessToken = async (idRestaurante) => {
  * Get order details from iFood
  */
 export const getIfoodOrder = async (orderId, accessToken) => {
-    const response = await fetch(`${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}`, {
+    const fetchWithTimeout = (await import('@/utils/fetchWithTimeout')).default;
+    const response = await fetchWithTimeout(`${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}`, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${accessToken}`,
             "accept": "application/json",
         },
-    });
+    }, 15000);
 
     if (!response.ok) {
         const error = await response.json();
@@ -83,14 +84,14 @@ export const getIfoodOrder = async (orderId, accessToken) => {
  * Confirm order to iFood
  */
 export const confirmIfoodOrder = async (orderId, accessToken) => {
-    const response = await fetch(`${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}/confirm`, {
+    const response = await fetchWithTimeout(`${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}/confirm`, {
         method: "POST",
         headers: {
             "Authorization": `Bearer ${accessToken}`,
             "Content-Type": "application/json",
             "accept": "application/json",
         },
-    });
+    }, 15000);
 
     if (!response.ok) {
         const error = await response.json();
@@ -104,7 +105,7 @@ export const confirmIfoodOrder = async (orderId, accessToken) => {
  * Request order cancellation to iFood
  */
 export const cancelIfoodOrder = async (orderId, cancellationCode, accessToken) => {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}/requestCancellation`,
         {
             method: "POST",
@@ -116,7 +117,8 @@ export const cancelIfoodOrder = async (orderId, cancellationCode, accessToken) =
             body: JSON.stringify({
                 cancellationCode: cancellationCode,
             }),
-        }
+        },
+        15000
     );
 
     if (!response.ok) {
@@ -131,7 +133,7 @@ export const cancelIfoodOrder = async (orderId, cancellationCode, accessToken) =
  * Get cancellation reasons for an order
  */
 export const getIfoodCancellationReasons = async (orderId, accessToken) => {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}/cancellationReasons`,
         {
             method: "GET",
@@ -139,7 +141,8 @@ export const getIfoodCancellationReasons = async (orderId, accessToken) => {
                 "Authorization": `Bearer ${accessToken}`,
                 "accept": "application/json",
             },
-        }
+        },
+        15000
     );
 
     if (!response.ok) {
@@ -154,7 +157,7 @@ export const getIfoodCancellationReasons = async (orderId, accessToken) => {
  * Mark order as ready for pickup
  */
 export const markIfoodOrderReady = async (orderId, accessToken) => {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}/readyToPickup`,
         {
             method: "POST",
@@ -162,7 +165,8 @@ export const markIfoodOrderReady = async (orderId, accessToken) => {
                 "Authorization": `Bearer ${accessToken}`,
                 "accept": "application/json",
             },
-        }
+        },
+        15000
     );
 
     if (!response.ok) {
@@ -177,7 +181,7 @@ export const markIfoodOrderReady = async (orderId, accessToken) => {
  * Dispatch order (mark as picked up)
  */
 export const dispatchIfoodOrder = async (orderId, accessToken) => {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${IFOOD_API_BASE_URL}/order/v1.0/orders/${orderId}/dispatch`,
         {
             method: "POST",
@@ -185,7 +189,8 @@ export const dispatchIfoodOrder = async (orderId, accessToken) => {
                 "Authorization": `Bearer ${accessToken}`,
                 "accept": "application/json",
             },
-        }
+        },
+        15000
     );
 
     if (!response.ok) {

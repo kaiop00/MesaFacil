@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from '@/config/firebaseConfig';
+import { fetchPrintServiceConfigStatus } from '@/services/printService';
 import {
   createImpressoraSetor,
   createSetorProducao,
@@ -16,8 +15,8 @@ import {
 } from "@/features/config/services/producaoService";
 import { getCategoriaNomes } from "@/features/config/services/CategoriasService";
 import { getAll } from "@/services/firebase/firestoreService";
-import { fetchAvailablePrinters, testSystemPrinter } from "@/services/printService";
 import { Printer, Building03, TrashFull } from "react-coolicons";
+import SystemPrintersModal from '@/features/config/components/SystemPrintersModal';
 
 const setorInicial = { nome: "", ativo: true };
 const impressoraInicial = {
@@ -28,7 +27,6 @@ const impressoraInicial = {
   setorId: "",
   larguraBobina: "80mm",
   systemPrinter: "",
-  printerSystemName: "",
   ativa: true,
 };
 
@@ -38,7 +36,6 @@ const larguraOptions = ["58mm", "80mm"];
 const ImpressoraSetorPage = () => {
   const { idRestaurante } = useAuth();
   const { notify } = useToast();
-  const [restauranteNome, setRestauranteNome] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [savingSetor, setSavingSetor] = useState(false);
@@ -46,13 +43,14 @@ const ImpressoraSetorPage = () => {
   const [setores, setSetores] = useState([]);
   const [impressoras, setImpressoras] = useState([]);
   const [categoriasDisponiveis, setCategoriasDisponiveis] = useState([]);
-  const [availablePrinters, setAvailablePrinters] = useState([]);
-  const [loadingPrinters, setLoadingPrinters] = useState(false);
   const [itemCountBySetor, setItemCountBySetor] = useState({});
   const [editandoSetor, setEditandoSetor] = useState(null);
   const [editandoImpressora, setEditandoImpressora] = useState(null);
   const [formSetor, setFormSetor] = useState(setorInicial);
   const [formImpressora, setFormImpressora] = useState(impressoraInicial);
+  const [showSystemPrintersModal, setShowSystemPrintersModal] = useState(false);
+  const [printServiceStatus, setPrintServiceStatus] = useState(null);
+  const [loadingPrintServiceStatus, setLoadingPrintServiceStatus] = useState(false);
 
   const setoresAtivos = useMemo(() => setores.filter((setor) => setor.ativo !== false), [setores]);
 
@@ -85,50 +83,37 @@ const ImpressoraSetorPage = () => {
     }
   };
 
-  const carregarImpressorasSistema = async () => {
-    setLoadingPrinters(true);
+  const carregarStatusPrintService = async () => {
+    setLoadingPrintServiceStatus(true);
     try {
-      const printers = await fetchAvailablePrinters();
-      setAvailablePrinters(Array.isArray(printers) ? printers : []);
+      const status = await fetchPrintServiceConfigStatus();
+      setPrintServiceStatus(status);
     } catch (error) {
-      console.error("Erro ao carregar impressoras do sistema:", error);
-      setAvailablePrinters([]);
-      notify(error.message || "Falha ao conectar impressora", "error");
+      console.warn('Erro ao carregar status do print-service', error?.message || error);
+      setPrintServiceStatus({
+        ok: false,
+        queueWorker: {
+          enabled: true,
+          active: false,
+          firebaseReady: false,
+          statusMessage: 'Serviço local de impressão indisponível',
+          recommendedCredentialPath: '',
+        },
+        printers: {
+          detected: 0,
+          items: [],
+          error: error?.message || 'Falha ao conectar ao print-service',
+        },
+      });
     } finally {
-      setLoadingPrinters(false);
+      setLoadingPrintServiceStatus(false);
     }
   };
 
   useEffect(() => {
     carregarDados();
+    carregarStatusPrintService();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idRestaurante]);
-
-  useEffect(() => {
-    // Carrega as impressoras locais uma vez ao abrir a tela.
-    carregarImpressorasSistema();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    async function fetchNome() {
-      if (!idRestaurante) {
-        setRestauranteNome("");
-        return;
-      }
-      try {
-        const ref = doc(db, "restaurantes", idRestaurante);
-        const snap = await getDoc(ref);
-        if (mounted && snap.exists()) setRestauranteNome(snap.data().nome || "");
-      } catch (err) {
-        console.warn('Erro ao carregar nome do restaurante', err?.message || err);
-      }
-    }
-    fetchNome();
-    return () => {
-      mounted = false;
-    };
   }, [idRestaurante]);
 
   const resetSetor = () => {
@@ -239,21 +224,8 @@ const ImpressoraSetorPage = () => {
     }
   };
 
-  const handleTesteImpressao = async (impressora) => {
-    const printerName = impressora?.printerSystemName || impressora?.systemPrinter || "";
-
-    if (!printerName) {
-      notify("Selecione uma impressora do sistema operacional", "warning");
-      return;
-    }
-
-    try {
-      await testSystemPrinter(printerName);
-      notify("Impressão enviada com sucesso", "success");
-    } catch (error) {
-      console.error(error);
-      notify(error.message || "Falha ao conectar impressora", "error");
-    }
+  const handleTesteImpressao = (impressora) => {
+    window.alert(`Teste de impressão disparado para ${impressora.nome}.`);
   };
 
   if (loading) {
@@ -274,14 +246,55 @@ const ImpressoraSetorPage = () => {
               Configurações de produção
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Impressora por setor</h1>
-            {restauranteNome && <p className="mt-1 text-sm font-medium text-amber-700">{restauranteNome}</p>}
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-700">
               Configure setores de produção, vincule produtos ao setor correto e cadastre impressoras para preparar o roteamento automático dos pedidos.
             </p>
           </div>
-          
+          <button
+            type="button"
+            onClick={carregarStatusPrintService}
+            className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50"
+          >
+            Atualizar status do serviço
+          </button>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Status da automação de impressão</h2>
+            <p className="text-sm text-gray-600">Validação da máquina local para descoberta de impressoras e impressão automática por setor.</p>
+          </div>
+          {loadingPrintServiceStatus ? (
+            <span className="text-sm text-gray-500">Atualizando...</span>
+          ) : null}
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Serviço local</p>
+            <p className={`mt-2 text-sm font-semibold ${printServiceStatus?.ok ? 'text-emerald-700' : 'text-red-700'}`}>
+              {printServiceStatus?.ok ? 'Online' : 'Offline'}
+            </p>
+            <p className="mt-1 text-xs text-gray-600">{printServiceStatus?.queueWorker?.statusMessage || 'Sem status disponível'}</p>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Worker automático</p>
+            <p className={`mt-2 text-sm font-semibold ${printServiceStatus?.queueWorker?.firebaseReady ? 'text-emerald-700' : 'text-amber-700'}`}>
+              {printServiceStatus?.queueWorker?.firebaseReady ? 'Pronto para impressão automática' : 'Aguardando credencial'}
+            </p>
+            <p className="mt-1 text-xs text-gray-600">{printServiceStatus?.queueWorker?.recommendedCredentialPath || 'Configure a credencial do Firebase nesta máquina.'}</p>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Impressoras encontradas</p>
+            <p className="mt-2 text-sm font-semibold text-slate-800">{printServiceStatus?.printers?.detected ?? 0}</p>
+            <p className="mt-1 text-xs text-gray-600">{printServiceStatus?.printers?.error || 'Use essas impressoras para vincular cada setor.'}</p>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -508,56 +521,50 @@ const ImpressoraSetorPage = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-900">Impressora do S.O.</p>
                   <p className="text-xs text-gray-600">
-                    Selecione a impressora instalada no computador para este setor de produção.
+                    Associe uma impressora instalada no computador a este setor de produção.
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={carregarImpressorasSistema}
-                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
-                  disabled={loadingPrinters}
+                  onClick={() => setShowSystemPrintersModal(true)}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
                 >
-                  {loadingPrinters ? "Carregando..." : "Atualizar impressoras"}
+                  Selecionar impressora
                 </button>
               </div>
 
-              <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Impressora do sistema operacional</label>
-                  <select
-                    value={formImpressora.printerSystemName || formImpressora.systemPrinter || ""}
-                    onChange={(e) => setFormImpressora((prev) => ({
-                      ...prev,
-                      systemPrinter: e.target.value,
-                      printerSystemName: e.target.value,
-                    }))}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                  >
-                    <option value="">Selecione uma impressora</option>
-                    {availablePrinters.map((printer) => (
-                      <option key={printer.name} value={printer.name}>
-                        {printer.name}{printer.default ? " (padrão)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="mt-3">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Nome da impressora do sistema</label>
+                <input
+                  type="text"
+                  value={formImpressora.systemPrinter}
+                  onChange={(e) => setFormImpressora((prev) => ({ ...prev, systemPrinter: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  placeholder="Ex: EPSON_TM_T20X"
+                />
+                <p className="mt-1 text-xs text-gray-500">Você pode selecionar no modal ou digitar manualmente o nome exato da impressora no computador.</p>
+              </div>
 
-                {(formImpressora.printerSystemName || formImpressora.systemPrinter) && (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-gray-700">
+                  {formImpressora.systemPrinter ? (
+                    <span>
+                      Selecionada: <strong>{formImpressora.systemPrinter}</strong>
+                    </span>
+                  ) : (
+                    <span>Nenhuma impressora do S.O. selecionada.</span>
+                  )}
+                </div>
+                {formImpressora.systemPrinter && (
                   <button
                     type="button"
-                    onClick={() => setFormImpressora((prev) => ({ ...prev, systemPrinter: "", printerSystemName: "" }))}
-                    className="rounded-lg border border-amber-300 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                    onClick={() => setFormImpressora((prev) => ({ ...prev, systemPrinter: "" }))}
+                    className="text-sm font-medium text-amber-700 hover:text-amber-800"
                   >
-                    Limpar seleção
+                    Remover seleção
                   </button>
                 )}
               </div>
-
-              {!loadingPrinters && availablePrinters.length === 0 && (
-                <p className="mt-3 text-xs text-amber-700">
-                  Nenhuma impressora foi detectada. Verifique se o MesaFacil Print Service está ativo e se o navegador permite chamadas locais.
-                </p>
-              )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -626,7 +633,7 @@ const ImpressoraSetorPage = () => {
                         <td className="px-4 py-3 font-medium text-gray-900">{impressora.nome}</td>
                         <td className="px-4 py-3 text-gray-700">{setor?.nome || "-"}</td>
                         <td className="px-4 py-3 text-gray-700">{impressora.tipo}</td>
-                        <td className="px-4 py-3 text-gray-700">{impressora.printerSystemName || impressora.systemPrinter || '-'}</td>
+                        <td className="px-4 py-3 text-gray-700">{impressora.systemPrinter || '-'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${impressora.ativa !== false ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-700"}`}>
                             {impressora.ativa !== false ? "Ativa" : "Inativa"}
@@ -645,8 +652,7 @@ const ImpressoraSetorPage = () => {
                                   porta: impressora.porta ?? "9100",
                                   setorId: impressora.setorId || "",
                                   larguraBobina: impressora.larguraBobina || "80mm",
-                                  systemPrinter: impressora.printerSystemName || impressora.systemPrinter || "",
-                                  printerSystemName: impressora.printerSystemName || impressora.systemPrinter || "",
+                                  systemPrinter: impressora.systemPrinter || "",
                                   ativa: impressora.ativa !== false,
                                 });
                               }}
@@ -681,11 +687,18 @@ const ImpressoraSetorPage = () => {
         </section>
       </div>
 
+      <SystemPrintersModal
+        isOpen={showSystemPrintersModal}
+        onClose={() => setShowSystemPrintersModal(false)}
+        onSelect={(printerName) => setFormImpressora((prev) => ({ ...prev, systemPrinter: printerName }))}
+      />
+
       <section className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-blue-900">Base pronta para o roteamento de produção</h2>
-        <div className="mt-3 grid gap-3 md:grid-cols-2 text-sm text-blue-900">
+        <div className="mt-3 grid gap-3 md:grid-cols-3 text-sm text-blue-900">
           <div className="rounded-xl bg-white p-4 border border-blue-100">1. Produto recebe <span className="font-semibold">setorId</span>.</div>
           <div className="rounded-xl bg-white p-4 border border-blue-100">2. Pedido pode ser agrupado por setor.</div>
+          <div className="rounded-xl bg-white p-4 border border-blue-100">3. Fila de impressão e reimpressão podem ser adicionadas na próxima etapa.</div>
         </div>
       </section>
     </div>

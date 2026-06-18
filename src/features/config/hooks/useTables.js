@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, useMemo } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { TablesContext } from "@/features/config/context/TablesContext";
 import { getPedidosDaMesa } from "@/features/order/services/orderService";
 import { formatDistanceToNow } from "date-fns";
@@ -75,49 +75,144 @@ function getPedidosSummary(pedidos, status, dateField) {
 export const useTables = (idRestaurante) => {
   const tablesFromCtx = useContext(TablesContext);
   const tables = useMemo(() => tablesFromCtx || [], [tablesFromCtx]);
+  const summaryCacheRef = useRef(new Map());
 
   const [mesasLivres, setMesasLivres] = useState([]);
   const [mesasAndamento, setMesasAndamento] = useState([]);
   const [mesasEntregues, setMesasEntregues] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!idRestaurante || tables.length === 0) return;
+    if (!idRestaurante) {
+      setMesasLivres([]);
+      setMesasAndamento([]);
+      setMesasEntregues([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    if (tables.length === 0) {
+      setMesasLivres([]);
+      setMesasAndamento([]);
+      setMesasEntregues([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    let isMounted = true;
+    const CACHE_TTL_MS = 15000;
 
     const enrichTables = async () => {
-      const livres = tables.filter(t => t.status === "livre");
-      const andamento = tables.filter(t => t.status === "andamento");
-      const entregues = tables.filter(t => t.status === "entregue");
+      setLoading(true);
+      setError(null);
 
-      const andamentoEnriched = await Promise.all(
-        andamento.map(async (mesa) => {
-          const pedidos = await getPedidosDaMesa(idRestaurante, mesa.id);
-          const { total, timeAgo } = getPedidosSummary(pedidos, "andamento", "criadoEm");
+      const livres = tables.filter((t) => t.status === "livre");
+      const andamento = tables.filter((t) => t.status === "andamento");
+      const entregues = tables.filter((t) => t.status === "entregue");
+
+      const now = Date.now();
+      const withCachedSummary = (mesa, fallback = { total: 0, timeAgo: "-" }) => {
+        const cached = summaryCacheRef.current.get(mesa.id);
+        if (!cached) return { ...mesa, ...fallback };
+        return { ...mesa, total: cached.total, timeAgo: cached.timeAgo };
+      };
+
+      const mesasParaAtualizarAndamento = andamento.filter((mesa) => {
+        const cached = summaryCacheRef.current.get(mesa.id);
+        return !cached || (now - cached.updatedAt) > CACHE_TTL_MS;
+      });
+
+      const mesasParaAtualizarEntregues = entregues.filter((mesa) => {
+        const cached = summaryCacheRef.current.get(mesa.id);
+        return !cached || (now - cached.updatedAt) > CACHE_TTL_MS;
+      });
+
+      try {
+        const andamentoEnrichedResults = await Promise.allSettled(
+          mesasParaAtualizarAndamento.map(async (mesa) => {
+            const pedidos = await getPedidosDaMesa(idRestaurante, mesa.id);
+            const { total, timeAgo } = getPedidosSummary(pedidos, "andamento", "criadoEm");
+            summaryCacheRef.current.set(mesa.id, { total, timeAgo, updatedAt: Date.now() });
+            return {
+              ...mesa,
+              total,
+              timeAgo,
+            };
+          })
+        );
+
+        const entreguesEnrichedResults = await Promise.allSettled(
+          mesasParaAtualizarEntregues.map(async (mesa) => {
+            const pedidos = await getPedidosDaMesa(idRestaurante, mesa.id);
+            const { total, timeAgo } = getPedidosSummary(pedidos, "entregue", "finalizadoEm");
+            summaryCacheRef.current.set(mesa.id, { total, timeAgo, updatedAt: Date.now() });
+            return {
+              ...mesa,
+              total,
+              timeAgo,
+            };
+          })
+        );
+
+        const andamentoAtualizado = andamentoEnrichedResults.map((result, index) => {
+          if (result.status === "fulfilled") {
+            return result.value;
+          }
+
           return {
-            ...mesa,
-            total,
-            timeAgo,
+            ...mesasParaAtualizarAndamento[index],
+            total: 0,
+            timeAgo: "-",
           };
-        })
-      );
+        });
 
-      const entreguesEnriched = await Promise.all(
-        entregues.map(async (mesa) => {
-          const pedidos = await getPedidosDaMesa(idRestaurante, mesa.id);
-          const { total, timeAgo } = getPedidosSummary(pedidos, "entregue", "finalizadoEm");
+        const entreguesAtualizado = entreguesEnrichedResults.map((result, index) => {
+          if (result.status === "fulfilled") {
+            return result.value;
+          }
+
           return {
-            ...mesa,
-            total,
-            timeAgo,
+            ...mesasParaAtualizarEntregues[index],
+            total: 0,
+            timeAgo: "-",
           };
-        })
-      );
+        });
 
-      setMesasLivres(livres);
-      setMesasAndamento(andamentoEnriched);
-      setMesasEntregues(entreguesEnriched);
+        const andamentoMap = new Map(andamentoAtualizado.map((mesa) => [mesa.id, mesa]));
+        const entreguesMap = new Map(entreguesAtualizado.map((mesa) => [mesa.id, mesa]));
+
+        const andamentoEnriched = andamento.map((mesa) =>
+          andamentoMap.get(mesa.id) || withCachedSummary(mesa)
+        );
+        const entreguesEnriched = entregues.map((mesa) =>
+          entreguesMap.get(mesa.id) || withCachedSummary(mesa)
+        );
+
+        if (!isMounted) return;
+        setMesasLivres(livres);
+        setMesasAndamento(andamentoEnriched);
+        setMesasEntregues(entreguesEnriched);
+      } catch (err) {
+        if (!isMounted) return;
+        setError(err);
+        setMesasLivres(livres);
+        setMesasAndamento([]);
+        setMesasEntregues([]);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
     enrichTables();
+
+    return () => {
+      isMounted = false;
+    };
   }, [tables, idRestaurante]);
 
 
@@ -127,5 +222,7 @@ export const useTables = (idRestaurante) => {
     mesasLivres: mesasLivres || [],
     mesasAndamento: mesasAndamento || [],
     mesasEntregues: mesasEntregues || [],
+    loading,
+    error,
   };
 };

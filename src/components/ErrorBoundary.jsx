@@ -1,5 +1,4 @@
 import { Component } from 'react';
-import { Link } from 'react-router-dom';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -45,12 +44,12 @@ class ErrorBoundary extends Component {
               >
                 Recarregar página
               </button>
-              <Link
-                to="/"
+              <a
+                href="/"
                 className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Voltar ao início
-              </Link>
+              </a>
             </div>
 
             {import.meta.env.DEV && this.state.errorInfo && (

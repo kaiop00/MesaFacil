@@ -5,10 +5,10 @@ const BaseModalWithHeader = ({ isOpen, onClose, title, subTitle, icon: Icon, chi
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative" style={{ zIndex }}>
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <DialogPanel className="w-full max-w-2xl rounded-lg bg-white shadow-xl overflow-hidden">
+      <div className="fixed inset-0 flex items-start justify-center overflow-y-auto p-2 sm:items-center sm:p-4">
+        <DialogPanel className="flex w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-lg max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100vh-2rem)]">
           {/* Cabeçalho */}
-          <div className="font-inter flex justify-between items-center px-6 py-4 bg-primary-dynamic">
+          <div className="font-inter flex shrink-0 items-center justify-between bg-primary-dynamic px-4 py-4 sm:px-6">
             <div className="flex items-start gap-3">
               {Icon && <Icon className="text-white w-9 h-9 mr-2" />}
               <div>
@@ -25,7 +25,7 @@ const BaseModalWithHeader = ({ isOpen, onClose, title, subTitle, icon: Icon, chi
           </div>
 
           {/* Corpo do modal scrollável */}
-          <div className="max-h-[80vh] overflow-y-auto px-4 sm:px-6 py-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
             {children}
           </div>
         </DialogPanel>

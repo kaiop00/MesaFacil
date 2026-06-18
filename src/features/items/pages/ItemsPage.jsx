@@ -62,16 +62,17 @@ const ItemsPage = () => {
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setFilteredItems(items);
+      setTotalItems(items.length);
     } else {
       const filtered = items.filter(item =>
         item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.marca && item.marca.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       setFilteredItems(filtered);
+      setTotalItems(filtered.length);
     }
     setCurrentPage(1);
-    setTotalItems(filteredItems.length);
-  }, [searchTerm, items, filteredItems]);
+  }, [searchTerm, items]);
 
   useEffect(() => {
     setTotalItems(filteredItems.length);

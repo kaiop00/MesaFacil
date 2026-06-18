@@ -1,7 +1,9 @@
 import { FIREBASE_AUTH_REGISTER_ENDPOINT } from '@/features/users/constants/endpoint';
 
+import fetchWithTimeout from '@/utils/fetchWithTimeout';
+
 async function registerUserOnFirebase(formData) {
-  return fetch(FIREBASE_AUTH_REGISTER_ENDPOINT, {
+  return fetchWithTimeout(FIREBASE_AUTH_REGISTER_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -11,7 +13,7 @@ async function registerUserOnFirebase(formData) {
       password: formData.password,
       returnSecureToken: true
     })
-  });
+  }, 10000);
 }
 
 export default registerUserOnFirebase;

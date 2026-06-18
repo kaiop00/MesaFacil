@@ -2,9 +2,9 @@
 // external resources (m.stripe.com) are unreachable.
 
 // Stripe toggle for maintenance windows.
-// Set to `true` only for local maintenance windows or offline testing.
-// Production keeps Stripe enabled so subscriptions can be managed normally.
-const STRIPE_TEMPORARILY_DISABLED = false;
+// Fail-safe mode: Stripe stays disabled unless explicitly enabled with
+// VITE_STRIPE_TEMPORARILY_DISABLED=false in the deployment environment.
+export const STRIPE_TEMPORARILY_DISABLED = import.meta.env.VITE_STRIPE_TEMPORARILY_DISABLED !== 'false';
 
 // Get Stripe publishable key from environment
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -55,24 +55,6 @@ class StripeService {
     }
   }
 
-  // Helper: fetch with timeout using AbortController
-  async _fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const resp = await fetch(url, { signal: controller.signal, ...options });
-      clearTimeout(id);
-      return resp;
-    } catch (err) {
-      clearTimeout(id);
-      if (err.name === 'AbortError') {
-        console.error(`Request to ${url} aborted after ${timeoutMs}ms`);
-        throw new Error('Request timed out');
-      }
-      throw err;
-    }
-  }
-
   /**
    * Create a checkout session for subscription
    * @param {string} priceId - Stripe Price ID
@@ -103,11 +85,13 @@ class StripeService {
         cancelUrl: `${window.location.origin}/selecionar-plano?checkout_canceled=true`,
       };
 
-      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/createCheckoutSession`, {
+      const response = await fetch(`${this.apiBaseUrl}/createCheckoutSession`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(requestBody),
-      }, 10000);
+      });
 
       const session = await response.json();
 
@@ -157,10 +141,12 @@ class StripeService {
     }
     
     try {
-      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/verifySession/${sessionId}`, {
+      const response = await fetch(`${this.apiBaseUrl}/verifySession/${sessionId}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      }, 10000);
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       const sessionData = await response.json();
 
@@ -197,9 +183,9 @@ class StripeService {
         throw new Error('Failed to get checkout URL from session');
       }
       
-      // Open Stripe Checkout in a new tab to avoid replacing the single-page app
-      // and causing navigation issues when returning from Stripe.
-      window.open(session.url, '_blank', 'noopener,noreferrer');
+      // Redirect directly to the Stripe Checkout URL
+      // This is the new recommended approach in Stripe.js v8+
+      window.location.href = session.url;
     } catch (error) {
       console.error('❌ Error redirecting to checkout:', error);
       throw error;
@@ -213,11 +199,16 @@ class StripeService {
    */
   async createBillingPortalSession(customerId) {
     try {
-      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/createPortalSession`, {
+      const response = await fetch(`${this.apiBaseUrl}/createPortalSession`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, returnUrl: `${window.location.origin}/home` }),
-      }, 10000);
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerId,
+          returnUrl: `${window.location.origin}/home`,
+        }),
+      });
 
       const session = await response.json();
 
@@ -240,9 +231,8 @@ class StripeService {
     try {
       const session = await this.createBillingPortalSession(customerId);
       
-      // Open the Stripe Billing Portal in a new tab to avoid replacing the app
-      // and allow users to close the portal without breaking the SPA state.
-      window.open(session.url, '_blank', 'noopener,noreferrer');
+      // Redirect to the portal URL
+      window.location.href = session.url;
     } catch (error) {
       console.error('Error redirecting to billing portal:', error);
       throw error;
@@ -274,10 +264,12 @@ class StripeService {
     }
     
     try {
-      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/getCustomerSubscription/${customerId}`, {
+      const response = await fetch(`${this.apiBaseUrl}/getCustomerSubscription/${customerId}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      }, 10000);
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       const data = await response.json();
 
@@ -339,10 +331,12 @@ class StripeService {
    */
   async cancelSubscription(subscriptionId) {
     try {
-      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/cancelSubscription/${subscriptionId}`, {
+      const response = await fetch(`${this.apiBaseUrl}/cancelSubscription/${subscriptionId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      }, 10000);
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       const data = await response.json();
 
@@ -363,10 +357,12 @@ class StripeService {
    */
   async getProducts() {
     try {
-      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/api/stripe/products`, {
+      const response = await fetch(`${this.apiBaseUrl}/api/stripe/products`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      }, 10000);
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       const products = await response.json();
 
@@ -391,11 +387,17 @@ class StripeService {
    */
   async activateUserPlan(idRestaurante, stripeCustomerId, stripeSubscriptionId) {
     try {
-      const response = await this._fetchWithTimeout(`${this.apiBaseUrl}/activatePlan`, {
+      const response = await fetch(`${this.apiBaseUrl}/activatePlan`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idRestaurante, stripeCustomerId, stripeSubscriptionId }),
-      }, 10000);
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idRestaurante,
+          stripeCustomerId,
+          stripeSubscriptionId
+        }),
+      });
 
       const result = await response.json();
 
@@ -418,9 +420,6 @@ export default stripeService;
 
 // Export class for testing or multiple instances if needed
 export { StripeService };
-
-// Export the temporarily disabled flag for use in other components
-export { STRIPE_TEMPORARILY_DISABLED };
 
 /**
  * Price ID mappings for environment variables

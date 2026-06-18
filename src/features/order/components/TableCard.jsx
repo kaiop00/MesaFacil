@@ -96,7 +96,7 @@ const TableCard = ({
     <>
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
         {/* ícone + menu */}
-        <div className="flex justify-between items-start">
+        <div className="flex items-start justify-between gap-3">
           <div className={`p-2 rounded ${currentStyle.iconBg} relative`}>
             {(isIfoodTable || isWATable) ? (
               <ShoppingBag02 className={`w-6 h-6 ${currentStyle.iconTxt}`} />
@@ -131,8 +131,8 @@ const TableCard = ({
 
         {/* conteúdo */}
         <div className="mt-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">
               {(isIfoodTable || isWATable) ? (
                 <span className="flex items-center gap-2">
                   <span>{isIfoodTable ? "iFood" : "WhatsApp"}</span>

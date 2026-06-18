@@ -24,13 +24,12 @@ const OrderPage = () => {
   const [mesaDetalhe, setMesaDetalhe] = useState(null);
   const { idRestaurante } = useAuth();
   const { hasPermission } = usePermissions();
-  const { mesasLivres, mesasAndamento, mesasEntregues, tables } = useTables(idRestaurante);
+  const { mesasLivres, mesasAndamento, mesasEntregues, tables, loading: tablesLoading } = useTables(idRestaurante);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isLoading = tables.length > 0 &&
-    (mesasAndamento.length === 0 && mesasEntregues.length === 0 && mesasLivres.length === 0);
+  const isLoading = tablesLoading;
 
   const mesasLivresDisplay = useMemo(
     () => mesasLivres.map(mapTableDisplay),
@@ -91,7 +90,7 @@ const OrderPage = () => {
   return (
     <CardapioProvider>
       <OrderProvider>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-24 space-y-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-20 sm:mt-24 space-y-8 sm:space-y-12">
           
           {/* Monitor de status do iFood - funciona em background */}
           <IfoodStatusMonitor 
