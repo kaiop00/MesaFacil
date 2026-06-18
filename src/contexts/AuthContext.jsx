@@ -225,7 +225,7 @@ export const AuthProvider = ({ children }) => {
               // Set free plan as fallback (or premium if Stripe is disabled)
               if (STRIPE_TEMPORARILY_DISABLED) {
                 setPlan({ 
-                  planId: 'monthly', 
+                  planId: 'semiannual', 
                   status: 'active', 
                   expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
                 });
@@ -237,7 +237,7 @@ export const AuthProvider = ({ children }) => {
             // No Stripe customer - grant premium access if Stripe is disabled, otherwise free plan
             if (STRIPE_TEMPORARILY_DISABLED) {
               setPlan({ 
-                planId: 'monthly', 
+                planId: 'semiannual', 
                 status: 'active', 
                 expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
               });
@@ -245,7 +245,7 @@ export const AuthProvider = ({ children }) => {
               // Compatibilidade com contas antigas que possuem subscriptionId salvo,
               // mas ainda sem customerId em restaurante.
               setPlan({
-                planId: 'monthly',
+                planId: 'semiannual',
                 status: 'active',
                 expiresAt: null,
               });
@@ -260,7 +260,7 @@ export const AuthProvider = ({ children }) => {
           // Grant premium access if Stripe is disabled, otherwise free plan
           if (STRIPE_TEMPORARILY_DISABLED) {
             setPlan({ 
-              planId: 'monthly', 
+              planId: 'semiannual', 
               status: 'active', 
               expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
             });

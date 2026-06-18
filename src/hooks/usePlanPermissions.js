@@ -103,7 +103,7 @@ export const usePlanPermissions = () => {
 
   // Get plan display information
   const planInfo = useMemo(() => {
-    const displayPlanId = shouldBypassPlanGates ? 'monthly' : planId;
+    const displayPlanId = shouldBypassPlanGates ? 'semiannual' : planId;
     return {
       id: displayPlanId,
       name: PLAN_NAMES[displayPlanId] || 'Desconhecido',
