@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 const RedirectHandler = () => {
-  const { user, idRestaurante, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -17,12 +17,9 @@ const RedirectHandler = () => {
     return <Navigate to="/home-page" replace />;
   }
 
-  // Usuário sem restaurante vinculado = conta recém-criada → seleção de plano
-  if (!idRestaurante) {
-    return <Navigate to="/selecionar-plano" replace />;
-  }
-
-  // Usuário existente com restaurante → vai direto para o dashboard
+  // Usuário autenticado → sempre vai para o dashboard
+  // Novos usuários chegam via /cadastro → /selecionar-plano (com state.idRestaurante)
+  // e nunca passam por aqui
   return <Navigate to="/home" replace />;
 };
 
