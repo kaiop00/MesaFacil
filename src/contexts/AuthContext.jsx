@@ -45,29 +45,61 @@ export const AuthProvider = ({ children }) => {
           const data = userDoc.exists() ? userDoc.data() : {};
 
           let resolvedRole = data.role || null;
-          let restaurantId = data.idRestaurante || null;
+          let restaurantId =
+            data.idRestaurante ||
+            data.idRestaurant ||
+            data.restaurantId ||
+            data.restauranteId ||
+            null;
 
-          // Se não há restaurant ID no usuário, tenta recuperar pelo nome do restaurante
-          // salvo no displayName do Firebase Auth (fluxo de cadastro antigo).
+          // Se não há restaurant ID no usuário, tenta recuperar por múltiplas estratégias legadas.
           if (!restaurantId) {
             try {
-              if (firebaseUser.displayName) {
-                const qByName = query(
-                  collection(db, "restaurantes"),
-                  where("nome", "==", firebaseUser.displayName)
+              const tryQueries = [];
+
+              // Fluxos legados comuns por vínculo ao usuário
+              tryQueries.push(
+                query(collection(db, "restaurantes"), where("ownerUid", "==", firebaseUser.uid)),
+                query(collection(db, "restaurantes"), where("uid", "==", firebaseUser.uid)),
+                query(collection(db, "restaurantes"), where("userId", "==", firebaseUser.uid)),
+                query(collection(db, "restaurantes"), where("createdBy", "==", firebaseUser.uid))
+              );
+
+              if (firebaseUser.email) {
+                tryQueries.push(
+                  query(collection(db, "restaurantes"), where("email", "==", firebaseUser.email)),
+                  query(collection(db, "restaurantes"), where("ownerEmail", "==", firebaseUser.email))
                 );
-                const snapshotByName = await getDocs(qByName);
-                if (!snapshotByName.empty) {
-                  restaurantId = snapshotByName.docs[0].id;
+              }
+
+              if (firebaseUser.displayName) {
+                tryQueries.push(
+                  query(collection(db, "restaurantes"), where("nome", "==", firebaseUser.displayName))
+                );
+              }
+
+              for (const q of tryQueries) {
+                if (restaurantId) break;
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                  restaurantId = snapshot.docs[0].id;
                 }
               }
             } catch (err) {
-              console.warn("Could not find restaurant by displayName:", err);
+              console.warn("Could not recover legacy restaurant id:", err);
             }
           }
 
-          // Conta proprietária antiga sem role explícita deve ter acesso de admin.
-          if (!resolvedRole && restaurantId) {
+          // Normalização de role legado
+          if (typeof resolvedRole === "string") {
+            const normalized = resolvedRole.toLowerCase();
+            if (normalized === "owner" || normalized === "proprietario" || normalized === "proprietário") {
+              resolvedRole = "admin";
+            }
+          }
+
+          // Conta antiga sem role explícita: assume admin para evitar bloqueio indevido.
+          if (!resolvedRole) {
             resolvedRole = "admin";
           }
 

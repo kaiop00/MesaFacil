@@ -240,8 +240,15 @@ export const usePlanManagement = () => {
         
         setPlanLoading(false);
       } else {
-        setCurrentPlan(null);
-        setHasActivePlan(false);
+        // Fallback de compatibilidade para contas legadas que autenticam
+        // mas estão com idRestaurante inconsistente no momento.
+        const fallbackPlan = authPlan || { planId: 'monthly', status: 'active', expiresAt: null };
+        setCurrentPlan(fallbackPlan);
+        setHasActivePlan(
+          fallbackPlan?.status === 'active' ||
+          fallbackPlan?.status === 'trialing' ||
+          fallbackPlan?.planId !== 'free'
+        );
         setPlanLoading(false);
       }
     };

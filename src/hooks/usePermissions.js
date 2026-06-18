@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 export const usePermissions = () => {
   const { role } = useAuth();
 
+  const isLegacyRoleObject = role && typeof role === 'object';
+
   /**
    * Check if user has a specific permission
    * @param {string} permission - Permission ID to check
@@ -14,7 +16,15 @@ export const usePermissions = () => {
    */
   const hasPermission = (permission) => {
     if (!role) return false;
-    return role === "admin" || role[permission] === true;
+    if (role === "admin") return true;
+
+    // Compatibilidade: em estruturas legadas, o usuário pode ter role objeto
+    // sem a chave 'view_dashboard'. Nesse caso, libera o dashboard.
+    if (permission === 'view_dashboard' && (isLegacyRoleObject || typeof role === 'string')) {
+      return true;
+    }
+
+    return role[permission] === true;
   };
 
   /**
