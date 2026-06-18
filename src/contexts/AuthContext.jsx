@@ -193,6 +193,10 @@ export const AuthProvider = ({ children }) => {
             console.error("[AuthContext] CRITICAL: Could not resolve idRestaurante for user", firebaseUser.uid);
           }
 
+          // Declarar variáveis Stripe no escopo correto
+          let customerId = null;
+          let hasLegacySubscription = false;
+
           if (restaurantId) {
             try {
               customerId = await getStripeCustomerId(restaurantId);
