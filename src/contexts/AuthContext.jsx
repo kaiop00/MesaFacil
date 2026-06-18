@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebaseConfig";
 import stripeService, { STRIPE_TEMPORARILY_DISABLED } from "@/services/stripeService";
 import { getStripeCustomerId } from "@/services/firebase/restaurantService";
@@ -45,7 +45,29 @@ export const AuthProvider = ({ children }) => {
           const data = userDoc.exists() ? userDoc.data() : {};
 
           setRole(data.role || "user");
-          const restaurantId = data.idRestaurante || null;
+          let restaurantId = data.idRestaurante || null;
+          
+          // Se não há restaurant ID, tenta encontrar um restaurante para este usuário
+          if (!restaurantId) {
+            try {
+              // Tenta encontrar um restaurante com o email do usuário
+              const q = query(
+                collection(db, "restaurantes"),
+                where("email", "==", firebaseUser.email)
+              );
+              const snapshot = await getDocs(q);
+              if (!snapshot.empty) {
+                restaurantId = snapshot.docs[0].id;
+                // Atualiza o documento do usuário com o ID do restaurante
+                await updateDoc(doc(db, "users", firebaseUser.uid), {
+                  idRestaurante: restaurantId
+                }).catch(err => console.warn("Could not update user document:", err));
+              }
+            } catch (err) {
+              console.warn("Could not find restaurant by email:", err);
+            }
+          }
+          
           setIdRestaurante(restaurantId);
           
           // Get Stripe Customer ID from restaurant document instead of user document

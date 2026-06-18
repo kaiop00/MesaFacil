@@ -121,8 +121,13 @@ export default function PlanSelectionPage() {
   };
 
   const handleContinue = async () => {
-    if (!selectedPlan || !user || !resolvedRestaurantId) {
+    if (!selectedPlan || !user) {
       notify('Erro: dados de autenticação incompletos. Por favor, faça login novamente.', 'error');
+      return;
+    }
+    
+    if (!resolvedRestaurantId) {
+      notify('Carregando dados do restaurante... Tente novamente em alguns segundos.', 'warning');
       return;
     }
 

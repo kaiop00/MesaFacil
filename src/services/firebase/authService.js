@@ -20,6 +20,7 @@ import {
   where,
   getDocs,
   addDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { app } from "@/config/firebaseConfig";
 import { PERMISSIONS } from "@/features/users/constants/permissions";
@@ -110,13 +111,44 @@ export async function registerWithEmail(email, password, nomeRestaurante) {
 
 /**
  * Realiza login com e-mail e senha.
+ * Garante que o documento do usuário existe no Firestore.
  * @param {string} email
  * @param {string} password
  * @returns {Promise<import("firebase/auth").User>} Usuário autenticado
  */
 export async function loginWithEmail(email, password) {
   const result = await signInWithEmailAndPassword(auth, email, password);
-  return result.user;
+  const user = result.user;
+
+  // Garante que o documento de usuário existe
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // Se não existe, cria com dados básicos
+      await setDoc(
+        userRef,
+        {
+          email: user.email,
+          status: "Ativo",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } else {
+      // Atualiza o timestamp de último acesso
+      await updateDoc(userRef, {
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error("Error ensuring user document exists:", error);
+    // Não lança erro aqui - o login foi bem-sucedido, apenas falhamos em garantir o doc
+  }
+
+  return user;
 }
 
 /**
