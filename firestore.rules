@@ -15,12 +15,39 @@ service cloud.firestore {
       return isAuthenticated() && userDoc().idRestaurante == restId;
     }
 
+    function isUserFromSameRestaurant() {
+      return isAuthenticated() && resource.data.idRestaurante == userDoc().idRestaurante;
+    }
+
+    function isNewUserForSameRestaurant() {
+      return isAuthenticated() && request.resource.data.idRestaurante == userDoc().idRestaurante;
+    }
+
     // Usuários podem ler/escrever seu próprio documento
     match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if false;
+      // próprio usuário OU equipe do mesmo restaurante
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isUserFromSameRestaurant()
+      );
+
+      // criação de usuário pelo dono/equipe do mesmo restaurante
+      allow create: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isNewUserForSameRestaurant()
+      );
+
+      // atualização de usuário próprio ou da equipe do mesmo restaurante
+      allow update: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        (
+          isUserFromSameRestaurant() &&
+          request.resource.data.idRestaurante == resource.data.idRestaurante
+        )
+      );
+
+      // remoção permitida apenas para equipe do mesmo restaurante
+      allow delete: if isUserFromSameRestaurant();
     }
 
     // Coleções públicas/compartilhadas - usuários autenticados podem ler
@@ -36,7 +63,8 @@ service cloud.firestore {
 
     // Dados do restaurante - leitura permissiva para autenticados
     match /restaurantes/{restId} {
-      allow read: if isAuthenticated();
+      // público: fluxo cliente por QR/WhatsApp precisa ler dados do restaurante
+      allow read: if true;
       allow write: if false;
     }
 
@@ -97,13 +125,33 @@ service cloud.firestore {
 
     // Subcoleções do restaurante - leitura permissiva para autenticados durante inicialização
     match /restaurantes/{restId}/cardapio/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isSameRestaurant(restId);
     }
 
     match /restaurantes/{restId}/mesas/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isSameRestaurant(restId);
+      allow read: if true;
+
+      // equipe autenticada do restaurante com controle total
+      allow create, delete: if isSameRestaurant(restId);
+
+      // QR/WhatsApp: permite atualizar apenas status da mesa
+      allow update: if isSameRestaurant(restId) || (
+        request.auth == null &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['status']) &&
+        request.resource.data.status in ['livre', 'andamento', 'entregue']
+      );
+    }
+
+    // Pedidos ficam dentro da subcoleção da mesa
+    match /restaurantes/{restId}/mesas/{mesaId}/pedidos/{pedidoId} {
+      allow read: if true;
+
+      // cliente (QR/WhatsApp) e equipe podem criar pedidos
+      allow create: if true;
+
+      // alterações/exclusões só para equipe do restaurante
+      allow update, delete: if isSameRestaurant(restId);
     }
 
     match /restaurantes/{restId}/pedidos/{docId} {
@@ -118,8 +166,15 @@ service cloud.firestore {
     }
 
     match /restaurantes/{restId}/promocoes/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isSameRestaurant(restId);
+    }
+
+    // Cliente pode registrar chamada de garçom/notificação em fluxo público
+    match /restaurantes/{restId}/notificacoes/{docId} {
+      allow read: if isSameRestaurant(restId);
+      allow create: if true;
+      allow update, delete: if isSameRestaurant(restId);
     }
 
     match /restaurantes/{restId}/usuarios/{docId} {
