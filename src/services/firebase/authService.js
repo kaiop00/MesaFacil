@@ -157,6 +157,7 @@ export async function loginWithEmail(email, password) {
  */
 export function logout() {
   localStorage.removeItem("cor-primary");
+  localStorage.removeItem("mesafacil:idRestaurante");
   return signOut(auth);
 }
 
@@ -175,11 +176,38 @@ export function resetPassword(email) {
  * @returns {Promise<string|null>} ID do restaurante ou null
  */
 export async function getUserRestauranteId(uid) {
+  const RESTAURANTE_ID_CACHE_KEY = "mesafacil:idRestaurante";
+
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
 
   if (userSnap.exists()) {
-    return userSnap.data().idRestaurante || null;
+    const data = userSnap.data() || {};
+    const idRestaurante =
+      data.idRestaurante ||
+      data.idRestaurant ||
+      data.restaurantId ||
+      data.id_restaurante ||
+      data?.restaurante?.id ||
+      data?.restaurant?.id ||
+      data.restauranteId ||
+      null;
+
+    if (idRestaurante) {
+      localStorage.setItem(RESTAURANTE_ID_CACHE_KEY, idRestaurante);
+      return idRestaurante;
+    }
+  }
+
+  const restauranteByUid = await getDoc(doc(db, "restaurantes", uid));
+  if (restauranteByUid.exists()) {
+    localStorage.setItem(RESTAURANTE_ID_CACHE_KEY, restauranteByUid.id);
+    return restauranteByUid.id;
+  }
+
+  const cached = localStorage.getItem(RESTAURANTE_ID_CACHE_KEY);
+  if (cached) {
+    return cached;
   }
 
   return null;

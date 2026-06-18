@@ -17,6 +17,7 @@ const AuthContext = createContext({
 
 // ✅ Provider que centraliza user, role, idRestaurante, plan e loading
 export const AuthProvider = ({ children }) => {
+  const RESTAURANTE_ID_CACHE_KEY = "mesafacil:idRestaurante";
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [idRestaurante, setIdRestaurante] = useState(null);
@@ -55,9 +56,23 @@ export const AuthProvider = ({ children }) => {
             data.restauranteId ||
             null;
 
+          // Cache local como fallback para contas legadas.
+          if (!restaurantId) {
+            const cachedRestaurantId = localStorage.getItem(RESTAURANTE_ID_CACHE_KEY);
+            if (cachedRestaurantId) {
+              restaurantId = cachedRestaurantId;
+            }
+          }
+
           // Se não há restaurant ID no usuário, tenta recuperar por múltiplas estratégias legadas.
           if (!restaurantId) {
             try {
+              // Estratégia 1: em alguns ambientes, o id do restaurante é o próprio UID do usuário.
+              const restaurantByUid = await getDoc(doc(db, "restaurantes", firebaseUser.uid));
+              if (restaurantByUid.exists()) {
+                restaurantId = restaurantByUid.id;
+              }
+
               const tryQueries = [];
 
               // Fluxos legados comuns por vínculo ao usuário
@@ -150,6 +165,10 @@ export const AuthProvider = ({ children }) => {
           
           setRole(resolvedRole || "user");
           setIdRestaurante(restaurantId);
+
+          if (restaurantId) {
+            localStorage.setItem(RESTAURANTE_ID_CACHE_KEY, restaurantId);
+          }
           
           // Get Stripe Customer ID from restaurant document instead of user document
           let customerId = null;
@@ -231,6 +250,7 @@ export const AuthProvider = ({ children }) => {
           setIdRestaurante(null);
           setPlan(null);
           setStripeCustomerId(null);
+          localStorage.removeItem(RESTAURANTE_ID_CACHE_KEY);
         }
       setLoading(false);
     });
