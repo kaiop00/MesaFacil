@@ -100,37 +100,6 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
     return partes.join(', ');
   };
 
-  // Notifica componente pai sobre mudanças
-  useEffect(() => {
-    if (onDataChange) {
-      // Para retirada, não precisa de endereço
-      if (isRetirada) {
-        const fullData = {
-          ...formData,
-          endereco: '',
-          enderecoDetalhado: null
-        };
-        onDataChange(fullData, isFormValid());
-      } else {
-        const enderecoAtual = selectedEndereco || enderecoData;
-        const enderecoCompleto = formatEnderecoCompleto(enderecoAtual);
-        const fullData = {
-          ...formData,
-          endereco: enderecoCompleto,
-          enderecoDetalhado: {
-            rua: enderecoAtual.rua || '',
-            numero: enderecoAtual.numero || '',
-            complemento: enderecoAtual.complemento || '',
-            bairro: enderecoAtual.bairro || '',
-            cidade: enderecoAtual.cidade || '',
-            pontoReferencia: enderecoAtual.pontoReferencia || ''
-          }
-        };
-        onDataChange(fullData, isFormValid());
-      }
-    }
-  }, [formData, selectedEndereco, enderecoData, isRetirada, onDataChange, isFormValid]);
-
   /**
    * Valida CPF (apenas formato básico)
    */
@@ -190,6 +159,37 @@ export function ClientDataForm({ onDataChange, isRequired = true, isRetirada = f
       temCidade
     );
   }, [formData, selectedEndereco, enderecoData, isRequired, isRetirada, tipoEntrega, bairros, selectedBairro]);
+
+  // Notifica componente pai sobre mudanças
+  useEffect(() => {
+    if (onDataChange) {
+      // Para retirada, não precisa de endereço
+      if (isRetirada) {
+        const fullData = {
+          ...formData,
+          endereco: '',
+          enderecoDetalhado: null
+        };
+        onDataChange(fullData, isFormValid());
+      } else {
+        const enderecoAtual = selectedEndereco || enderecoData;
+        const enderecoCompleto = formatEnderecoCompleto(enderecoAtual);
+        const fullData = {
+          ...formData,
+          endereco: enderecoCompleto,
+          enderecoDetalhado: {
+            rua: enderecoAtual.rua || '',
+            numero: enderecoAtual.numero || '',
+            complemento: enderecoAtual.complemento || '',
+            bairro: enderecoAtual.bairro || '',
+            cidade: enderecoAtual.cidade || '',
+            pontoReferencia: enderecoAtual.pontoReferencia || ''
+          }
+        };
+        onDataChange(fullData, isFormValid());
+      }
+    }
+  }, [formData, selectedEndereco, enderecoData, isRetirada, onDataChange, isFormValid]);
 
   /**
    * Formata CPF: 000.000.000-00

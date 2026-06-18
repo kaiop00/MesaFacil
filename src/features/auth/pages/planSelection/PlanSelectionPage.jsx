@@ -7,12 +7,14 @@ import { PLANS_DATA } from '../../constants/plansData';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/useToast';
 import stripeService, { STRIPE_TEMPORARILY_DISABLED } from '@/services/stripeService';
+import { hasUserUsedFreeTrial, claimUserFreeTrial } from '@/services/firebase/authService';
 import mesafacil from '@/assets/mesafacil.png';
 
 export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  const [hasUsedFreeTrial, setHasUsedFreeTrial] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, idRestaurante, stripeCustomerId, loading } = useAuth();
@@ -20,7 +22,27 @@ export default function PlanSelectionPage() {
   const { notify } = useToast();
   const resolvedRestaurantId = idRestaurante || location.state?.idRestaurante;
   const isFreeTrialExpired = Boolean(currentPlan?.planId === 'free' && currentPlan?.isTrialExpired);
+  const hasConsumedFreeTrial = hasUsedFreeTrial || Boolean(currentPlan?.trialStartedAt) || Boolean(currentPlan?.isTrialExpired);
   const grantedRef = useRef(false);
+
+  useEffect(() => {
+    const loadUserTrialUsage = async () => {
+      if (!user?.uid) {
+        setHasUsedFreeTrial(false);
+        return;
+      }
+
+      try {
+        const used = await hasUserUsedFreeTrial(user.uid);
+        setHasUsedFreeTrial(used);
+      } catch (error) {
+        console.error('Erro ao verificar uso do teste grátis por usuário:', error);
+        setHasUsedFreeTrial(false);
+      }
+    };
+
+    loadUserTrialUsage();
+  }, [user?.uid]);
 
   // Check if user has an existing subscription in Stripe
   useEffect(() => {
@@ -31,18 +53,15 @@ export default function PlanSelectionPage() {
           // Guard to avoid repeated grants/navigations when component re-renders
           if (!grantedRef.current) {
             grantedRef.current = true;
-            notify('Sistema de pagamento desativado. Acesso premium concedido automaticamente!', 'info');
             // Grant premium plan and redirect
             try {
               await setUserPlan(resolvedRestaurantId, null, null);
             } catch (error) {
               console.error('Error setting user plan:', error);
             }
-            // Redirect to home after short delay
-            setTimeout(() => {
-              navigate('/home', { replace: true });
-            }, 1500);
           }
+          setIsCheckingSubscription(false);
+          navigate('/home', { replace: true });
         } else {
           setIsCheckingSubscription(false);
         }
@@ -93,8 +112,8 @@ export default function PlanSelectionPage() {
   }, [stripeCustomerId, notify, resolvedRestaurantId, setUserPlan, navigate]);
 
   const handlePlanSelect = (plan) => {
-    if (plan.id === 'free' && isFreeTrialExpired) {
-      notify('Seu teste grátis já expirou. Escolha um plano pago para continuar.', 'warning');
+    if (plan.id === 'free' && (isFreeTrialExpired || hasConsumedFreeTrial)) {
+      notify('Teste grátis já utilizado. Escolha um plano pago para continuar.', 'warning');
       return;
     }
 
@@ -120,13 +139,22 @@ export default function PlanSelectionPage() {
       }
       
       if (selectedPlan.id === 'free') {
-        if (isFreeTrialExpired) {
-          notify('O período de teste grátis acabou. Escolha um plano pago.', 'warning');
+        if (isFreeTrialExpired || hasConsumedFreeTrial) {
+          notify('Teste grátis já utilizado. Escolha um plano pago.', 'warning');
           setIsProcessing(false);
           return;
         }
 
         await setUserPlan(resolvedRestaurantId, null, null);
+
+        const trialClaimed = await claimUserFreeTrial(user.uid);
+        if (!trialClaimed) {
+          notify('Teste grátis já utilizado nesta conta. Escolha um plano pago.', 'warning');
+          setIsProcessing(false);
+          return;
+        }
+
+        setHasUsedFreeTrial(true);
         notify('Plano gratuito ativado com sucesso!', 'success');
         navigate('/home', { replace: true });
       } else {
@@ -226,6 +254,26 @@ export default function PlanSelectionPage() {
             </div>
           </div>
         )}
+
+        {!STRIPE_TEMPORARILY_DISABLED && !isFreeTrialExpired && hasConsumedFreeTrial && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-6 mb-8 max-w-4xl mx-auto">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-amber-900 text-lg mb-2">
+                  Teste grátis já utilizado
+                </h3>
+                <p className="text-amber-800">
+                  Esta conta já utilizou o período de 30 dias. Para continuar, escolha um plano pago.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Título da seção */}
         <div className="text-center mb-12">{/* Alert if no restaurant ID */}
@@ -253,7 +301,7 @@ export default function PlanSelectionPage() {
         {/* Grid de planos */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {PLANS_DATA.map((plan) => {
-            const isFreePlanBlocked = !STRIPE_TEMPORARILY_DISABLED && isFreeTrialExpired && plan.id === 'free';
+            const isFreePlanBlocked = !STRIPE_TEMPORARILY_DISABLED && (isFreeTrialExpired || hasConsumedFreeTrial) && plan.id === 'free';
 
             return (
               <PlanCard
@@ -263,7 +311,7 @@ export default function PlanSelectionPage() {
                 onSelect={() => handlePlanSelect(plan)}
                 isPopular={plan.isPopular}
                 isDisabled={isFreePlanBlocked}
-                disabledReason={isFreePlanBlocked ? 'Teste grátis expirado para esta conta.' : null}
+                disabledReason={isFreePlanBlocked ? 'Teste grátis já utilizado para esta conta.' : null}
               />
             );
           })}

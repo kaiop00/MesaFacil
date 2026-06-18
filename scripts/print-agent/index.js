@@ -1,4 +1,3 @@
-import process from 'node:process';
 import admin from 'firebase-admin';
 import fs from 'fs/promises';
 import path from 'path';
@@ -35,6 +34,7 @@ if (SERVICE_ACCOUNT_PATH) {
 
 // Optional HTTP API to expose system printers to the frontend
 const HTTP_PORT = Number(process.env.PRINT_AGENT_HTTP_PORT || 3000);
+let httpServer = null;
 async function tryStartHttpServer() {
     if (!HTTP_PORT) return;
     try {
@@ -78,7 +78,7 @@ async function tryStartHttpServer() {
         // Body esperado: { restauranteId?: string, printerName?: string, ticketText?: string, ticketHtml?: string, jobId?: string }
         app.post('/print', async (req, res) => {
             try {
-                const { restauranteId, ticketText, ticketHtml, jobId } = req.body || {};
+                const { restauranteId, printerName, ticketText, ticketHtml, jobId } = req.body || {};
                 if (!ticketText && !ticketHtml) return res.status(400).json({ error: 'ticketText ou ticketHtml obrigatório' });
 
                 const outDir = path.join(process.cwd(), 'print-output', restauranteId || 'local');
@@ -95,7 +95,7 @@ async function tryStartHttpServer() {
             }
         });
 
-        app.listen(HTTP_PORT, () => {
+        httpServer = app.listen(HTTP_PORT, () => {
             console.log(`Print agent HTTP API rodando em http://localhost:${HTTP_PORT}`);
         });
     } catch (err) {
@@ -183,7 +183,7 @@ function restauranteIdFromRef(ref) {
     // ref.path like 'restaurantes/{id}/printQueue/{docId}' -> parent.parent.id
     try {
         return ref.parent.parent.id;
-    } catch {
+    } catch (e) {
         return 'unknown';
     }
 }
@@ -253,7 +253,7 @@ async function pollOnce() {
         for (const doc of snaps.docs) {
             // process sequentially to avoid race; small scale is fine
             // we don't await here to allow concurrency if needed; but keep sequential for simplicity
-             
+            // eslint-disable-next-line no-await-in-loop
             await processDoc(doc);
             count++;
         }
@@ -278,7 +278,7 @@ async function main() {
             console.error('Erro no loop principal:', err.message || err);
         }
         // sleep
-         
+        // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
     }
 }

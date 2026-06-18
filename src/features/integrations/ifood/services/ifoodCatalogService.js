@@ -19,7 +19,8 @@ export const fetchIfoodCatalog = async (idRestaurante) => {
     console.log("Calling function URL:", functionUrl);
     
     try {
-        const response = await fetch(functionUrl, {
+        const { default: fetchWithTimeout } = await import('@/utils/fetchWithTimeout');
+        const response = await fetchWithTimeout(functionUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -27,7 +28,7 @@ export const fetchIfoodCatalog = async (idRestaurante) => {
             body: JSON.stringify({
                 data: { idRestaurante }
             }),
-        });
+        }, 15000);
         
         console.log("Response status:", response.status);
         

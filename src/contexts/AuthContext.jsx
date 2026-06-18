@@ -104,13 +104,13 @@ export const AuthProvider = ({ children }) => {
             setPlan({ planId: 'free', status: 'active', expiresAt: null });
           }
         }
-      } else {
-        setUser(null);
-        setRole(null);
-        setIdRestaurante(null);
-        setPlan(null);
-        setStripeCustomerId(null);
-      }
+        } else {
+          setUser(null);
+          setRole(null);
+          setIdRestaurante(null);
+          setPlan(null);
+          setStripeCustomerId(null);
+        }
       setLoading(false);
     });
 

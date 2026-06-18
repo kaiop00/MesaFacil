@@ -14,6 +14,7 @@ import {
   setDoc,
   serverTimestamp,
   getDoc,
+  runTransaction,
   collection,
   query,
   where,
@@ -96,6 +97,8 @@ export async function registerWithEmail(email, password, nomeRestaurante) {
     email: result.user.email,
     idRestaurante,
     status: 'Ativo',
+    freeTrialUsed: false,
+    freeTrialClaimedAt: null,
     role: {
       ...allPermissions
     },
@@ -148,4 +151,57 @@ export async function getUserRestauranteId(uid) {
   }
 
   return null;
+}
+
+/**
+ * Checks whether a user account has already consumed the free trial.
+ * @param {string} uid
+ * @returns {Promise<boolean>}
+ */
+export async function hasUserUsedFreeTrial(uid) {
+  if (!uid) return false;
+
+  const userRef = doc(db, 'users', uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    return false;
+  }
+
+  const data = userSnap.data() || {};
+  return Boolean(data.freeTrialUsed || data.freeTrialClaimedAt);
+}
+
+/**
+ * Marks the free trial as consumed for a user account (one-time claim).
+ * Returns false when the trial was already consumed.
+ * @param {string} uid
+ * @returns {Promise<boolean>}
+ */
+export async function claimUserFreeTrial(uid) {
+  if (!uid) {
+    throw new Error('User ID is required');
+  }
+
+  const userRef = doc(db, 'users', uid);
+
+  return runTransaction(db, async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User document not found');
+    }
+
+    const data = userSnap.data() || {};
+    if (data.freeTrialUsed || data.freeTrialClaimedAt) {
+      return false;
+    }
+
+    transaction.update(userRef, {
+      freeTrialUsed: true,
+      freeTrialClaimedAt: serverTimestamp(),
+    });
+
+    return true;
+  });
 }

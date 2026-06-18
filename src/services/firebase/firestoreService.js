@@ -50,6 +50,41 @@ export async function getAll(idRestaurante, subcollectionName, options = {}) {
 }
 
 /**
+ * Busca documentos filtrando por um campo específico com ordenação e limite opcionais
+ * @param {string} idRestaurante
+ * @param {string} subcollectionName
+ * @param {string} field
+ * @param {import('firebase/firestore').WhereFilterOp} op
+ * @param {any} value
+ * @param {object} [options]
+ * @param {string} [options.orderByField]
+ * @param {string} [options.order]
+ * @param {number} [options.limit]
+ */
+export async function getByField(idRestaurante, subcollectionName, field, op, value, options = {}) {
+  const colRef = getSubcollectionRef(idRestaurante, subcollectionName);
+
+  const constraints = [where(field, op, value)];
+
+  if (options.orderByField) {
+    constraints.push(orderBy(options.orderByField, options.order || 'asc'));
+  }
+
+  if (typeof options.limit === 'number' && options.limit > 0) {
+    constraints.push(limit(options.limit));
+  }
+
+  const q = query(colRef, ...constraints);
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data() || {};
+    if (Object.prototype.hasOwnProperty.call(data, 'id')) delete data.id;
+    return { id: docSnap.id, ...data };
+  });
+}
+
+/**
  * Busca um documento por ID na subcoleção
  * @param {string} idRestaurante
  * @param {string} subcollectionName

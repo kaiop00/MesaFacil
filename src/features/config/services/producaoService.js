@@ -3,16 +3,6 @@ import { create, getAll, remove, update } from "@/services/firebase/firestoreSer
 const SETORES_COLL = "setoresProducao";
 const IMPRESSORAS_COLL = "impressorasSetor";
 
-const normalizePrinterSystemName = (data = {}) => {
-  return String(data.printerSystemName || data.systemPrinter || "").trim();
-};
-
-const normalizeImpressoraSetor = (impressora = {}) => ({
-  ...impressora,
-  printerSystemName: normalizePrinterSystemName(impressora),
-  systemPrinter: String(impressora.systemPrinter || impressora.printerSystemName || "").trim(),
-});
-
 export const getSetoresProducao = async (idRestaurante) => {
   return await getAll(idRestaurante, SETORES_COLL, { orderByField: "nome", order: "asc" });
 };
@@ -42,8 +32,7 @@ export const deleteSetorProducao = async (idRestaurante, setorId) => {
 };
 
 export const getImpressorasSetor = async (idRestaurante) => {
-  const impressoras = await getAll(idRestaurante, IMPRESSORAS_COLL, { orderByField: "nome", order: "asc" });
-  return Array.isArray(impressoras) ? impressoras.map(normalizeImpressoraSetor) : [];
+  return await getAll(idRestaurante, IMPRESSORAS_COLL, { orderByField: "nome", order: "asc" });
 };
 
 export const createImpressoraSetor = async (idRestaurante, data) => {
@@ -51,8 +40,7 @@ export const createImpressoraSetor = async (idRestaurante, data) => {
     nome: String(data.nome || "").trim(),
     tipo: data.tipo || "TERMICA",
     ip: String(data.ip || "").trim(),
-    systemPrinter: normalizePrinterSystemName(data),
-    printerSystemName: normalizePrinterSystemName(data),
+    systemPrinter: String(data.systemPrinter || "").trim(),
     porta: data.porta ? Number(data.porta) : null,
     setorId: data.setorId || "",
     larguraBobina: data.larguraBobina || "80mm",
@@ -65,8 +53,7 @@ export const updateImpressoraSetor = async (idRestaurante, impressoraId, data) =
     nome: String(data.nome || "").trim(),
     tipo: data.tipo || "TERMICA",
     ip: String(data.ip || "").trim(),
-    systemPrinter: normalizePrinterSystemName(data),
-    printerSystemName: normalizePrinterSystemName(data),
+    systemPrinter: String(data.systemPrinter || "").trim(),
     porta: data.porta ? Number(data.porta) : null,
     setorId: data.setorId || "",
     larguraBobina: data.larguraBobina || "80mm",

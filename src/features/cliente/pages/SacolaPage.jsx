@@ -40,6 +40,7 @@ export default function SacolaPage() {
     const [valorPagamento, setValorPagamento] = useState('');
     const [tipoEntrega, setTipoEntrega] = useState('delivery'); // 'delivery' ou 'retirada'
     const [observacaoGeral, setObservacaoGeral] = useState('');
+    const [observacaoAbertaPorItem, setObservacaoAbertaPorItem] = useState({});
     const [pedidoFinalizado, setPedidoFinalizado] = useState(false);
     const isRetirada = tipoEntrega === 'retirada';
 
@@ -139,7 +140,7 @@ export default function SacolaPage() {
 
                 return {
                     ...item,
-                    descricao: item.descricao || "",
+                    descricao: descricaoItem,
                     observacao: descricaoItem,
                     itemObservation: descricaoItem,
                 };
@@ -241,13 +242,47 @@ export default function SacolaPage() {
                     {/* GRID RESPONSIVO: 1 (mobile), 2 (tablet e desktop) */}
                     <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
                         {carrinhoItems.map((item) => (
-                            <CardCarrinho
-                                key={item.cartItemId || item.id}
-                                item={item}
-                                onIncrement={() => incrementarQuantidadeCarrinho(item.cartItemId || item.id)}
-                                onDecrement={() => decrementarQuantidadeCarrinho(item.cartItemId || item.id)}
-                                onUpdateObservation={atualizarObservacaoCarrinho}
-                            />
+                            <div key={item.cartItemId || item.id} className="space-y-2 rounded-md border border-gray-200 bg-white p-2">
+                                <CardCarrinho
+                                    item={item}
+                                    onIncrement={() => incrementarQuantidadeCarrinho(item.cartItemId || item.id)}
+                                    onDecrement={() => decrementarQuantidadeCarrinho(item.cartItemId || item.id)}
+                                    onUpdateObservation={atualizarObservacaoCarrinho}
+                                />
+
+                                <div className="px-2 pb-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const itemId = item.cartItemId || item.id;
+                                            setObservacaoAbertaPorItem((prev) => ({
+                                                ...prev,
+                                                [itemId]: !prev[itemId],
+                                            }));
+                                        }}
+                                        className="text-xs font-semibold text-amber-700 hover:text-amber-800"
+                                    >
+                                        {observacaoAbertaPorItem[item.cartItemId || item.id]
+                                            ? "Ocultar observação do item"
+                                            : "Adicionar observação ao item"}
+                                    </button>
+
+                                    {(observacaoAbertaPorItem[item.cartItemId || item.id] || item.itemObservation || item.observacao) && (
+                                        <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2">
+                                            <label className="mb-1 block text-xs font-semibold text-amber-800">
+                                                Observação deste item
+                                            </label>
+                                            <textarea
+                                                data-cartid={item.cartItemId || item.id}
+                                                value={item.itemObservation || item.observacao || ""}
+                                                onChange={(e) => atualizarObservacaoCarrinho(item.cartItemId || item.id, e.target.value)}
+                                                placeholder="Ex: sem cebola, pouco sal, gelo e limão..."
+                                                className="w-full min-h-20 rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B]"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         ))}
                     </div>
 

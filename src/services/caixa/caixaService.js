@@ -29,8 +29,16 @@ function normalizarFormaPagamento(formaPagamento) {
  * Verifica se existe sessão de caixa aberta para a empresa
  */
 export async function getOpenSession(empresaId) {
-  const sessions = await firestore.getAll(empresaId, SESSIONS_COLL, { orderByField: 'dataAbertura', order: 'desc' });
-  return sessions.find(s => s.status === 'ABERTO') || null;
+  const sessions = await firestore.getByField(
+    empresaId,
+    SESSIONS_COLL,
+    'status',
+    '==',
+    'ABERTO',
+    { limit: 1 }
+  );
+
+  return sessions[0] || null;
 }
 
 /**
@@ -132,13 +140,11 @@ export async function criarMovimentacao({ empresaId, usuarioId, tipo, valor, des
  * Calcula totais por forma de pagamento e valores para conferência de gaveta
  */
 export async function calcularTotaisSessao(empresaId, caixaSessionId) {
-  const pagamentos = await firestore.getAll(empresaId, PAGAMENTOS_COLL);
-  const lancamentos = await firestore.getAll(empresaId, LANCAMENTOS_COLL);
-  const movimentos = await firestore.getAll(empresaId, MOVIMENTOS_COLL);
-
-  const pagamentosSessao = pagamentos.filter(p => p.caixaSessionId === caixaSessionId);
-  const lancamentosSessao = lancamentos.filter(l => l.caixaSessionId === caixaSessionId);
-  const movimentosSessao = movimentos.filter(m => m.caixaSessionId === caixaSessionId);
+  const [pagamentosSessao, lancamentosSessao, movimentosSessao] = await Promise.all([
+    firestore.getByField(empresaId, PAGAMENTOS_COLL, 'caixaSessionId', '==', caixaSessionId),
+    firestore.getByField(empresaId, LANCAMENTOS_COLL, 'caixaSessionId', '==', caixaSessionId),
+    firestore.getByField(empresaId, MOVIMENTOS_COLL, 'caixaSessionId', '==', caixaSessionId),
+  ]);
 
   const formas = ['DINHEIRO','PIX','CREDITO','DEBITO','VOUCHER','IFOOD'];
   const porForma = {};
@@ -244,8 +250,22 @@ export async function forceCloseSessionDebug({ empresaId, usuarioId, caixaSessio
 }
 
 export async function getLastClosedSessionWithReport(empresaId) {
-  const sessions = await firestore.getAll(empresaId, SESSIONS_COLL, { orderByField: 'dataFechamento', order: 'desc' });
-  const closed = sessions.find(s => s.status === 'FECHADO' && s.relatorioFechamento);
+  const sessions = await firestore.getByField(
+    empresaId,
+    SESSIONS_COLL,
+    'status',
+    '==',
+    'FECHADO',
+    { limit: 50 }
+  );
+
+  const ordered = [...sessions].sort((a, b) => {
+    const dateA = new Date(a.dataFechamento || a.dataAbertura || 0).getTime();
+    const dateB = new Date(b.dataFechamento || b.dataAbertura || 0).getTime();
+    return dateB - dateA;
+  });
+
+  const closed = ordered.find((s) => s.status === 'FECHADO' && s.relatorioFechamento);
   if (!closed) return null;
   return {
     sessionId: closed.id,
@@ -304,7 +324,7 @@ export async function gerarRelatorioFechamento(empresaId, caixaSessionId, option
   const formatValue = (v) => {
     try {
       return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    } catch { return (v || '').toString(); }
+    } catch (e) { return (v || '').toString(); }
   };
 
   const padRight = (label, value, valueWidth = 16) => {
@@ -329,7 +349,7 @@ export async function gerarRelatorioFechamento(empresaId, caixaSessionId, option
 
   // tenta buscar dados do restaurante para cabeçalho
   let restaurant = null;
-  try { restaurant = await getRestaurant(empresaId); } catch { restaurant = null; }
+  try { restaurant = await getRestaurant(empresaId); } catch (e) { restaurant = null; }
 
   const header = [];
   header.push(padCenter(restaurant?.nome || ('Restaurante ' + empresaId)));
@@ -384,6 +404,7 @@ export async function gerarRelatorioFechamento(empresaId, caixaSessionId, option
 export default {
   abrirCaixa,
   getOpenSession,
+  getLastClosedSessionWithReport,
   registrarPagamentoPedido,
   criarLancamentoManual,
   criarMovimentacao,

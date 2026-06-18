@@ -3,6 +3,11 @@ import { useOrderOrigin } from '@/hooks/useOrderOrigin';
 
 const CarrinhoContext = createContext(null);
 
+function toNumber(value, fallback = 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 function buildCartItemKey(item) {
     return `${item.cartItemId || item.id}`;
 }
@@ -42,7 +47,9 @@ export default function CarrinhoProvider({ children }) {
             }
 
             // Garante que o preço promocional seja usado se houver promoção
-            const priceToUse = item.temPromocao ? item.valor : (item.price ?? item.valor ?? 0);
+            const priceToUse = item.temPromocao
+                ? toNumber(item.valor)
+                : toNumber(item.price ?? item.valor ?? 0);
 
             const newItem = {
                 ...item,
@@ -53,7 +60,7 @@ export default function CarrinhoProvider({ children }) {
                 // Preserva informações de promoção no carrinho
                 temPromocao: item.temPromocao || false,
                 promocao: item.promocao || null,
-                valorOriginal: item.valorOriginal || item.valor || item.price,
+                valorOriginal: toNumber(item.valorOriginal ?? item.valor ?? item.price ?? 0),
                 descricao: (item.descricao || "").trim(),
                 observacao: (item.observacao || item.observacoes || "").trim(),
                 itemObservation: (item.itemObservation || item.observacao || item.observacoes || "").trim(),
@@ -113,7 +120,7 @@ export default function CarrinhoProvider({ children }) {
     }
 
     function atualizarObservacaoCarrinho(id, observation) {
-        const descricao = (observation || "").trim();
+        const descricao = String(observation || "");
 
         setCarrinhoItems((prev) =>
             prev.map((item) => {

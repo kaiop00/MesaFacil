@@ -1,14 +1,12 @@
 // NavFooter.jsx
-import { NavLink, useResolvedPath } from "react-router-dom";
+import { NavLink, useLocation, useParams } from "react-router-dom";
 import { ListOrdered, Handbag, EditPencilLine01 } from "react-coolicons";
 import { useCarrinho } from "../context/CarrinhoContext";
 
 function Item({ to, label, icon, badge, end }) {
-    const resolved = useResolvedPath(to);
-
     return (
         <NavLink
-            to={resolved}
+            to={to}
             end={end}
             className={({ isActive }) =>
                 [
@@ -41,7 +39,15 @@ function Item({ to, label, icon, badge, end }) {
 }
 
 export default function NavFooter() {
+    const location = useLocation();
+    const { slug } = useParams();
     const { quantidade } = useCarrinho();
+
+    const basePath = slug ? `/mesa/${slug}` : "/mesa";
+    const search = location.search || "";
+    const cardapioTo = { pathname: basePath, search };
+    const sacolaTo = { pathname: `${basePath}/sacola`, search };
+    const pedidoTo = { pathname: `${basePath}/pedido`, search };
 
     return (
         <nav
@@ -66,19 +72,19 @@ export default function NavFooter() {
         "
             >
                 <Item
-                    to="."
+                    to={cardapioTo}
                     end
                     label="Cardápio"
                     icon={<EditPencilLine01 size={24} />}
                 />
                 <Item
-                    to="sacola"
+                    to={sacolaTo}
                     label="Sacola"
                     icon={<Handbag size={24} />}
                     badge={quantidade}
                 />
                 <Item
-                    to="pedido"
+                    to={pedidoTo}
                     label="Pedidos"
                     icon={<ListOrdered size={24} />}
                 />

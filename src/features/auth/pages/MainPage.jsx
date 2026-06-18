@@ -14,11 +14,12 @@ export default function MainPage() {
         <>
             <div className="font-inter h-screen overflow-hidden relative">
                 {/* Header fixo */}
-                <header className="absolute top-0 left-0 w-full bg-white flex justify-between items-center px-8 py-4 z-20 shadow-md">
-                    <img src={mesafacil} alt="logo" className="w-40 sm:w-32" />
+                <header className="absolute top-0 left-0 w-full bg-white flex justify-between items-center gap-2 px-3 py-3 sm:px-8 sm:py-4 z-30 shadow-md">
+                    <img src={mesafacil} alt="logo" className="w-28 sm:w-32 md:w-40 flex-shrink-0" />
 
-                    <button className="bg-[#F8912E] text-white font-medium rounded px-4 py-2 hover:opacity-90 transition text-sm sm:text-base cursor-pointer" onClick={() => navigate("/login")}>
-                        Acessar Sistema
+                    <button className="bg-[#F8912E] text-white font-medium rounded px-2.5 py-1.5 sm:px-4 sm:py-2 hover:opacity-90 transition text-[11px] leading-tight sm:text-sm md:text-base cursor-pointer whitespace-nowrap flex-shrink-0" onClick={() => navigate("/login")}>
+                        <span className="sm:hidden">Acessar</span>
+                        <span className="hidden sm:inline">Acessar Sistema</span>
                     </button>
                 </header>
 

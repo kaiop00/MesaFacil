@@ -273,7 +273,14 @@ exports.createCheckoutSession = onRequest(
       }
 
       const stripe = require("stripe")(getStripeSecretKey());
-      const {priceId, customerEmail, metadata, successUrl, cancelUrl} = req.body;
+      const {
+        priceId,
+        customerEmail,
+        metadata,
+        successUrl,
+        cancelUrl,
+        promotionCodeId,
+      } = req.body;
 
       // Validate required fields
       if (!priceId || !customerEmail || !successUrl || !cancelUrl) {
@@ -300,8 +307,13 @@ exports.createCheckoutSession = onRequest(
         });
       }
 
-      // Create checkout session
-      const session = await stripe.checkout.sessions.create({
+      if (promotionCodeId && !String(promotionCodeId).startsWith("promo_")) {
+        return res.status(400).json({
+          error: "Invalid promotionCodeId. Expected Stripe ID starting with 'promo_'.",
+        });
+      }
+
+      const checkoutPayload = {
         customer: customer.id,
         payment_method_types: ["card"],
         payment_method_collection: "if_required",
@@ -318,9 +330,17 @@ exports.createCheckoutSession = onRequest(
         subscription_data: {
           metadata: metadata || {},
         },
-        allow_promotion_codes: true,
         billing_address_collection: "required",
-      });
+      };
+
+      if (promotionCodeId) {
+        checkoutPayload.discounts = [{promotion_code: promotionCodeId}];
+      } else {
+        checkoutPayload.allow_promotion_codes = true;
+      }
+
+      // Create checkout session
+      const session = await stripe.checkout.sessions.create(checkoutPayload);
 
       res.json({id: session.id, url: session.url});
     } catch (error) {

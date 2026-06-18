@@ -2,15 +2,18 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import BaseModalWithHeader from "@/components/BaseModalWithHeader";
 import OrderItemsList from "@/features/order/components/OrderItemsList";
-import { getPedidosDaMesa, finalizarPedidoEspecifico, transferirPedidoEntreMesas } from "@/features/order/services/orderService";
+import {
+    cancelarItemPedido,
+    cancelarPedido,
+    getPedidosDaMesa,
+    finalizarPedidoEspecifico,
+} from "@/features/order/services/orderService";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
 import { useToast } from "@/hooks/useToast";
 import { useServiceFee } from "@/features/cliente/hooks/useServiceFee";
 import { useCoverCharge } from "@/features/cliente/hooks/useCoverCharge";
-import { doc, updateDoc, collection, onSnapshot, query, getDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, onSnapshot, query } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
-import { getPrintQueueByPedido } from "@/features/config/services/printQueueService";
-import { printQueueItemsNow } from "@/features/config/services/printDispatchService";
 import {
     computeTotalPedidos,
     computeServiceFeeAmount,
@@ -20,7 +23,6 @@ import {
     DEFAULT_SERVICE_FEE_PERCENT,
     formatCurrency,
 } from "@/features/cliente/utils/pedidos";
-import { debugResolveSetoresForItems } from "@/features/config/services/printQueueService";
 import { 
     extractIfoodCustomerInfo,
     isIfoodOrder
@@ -35,10 +37,11 @@ import IfoodAdditionalFeesDetails from "@/features/integrations/ifood/components
 import IfoodCustomerDetails from "@/features/integrations/ifood/components/IfoodCustomerDetails";
 import PaymentMethodModal from "@/features/order/components/modals/PaymentMethodModal";
 import NfceModal from "@/features/order/components/modals/NfceModal";
+import CancelOrderModal from "@/features/order/components/modals/CancelOrderModal";
+import CancelOrderItemModal from "@/features/order/components/modals/CancelOrderItemModal";
 import { buscarConfigFiscal } from "@/features/fiscal/services/configFiscalService";
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 import { useDetailOrderPrint } from "@/features/order/hooks/useDetailOrderPrint";
-import { useTables } from "@/features/config/hooks/useTables";
 
 const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onMesaUpdate }) => {
     const { t } = useTranslation('order');
@@ -50,25 +53,16 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
     const [pedidoParaFinalizar, setPedidoParaFinalizar] = useState(null);
     const [showNfceModal, setShowNfceModal] = useState(false);
     const [nfcePedidoInfo, setNfcePedidoInfo] = useState(null);
+    const [showCancelOrderModal, setShowCancelOrderModal] = useState(false);
+    const [showCancelItemModal, setShowCancelItemModal] = useState(false);
+    const [pedidoParaCancelar, setPedidoParaCancelar] = useState(null);
+    const [itemParaCancelar, setItemParaCancelar] = useState(null);
+    const [cancelamentoLoading, setCancelamentoLoading] = useState(false);
     const [nfceDisponivel, setNfceDisponivel] = useState(false);
     const [configFiscal, setConfigFiscal] = useState(null);
     const [numeroPessoas, setNumeroPessoas] = useState(1);
-    const [reimprimindo, setReimprimindo] = useState({});
-    const [setoresReimpressao, setSetoresReimpressao] = useState({});
-    const [setorSelecionadoReimpressao, setSetorSelecionadoReimpressao] = useState({});
-    const [transferencias, setTransferencias] = useState({});
-    const [transferindo, setTransferindo] = useState({});
     const { notify } = useToast();
     const { printDetailOrder } = useDetailOrderPrint();
-    const { tables } = useTables(idRestaurante);
-
-    const mesasTransferiveis = useMemo(() => {
-        if (!mesaSelecionada?.id || !Array.isArray(tables)) return [];
-
-        return tables
-            .filter((mesa) => mesa?.id && mesa.id !== mesaSelecionada.id)
-            .filter((mesa) => !isIfoodOrder(mesa.id) && !String(mesa.id).startsWith("whatsapp"));
-    }, [mesaSelecionada?.id, tables]);
     
     // Calcular orderOrigin a partir da mesa ou do primeiro pedido
     const orderOrigin = useMemo(() => {
@@ -83,6 +77,14 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         return null;
     }, [mesaSelecionada, pedidos]);
 
+    // Calcula tipoEntrega (delivery ou retirada) a partir do primeiro pedido WhatsApp
+    const tipoEntrega = useMemo(() => {
+        if (pedidos.length > 0 && pedidos[0]?.tipoEntrega) {
+            return pedidos[0].tipoEntrega;
+        }
+        return 'delivery'; // default para delivery
+    }, [pedidos]);
+    
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
@@ -95,6 +97,7 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
+        isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     // Sincroniza numeroPessoas com a mesa selecionada
@@ -192,6 +195,11 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                 return;
             }
 
+            // For each pedido that has an ifoodOrderId, set up a real-time listener
+            // on the corresponding ifoodOrders/{ifoodOrderId} doc.
+            // Only add listeners for NEW pedidos that don't have one yet.
+            const currentPedidoIds = new Set(dados.map(p => p.ifoodOrderId).filter(Boolean));
+            
             // Build listeners for pedidos we haven't subscribed to yet
             const existingListenerIds = new Set(
                 ifoodUnsubscribersRef.current.map(u => u._ifoodOrderId)
@@ -269,67 +277,72 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         setPedidoParaFinalizar(null);
     };
 
+    const handleOpenNfceModal = useCallback((pedidoId, pedidoData = null) => {
+        if (!mesaSelecionada?.id) return;
+
+        setNfcePedidoInfo({
+            mesaId: mesaSelecionada.id,
+            pedidoId,
+            orderData: pedidoData
+                ? {
+                    ...pedidoData,
+                    mesaNumero: pedidoData?.mesaNumero || mesaSelecionada?.numero || "-",
+                }
+                : null,
+        });
+        setShowNfceModal(true);
+    }, [mesaSelecionada?.id, mesaSelecionada?.numero]);
+
     const handleConfirmPayment = async (dadosPagamento) => {
         if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;
         const pedidoIdFinalizado = pedidoParaFinalizar;
         const pedidoEmAndamento = pedidos.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
-
-        // Marca como finalizando localmente para bloquear botão
+        
         setFinalizando(prev => ({ ...prev, [pedidoParaFinalizar]: true }));
+        try {
+            await finalizarPedidoEspecifico(
+                idRestaurante, 
+                mesaSelecionada.id, 
+                pedidoIdFinalizado,
+                dadosPagamento
+            );
+            notify(t('messages.success.paymentConfirmed'), "success");
+            
+            // Recarregar a lista
+            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
+            setPedidos(dados || []);
+            
+            // Fechar modal de pagamento
+            handleClosePaymentModal();
 
-        // Executa finalização em background para não bloquear a UI
-        const finalizePromise = finalizarPedidoEspecifico(
-            idRestaurante,
-            mesaSelecionada.id,
-            pedidoIdFinalizado,
-            dadosPagamento
-        ).then(async () => {
-            try {
-                const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
-                setPedidos(dados || []);
-
-                if ((dados || []).length === 0) {
-                    if (nfceDisponivel && orderDataForFiscalModal) {
-                        setShowNfceModal(true);
-                    }
+            // Sempre abre a modal após finalizar. A emissão de NFC-e é habilitada/desabilitada dentro da modal.
+            const pedidoFinalizado = dados?.find((pedido) => pedido.id === pedidoIdFinalizado) || null;
+            const orderDataForFiscalModal = pedidoFinalizado
+                ? {
+                    ...pedidoFinalizado,
+                    mesaNumero: pedidoFinalizado?.mesaNumero || mesaSelecionada?.numero || "-",
                 }
-            } catch (err) {
-                console.warn('Erro ao atualizar pedidos após finalizacao (background):', err);
-            }
-        }).catch((error) => {
-            console.error('Erro ao finalizar pedido (background):', error);
-            notify(t('messages.error.finishOrder'), 'error');
-        }).finally(() => {
+                : pedidoEmAndamento
+                    ? {
+                        ...pedidoEmAndamento,
+                        ...dadosPagamento,
+                        status: "entregue",
+                        mesaNumero: pedidoEmAndamento?.mesaNumero || mesaSelecionada?.numero || "-",
+                    }
+                    : null;
+
+            setNfcePedidoInfo({
+                mesaId: mesaSelecionada.id,
+                pedidoId: pedidoIdFinalizado,
+                orderData: orderDataForFiscalModal,
+            });
+            setShowNfceModal(true);
+        } catch (error) {
+            console.error("Erro ao finalizar pedido:", error);
+            notify(t('messages.error.finishOrder'), "error");
+        } finally {
             setFinalizando(prev => ({ ...prev, [pedidoParaFinalizar]: false }));
-        });
-
-        // Notifica sucesso imediato e fecha modal de pagamento
-        notify(t('messages.success.paymentConfirmed'), "success");
-        handleClosePaymentModal();
-
-        // Prepara dados para abrir o modal fiscal imediatamente usando o estado local
-        const orderDataForFiscalModal = pedidoEmAndamento
-            ? {
-                ...pedidoEmAndamento,
-                ...dadosPagamento,
-                status: 'entregue',
-                mesaNumero: pedidoEmAndamento?.mesaNumero || mesaSelecionada?.numero || '-',
-            }
-            : null;
-
-        setNfcePedidoInfo({
-            mesaId: mesaSelecionada.id,
-            pedidoId: pedidoIdFinalizado,
-            orderData: orderDataForFiscalModal,
-        });
-
-        if (!nfceDisponivel) {
-            notify(t('nfce.hints.configRequiredAfterFinish'), "warning");
-            setNfcePedidoInfo(null);
         }
-
-        // keep promise alive (no await) so background tasks run
-        return finalizePromise;
     };
 
     const handleFinalizeCanceledOrder = async (pedidoId) => {
@@ -360,6 +373,68 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             setFinalizando((prev) => ({ ...prev, [pedidoId]: false }));
         }
     };
+
+    const handleOpenCancelOrderModal = useCallback((pedido) => {
+        if (!pedido || pedido.status !== "andamento") return;
+        setPedidoParaCancelar(pedido);
+        setShowCancelOrderModal(true);
+    }, []);
+
+    const handleConfirmCancelOrder = useCallback(async (motivoCancelamento) => {
+        if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaCancelar?.id) return;
+
+        setCancelamentoLoading(true);
+        try {
+            await cancelarPedido(idRestaurante, mesaSelecionada.id, pedidoParaCancelar.id, {
+                motivoCancelamento,
+            });
+
+            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
+            setPedidos(dados || []);
+            notify("Pedido cancelado com sucesso", "success");
+            setShowCancelOrderModal(false);
+            setPedidoParaCancelar(null);
+        } catch (error) {
+            console.error("Erro ao cancelar pedido:", error);
+            notify(error?.message || "Erro ao cancelar pedido", "error");
+        } finally {
+            setCancelamentoLoading(false);
+        }
+    }, [idRestaurante, mesaSelecionada?.id, pedidoParaCancelar, notify]);
+
+    const handleOpenCancelItemModal = useCallback((pedido, item, itemIndex) => {
+        if (!pedido || pedido.status !== "andamento" || !item) return;
+        setPedidoParaCancelar(pedido);
+        setItemParaCancelar({ item, itemIndex });
+        setShowCancelItemModal(true);
+    }, []);
+
+    const handleConfirmCancelItem = useCallback(async ({ quantidade, motivoCancelamento }) => {
+        if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaCancelar?.id || itemParaCancelar?.itemIndex == null) {
+            return;
+        }
+
+        setCancelamentoLoading(true);
+        try {
+            await cancelarItemPedido(idRestaurante, mesaSelecionada.id, pedidoParaCancelar.id, {
+                itemIndex: itemParaCancelar.itemIndex,
+                quantidade,
+                motivoCancelamento,
+            });
+
+            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
+            setPedidos(dados || []);
+            notify("Item cancelado com sucesso", "success");
+            setShowCancelItemModal(false);
+            setItemParaCancelar(null);
+            setPedidoParaCancelar(null);
+        } catch (error) {
+            console.error("Erro ao cancelar item:", error);
+            notify(error?.message || "Erro ao cancelar item", "error");
+        } finally {
+            setCancelamentoLoading(false);
+        }
+    }, [idRestaurante, mesaSelecionada?.id, pedidoParaCancelar, itemParaCancelar, notify]);
 
     const totalSemTaxa = useMemo(() => computeTotalPedidos(pedidos), [pedidos]);
     const percentNormalized = useMemo(
@@ -452,160 +527,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         });
     }, [printDetailOrder, mesaSelecionada, pedidos, totalSemTaxa, percentNormalized, valorServico, serviceFeeExempt, coverChargeEnabled, coverChargeValue, numeroPessoas, valorCouvert, totalComServico]);
 
-    const handleReimprimirPedido = useCallback(async (pedidoId) => {
-        if (!idRestaurante || !pedidoId) return;
-
-        setReimprimindo((prev) => ({ ...prev, [pedidoId]: true }));
-        try {
-            const queueItems = await getPrintQueueByPedido(idRestaurante, pedidoId);
-            if (!queueItems.length) {
-                notify("Nenhum setor foi encontrado na fila deste pedido", "warning");
-                return;
-            }
-
-            await printQueueItemsNow(idRestaurante, queueItems);
-            notify("Reimpressão enviada com sucesso", "success");
-        } catch (error) {
-            console.error("Erro ao reimprimir pedido:", error);
-            notify(error.message || "Falha ao reimprimir pedido", "error");
-        } finally {
-            setReimprimindo((prev) => ({ ...prev, [pedidoId]: false }));
-        }
-    }, [idRestaurante, notify]);
-
-    const handleReimprimirSetor = useCallback(async (pedidoId) => {
-        if (!idRestaurante || !pedidoId) return;
-
-        setReimprimindo((prev) => ({ ...prev, [pedidoId]: true }));
-        try {
-            const queueItems = await getPrintQueueByPedido(idRestaurante, pedidoId);
-            if (!queueItems.length) {
-                // Diagnostics: resolve setores from pedido items to understand mapping
-                try {
-                    const pedidoState = pedidos.find(p => p.id === pedidoId) || {};
-
-                    // Try to fetch the full pedido from Firestore in case the UI state is shallow
-                    let pedidoFromDb = null;
-                    try {
-                        if (mesaSelecionada?.id) {
-                            const pedidoRef = doc(db, 'restaurantes', idRestaurante, 'mesas', mesaSelecionada.id, 'pedidos', pedidoId);
-                            const pedidoSnap = await getDoc(pedidoRef);
-                            if (pedidoSnap.exists()) pedidoFromDb = pedidoSnap.data();
-                        }
-                    } catch (fetchErr) {
-                        console.debug('DEBUG failed to fetch pedido from firestore', fetchErr);
-                    }
-
-                    console.debug('DEBUG pedido state vs firestore', { pedidoState, pedidoFromDb });
-
-                    const itemsToInspect = (pedidoFromDb && Array.isArray(pedidoFromDb.items) && pedidoFromDb.items.length > 0)
-                        ? pedidoFromDb.items
-                        : (pedidoState.items || []);
-
-                    const diagnostic = await debugResolveSetoresForItems(idRestaurante, itemsToInspect || []);
-                    console.debug('DEBUG setores resolution for pedido', pedidoId, diagnostic);
-                } catch (dErr) {
-                    console.debug('DEBUG failed to resolve setores for items', dErr);
-                }
-
-                notify("Nenhum setor foi encontrado na fila deste pedido", "warning");
-                return;
-            }
-
-            const setores = Array.from(new Set(queueItems.map((item) => String(item.setorNome || item.payload?.setorNome || "Sem setor").trim())));
-            setSetoresReimpressao((prev) => ({ ...prev, [pedidoId]: queueItems }));
-            setSetorSelecionadoReimpressao((prev) => ({ ...prev, [pedidoId]: prev[pedidoId] || setores[0] || "" }));
-
-            if (setores.length === 0) {
-                notify("Setor não encontrado na fila deste pedido", "warning");
-                return;
-            }
-        } catch (error) {
-            console.error("Erro ao reimprimir setor:", error);
-            notify(error.message || "Falha ao reimprimir setor", "error");
-        } finally {
-            setReimprimindo((prev) => ({ ...prev, [pedidoId]: false }));
-        }
-    }, [idRestaurante, notify, pedidos, mesaSelecionada?.id]);
-
-    const handleTransferirPedido = useCallback(async (pedidoId) => {
-        if (!idRestaurante || !mesaSelecionada?.id || !pedidoId) return;
-
-        const mesaDestinoId = transferencias[pedidoId];
-        if (!mesaDestinoId) {
-            notify(t("messages.error.selectTransferTable"), "warning");
-            return;
-        }
-
-        setTransferindo((prev) => ({ ...prev, [pedidoId]: true }));
-        try {
-            await transferirPedidoEntreMesas(idRestaurante, mesaSelecionada.id, mesaDestinoId, pedidoId);
-            notify(t("messages.success.orderTransferred"), "success");
-            setTransferencias((prev) => ({ ...prev, [pedidoId]: "" }));
-
-            const dados = await getPedidosDaMesa(idRestaurante, mesaSelecionada.id);
-            setPedidos(dados || []);
-        } catch (error) {
-            console.error("Erro ao transferir pedido:", error);
-            notify(error.message || t("messages.error.transferOrder"), "error");
-        } finally {
-            setTransferindo((prev) => ({ ...prev, [pedidoId]: false }));
-        }
-    }, [idRestaurante, mesaSelecionada?.id, notify, transferencias, t]);
-
-    const handleEnviarReimpressaoSetor = useCallback(async (pedidoId) => {
-        if (!idRestaurante || !pedidoId) return;
-
-        const queueItems = setoresReimpressao[pedidoId] || [];
-        const setorSelecionado = String(setorSelecionadoReimpressao[pedidoId] || "").trim().toLowerCase();
-
-        if (!queueItems.length || !setorSelecionado) {
-            notify("Selecione um setor para reimprimir", "warning");
-            return;
-        }
-
-        const itensSetor = queueItems.filter((item) => {
-            const setorNome = String(item.setorNome || item.payload?.setorNome || "Sem setor").trim().toLowerCase();
-            return setorNome === setorSelecionado;
-        });
-
-        if (!itensSetor.length) {
-            notify("Setor não encontrado na fila deste pedido", "warning");
-            return;
-        }
-
-        setReimprimindo((prev) => ({ ...prev, [pedidoId]: true }));
-        try {
-            await printQueueItemsNow(idRestaurante, itensSetor);
-            notify("Reimpressão do setor enviada com sucesso", "success");
-        } catch (error) {
-            console.error("Erro ao reimprimir setor:", error);
-            notify(error.message || "Falha ao reimprimir setor", "error");
-        } finally {
-            setReimprimindo((prev) => ({ ...prev, [pedidoId]: false }));
-        }
-    }, [idRestaurante, notify, setoresReimpressao, setorSelecionadoReimpressao]);
-
-    const nfceModalNode = (
-        <NfceModal
-            isOpen={showNfceModal}
-            onClose={() => {
-                setShowNfceModal(false);
-                setNfcePedidoInfo(null);
-            }}
-            idRestaurante={idRestaurante}
-            mesaId={nfcePedidoInfo?.mesaId}
-            pedidoId={nfcePedidoInfo?.pedidoId}
-            orderData={nfcePedidoInfo?.orderData}
-            nfceEnabled={nfceDisponivel}
-            danfceOptions={configFiscal?.nfce || {}}
-        />
-    );
-
-    if (!loading && pedidos.length === 0) {
-        return showNfceModal && nfcePedidoInfo ? nfceModalNode : null;
-    }
-
     return (
         <BaseModalWithHeader
             isOpen={!!isOpen}
@@ -663,106 +584,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                 <p className="text-xs text-gray-500 italic">
                                     {t('modals.orderDetail.status')}: {pedido.status || "-"}
                                 </p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleReimprimirPedido(pedido.id)}
-                                        disabled={!!reimprimindo[pedido.id]}
-                                        className="rounded-md border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-60"
-                                    >
-                                        {reimprimindo[pedido.id] ? 'Reimprimindo...' : 'Reimprimir pedido'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleReimprimirSetor(pedido.id)}
-                                        disabled={!!reimprimindo[pedido.id]}
-                                        className="rounded-md border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-60"
-                                    >
-                                        Carregar setores
-                                    </button>
-                                </div>
-                                {Array.isArray(setoresReimpressao[pedido.id]) && setoresReimpressao[pedido.id].length > 0 && (
-                                    <div className="mt-3 flex flex-wrap items-end gap-2 rounded-md border border-amber-100 bg-amber-50/60 p-3">
-                                        <div className="min-w-[220px] flex-1">
-                                            <label className="mb-1 block text-xs font-medium text-amber-800">
-                                                Selecione o setor para reimpressão
-                                            </label>
-                                            <select
-                                                value={setorSelecionadoReimpressao[pedido.id] || ""}
-                                                onChange={(e) => setSetorSelecionadoReimpressao((prev) => ({
-                                                    ...prev,
-                                                    [pedido.id]: e.target.value,
-                                                }))}
-                                                className="w-full rounded-md border border-amber-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                                            >
-                                                {Array.from(new Set(setoresReimpressao[pedido.id].map((item) => String(item.setorNome || item.payload?.setorNome || "Sem setor").trim()))).map((setorNome) => (
-                                                    <option key={`${pedido.id}-${setorNome}`} value={setorNome}>
-                                                        {setorNome}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleEnviarReimpressaoSetor(pedido.id)}
-                                            disabled={!!reimprimindo[pedido.id]}
-                                            className="rounded-md bg-amber-500 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
-                                        >
-                                            {reimprimindo[pedido.id] ? 'Enviando...' : 'Reimprimir setor'}
-                                        </button>
-                                    </div>
-                                )}
-                                {pedido.status === "andamento" && mesasTransferiveis.length > 0 && (
-                                    <div className="mt-3 rounded-md border border-sky-100 bg-sky-50/70 p-3">
-                                        <div className="mb-2 flex items-center justify-between gap-2">
-                                            <div>
-                                                <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">
-                                                    {t("modals.orderDetail.transfer.title")}
-                                                </p>
-                                                <p className="text-xs text-sky-700">
-                                                    {t("modals.orderDetail.transfer.subtitle")}
-                                                </p>
-                                            </div>
-                                            <span className="text-xs text-sky-700">
-                                                {t("modals.orderDetail.transfer.currentTable")}: {t('tables.tableLetter', { letter: mesaSelecionada?.numero || "-" })}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex flex-wrap items-end gap-2">
-                                            <div className="min-w-[220px] flex-1">
-                                                <label className="mb-1 block text-xs font-medium text-sky-800">
-                                                    {t("modals.orderDetail.transfer.targetTable")}
-                                                </label>
-                                                <select
-                                                    value={transferencias[pedido.id] || ""}
-                                                    onChange={(e) => setTransferencias((prev) => ({
-                                                        ...prev,
-                                                        [pedido.id]: e.target.value,
-                                                    }))}
-                                                    className="w-full rounded-md border border-sky-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                                                >
-                                                    <option value="">{t("modals.orderDetail.transfer.placeholder")}</option>
-                                                    {mesasTransferiveis.map((mesa) => (
-                                                        <option key={mesa.id} value={mesa.id}>
-                                                            {t('tables.tableLetter', { letter: mesa.numero ?? mesa.nome ?? mesa.id })} - {t(`tables.status.${String(mesa.status || "livre").toLowerCase()}`)}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => handleTransferirPedido(pedido.id)}
-                                                disabled={!!transferindo[pedido.id] || !transferencias[pedido.id]}
-                                                className="rounded-md bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                            >
-                                                {transferindo[pedido.id]
-                                                    ? t("modals.orderDetail.transfer.buttons.processing")
-                                                    : t("modals.orderDetail.transfer.buttons.transfer")}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
@@ -976,8 +797,27 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                             items={pedido.items || []}
                             updateItemQuantity={() => { }} // Desativado
                             removeItem={() => { }}         // Desativado
+                            onCancelItem={pedido.status === 'andamento'
+                                ? (item, index) => handleOpenCancelItemModal(pedido, item, index)
+                                : undefined}
                             readOnly                       // Flag de só leitura
                         />
+
+                        {Array.isArray(pedido.cancelamentos) && pedido.cancelamentos.length > 0 && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
+                                <p className="text-sm font-semibold text-red-800">Itens cancelados</p>
+                                {pedido.cancelamentos.map((cancelamento, idx) => (
+                                    <div key={`${pedido.id}-cancelamento-${idx}`} className="text-sm text-red-700">
+                                        <p className="font-medium">
+                                            {Number(cancelamento.quantidade || 0)}x {cancelamento.itemNome || "Item"}
+                                        </p>
+                                        {cancelamento.motivoCancelamento && (
+                                            <p className="text-xs">Motivo: {cancelamento.motivoCancelamento}</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {Array.isArray(pedido.pagamentos) && pedido.pagamentos.length > 0 && (
                             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
@@ -1064,6 +904,15 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
                                     </p>
                                 )}
                                 <div className="flex justify-end gap-2">
+                                {pedido.status === 'andamento' && (
+                                    <button
+                                        onClick={() => handleOpenCancelOrderModal(pedido)}
+                                        disabled={cancelamentoLoading}
+                                        className="px-4 py-2 bg-red-600 text-white rounded disabled:bg-gray-300 cursor-pointer"
+                                    >
+                                        {cancelamentoLoading ? t('page.loading') : 'Cancelar pedido'}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => {
                                         if (pedido.status === 'cancelado') {
@@ -1154,15 +1003,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             )}
 
             <div className="flex justify-end gap-2 mt-6">
-                {nfceDisponivel && nfcePedidoInfo && (
-                    <button
-                        type="button"
-                        onClick={() => setShowNfceModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-300 rounded hover:bg-emerald-100 text-emerald-700 font-semibold cursor-pointer"
-                    >
-                        Emitir NFC-e
-                    </button>
-                )}
                 {!loading && pedidos.length > 0 && !isDelivery && (
                     <button
                         onClick={handlePrintComanda}
@@ -1192,7 +1032,49 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             />
 
             {/* Modal de NFC-e */}
-            {nfceModalNode}
+            <NfceModal
+                isOpen={showNfceModal}
+                onClose={() => {
+                    setShowNfceModal(false);
+                    setNfcePedidoInfo(null);
+                    onClose?.();
+                }}
+                idRestaurante={idRestaurante}
+                mesaId={nfcePedidoInfo?.mesaId}
+                pedidoId={nfcePedidoInfo?.pedidoId}
+                orderData={nfcePedidoInfo?.orderData}
+                nfceEnabled={nfceDisponivel}
+                danfceOptions={configFiscal?.nfce || {}}
+            />
+
+            <CancelOrderModal
+                isOpen={showCancelOrderModal}
+                onClose={() => {
+                    if (cancelamentoLoading) return;
+                    setShowCancelOrderModal(false);
+                    setPedidoParaCancelar(null);
+                }}
+                pedido={pedidoParaCancelar ? {
+                    numeroPedido: pedidoParaCancelar.id,
+                    nomeCliente: mesaSelecionada?.numero ? `Mesa ${mesaSelecionada.numero}` : "Mesa",
+                    total: pedidoParaCancelar.total || 0,
+                } : null}
+                onConfirm={handleConfirmCancelOrder}
+                loading={cancelamentoLoading}
+            />
+
+            <CancelOrderItemModal
+                isOpen={showCancelItemModal}
+                onClose={() => {
+                    if (cancelamentoLoading) return;
+                    setShowCancelItemModal(false);
+                    setItemParaCancelar(null);
+                    setPedidoParaCancelar(null);
+                }}
+                item={itemParaCancelar?.item || null}
+                onConfirm={handleConfirmCancelItem}
+                loading={cancelamentoLoading}
+            />
         </BaseModalWithHeader>
     );
 };

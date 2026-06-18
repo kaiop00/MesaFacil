@@ -68,6 +68,43 @@ const getPaymentEntriesFromPedido = (pedido) => {
         "",
     }));
   }
+    const buildCanceledItemsSection = useCallback((pedidos) => {
+      const cancelamentos = [];
+
+      pedidos.forEach((pedido) => {
+        if (Array.isArray(pedido?.cancelamentos)) {
+          pedido.cancelamentos.forEach((cancelamento) => {
+            cancelamentos.push(cancelamento);
+          });
+        }
+      });
+
+      if (cancelamentos.length === 0) {
+        return "";
+      }
+
+      const lines = cancelamentos
+        .map((cancelamento) => {
+          const qty = Number(cancelamento?.quantidade || 0);
+          const nome = sanitize(cancelamento?.itemNome || "Item");
+          const motivo = sanitize(cancelamento?.motivoCancelamento || "Sem motivo informado");
+          return `
+            <div class="item">
+              <div class="item-line">
+                <span class="name">${qty}x ${nome}</span>
+              </div>
+              <div class="item-extra">Motivo: ${motivo}</div>
+            </div>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="divider"></div>
+        <div class="row title">Itens cancelados</div>
+        ${lines}
+      `;
+    }, []);
 
   if (pedido.formaPagamento) {
     return [{
@@ -484,6 +521,7 @@ export const useDetailOrderPrint = () => {
               <div class="divider"></div>
               <div class="row title">Itens</div>
               ${buildItemsSection(pedidos)}
+              ${buildCanceledItemsSection(pedidos)}
 
               <div class="divider"></div>
               ${buildTotalSection({

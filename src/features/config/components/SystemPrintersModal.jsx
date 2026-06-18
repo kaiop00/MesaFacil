@@ -1,28 +1,26 @@
 import { useEffect, useState } from 'react';
+import { fetchAvailablePrinters, getPrintServiceBaseUrl } from '@/services/printService';
 
 export default function SystemPrintersModal({ isOpen, onClose, onSelect }) {
   const [loading, setLoading] = useState(false);
   const [printers, setPrinters] = useState([]);
   const [error, setError] = useState(null);
 
-  const agentUrl = 'http://localhost:3000/printers';
-
   useEffect(() => {
     if (!isOpen) return;
     let mounted = true;
+
     async function fetchPrinters() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(agentUrl, { cache: 'no-store' });
-        if (!res.ok) throw new Error('Erro ao conectar ao agente local');
-        const data = await res.json();
+        const data = await fetchAvailablePrinters();
         if (mounted) setPrinters(Array.isArray(data) ? data : []);
       } catch (err) {
         console.warn(err);
         if (mounted) {
           setError(
-            'Não foi possível carregar as impressoras do sistema. Verifique se o agente local está rodando em http://localhost:3000 e se a dependência de impressão está disponível.'
+            `Não foi possível carregar as impressoras do sistema. Verifique se o serviço local de impressão está ativo em ${getPrintServiceBaseUrl()} e se a dependência de impressão está disponível.`
           );
         }
       } finally {
@@ -49,7 +47,7 @@ export default function SystemPrintersModal({ isOpen, onClose, onSelect }) {
         {error && (
           <div className="mb-4 rounded border border-red-100 bg-red-50 p-3 text-sm text-red-700">
             <p>{error}</p>
-            <p className="mt-2 text-xs text-red-600">Se o agente estiver ativo, tente recarregar o modal. Caso contrário, inicie o comando `npm run print-agent` no terminal.</p>
+            <p className="mt-2 text-xs text-red-600">Se o serviço estiver ativo, tente recarregar o modal. Caso contrário, inicie o serviço em apps/print-service com npm run dev.</p>
           </div>
         )}
 

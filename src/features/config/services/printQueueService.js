@@ -1,48 +1,18 @@
 import { create, getAll, update } from "@/services/firebase/firestoreService";
-import { db } from "@/config/firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
 import {
   getImpressorasSetor,
   getSetoresProducao,
 } from "@/features/config/services/producaoService";
-import { fetchAvailablePrinters } from "@/services/printService";
 
 const PRINT_QUEUE_COLL = "printQueue";
-const SYSTEM_NAME = "MesaFacil";
+
+const moneyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 const safeText = (value) => String(value ?? "").replace(/[<>]/g, "").trim();
 const line = (char = "-") => char.repeat(48);
-const centerText = (value, width = 48) => {
-  const text = safeText(value);
-  if (!text) return "";
-  if (text.length >= width) return text;
-  const totalPadding = width - text.length;
-  const leftPadding = Math.floor(totalPadding / 2);
-  const rightPadding = totalPadding - leftPadding;
-  return `${" ".repeat(leftPadding)}${text}${" ".repeat(rightPadding)}`;
-};
-
-// Wraps a long text into multiple lines and centers each line to the given width.
-const centerMultiLine = (value, width = 48) => {
-  const text = safeText(value);
-  if (!text) return "";
-
-  // Simple word-wrap
-  const words = text.split(/\s+/);
-  const lines = [];
-  let current = "";
-  for (const w of words) {
-    if ((current + " " + w).trim().length <= width) {
-      current = (current + " " + w).trim();
-    } else {
-      if (current) lines.push(current);
-      current = w;
-    }
-  }
-  if (current) lines.push(current);
-
-  return lines.map((ln) => centerText(ln, width)).join("\n");
-};
 const normalizeCategory = (value) => safeText(value).toLocaleLowerCase("pt-BR");
 
 const resolveSetorFromItem = (item, setores = []) => {
@@ -85,36 +55,11 @@ const resolveSetorFromItem = (item, setores = []) => {
   };
 };
 
-const normalizePrinterName = (value) => String(value || "").trim();
-
-const resolveFallbackPrinterName = async (impressoras = []) => {
-  const linkedPrinter = (impressoras || []).find((item) => item?.ativa !== false && normalizePrinterName(item?.printerSystemName || item?.systemPrinter));
-  const linkedName = normalizePrinterName(linkedPrinter?.printerSystemName || linkedPrinter?.systemPrinter);
-  if (linkedName) {
-    return linkedName;
-  }
-
-  try {
-    const printers = await fetchAvailablePrinters();
-    const defaultPrinter = printers.find((item) => item?.default && item?.connected !== false) || printers.find((item) => item?.connected !== false) || printers[0];
-    return normalizePrinterName(defaultPrinter?.name);
-  } catch (error) {
-    console.debug("DEBUG resolveFallbackPrinterName: failed to read printers", error?.message || error);
-    return "";
-  }
-};
-
 const formatItemLabel = (item, index) => {
   const quantity = Number(item?.quantity || 0);
-  const name = safeText(item?.nome || "Item").toUpperCase();
-  const observation = safeText(item?.itemObservation || item?.descricao || item?.observacao || item?.observacoes || "");
-  const lines = [`${String(index + 1).padStart(2, "0")}. ${quantity}X ${name}`];
-
-  if (observation) {
-    lines.push(`   OBS: ${observation.toUpperCase()}`);
-  }
-
-  return lines.join("\n");
+  const name = safeText(item?.nome || "Item");
+  const total = Number(item?.price || 0) * quantity;
+  return `${String(index + 1).padStart(2, "0")}. ${quantity}x ${name} ${moneyFormatter.format(total)}`;
 };
 
 const groupItemsBySetor = (items = [], setores = []) => {
@@ -140,21 +85,20 @@ const groupItemsBySetor = (items = [], setores = []) => {
 
 const buildTicketText = ({
   tipo,
+  pedidoId,
   mesaNumero,
   setorNome,
-  estabelecimentoNome,
   items,
+  total,
   observacoes,
   motivoCancelamento,
 }) => {
   const header = [
     line(),
-    // Center both system name and establishment name; wrap long names if needed
-    centerMultiLine(SYSTEM_NAME.toUpperCase()),
-    centerMultiLine(estabelecimentoNome || "-"),
-    `TIPO: ${safeText(tipo).toUpperCase()}`,
-    `MESA: ${safeText(mesaNumero || "-").toUpperCase()}`,
-    `SETOR: ${safeText(setorNome || "-").toUpperCase()}`,
+    `TIPO: ${safeText(tipo)}`,
+    `MESA: ${safeText(mesaNumero || "-")}`,
+    `SETOR: ${safeText(setorNome || "-")}`,
+    `PEDIDO: ${safeText(pedidoId || "-")}`,
     line(),
   ];
 
@@ -162,10 +106,11 @@ const buildTicketText = ({
 
   const footer = [
     line(),
+    `TOTAL: ${moneyFormatter.format(Number(total || 0))}`,
   ];
 
-  if (observacoes) footer.push(line(), `OBS: ${safeText(observacoes).toUpperCase()}`);
-  if (motivoCancelamento) footer.push(line(), `MOTIVO: ${safeText(motivoCancelamento).toUpperCase()}`);
+  if (observacoes) footer.push(line(), `OBS: ${safeText(observacoes)}`);
+  if (motivoCancelamento) footer.push(line(), `MOTIVO: ${safeText(motivoCancelamento)}`);
 
   footer.push(line());
   return [...header, ...itemLines, ...footer].join("\n");
@@ -194,8 +139,6 @@ const buildQueuePayload = ({
   mesaNumero,
   setorId,
   setorNome,
-  estabelecimentoNome,
-  printerSystemName,
   items,
   total,
   observacoes,
@@ -206,8 +149,8 @@ const buildQueuePayload = ({
     pedidoId,
     mesaNumero,
     setorNome,
-    estabelecimentoNome,
     items,
+    total,
     observacoes,
     motivoCancelamento,
   });
@@ -219,7 +162,6 @@ const buildQueuePayload = ({
     mesaNumero: mesaNumero || mesaId || "-",
     setorId,
     setorNome,
-    printerSystemName: printerSystemName || "",
     total: Number(total || 0),
     observacoes: observacoes || "",
     motivoCancelamento: motivoCancelamento || "",
@@ -228,8 +170,7 @@ const buildQueuePayload = ({
       nome: item.nome,
       price: Number(item.price || 0),
       quantity: Number(item.quantity || 0),
-      descricao: item.descricao || item.observacao || item.observacoes || "",
-      itemObservation: item.itemObservation || item.observacao || item.observacoes || "",
+      descricao: item.descricao || "",
       setorId: item.setorId || "",
       setorNome: item.setorNome || "",
     })),
@@ -238,26 +179,11 @@ const buildQueuePayload = ({
   };
 };
 
-const fetchEstabelecimentoNome = async (idRestaurante) => {
-  const restauranteSnapshot = await getDoc(doc(db, "restaurantes", idRestaurante));
-  return restauranteSnapshot.exists()
-    ? safeText(restauranteSnapshot.data()?.nome || "")
-    : "";
-};
-
 export const getPrintQueue = async (idRestaurante) => {
   return await getAll(idRestaurante, PRINT_QUEUE_COLL, {
     orderByField: "criadoEm",
     order: "desc",
   });
-};
-
-export const debugResolveSetoresForItems = async (idRestaurante, items = []) => {
-  const setores = await getSetoresProducao(idRestaurante);
-  return (items || []).map((item) => ({
-    item,
-    resolved: resolveSetorFromItem(item, setores || []),
-  }));
 };
 
 export const enqueuePrintJobsForPedido = async ({
@@ -272,42 +198,16 @@ export const enqueuePrintJobsForPedido = async ({
     getSetoresProducao(idRestaurante),
     getImpressorasSetor(idRestaurante),
   ]);
-  const estabelecimentoNome = await fetchEstabelecimentoNome(idRestaurante);
-  console.debug("DEBUG enqueuePrintJobsForPedido: fetched setores/impressoras", {
-    idRestaurante,
-    pedidoId,
-    itemsCount: items.length,
-    setoresCount: (setores || []).length,
-    impressorasCount: (impressoras || []).length,
-  });
-
-  // Observações agora devem ser tratadas por item no momento da criação do pedido.
-  // Não tentar atribuir observações gerais do pedido aos items aqui —
-  // o frontend / serviço que cria o pedido deve preencher `item.descricao` corretamente.
 
   const grupos = groupItemsBySetor(items, setores || []);
-  if (grupos.length === 0) {
-    try {
-      const diagnostic = await debugResolveSetoresForItems(idRestaurante, items || []);
-      console.debug("DEBUG enqueuePrintJobsForPedido: no groups found; item->setor mapping:", diagnostic);
-    } catch (dE) {
-      console.debug("DEBUG enqueuePrintJobsForPedido: failed diagnostic", dE);
-    }
-  }
   if (grupos.length === 0) return [];
-
-  const fallbackPrinterName = await resolveFallbackPrinterName(impressoras);
 
   const jobs = [];
 
   for (const grupo of grupos) {
-    console.debug("DEBUG enqueuePrintJobsForPedido: processing grupo", { grupo });
     const setor = (setores || []).find((item) => item.id === grupo.setorId);
     const impressora = (impressoras || []).find(
       (item) => item.setorId === grupo.setorId && item.ativa !== false
-    );
-    const printerSystemName = normalizePrinterName(
-      impressora?.printerSystemName || impressora?.systemPrinter || fallbackPrinterName
     );
 
     const payload = buildQueuePayload({
@@ -317,8 +217,6 @@ export const enqueuePrintJobsForPedido = async ({
       mesaNumero,
       setorId: grupo.setorId,
       setorNome: setor?.nome || grupo.setorNome || "Sem setor",
-      estabelecimentoNome,
-      printerSystemName,
       items: grupo.items,
       total: grupo.items.reduce(
         (acc, item) => acc + Number(item.price || 0) * Number(item.quantity || 0),
@@ -327,37 +225,23 @@ export const enqueuePrintJobsForPedido = async ({
       observacoes: pedidoData.observacoes || "",
     });
 
-    // DEBUG: log payload and item descriptions to help trace lost observations
-    try {
-      console.debug("DEBUG enqueuePrintJobsForPedido payload", {
-        pedidoId,
-        setorId: grupo.setorId,
-        itemsPreview: (grupo.items || []).map((it) => ({ id: it.id, nome: it.nome, descricao: it.descricao || it.observacao || "" })),
-        payloadPreview: {
-          observacoes: payload.observacoes,
-          itemsCount: (payload.items || []).length,
-        },
-      });
-    } catch {
-      // ignore logging errors
-    }
-
     const docRef = await create(idRestaurante, PRINT_QUEUE_COLL, {
       pedidoId,
       mesaId,
       mesaNumero: mesaNumero || mesaId || "-",
       setorId: grupo.setorId,
       setorNome: setor?.nome || grupo.setorNome || "Sem setor",
-      printerSystemName,
       impressoraId: impressora?.id || null,
       impressoraNome: impressora?.nome || null,
+      printerSystemName: impressora?.systemPrinter || null,
       tipo: "PEDIDO",
       status: "PENDENTE",
       tentativas: 0,
-      payload,
+      payload: {
+        ...payload,
+        printerSystemName: impressora?.systemPrinter || "",
+      },
     });
-
-    console.debug("DEBUG enqueuePrintJobsForPedido: created queue item", { queueId: docRef.id, setorId: grupo.setorId, impressoraId: impressora?.id || null });
 
     jobs.push({ id: docRef.id, ...payload });
   }
@@ -378,7 +262,6 @@ export const enqueueCancelamentoPedido = async ({
     getSetoresProducao(idRestaurante),
     getImpressorasSetor(idRestaurante),
   ]);
-  const estabelecimentoNome = await fetchEstabelecimentoNome(idRestaurante);
 
   const grupos = groupItemsBySetor(items, setores || []);
   if (grupos.length === 0) return [];
@@ -390,9 +273,6 @@ export const enqueueCancelamentoPedido = async ({
     const impressora = (impressoras || []).find(
       (item) => item.setorId === grupo.setorId && item.ativa !== false
     );
-    const printerSystemName = String(
-      impressora?.printerSystemName || impressora?.systemPrinter || ""
-    ).trim();
 
     const payload = buildQueuePayload({
       tipo: "CANCELAMENTO",
@@ -401,8 +281,6 @@ export const enqueueCancelamentoPedido = async ({
       mesaNumero,
       setorId: grupo.setorId,
       setorNome: setor?.nome || grupo.setorNome || "Sem setor",
-      estabelecimentoNome,
-      printerSystemName,
       items: grupo.items,
       total: grupo.items.reduce(
         (acc, item) => acc + Number(item.price || 0) * Number(item.quantity || 0),
@@ -418,13 +296,16 @@ export const enqueueCancelamentoPedido = async ({
       mesaNumero: mesaNumero || mesaId || "-",
       setorId: grupo.setorId,
       setorNome: setor?.nome || grupo.setorNome || "Sem setor",
-      printerSystemName,
       impressoraId: impressora?.id || null,
       impressoraNome: impressora?.nome || null,
+      printerSystemName: impressora?.systemPrinter || null,
       tipo: "CANCELAMENTO",
       status: "PENDENTE",
       tentativas: 0,
-      payload,
+      payload: {
+        ...payload,
+        printerSystemName: impressora?.systemPrinter || "",
+      },
     });
 
     jobs.push({ id: docRef.id, ...payload });
