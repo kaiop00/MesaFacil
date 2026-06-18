@@ -5,12 +5,17 @@ const normalizeBaseUrl = (value) => {
 
 const resolveCandidateBaseUrls = () => {
   const configuredUrl = normalizeBaseUrl(import.meta.env.VITE_PRINT_SERVICE_URL || '/print-service');
-  const candidates = [configuredUrl];
+  const candidates = [];
 
-  // When the app runs locally over HTTP, allow a direct fallback to the service.
-  if (typeof window !== 'undefined' && window.location?.protocol === 'http:') {
+  // Sempre tentar o agente local da máquina primeiro.
+  // Isso é essencial quando o app está em produção (HTTPS), pois o operador
+  // ainda precisa acessar as impressoras instaladas no próprio computador.
+  if (typeof window !== 'undefined') {
     candidates.push('http://127.0.0.1:4891');
+    candidates.push('http://localhost:4891');
   }
+
+  candidates.push(configuredUrl);
 
   return Array.from(new Set(candidates.filter(Boolean)));
 };
