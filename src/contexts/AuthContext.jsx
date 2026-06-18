@@ -49,6 +49,9 @@ export const AuthProvider = ({ children }) => {
             data.idRestaurante ||
             data.idRestaurant ||
             data.restaurantId ||
+            data.id_restaurante ||
+            data?.restaurante?.id ||
+            data?.restaurant?.id ||
             data.restauranteId ||
             null;
 
@@ -83,6 +86,30 @@ export const AuthProvider = ({ children }) => {
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
                   restaurantId = snapshot.docs[0].id;
+                }
+              }
+
+              // Fallback adicional: algumas contas antigas foram recriadas no Auth,
+              // mas mantiveram idRestaurante em outro documento de users com o mesmo e-mail.
+              if (!restaurantId && firebaseUser.email) {
+                const usersByEmail = await getDocs(
+                  query(collection(db, "users"), where("email", "==", firebaseUser.email))
+                );
+                for (const userMatch of usersByEmail.docs) {
+                  const legacyUser = userMatch.data() || {};
+                  const legacyRestaurantId =
+                    legacyUser.idRestaurante ||
+                    legacyUser.idRestaurant ||
+                    legacyUser.restaurantId ||
+                    legacyUser.id_restaurante ||
+                    legacyUser?.restaurante?.id ||
+                    legacyUser?.restaurant?.id ||
+                    legacyUser.restauranteId ||
+                    null;
+                  if (legacyRestaurantId) {
+                    restaurantId = legacyRestaurantId;
+                    break;
+                  }
                 }
               }
             } catch (err) {

@@ -19,6 +19,7 @@ import PlanInfo from "@/components/PlanInfo";
 import stripeService, { STRIPE_TEMPORARILY_DISABLED } from "@/services/stripeService";
 import { useToast } from "@/hooks/useToast";
 import { getStripeCustomerId } from "@/services/firebase/restaurantService";
+import { getUserRestauranteId } from "@/services/firebase/authService";
 
 const Header = ({ isSidebarOpen = true }) => {
   const ENABLE_PEDIDOS_EXIT_HARD_REFRESH = false;
@@ -36,7 +37,7 @@ const Header = ({ isSidebarOpen = true }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const imagemRestaurante = useImagemDoRestaurante();
-  const { idRestaurante } = useAuth();
+  const { idRestaurante, user } = useAuth();
   const { hasPermission, isAdmin } = usePermissions();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
@@ -81,14 +82,19 @@ const Header = ({ isSidebarOpen = true }) => {
         return;
       }
       
-      // Check if restaurant has Stripe customer ID
-      if (!idRestaurante) {
-        notify('ID do restaurante não encontrado.', 'error');
+      // Recupera idRestaurante com fallback para contas legadas.
+      let resolvedRestaurantId = idRestaurante;
+      if (!resolvedRestaurantId && user?.uid) {
+        resolvedRestaurantId = await getUserRestauranteId(user.uid);
+      }
+
+      if (!resolvedRestaurantId) {
+        notify('Não foi possível identificar o restaurante desta conta. Faça login novamente e tente de novo.', 'error');
         return;
       }
 
       // Get Stripe customer ID from restaurant document
-      const stripeCustomerId = await getStripeCustomerId(idRestaurante);
+      const stripeCustomerId = await getStripeCustomerId(resolvedRestaurantId);
 
       // Check if restaurant has a Stripe customer ID
       if (!stripeCustomerId) {
