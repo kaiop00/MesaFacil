@@ -24,6 +24,7 @@ import {
   getFeatureName
 } from '@/utils/planPermissions';
 import { PLAN_NAMES, PLAN_COLORS } from '@/constants/planFeatures';
+import { STRIPE_TEMPORARILY_DISABLED } from '@/services/stripeService';
 
 /**
  * Hook that provides plan permission checking utilities
@@ -49,8 +50,11 @@ export const usePlanPermissions = () => {
     return currentPlan?.planId || 'free';
   }, [currentPlan]);
 
-  // During active free trial, grant complete access as premium.
+  // During active free trial (or when Stripe is disabled), grant complete access as premium.
   const hasFullTrialAccess = useMemo(() => {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      return true;
+    }
     return Boolean(currentPlan) && planId === 'free' && !currentPlan?.isTrialExpired;
   }, [planId, currentPlan]);
 
@@ -94,10 +98,11 @@ export const usePlanPermissions = () => {
 
   // Get plan display information
   const planInfo = useMemo(() => {
+    const displayPlanId = STRIPE_TEMPORARILY_DISABLED ? 'monthly' : planId;
     return {
-      id: planId,
-      name: PLAN_NAMES[planId] || 'Desconhecido',
-      color: PLAN_COLORS[planId] || 'gray',
+      id: displayPlanId,
+      name: PLAN_NAMES[displayPlanId] || 'Desconhecido',
+      color: PLAN_COLORS[displayPlanId] || 'gray',
       daysRemaining: getDaysRemaining(),
       expiresAt: currentPlan?.expiresAt,
       activatedAt: currentPlan?.activatedAt
@@ -153,6 +158,9 @@ export const usePlanPermissions = () => {
 
   // Check if plan has expired
   const isExpired = useMemo(() => {
+    if (STRIPE_TEMPORARILY_DISABLED) {
+      return false;
+    }
     const daysRemaining = getDaysRemaining();
     return daysRemaining !== null && daysRemaining <= 0;
   }, [getDaysRemaining]);
