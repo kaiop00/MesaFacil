@@ -47,6 +47,15 @@ export default function PlanSelectionPage() {
   // Check if user has an existing subscription in Stripe
   useEffect(() => {
     const checkExistingSubscription = async () => {
+      // Se o usuário já tem um restaurante vinculado E não veio do fluxo de cadastro,
+      // é uma conta existente → redireciona direto para o home
+      const comingFromRegistration = Boolean(location.state?.idRestaurante);
+      if (resolvedRestaurantId && !comingFromRegistration) {
+        setIsCheckingSubscription(false);
+        navigate('/home', { replace: true });
+        return;
+      }
+
       // TEMPORARY: If Stripe is disabled, skip subscription check and redirect to home
       if (STRIPE_TEMPORARILY_DISABLED) {
         if (resolvedRestaurantId) {
