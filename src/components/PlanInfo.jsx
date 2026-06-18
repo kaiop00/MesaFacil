@@ -1,9 +1,8 @@
-import { usePlanManagement } from "@/hooks/usePlanManagement";
+import { usePlan } from "@/contexts/PlanContext";
 import { PLANS_DATA } from "@/features/auth/constants/plansData";
 
 export default function PlanInfo({ showDetailed = false }) {
-  const { currentPlan, planLoading, getAccessLevel } =
-    usePlanManagement();
+  const { currentPlan, planInfo, planLoading, getAccessLevel } = usePlan();
 
   if (planLoading) {
     return <div className="animate-pulse bg-gray-200 rounded-lg h-20"></div>;
@@ -17,12 +16,9 @@ export default function PlanInfo({ showDetailed = false }) {
     );
   }
 
-  // Only show for free plan users
-  if (currentPlan.planId !== 'free') {
-    return null;
-  }
-
-  const planData = PLANS_DATA.find((p) => p.id === currentPlan.planId);
+  const planData = PLANS_DATA.find((p) => p.id === (planInfo?.id || currentPlan?.planId));
+  const planLabel = planData?.name || planInfo?.name || currentPlan?.planId || 'Desconhecido';
+  const isFreePlan = (planInfo?.id || currentPlan?.planId) === 'free';
 
   return (
     <div
@@ -35,12 +31,12 @@ export default function PlanInfo({ showDetailed = false }) {
           <div
             className={`
             w-3 h-3 rounded-full
-            ${currentPlan.planId === "free" ? "bg-gray-400" : "bg-green-500"}
+            ${isFreePlan ? "bg-gray-400" : "bg-green-500"}
           `}
           ></div>
           <div>
             <h3 className="font-semibold text-gray-800">
-              Plano {planData?.name || currentPlan.planId}
+              Plano {planLabel}
             </h3>
           </div>
         </div>
@@ -71,7 +67,7 @@ export default function PlanInfo({ showDetailed = false }) {
             </span>
           </div>
 
-          {currentPlan.planId === "free" && (
+          {isFreePlan && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <button
                 onClick={() => (window.location.href = "/selecionar-plano")}

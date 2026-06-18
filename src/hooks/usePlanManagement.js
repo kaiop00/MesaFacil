@@ -208,23 +208,8 @@ export const usePlanManagement = () => {
             setCurrentPlan(authPlan);
             setHasActivePlan(true);
           } else {
-            let trialData = await withTimeout(getFreeTrialData(idRestaurante), PLAN_DATA_TIMEOUT_MS, 'getFreeTrialData');
-            if (!trialData.hasStarted) {
-              trialData = await withTimeout(initializeFreeTrialIfNeeded(idRestaurante), PLAN_DATA_TIMEOUT_MS, 'initializeFreeTrialIfNeeded');
-            }
-
-            const trialPlan = buildTrialState(authPlan || { planId: 'free' }, trialData);
-
-            if (trialPlan.isTrialExpired && !trialData?.isExpired) {
-              try {
-                await withTimeout(markFreeTrialAsExpired(idRestaurante), PLAN_DATA_TIMEOUT_MS, 'markFreeTrialAsExpired');
-              } catch (markError) {
-                console.error('Erro ao persistir status expirado do teste grátis:', markError);
-              }
-            }
-
-            setCurrentPlan(trialPlan);
-            setHasActivePlan(!trialPlan.isTrialExpired);
+            // authPlan pode vir desatualizado; consulta Stripe/restaurant como fonte principal.
+            await checkUserPlan(idRestaurante);
           }
         } catch (error) {
           console.error('Erro ao carregar plano do restaurante:', error);
