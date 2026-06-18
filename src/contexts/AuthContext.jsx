@@ -191,6 +191,8 @@ export const AuthProvider = ({ children }) => {
             }
           } else {
             console.error("[AuthContext] CRITICAL: Could not resolve idRestaurante for user", firebaseUser.uid);
+          }
+
           if (restaurantId) {
             try {
               customerId = await getStripeCustomerId(restaurantId);
