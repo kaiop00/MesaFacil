@@ -50,13 +50,15 @@ export const usePlanPermissions = () => {
     return currentPlan?.planId || 'free';
   }, [currentPlan]);
 
+  const shouldBypassPlanGates = useMemo(() => {
+    return STRIPE_TEMPORARILY_DISABLED || planId === 'free';
+  }, [planId]);
+
   // During active free trial (or when Stripe is disabled), grant complete access as premium.
   const hasFullTrialAccess = useMemo(() => {
-    if (STRIPE_TEMPORARILY_DISABLED) {
-      return true;
-    }
+    if (shouldBypassPlanGates) return true;
     return Boolean(currentPlan) && planId === 'free' && !currentPlan?.isTrialExpired;
-  }, [planId, currentPlan]);
+  }, [shouldBypassPlanGates, planId, currentPlan]);
 
   const effectivePlanId = useMemo(() => {
     return hasFullTrialAccess ? 'semiannual' : planId;
@@ -64,8 +66,11 @@ export const usePlanPermissions = () => {
 
   // Check if user has access to a specific feature flag
   const hasFeatureAccess = useMemo(() => {
-    return (featureFlag) => hasFeature(effectivePlanId, featureFlag);
-  }, [effectivePlanId]);
+    return (featureFlag) => {
+      if (shouldBypassPlanGates) return true;
+      return hasFeature(effectivePlanId, featureFlag);
+    };
+  }, [effectivePlanId, shouldBypassPlanGates]);
 
   // Get required plan for a feature
   const getRequiredPlan = useMemo(() => {
@@ -98,7 +103,7 @@ export const usePlanPermissions = () => {
 
   // Get plan display information
   const planInfo = useMemo(() => {
-    const displayPlanId = STRIPE_TEMPORARILY_DISABLED ? 'monthly' : planId;
+    const displayPlanId = shouldBypassPlanGates ? 'monthly' : planId;
     return {
       id: displayPlanId,
       name: PLAN_NAMES[displayPlanId] || 'Desconhecido',
@@ -107,7 +112,7 @@ export const usePlanPermissions = () => {
       expiresAt: currentPlan?.expiresAt,
       activatedAt: currentPlan?.activatedAt
     };
-  }, [planId, currentPlan, getDaysRemaining]);
+  }, [planId, currentPlan, getDaysRemaining, shouldBypassPlanGates]);
 
   // Check if target plan is an upgrade
   const checkIsUpgrade = useMemo(() => {
@@ -158,12 +163,12 @@ export const usePlanPermissions = () => {
 
   // Check if plan has expired
   const isExpired = useMemo(() => {
-    if (STRIPE_TEMPORARILY_DISABLED) {
+    if (shouldBypassPlanGates) {
       return false;
     }
     const daysRemaining = getDaysRemaining();
     return daysRemaining !== null && daysRemaining <= 0;
-  }, [getDaysRemaining]);
+  }, [getDaysRemaining, shouldBypassPlanGates]);
 
   // Legacy compatibility wrappers
   const canAddProduct = useMemo(() => {
