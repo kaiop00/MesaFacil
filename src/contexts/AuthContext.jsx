@@ -40,10 +40,12 @@ export const AuthProvider = ({ children }) => {
 
       if (firebaseUser) {
         setUser(firebaseUser);
+        console.log("[AuthContext] User logged in:", firebaseUser.uid, firebaseUser.email);
 
         try {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           const data = userDoc.exists() ? userDoc.data() : {};
+          console.log("[AuthContext] User document data:", data);
 
           let resolvedRole = data.role || null;
           let restaurantId =
@@ -59,6 +61,7 @@ export const AuthProvider = ({ children }) => {
           // Cache local como fallback para contas legadas.
           if (!restaurantId) {
             const cachedRestaurantId = localStorage.getItem(RESTAURANTE_ID_CACHE_KEY);
+            console.log("[AuthContext] Cached restaurant ID:", cachedRestaurantId);
             if (cachedRestaurantId) {
               restaurantId = cachedRestaurantId;
             }
@@ -69,8 +72,10 @@ export const AuthProvider = ({ children }) => {
             try {
               // Estratégia 1: em alguns ambientes, o id do restaurante é o próprio UID do usuário.
               const restaurantByUid = await getDoc(doc(db, "restaurantes", firebaseUser.uid));
+              console.log("[AuthContext] Checking restaurantes/{uid}:", restaurantByUid.exists());
               if (restaurantByUid.exists()) {
                 restaurantId = restaurantByUid.id;
+                console.log("[AuthContext] Found restaurant by UID:", restaurantId);
               }
 
               const tryQueries = [];
@@ -101,6 +106,7 @@ export const AuthProvider = ({ children }) => {
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
                   restaurantId = snapshot.docs[0].id;
+                  console.log("[AuthContext] Found restaurant by query:", restaurantId);
                 }
               }
 
@@ -123,6 +129,7 @@ export const AuthProvider = ({ children }) => {
                     null;
                   if (legacyRestaurantId) {
                     restaurantId = legacyRestaurantId;
+                    console.log("[AuthContext] Found restaurant from legacy users:", restaurantId);
                     break;
                   }
                 }
@@ -168,11 +175,22 @@ export const AuthProvider = ({ children }) => {
 
           if (restaurantId) {
             localStorage.setItem(RESTAURANTE_ID_CACHE_KEY, restaurantId);
-          }
-          
-          // Get Stripe Customer ID from restaurant document instead of user document
-          let customerId = null;
-          let hasLegacySubscription = false;
+            // Persistir também em users doc como fallback adicional
+            try {
+              await setDoc(
+                doc(db, "users", firebaseUser.uid),
+                {
+                  idRestaurante: restaurantId,
+                  lastSync: new Date(),
+                },
+                { merge: true }
+              );
+              console.log("[AuthContext] Persisted idRestaurante to users doc");
+            } catch (err) {
+              console.warn("[AuthContext] Could not persist idRestaurante:", err);
+            }
+          } else {
+            console.error("[AuthContext] CRITICAL: Could not resolve idRestaurante for user", firebaseUser.uid);
           if (restaurantId) {
             try {
               customerId = await getStripeCustomerId(restaurantId);
