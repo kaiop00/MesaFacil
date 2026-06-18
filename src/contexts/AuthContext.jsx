@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebaseConfig";
 import stripeService, { STRIPE_TEMPORARILY_DISABLED } from "@/services/stripeService";
-import { getStripeCustomerId } from "@/services/firebase/restaurantService";
+import { getStripeCustomerId, getRestaurant } from "@/services/firebase/restaurantService";
 
 // ✅ Cria o contexto
 const AuthContext = createContext({
@@ -44,37 +44,69 @@ export const AuthProvider = ({ children }) => {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           const data = userDoc.exists() ? userDoc.data() : {};
 
-          setRole(data.role || "user");
+          let resolvedRole = data.role || null;
           let restaurantId = data.idRestaurante || null;
-          
-          // Se não há restaurant ID, tenta encontrar um restaurante para este usuário
+
+          // Se não há restaurant ID no usuário, tenta recuperar pelo nome do restaurante
+          // salvo no displayName do Firebase Auth (fluxo de cadastro antigo).
           if (!restaurantId) {
             try {
-              // Tenta encontrar um restaurante com o email do usuário
-              const q = query(
-                collection(db, "restaurantes"),
-                where("email", "==", firebaseUser.email)
-              );
-              const snapshot = await getDocs(q);
-              if (!snapshot.empty) {
-                restaurantId = snapshot.docs[0].id;
-                // Atualiza o documento do usuário com o ID do restaurante
-                await updateDoc(doc(db, "users", firebaseUser.uid), {
-                  idRestaurante: restaurantId
-                }).catch(err => console.warn("Could not update user document:", err));
+              if (firebaseUser.displayName) {
+                const qByName = query(
+                  collection(db, "restaurantes"),
+                  where("nome", "==", firebaseUser.displayName)
+                );
+                const snapshotByName = await getDocs(qByName);
+                if (!snapshotByName.empty) {
+                  restaurantId = snapshotByName.docs[0].id;
+                }
               }
             } catch (err) {
-              console.warn("Could not find restaurant by email:", err);
+              console.warn("Could not find restaurant by displayName:", err);
+            }
+          }
+
+          // Conta proprietária antiga sem role explícita deve ter acesso de admin.
+          if (!resolvedRole && restaurantId) {
+            resolvedRole = "admin";
+          }
+
+          // Persistir recuperação para estabilizar próximos logins.
+          if (restaurantId && (!data.idRestaurante || !data.role)) {
+            try {
+              await setDoc(
+                doc(db, "users", firebaseUser.uid),
+                {
+                  email: firebaseUser.email || data.email || null,
+                  idRestaurante: restaurantId,
+                  role: resolvedRole || "admin",
+                  updatedAt: new Date(),
+                },
+                { merge: true }
+              );
+            } catch (err) {
+              console.warn("Could not persist recovered user fields:", err);
             }
           }
           
+          setRole(resolvedRole || "user");
           setIdRestaurante(restaurantId);
           
           // Get Stripe Customer ID from restaurant document instead of user document
           let customerId = null;
+          let hasLegacySubscription = false;
           if (restaurantId) {
             try {
               customerId = await getStripeCustomerId(restaurantId);
+              if (!customerId && data?.stripeCustomerId) {
+                customerId = data.stripeCustomerId;
+              }
+
+              if (!customerId) {
+                const restaurant = await getRestaurant(restaurantId);
+                hasLegacySubscription = Boolean(restaurant?.stripeSubscriptionId);
+              }
+
               setStripeCustomerId(customerId);
             } catch (error) {
               console.error("Error getting Stripe customer ID from restaurant:", error);
@@ -106,6 +138,14 @@ export const AuthProvider = ({ children }) => {
                 planId: 'monthly', 
                 status: 'active', 
                 expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000))
+              });
+            } else if (hasLegacySubscription) {
+              // Compatibilidade com contas antigas que possuem subscriptionId salvo,
+              // mas ainda sem customerId em restaurante.
+              setPlan({
+                planId: 'monthly',
+                status: 'active',
+                expiresAt: null,
               });
             } else {
               setPlan({ planId: 'free', status: 'active', expiresAt: null });

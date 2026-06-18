@@ -193,7 +193,6 @@ const DashboardPage = () => {
     return (
       <PermissionDeniedPage 
         message={t("noPermissionMessage")}
-        description={t("contactAdmin")}
       />
     );
   }
