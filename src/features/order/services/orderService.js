@@ -255,7 +255,7 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
                     idRestaurante,
                     pedidoId,
                     mesaId,
-                    mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+                    mesaNumero: mesaId,
                     pedidoData: {
                         items: pedidoItems,
                         total,
@@ -323,8 +323,16 @@ export const createPedidoPublico = async (idRestaurante, mesaId, items, total, o
             ...(extraData.troco && { troco: extraData.troco }),
             ...(extraData.taxaEntrega && { taxaEntrega: extraData.taxaEntrega }),
         };
-        
-        await setDoc(newPedidoRef, pedidoPayload);
+
+        const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
+
+        await runTransaction(db, async (transaction) => {
+            transaction.set(newPedidoRef, pedidoPayload);
+            transaction.update(mesaDocRef, {
+                status: "andamento",
+            });
+        });
+
         return { pedidoId: newPedidoRef.id, estoqueProcessado: false };
     } catch (error) {
         console.error("Erro ao criar pedido público:", error);
