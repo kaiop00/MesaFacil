@@ -50,7 +50,7 @@ export const OrderProvider = ({ children }) => {
   };
 
   const updateItemObservation = (itemId, observation) => {
-    const descricao = (observation || "").trim();
+    const descricao = observation ?? "";
 
     setItems((prev) =>
       prev.map((item) => {

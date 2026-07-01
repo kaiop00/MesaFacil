@@ -68,43 +68,6 @@ const getPaymentEntriesFromPedido = (pedido) => {
         "",
     }));
   }
-    const buildCanceledItemsSection = useCallback((pedidos) => {
-      const cancelamentos = [];
-
-      pedidos.forEach((pedido) => {
-        if (Array.isArray(pedido?.cancelamentos)) {
-          pedido.cancelamentos.forEach((cancelamento) => {
-            cancelamentos.push(cancelamento);
-          });
-        }
-      });
-
-      if (cancelamentos.length === 0) {
-        return "";
-      }
-
-      const lines = cancelamentos
-        .map((cancelamento) => {
-          const qty = Number(cancelamento?.quantidade || 0);
-          const nome = sanitize(cancelamento?.itemNome || "Item");
-          const motivo = sanitize(cancelamento?.motivoCancelamento || "Sem motivo informado");
-          return `
-            <div class="item">
-              <div class="item-line">
-                <span class="name">${qty}x ${nome}</span>
-              </div>
-              <div class="item-extra">Motivo: ${motivo}</div>
-            </div>
-          `;
-        })
-        .join("");
-
-      return `
-        <div class="divider"></div>
-        <div class="row title">Itens cancelados</div>
-        ${lines}
-      `;
-    }, []);
 
   if (pedido.formaPagamento) {
     return [{
@@ -145,7 +108,8 @@ export const useDetailOrderPrint = () => {
         const price = currencyFormatter.format(Number(itemTotal));
 
         const extras = [];
-        if (item?.descricao) extras.push(sanitize(item.descricao));
+        const itemObservation = String(item?.descricao || item?.observacao || item?.itemObservation || "").trim();
+        if (itemObservation) extras.push(sanitize(itemObservation));
 
         if (Array.isArray(item?.alergias) && item.alergias.length > 0) {
           extras.push(
@@ -176,6 +140,44 @@ export const useDetailOrderPrint = () => {
         `;
       })
       .join("");
+  }, []);
+
+  const buildCanceledItemsSection = useCallback((pedidos) => {
+    const cancelamentos = [];
+
+    pedidos.forEach((pedido) => {
+      if (Array.isArray(pedido?.cancelamentos)) {
+        pedido.cancelamentos.forEach((cancelamento) => {
+          cancelamentos.push(cancelamento);
+        });
+      }
+    });
+
+    if (cancelamentos.length === 0) {
+      return "";
+    }
+
+    const lines = cancelamentos
+      .map((cancelamento) => {
+        const qty = Number(cancelamento?.quantidade || 0);
+        const nome = sanitize(cancelamento?.itemNome || "Item");
+        const motivo = sanitize(cancelamento?.motivoCancelamento || "Sem motivo informado");
+        return `
+          <div class="item">
+            <div class="item-line">
+              <span class="name">${qty}x ${nome}</span>
+            </div>
+            <div class="item-extra">Motivo: ${motivo}</div>
+          </div>
+        `;
+      })
+      .join("");
+
+    return `
+      <div class="divider"></div>
+      <div class="row title">Itens cancelados</div>
+      ${lines}
+    `;
   }, []);
 
   /**
@@ -550,7 +552,7 @@ export const useDetailOrderPrint = () => {
         </html>
       `;
     },
-    [buildItemsSection, buildTotalSection, buildPaymentSection]
+    [buildItemsSection, buildCanceledItemsSection, buildTotalSection, buildPaymentSection]
   );
 
   /**
@@ -558,64 +560,58 @@ export const useDetailOrderPrint = () => {
    */
   const printDetailOrder = useCallback(
     (data) => {
-      if (!data) {
-        console.warn("[useDetailOrderPrint] Tentativa de imprimir dados inválidos");
+      const htmlContent = buildHtml(data);
+
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.style.position = "absolute";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      document.body.appendChild(iframe);
+
+      const printDocument = iframe.contentWindow?.document;
+      if (!printDocument) {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+        console.error("[useDetailOrderPrint] Não foi possível criar o documento de impressão.");
         return;
       }
 
-      const htmlContent = buildHtml(data);
-      
-      // Create iframe for printing (more reliable than window.open)
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.style.position = 'absolute';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      document.body.appendChild(iframe);
-      
-      // Write content to iframe
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
-      
-      // Handle both onload and fallback for print
+      printDocument.open();
+      printDocument.write(htmlContent);
+      printDocument.close();
+
       let printed = false;
       let timeoutId = null;
-      
+
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      };
+
       const doPrint = () => {
         if (printed) return;
         printed = true;
-        
+
         if (timeoutId) clearTimeout(timeoutId);
-        
+
         try {
-          // Small delay to ensure content is fully rendered
-          setTimeout(() => {
-            iframe.focus();
-            iframe.contentWindow.print();
-          }, 100);
-          
-          // Remove iframe after print dialog closes (user accepts or cancels)
-          // Longer delay to let dialog appear
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 1500);
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
         } catch (error) {
-          console.error("[useDetailOrderPrint] Erro ao imprimir:", error);
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
+          console.error("[useDetailOrderPrint] Erro ao imprimir a comanda:", error);
+          cleanup();
+          return;
         }
+
+        timeoutId = window.setTimeout(cleanup, 3000);
       };
-      
-      // Wait for iframe content to load before printing
+
       iframe.onload = doPrint;
-      
-      // Fallback: print after delay if onload doesn't fire
-      timeoutId = setTimeout(doPrint, 1000);
+      timeoutId = window.setTimeout(doPrint, 300);
     },
     [buildHtml]
   );
