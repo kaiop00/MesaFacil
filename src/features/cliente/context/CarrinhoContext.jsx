@@ -120,7 +120,7 @@ export default function CarrinhoProvider({ children }) {
     }
 
     function atualizarObservacaoCarrinho(id, observation) {
-        const descricao = String(observation || "");
+        const descricao = (observation || "").trim();
 
         setCarrinhoItems((prev) =>
             prev.map((item) => {

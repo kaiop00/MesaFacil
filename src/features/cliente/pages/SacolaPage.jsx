@@ -140,7 +140,7 @@ export default function SacolaPage() {
 
                 return {
                     ...item,
-                    descricao: descricaoItem,
+                    descricao: item.descricao || "",
                     observacao: descricaoItem,
                     itemObservation: descricaoItem,
                 };

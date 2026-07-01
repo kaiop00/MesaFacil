@@ -176,7 +176,7 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
         setorNome: item.setorNome || item.setor?.nome || "",
         categorias: item.categorias || [],
         alergias: item.alergias || [],
-        descricao: String(item.descricao || item.observacao || item.itemObservation || item.observacoes || "").trim(),
+        descricao: item.descricao || "",
         imagemUrl: item.imagemUrl || "",
         ncm: item.ncm || null,
         tipoTributacao: item.tipoTributacao || (item.monofasico ? "monofasico" : "normal"),
@@ -242,10 +242,6 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
             if (consumoIngredientes.length > 0) {
                 await processarBaixaEstoque(idRestaurante, consumoIngredientes, pedidoId);
             }
-
-            const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
-            const mesaSnapshot = await getDoc(mesaDocRef);
-            const mesaData = mesaSnapshot.exists() ? mesaSnapshot.data() : {};
             
             try {
                 await enqueuePrintJobsForPedido({
@@ -346,25 +342,21 @@ export const finalizarPedido = async (idRestaurante, mesaId, dadosPagamento = {}
             
             await updateDoc(pedidoDocRef, updateData);
             
-            try {
-                await salvarPedidoNoHistorico({
-                    idRestaurante,
-                    mesaId,
-                    mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
-                    pedidoId: docSnap.id,
-                    pedidoData: docSnap.data(),
-                    finalizadoEm,
-                    status: "entregue",
-                    formaPagamento,
-                    observacoesPagamento,
-                    troco,
-                    pagamentos,
-                    pagamentoCartao,
-                    ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
-                });
-            } catch (error) {
-                console.warn("Nao foi possivel salvar pedido no historico durante finalizacao:", error?.message || error);
-            }
+            await salvarPedidoNoHistorico({
+                idRestaurante,
+                mesaId,
+                mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+                pedidoId: docSnap.id,
+                pedidoData: docSnap.data(),
+                finalizadoEm,
+                status: "entregue",
+                formaPagamento,
+                observacoesPagamento,
+                troco,
+                pagamentos,
+                pagamentoCartao,
+                ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
+            });
 
             await registrarPagamentoAutomaticoNoCaixa({
                 idRestaurante,
@@ -418,33 +410,29 @@ export const finalizarPedidoEspecifico = async (
 
     // Salva no histórico se removerDaLista for true
     if (removerDaLista) {
-        try {
-            await salvarPedidoNoHistorico({
-                idRestaurante,
-                mesaId,
-                mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
-                pedidoId,
-                pedidoData: {
-                    ...pedidoData,
-                    formaPagamento,
-                    observacoesPagamento,
-                    troco,
-                    pagamentos,
-                    pagamentoCartao,
-                    ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
-                },
-                finalizadoEm,
-                status: statusFinal,
+        await salvarPedidoNoHistorico({
+            idRestaurante,
+            mesaId,
+            mesaNumero: sanitizeMesaNumero(mesaData, mesaId),
+            pedidoId,
+            pedidoData: {
+                ...pedidoData,
                 formaPagamento,
                 observacoesPagamento,
                 troco,
                 pagamentos,
                 pagamentoCartao,
                 ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
-            });
-        } catch (error) {
-            console.warn("Nao foi possivel salvar pedido no historico durante finalizacao especifica:", error?.message || error);
-        }
+            },
+            finalizadoEm,
+            status: statusFinal,
+            formaPagamento,
+            observacoesPagamento,
+            troco,
+            pagamentos,
+            pagamentoCartao,
+            ...(gorjetaTotal > 0 ? { gorjeta: gorjetaTotal } : {}),
+        });
 
         await registrarPagamentoAutomaticoNoCaixa({
             idRestaurante,
