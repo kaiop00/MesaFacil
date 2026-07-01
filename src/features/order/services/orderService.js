@@ -277,6 +277,62 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
 };
 
 /**
+ * Cria pedido para clientes públicos (QR code) - versão simplificada
+ */
+export const createPedidoPublico = async (idRestaurante, mesaId, items, total, observacoes = "", extraData = {}) => {
+    try {
+        const pedidoItems = items.map((item) => ({
+            id: item.id,
+            nome: item.nome,
+            price: item.price,
+            quantity: item.quantity,
+            setorId: item.setorId || item.setor?.id || "",
+            setorNome: item.setorNome || item.setor?.nome || "",
+            categorias: item.categorias || [],
+            alergias: item.alergias || [],
+            descricao: item.descricao || "",
+            imagemUrl: item.imagemUrl || "",
+            ncm: item.ncm || null,
+            tipoTributacao: item.tipoTributacao || (item.monofasico ? "monofasico" : "normal"),
+            monofasico: Boolean(item.monofasico || item.isMonofasico || item.tipoTributacao === "monofasico"),
+        }));
+
+        // Criar apenas o pedido - nada mais
+        const pedidosRef = collection(
+            db,
+            "restaurantes",
+            idRestaurante,
+            "mesas",
+            mesaId,
+            "pedidos"
+        );
+
+        const newPedidoRef = doc(pedidosRef);
+        
+        const pedidoPayload = {
+            items: pedidoItems,
+            total,
+            status: "andamento",
+            observacoes,
+            read: false,
+            criadoEm: serverTimestamp(),
+            orderOrigin: extraData.orderOrigin || 'mesaconvencional',
+            ...(extraData.tipoEntrega && { tipoEntrega: extraData.tipoEntrega }),
+            ...(extraData.cliente && { cliente: extraData.cliente }),
+            ...(extraData.formaPagamento && { formaPagamento: extraData.formaPagamento }),
+            ...(extraData.troco && { troco: extraData.troco }),
+            ...(extraData.taxaEntrega && { taxaEntrega: extraData.taxaEntrega }),
+        };
+        
+        await setDoc(newPedidoRef, pedidoPayload);
+        return { pedidoId: newPedidoRef.id, estoqueProcessado: false };
+    } catch (error) {
+        console.error("Erro ao criar pedido público:", error);
+        throw error;
+    }
+};
+
+/**
  * Lista pedidos de uma mesa
  */
 export const getPedidosDaMesa = async (idRestaurante, mesaId) => {

@@ -126,6 +126,8 @@ service cloud.firestore {
     match /restaurantes/{restId}/mesas/{mesaId} {
       allow read: if true;
       allow write: if isSameRestaurant(restId);
+      // Permite que clientes públicos (QR code) atualizem status da mesa
+      allow update: if true;
     }
 
     // Fallback: outras coleções do restaurante seguem regra de leitura para o mesmo restaurante,

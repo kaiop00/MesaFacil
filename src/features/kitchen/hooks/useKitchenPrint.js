@@ -609,35 +609,41 @@ export const useKitchenPrint = () => {
       
       // Handle both onload and fallback for print
       let printed = false;
+      let timeoutId = null;
       
       const doPrint = () => {
         if (printed) return;
         printed = true;
+        
+        if (timeoutId) clearTimeout(timeoutId);
+        
         try {
-          iframe.contentWindow.print();
-          // Remove iframe after print dialog closes
+          // Small delay to ensure content is fully rendered
+          setTimeout(() => {
+            iframe.focus();
+            iframe.contentWindow.print();
+          }, 100);
+          
+          // Remove iframe after print dialog closes (user accepts or cancels)
+          // Longer delay to let dialog appear
           setTimeout(() => {
             if (document.body.contains(iframe)) {
               document.body.removeChild(iframe);
             }
-          }, 500);
+          }, 1500);
         } catch (error) {
           console.error("[useKitchenPrint] Erro ao imprimir:", error);
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
         }
       };
       
-      // Try onload first
+      // Wait for iframe content to load before printing
       iframe.onload = doPrint;
       
-      // Fallback: print after a short delay if onload doesn't trigger
-      const timeoutId = setTimeout(doPrint, 800);
-      
-      // Clear timeout if onload fires
-      const originalOnload = iframe.onload;
-      iframe.onload = () => {
-        clearTimeout(timeoutId);
-        originalOnload?.call(iframe);
-      };
+      // Fallback: print after delay if onload doesn't fire
+      timeoutId = setTimeout(doPrint, 1000);
     },
     [buildHtml]
   );

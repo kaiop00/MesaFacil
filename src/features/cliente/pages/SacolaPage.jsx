@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCarrinho } from "../context/CarrinhoContext";
 import CardCarrinho from "../components/CardCarrinho";
 import CarrinhoFooter from "../layout/CarrinhoFooter";
-import { createPedido } from "@/features/order/services/orderService";
+import { createPedidoPublico } from "@/features/order/services/orderService";
 import { useCliente } from "../context/ClienteContext";
 import { useToast } from "@/hooks/useToast";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -175,7 +175,7 @@ export default function SacolaPage() {
                 orderOrigin: orderOrigin,
             };
 
-            await createPedido(
+            await createPedidoPublico(
                 idRestaurante,
                 mesaId,
                 itensParaEnviar,
