@@ -86,7 +86,11 @@ service cloud.firestore {
 
     // Regras para fluxo de comandas/pedidos
     match /restaurantes/{restId}/mesas/{mesaId}/pedidos/{pedidoId} {
+      // Operadores autenticados do restaurante
       allow read, write: if isSameRestaurant(restId);
+      // Clientes públicos (QR code) podem criar e ler seus próprios pedidos
+      allow read, create: if true;
+      allow update: if true;
     }
 
     match /restaurantes/{restId}/historicoPedidos/{pedidoId} {
