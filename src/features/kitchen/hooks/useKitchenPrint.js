@@ -586,27 +586,57 @@ export const useKitchenPrint = () => {
 
   const printOrder = useCallback(
     (order, options = {}) => {
-      if (!order) return;
+      if (!order) {
+        console.warn("[useKitchenPrint] Tentativa de imprimir pedido inválido");
+        return;
+      }
 
       const htmlContent = buildHtml(order, options);
       
       // Create iframe for printing (more reliable than window.open, avoids popup blocking)
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
+      iframe.style.position = 'absolute';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
       document.body.appendChild(iframe);
       
-      iframe.contentWindow.document.write(htmlContent);
-      iframe.contentWindow.document.close();
+      // Write content to iframe
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
       
-      // Wait for content to render before printing
-      iframe.onload = () => {
-        setTimeout(() => {
+      // Handle both onload and fallback for print
+      let printed = false;
+      
+      const doPrint = () => {
+        if (printed) return;
+        printed = true;
+        try {
           iframe.contentWindow.print();
           // Remove iframe after print dialog closes
           setTimeout(() => {
-            document.body.removeChild(iframe);
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
           }, 500);
-        }, 300);
+        } catch (error) {
+          console.error("[useKitchenPrint] Erro ao imprimir:", error);
+        }
+      };
+      
+      // Try onload first
+      iframe.onload = doPrint;
+      
+      // Fallback: print after a short delay if onload doesn't trigger
+      const timeoutId = setTimeout(doPrint, 800);
+      
+      // Clear timeout if onload fires
+      const originalOnload = iframe.onload;
+      iframe.onload = () => {
+        clearTimeout(timeoutId);
+        originalOnload?.call(iframe);
       };
     },
     [buildHtml]

@@ -83,7 +83,7 @@ export default function ItemModal({ item, onClose, onAdicionar }) {
                         value={observacao}
                         onChange={(e) => setObservacao(e.target.value)}
                         placeholder="Ex: bem passado, sem cebola, pouco sal..."
-                        className="w-full min-h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B]"
+                        className="w-full min-h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B] whitespace-pre-wrap break-words"
                     />
                 </div>
 

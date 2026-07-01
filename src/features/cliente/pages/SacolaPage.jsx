@@ -277,7 +277,7 @@ export default function SacolaPage() {
                                                 value={item.itemObservation || item.observacao || ""}
                                                 onChange={(e) => atualizarObservacaoCarrinho(item.cartItemId || item.id, e.target.value)}
                                                 placeholder="Ex: sem cebola, pouco sal, gelo e limão..."
-                                                className="w-full min-h-20 rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B]"
+                                                className="w-full min-h-20 rounded-md border border-amber-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B] whitespace-pre-wrap break-words"
                                             />
                                         </div>
                                     )}
@@ -297,7 +297,7 @@ export default function SacolaPage() {
                             value={observacaoGeral}
                             onChange={(e) => setObservacaoGeral(e.target.value)}
                             placeholder="Ex.: sem talher, tocar a campainha, pedir sem gelo..."
-                            className="w-full min-h-24 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B]"
+                            className="w-full min-h-24 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#D9A23B] focus:ring-1 focus:ring-[#D9A23B] whitespace-pre-wrap break-words"
                         />
                     </div>
 

@@ -195,6 +195,15 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
         throw new Error(`Estoque insuficiente para processar o pedido:\n\n${itensProblema}`);
     }
 
+    // Calcular consumo de ingredientes ANTES de criar o pedido para validar tudo antecipadamente
+    let consumoIngredientes = [];
+    try {
+        consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, pedidoItems);
+    } catch (consumoError) {
+        console.error("Erro ao calcular consumo de ingredientes:", consumoError);
+        throw new Error(`Erro ao validar disponibilidade: ${consumoError.message}`);
+    }
+
     return await runTransaction(db, async (transaction) => {
         const pedidosRef = collection(
             db,
@@ -235,10 +244,8 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
 
         return newPedidoRef.id;
     }).then(async (pedidoId) => {
-        // 2. Processar baixa no estoque após salvar o pedido
+        // 2. Processar baixa no estoque após salvar o pedido (usando consumoIngredientes já calculado)
         try {
-            const consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, pedidoItems);
-            
             if (consumoIngredientes.length > 0) {
                 await processarBaixaEstoque(idRestaurante, consumoIngredientes, pedidoId);
             }
