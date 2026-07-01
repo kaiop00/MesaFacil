@@ -40,7 +40,20 @@ const RequireFeature = ({
   benefits,
   children 
 }) => {
-  const { hasFeatureAccess } = usePlan();
+  const { hasFeatureAccess, isExpired, daysRemaining } = usePlan();
+
+  // Show expiration message if plan is expired
+  if (isExpired) {
+    return (
+      <FeatureLockedPage
+        featureName={featureName || 'Recurso'}
+        requiredPlan={requiredPlan}
+        description={`Sua assinatura expirou. Renove para continuar usando ${featureName?.toLowerCase() || 'este recurso'}.`}
+        benefits={benefits}
+        isExpired={true}
+      />
+    );
+  }
 
   // Check if user has access to the feature
   if (!hasFeatureAccess(feature)) {

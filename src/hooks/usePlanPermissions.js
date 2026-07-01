@@ -68,9 +68,14 @@ export const usePlanPermissions = () => {
   const hasFeatureAccess = useMemo(() => {
     return (featureFlag) => {
       if (shouldBypassPlanGates) return true;
+      // Block feature access if plan has expired
+      if (currentPlan && getDaysRemaining() <= 0 && currentPlan.planId !== 'free') {
+        console.warn(`Feature ${featureFlag} blocked: subscription expired`);
+        return false;
+      }
       return hasFeature(effectivePlanId, featureFlag);
     };
-  }, [effectivePlanId, shouldBypassPlanGates]);
+  }, [effectivePlanId, shouldBypassPlanGates, currentPlan, getDaysRemaining]);
 
   // Get required plan for a feature
   const getRequiredPlan = useMemo(() => {

@@ -66,13 +66,20 @@ export const AuthProvider = ({ children }) => {
             : null;
 
           if (customerId || subscriptionId) {
-            setPlan({
-              planId: "monthly",
-              status: "active",
-              expiresAt: null,
-              stripeCustomerId: customerId,
-              stripeSubscriptionId: subscriptionId,
-            });
+            // Fetch actual plan details from Stripe
+            try {
+              const stripeService = await import('@/services/stripeService').then(m => m.default);
+              const stripePlan = await stripeService.getCurrentPlan(customerId);
+              if (stripePlan) {
+                setPlan(stripePlan);
+              } else {
+                // Fallback to free if Stripe returns no plan
+                setPlan({ planId: 'free', status: 'active', expiresAt: null });
+              }
+            } catch (stripeError) {
+              console.warn('Could not load plan from Stripe, using free plan:', stripeError);
+              setPlan({ planId: 'free', status: 'active', expiresAt: null });
+            }
           } else {
             setPlan({ planId: 'free', status: 'active', expiresAt: null });
           }
