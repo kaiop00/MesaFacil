@@ -16,6 +16,7 @@ const TableCard = ({
   mesa,          // ✅ objeto real
   idRestaurante,
   onOpenDetail,
+  onTransfer,
 }) => {
   const { t } = useTranslation('order');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -92,6 +93,12 @@ const TableCard = ({
     setShowOptions(false);
   }
 
+  const handleTransfer = (event) => {
+    event?.preventDefault?.();
+    onTransfer?.(mesa);
+    setShowOptions(false);
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
@@ -119,10 +126,7 @@ const TableCard = ({
                     setShowOptions(false);
                   }}
                   onFinalize={handleFinalize}
-                  onTransfer={() => {
-                    onOpenDetail?.(mesa);
-                    setShowOptions(false);
-                  }}
+                  onTransfer={handleTransfer}
                 />
               )}
             </div>

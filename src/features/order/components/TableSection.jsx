@@ -7,6 +7,7 @@ const TableSection = ({
   items,
   idRestaurante,
   onOpenDetail,
+  onTransfer,
 }) => {
   const { t } = useTranslation('order');
 
@@ -43,6 +44,7 @@ const TableSection = ({
             mesa={it.mesa}
             idRestaurante={idRestaurante}
             onOpenDetail={onOpenDetail}
+            onTransfer={onTransfer}
           />
         ))}
       </div>

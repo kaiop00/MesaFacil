@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic"; // ✅ seu spinner
 import DetailOrderModal from "@/features/order/components/modals/DetailOrderModal";
+import TransferOrderModal from "@/features/order/components/modals/TransferOrderModal";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import IfoodStatusMonitor from "@/features/integrations/ifood/components/IfoodStatusMonitor";
@@ -22,6 +23,8 @@ const OrderPage = () => {
   const [selectedTable, setSelectedtable] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [mesaDetalhe, setMesaDetalhe] = useState(null);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [mesaTransferencia, setMesaTransferencia] = useState(null);
   const { idRestaurante } = useAuth();
   const { hasPermission } = usePermissions();
   const { mesasLivres, mesasAndamento, mesasEntregues, tables, loading: tablesLoading } = useTables(idRestaurante);
@@ -65,6 +68,12 @@ const OrderPage = () => {
     if (!mesa) return;
     setMesaDetalhe(mesa);
     setIsDetailModalOpen(true);
+  };
+
+  const handleOpenTransferModal = (mesa) => {
+    if (!mesa) return;
+    setMesaTransferencia(mesa);
+    setIsTransferModalOpen(true);
   };
 
   // Abrir detalhes via deep-link (?mesaId=...)
@@ -120,6 +129,7 @@ const OrderPage = () => {
                 items={mesasEntreguesDisplay}
                 idRestaurante={idRestaurante}
                 onOpenDetail={handleOpenDetailModal}
+                onTransfer={handleOpenTransferModal}
               />
               <TableSection
                 title={t('tables.status.andamento')}
@@ -127,6 +137,7 @@ const OrderPage = () => {
                 items={mesasAndamentoDisplay}
                 idRestaurante={idRestaurante}
                 onOpenDetail={handleOpenDetailModal}
+                onTransfer={handleOpenTransferModal}
               />
               <TableSection
                 title={t('tables.status.livre')}
@@ -134,6 +145,7 @@ const OrderPage = () => {
                 items={mesasLivresDisplay}
                 idRestaurante={idRestaurante}
                 onOpenDetail={handleOpenDetailModal}
+                onTransfer={handleOpenTransferModal}
               />
             </>
           )}
@@ -163,6 +175,23 @@ const OrderPage = () => {
             }}
             mesaSelecionada={mesaDetalhe}
             idRestaurante={idRestaurante}
+          />
+
+          <TransferOrderModal
+            isOpen={isTransferModalOpen}
+            onClose={() => {
+              setIsTransferModalOpen(false);
+              setMesaTransferencia(null);
+            }}
+            idRestaurante={idRestaurante}
+            sourceTable={mesaTransferencia}
+            tables={tables}
+            onTransferred={() => {
+              setIsTransferModalOpen(false);
+              setMesaTransferencia(null);
+              // Reabrir detalhes para refletir o novo estado das mesas
+              setIsDetailModalOpen(false);
+            }}
           />
         </div>
       </OrderProvider>

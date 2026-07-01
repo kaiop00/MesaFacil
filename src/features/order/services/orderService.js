@@ -227,6 +227,8 @@ export const createPedido = async (idRestaurante, mesaId, items, total, observac
             observacoes,
             read: false,
             criadoEm: serverTimestamp(),
+            mesaId,
+            mesaNumero: mesaId,
             // Campos adicionais para WhatsApp e outras origens
             orderOrigin: extraData.orderOrigin || 'mesaconvencional',
             ...(extraData.tipoEntrega && { tipoEntrega: extraData.tipoEntrega }),
@@ -320,6 +322,8 @@ export const createPedidoPublico = async (idRestaurante, mesaId, items, total, o
             observacoes,
             read: false,
             criadoEm: serverTimestamp(),
+            mesaId,
+            mesaNumero: mesaId,
             orderOrigin: extraData.orderOrigin || 'mesaconvencional',
             ...(extraData.tipoEntrega && { tipoEntrega: extraData.tipoEntrega }),
             ...(extraData.cliente && { cliente: extraData.cliente }),
@@ -327,6 +331,19 @@ export const createPedidoPublico = async (idRestaurante, mesaId, items, total, o
             ...(extraData.troco && { troco: extraData.troco }),
             ...(extraData.taxaEntrega && { taxaEntrega: extraData.taxaEntrega }),
         };
+
+        // Valida e calcula o consumo de ingredientes também no fluxo público.
+        const verificacaoEstoque = await verificarEstoqueDisponivel(idRestaurante, pedidoItems);
+        if (!verificacaoEstoque.podeProcessar) {
+            const itensProblema = verificacaoEstoque.verificacoes
+                .filter((v) => !v.disponivel)
+                .map((v) => `${v.itemNome}: ${v.motivo}`)
+                .join('\n');
+
+            throw new Error(`Estoque insuficiente para processar o pedido:\n\n${itensProblema}`);
+        }
+
+        const consumoIngredientes = await calcularConsumoIngredientes(idRestaurante, pedidoItems);
 
         const mesaDocRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaId);
 
@@ -337,11 +354,112 @@ export const createPedidoPublico = async (idRestaurante, mesaId, items, total, o
             });
         });
 
-        return { pedidoId: newPedidoRef.id, estoqueProcessado: false };
+        try {
+            if (consumoIngredientes.length > 0) {
+                await processarBaixaEstoque(idRestaurante, consumoIngredientes, newPedidoRef.id);
+            }
+        } catch (estoqueError) {
+            console.error("Erro ao processar baixa no estoque do pedido público:", estoqueError);
+            throw new Error(`Pedido criado, mas houve erro ao processar estoque: ${estoqueError.message}`);
+        }
+
+        return { pedidoId: newPedidoRef.id, estoqueProcessado: consumoIngredientes.length > 0 };
     } catch (error) {
         console.error("Erro ao criar pedido público:", error);
         throw error;
     }
+};
+
+/**
+ * Transfere todos os pedidos de uma mesa para outra mesa.
+ */
+export const transferirPedidosMesa = async (idRestaurante, mesaOrigemId, mesaDestinoId) => {
+    if (!idRestaurante || !mesaOrigemId || !mesaDestinoId) {
+        throw new Error("Parâmetros inválidos para transferir pedido");
+    }
+
+    if (mesaOrigemId === mesaDestinoId) {
+        throw new Error("Selecione uma mesa diferente para a transferência");
+    }
+
+    const mesaOrigemRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaOrigemId);
+    const mesaDestinoRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaDestinoId);
+    const pedidosOrigemRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaOrigemId, "pedidos");
+    const pedidosDestinoRef = collection(db, "restaurantes", idRestaurante, "mesas", mesaDestinoId, "pedidos");
+
+    const [mesaOrigemSnap, mesaDestinoSnap, pedidosOrigemSnap, pedidosDestinoSnap] = await Promise.all([
+        getDoc(mesaOrigemRef),
+        getDoc(mesaDestinoRef),
+        getDocs(pedidosOrigemRef),
+        getDocs(pedidosDestinoRef),
+    ]);
+
+    if (!mesaOrigemSnap.exists()) {
+        throw new Error("Mesa de origem não encontrada");
+    }
+
+    if (!mesaDestinoSnap.exists()) {
+        throw new Error("Mesa de destino não encontrada");
+    }
+
+    if (pedidosOrigemSnap.empty) {
+        throw new Error("Não há pedidos para transferir nesta mesa");
+    }
+
+    const mesaOrigemData = mesaOrigemSnap.data() || {};
+    const mesaDestinoData = mesaDestinoSnap.data() || {};
+    const totalTransferido = pedidosOrigemSnap.docs.reduce((acc, pedidoDoc) => {
+        return acc + Number(pedidoDoc.data()?.total || 0);
+    }, 0);
+    const totalDestinoAtual = pedidosDestinoSnap.docs.reduce((acc, pedidoDoc) => {
+        return acc + Number(pedidoDoc.data()?.total || 0);
+    }, 0);
+    const mesaOrigemNumero = mesaOrigemData.numero ?? mesaOrigemData.nome ?? mesaOrigemId;
+    const mesaDestinoNumero = mesaDestinoData.numero ?? mesaDestinoData.nome ?? mesaDestinoId;
+
+    const batch = writeBatch(db);
+    const transferidoEm = serverTimestamp();
+
+    pedidosOrigemSnap.docs.forEach((pedidoDoc) => {
+        const pedidoData = pedidoDoc.data();
+        const pedidoDestinoRef = doc(db, "restaurantes", idRestaurante, "mesas", mesaDestinoId, "pedidos", pedidoDoc.id);
+
+        batch.set(pedidoDestinoRef, {
+            ...pedidoData,
+            mesaId: mesaDestinoId,
+            mesaNumero: mesaDestinoNumero,
+            transferidoDeMesaId: mesaOrigemId,
+            transferidoDeMesaNumero: mesaOrigemNumero,
+            transferidoEm,
+            atualizadoEm: transferidoEm,
+        });
+
+        batch.delete(pedidoDoc.ref);
+    });
+
+    batch.update(mesaOrigemRef, {
+        status: "livre",
+        total: 0,
+        entregueEm: null,
+        atualizadoEm: transferidoEm,
+    });
+
+    batch.update(mesaDestinoRef, {
+        status: "andamento",
+        total: totalDestinoAtual + totalTransferido,
+        entregueEm: null,
+        atualizadoEm: transferidoEm,
+    });
+
+    await batch.commit();
+
+    return {
+        sucesso: true,
+        mesaOrigemId,
+        mesaDestinoId,
+        totalTransferido,
+        pedidosTransferidos: pedidosOrigemSnap.size,
+    };
 };
 
 /**
