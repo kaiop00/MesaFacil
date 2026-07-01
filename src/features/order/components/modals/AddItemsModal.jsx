@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 // removed useItemObservationPreference: always apply item observation by default
 import { useTranslation } from "react-i18next";
 import { useCardapioContext } from "@/features/foodList/context/CardapioContext";
@@ -24,6 +24,7 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
     const [loading, setLoading] = useState(false);
     const [verificacaoEstoque, setVerificacaoEstoque] = useState(null);
     const [loadingEstoque, setLoadingEstoque] = useState(false);
+    const wasOpenRef = useRef(false);
 
     const observationShortcuts = [
         t('modals.addItems.shortcuts.mediumRare'),
@@ -47,11 +48,15 @@ const AddItemsModal = ({ isOpen, onClose, selectedTable }) => {
     };
 
     useEffect(() => {
-        if (!isOpen) {
+        const justClosed = wasOpenRef.current && !isOpen;
+
+        if (justClosed) {
             setSelectedItemId("");
             setItemObservation("");
             clearOrder();
         }
+
+        wasOpenRef.current = Boolean(isOpen);
     }, [isOpen, clearOrder])
 
 

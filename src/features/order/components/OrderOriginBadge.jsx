@@ -60,12 +60,12 @@ export function OrderOriginBadge({ origin = 'mesaconvencional', size = 'medium',
 
   return (
     <span className={`
-      inline-flex items-center rounded-full font-semibold text-white shadow-sm
-      transition-shadow duration-200 whitespace-nowrap
+      inline-flex max-w-full items-center rounded-full font-semibold text-white shadow-sm
+      transition-shadow duration-200 whitespace-normal break-words
       ${config.bgClass} ${config.hoverClass} ${sizeClass}
     `}>
       <span>{config.icon}</span>
-      <span>{config.label}</span>
+      <span className="min-w-0">{config.label}</span>
     </span>
   );
 }

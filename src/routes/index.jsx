@@ -1,8 +1,5 @@
-import {
-  BrowserRouter,
-  Route,
-  Routes,
-} from "react-router-dom";
+// routes/index.jsx
+import { createBrowserRouter, Navigate, RouterProvider, useLocation } from "react-router-dom";
 import Layout from "@/layouts/Layout";
 import PrivateRoute from "@/components/PrivateRoute";
 import RequireFeature from "@/components/RequireFeature";
@@ -10,13 +7,16 @@ import RequirePermission from "@/components/RequirePermission";
 import RedirectHandler from "@/components/RedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
+//Importação das páginas de erro
 import ErrorPage from "@/pages/ErrorPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { FEATURE_FLAGS } from "@/constants/planFeatures";
 
+//Importação das páginas estáticas
 import PrivacyPage from "@/static/privacy/PrivacyPage";
 import TermsPage from "@/static/terms/TermsPage.jsx";
 
+//Importação das páginas publicas
 import LoginPage from "@/features/auth/pages/login/LoginPage";
 import RegisterPage from "@/features/auth/pages/register/RegisterPage";
 import ForgotPasswordPage from "@/features/auth/pages/forgotPassword/ForgotPasswordPage";
@@ -24,6 +24,8 @@ import MainPage from "@/features/auth/pages/MainPage";
 import PlanSelectionPage from "@/features/auth/pages/planSelection/PlanSelectionPage";
 import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 
+
+// Importação das páginas privadas
 import DashboardPage from "@/features/dashboard/pages/DashboardPage";
 import OrderPage from "@/features/order/pages/OrderPage";
 import FoodListPage from "@/features/foodList/pages/FoodListPage";
@@ -35,7 +37,6 @@ import MovementsPage from "@/features/movements/pages/MovementsPage";
 import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
 import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
-import ImpressoraSetorPage from "@/features/config/pages/ImpressoraSetorPage";
 import ConfigFiscalPage from "@/features/fiscal/pages/ConfigFiscalPage";
 import NfceListPage from "@/features/fiscal/pages/NfceListPage";
 import NfceDemoPage from "@/features/fiscal/pages/NfceDemoPage";
@@ -45,6 +46,7 @@ import LancamentoManual from "@/features/caixa/pages/LancamentoManual";
 import Movimentacoes from "@/features/caixa/pages/Movimentacoes";
 import HistoricoCaixas from "@/features/caixa/pages/HistoricoCaixas";
 
+//providers
 import { CardapioProvider } from "@/features/foodList/context/CardapioContext";
 import { TablesProvider } from "@/features/config/context/TablesContext";
 import MesaPage from "@/features/cliente/pages/MesaPage";
@@ -52,148 +54,279 @@ import ClienteLayout from "@/features/cliente/layout/ClienteLayout";
 import SacolaPage from "@/features/cliente/pages/SacolaPage";
 import PedidoClientePage from "@/features/cliente/pages/PedidoClientePage";
 
-const AppRoutes = () => {
-  return (
-    <Routes>
-      <Route path="/" element={<RedirectHandler />} />
+const LegacyRedirect = ({ to }) => {
+  const location = useLocation();
 
-      <Route path="/home-page" element={<MainPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/cadastro" element={<RegisterPage />} />
-      <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-      <Route path="/selecionar-plano" element={<PlanSelectionPage />} />
-      <Route path="/payment-success" element={<PaymentSuccessPage />} />
-      <Route path="/politica-privacidade" element={<PrivacyPage />} />
-      <Route path="/termos" element={<TermsPage />} />
+  return <Navigate to={`${to}${location.search}${location.hash}`} replace />;
+};
 
-      <Route path="mesa/:slug" element={<ClienteLayout />}>
-        <Route index element={<MesaPage />} />
-        <Route path="sacola" element={<SacolaPage />} />
-        <Route path="pedido" element={<PedidoClientePage />} />
-      </Route>
+const legacyRouteMap = {
+  "/dashboard": "/home",
+  "/pedidos": "/home/pedidos",
+  "/cardapio": "/home/cardapio",
+  "/relatorios": "/home/relatorios",
+  "/promocoes": "/home/promocoes",
+  "/usuarios": "/home/usuarios",
+  "/itens": "/home/itens",
+  "/movimentacao": "/home/movimentacao",
+  "/movimentacoes": "/home/movimentacao",
+  "/integracoes": "/home/integracoes/ifood",
+  "/ifood": "/home/integracoes/ifood",
+  "/whatsapp": "/home/whatsapp",
+  "/impressoras-setor": "/home",
+  "/fiscal": "/home/fiscal",
+  "/nfce-emitidas": "/home/nfce-emitidas",
+  "/nfce-demo": "/home/nfce-demo",
+  "/caixa": "/home/caixa",
+  "/caixa/abrir": "/home/caixa/abrir",
+  "/caixa/lancamento": "/home/caixa/lancamento",
+  "/caixa/movimentacoes": "/home/caixa/movimentacoes",
+  "/caixa/historico": "/home/caixa/historico",
+};
 
-      <Route
-        path="/home"
-        element={<PrivateRoute />}
-      >
-        <Route
-          element={
-            <TablesProvider>
-              <Layout />
-            </TablesProvider>
-          }
-        >
-          <Route index element={<DashboardPage />} />
-          <Route path="pedidos" element={<OrderPage />} />
-          <Route path="cozinha" element={<KitchenPage />} />
-          <Route
-            path="cardapio"
-            element={
-              <CardapioProvider>
-                <FoodListPage />
-              </CardapioProvider>
-            }
-          />
-          <Route path="relatorios" element={<ReportPage />} />
-          <Route path="promocoes" element={<PromotionPage />} />
+const LegacyRouteResolver = () => {
+  const location = useLocation();
+  const normalizedPath = location.pathname.toLowerCase();
+  const redirectTo = legacyRouteMap[normalizedPath];
 
-          <Route
-            path="usuarios"
-            element={
-              <RequireFeature
-                feature={FEATURE_FLAGS.EMPLOYEE_MANAGEMENT}
-                featureName="Gerenciamento de Funcionarios"
-                requiredPlan="monthly"
-                description="Gerencie sua equipe com controle completo de permissões e acessos. Adicione funcionarios, defina papeis e acompanhe atividades."
-                benefits={[
-                  "Criacao ilimitada de usuarios",
-                  "Controle granular de permissoes",
-                  "Diferentes papeis (admin, garcom, cozinha)",
-                  "Historico de atividades por usuario",
-                  "Ativacao e desativacao de contas",
-                  "Gerenciamento de senhas e acessos",
-                ]}
-              >
-                <UsersPage />
-              </RequireFeature>
-            }
-          />
+  if (redirectTo) {
+    return <Navigate to={`${redirectTo}${location.search}${location.hash}`} replace />;
+  }
 
-          <Route
-            path="itens"
-            element={
+  return <NotFoundPage />;
+};
+
+const router = createBrowserRouter([
+  ...Object.entries(legacyRouteMap).map(([path, to]) => ({
+    path,
+    element: <LegacyRedirect to={to} />,
+  })),
+  {
+    path: "/Dashboard",
+    element: <Navigate to="/home" replace />,
+  },
+
+  // redireciona para /home ou /login
+  {
+    path: "/",
+    element: <RedirectHandler />,
+    errorElement: <ErrorPage />,
+  },
+
+  //rotas publicas
+  {
+    path: "/home-page",
+    element: <MainPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/cadastro",
+    element: <RegisterPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/recuperar-senha",
+    element: <ForgotPasswordPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/selecionar-plano",
+    element: <PlanSelectionPage />,
+  },
+  {
+    path: "/payment-success",
+    element: <PaymentSuccessPage />,
+  },
+  {
+    path: "/politica-privacidade",
+    element: <PrivacyPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/termos",
+    element: <TermsPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "mesa/:slug",
+    element: <ClienteLayout />,
+    errorElement: <ErrorPage />,
+    children: [
+      { index: true, element: <MesaPage /> },
+      { path: "sacola", element: <SacolaPage /> },
+      { path: "pedido", element: <PedidoClientePage /> }
+    ]
+  },
+
+  //rotas privadas
+  {
+    path: "/home",
+    element: <PrivateRoute />, // garante proteção total do path
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: "",
+        element: (
+          <TablesProvider>
+            <Layout />
+          </TablesProvider>
+        ),
+        children: [
+          { path: "", element: <DashboardPage /> },
+          { path: "pedidos", element: <OrderPage /> },
+          { path: "cozinha", element: <KitchenPage /> },
+          { path: "cardapio", element: <CardapioProvider> <FoodListPage /> </CardapioProvider> },
+          { path: "relatorios", element: <ReportPage /> },
+          { 
+            path: "promocoes", 
+            element: <PromotionPage />  // Promoções disponíveis para todos os planos
+          },
+        { 
+          path: "usuarios", 
+          element: (
+            <RequireFeature
+              feature={FEATURE_FLAGS.EMPLOYEE_MANAGEMENT}
+              featureName="Gerenciamento de Funcionários"
+              requiredPlan="monthly"
+              description="Gerencie sua equipe com controle completo de permissões e acessos. Adicione funcionários, defina papéis e acompanhe atividades."
+              benefits={[
+                "Criação ilimitada de usuários",
+                "Controle granular de permissões",
+                "Diferentes papéis (admin, garçom, cozinha)",
+                "Histórico de atividades por usuário",
+                "Ativação e desativação de contas",
+                "Gerenciamento de senhas e acessos"
+              ]}
+            >
+              <UsersPage />
+            </RequireFeature>
+          )
+        },
+        { 
+          path: "itens", 
+          element: (
               <RequireFeature
                 feature={FEATURE_FLAGS.INVENTORY_CONTROL}
                 featureName="Controle de Estoque"
                 requiredPlan="monthly"
-                description="Gerencie seu estoque de ingredientes e itens com precisão. Controle entradas, saidas e acompanhe o saldo em tempo real."
+                description="Gerencie seu estoque de ingredientes e itens com precisão. Controle entradas, saídas e acompanhe o saldo em tempo real."
                 benefits={[
                   "Cadastro ilimitado de itens e ingredientes",
                   "Controle de estoque em tempo real",
-                  "Historico completo de movimentacoes",
+                  "Histórico completo de movimentações",
                   "Alertas de estoque baixo",
-                  "Relatorios de consumo e desperdicio",
+                  "Relatórios de consumo e desperdício"
                 ]}
               >
                 <ItemsPage />
               </RequireFeature>
-            }
-          />
-
-          <Route
-            path="movimentacao"
-            element={
+            )
+          },
+          { 
+            path: "movimentacao", 
+            element: (
               <RequireFeature
                 feature={FEATURE_FLAGS.INVENTORY_CONTROL}
-                featureName="Movimentacoes de Estoque"
+                featureName="Movimentações de Estoque"
                 requiredPlan="monthly"
-                description="Registre e acompanhe todas as movimentacoes do seu estoque. Controle entradas, saidas e ajustes com historico detalhado."
+                description="Registre e acompanhe todas as movimentações do seu estoque. Controle entradas, saídas e ajustes com histórico detalhado."
                 benefits={[
-                  "Registro de todas as entradas e saidas",
-                  "Historico completo de movimentacoes",
+                  "Registro de todas as entradas e saídas",
+                  "Histórico completo de movimentações",
                   "Rastreabilidade de produtos",
-                  "Analise de consumo por periodo",
-                  "Identificacao de perdas e desperdicios",
+                  "Análise de consumo por período",
+                  "Identificação de perdas e desperdícios"
                 ]}
               >
                 <MovementsPage />
               </RequireFeature>
-            }
-          />
-
-          <Route
-            path="integracoes/ifood"
-            element={
+            )
+          },
+          { 
+            path: "integracoes/ifood", 
+            element: (
               <RequirePermission permission="manage_ifood_integration">
                 <IfoodIntegrationPage />
               </RequirePermission>
-            }
-          />
-          <Route path="whatsapp" element={<WhatsAppPage />} />
-          <Route path="impressoras-setor" element={<ImpressoraSetorPage />} />
-          <Route path="fiscal" element={<ConfigFiscalPage />} />
-          <Route path="nfce-emitidas" element={<NfceListPage />} />
-          <Route path="nfce-demo" element={<NfceDemoPage />} />
-          <Route path="caixa" element={<CaixaAtual />} />
-          <Route path="caixa/abrir" element={<AbrirCaixa />} />
-          <Route path="caixa/lancamento" element={<LancamentoManual />} />
-          <Route path="caixa/movimentacoes" element={<Movimentacoes />} />
-          <Route path="caixa/historico" element={<HistoricoCaixas />} />
-        </Route>
-      </Route>
+            )
+          },
+          {
+            path: "whatsapp",
+            element: <WhatsAppPage />
+          },
+          {
+            path: "fiscal",
+            element: <ConfigFiscalPage />,
+          },
+          {
+            path: "nfce-emitidas",
+            element: <NfceListPage />,
+          },
+          {
+            path: "nfce-demo",
+            element: <NfceDemoPage />,
+          },
+          {
+            path: "caixa",
+            element: (
+              <RequirePermission permission="view_cash">
+                <CaixaAtual />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: "caixa/abrir",
+            element: (
+              <RequirePermission permission="manage_cash">
+                <AbrirCaixa />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: "caixa/lancamento",
+            element: (
+              <RequirePermission permission="manage_cash">
+                <LancamentoManual />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: "caixa/movimentacoes",
+            element: (
+              <RequirePermission permission="view_cash">
+                <Movimentacoes />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: "caixa/historico",
+            element: (
+              <RequirePermission permission="view_cash">
+                <HistoricoCaixas />
+              </RequirePermission>
+            ),
+          },
+        ],
+      }
+    ]
+  },
 
-      <Route path="/erro" element={<ErrorPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-  );
-};
+  //redirecionamento de rota errada
+  {
+    path: "*",
+    element: <LegacyRouteResolver />,
+  }
+]);
 
 const AppRouter = () => {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </ErrorBoundary>
   );
 };

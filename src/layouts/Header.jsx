@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, UserCircle } from "react-coolicons";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ConfigModal from "@/features/config/components/modals/ConfigModal";
 import ColorsConfigModal from "@/features/config/components/modals/ColorsConfigModal";
@@ -16,13 +16,15 @@ import { useIfoodDisputes } from "@/features/integrations/ifood/hooks/useIfoodDi
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import PlanInfo from "@/components/PlanInfo";
-import stripeService, { STRIPE_TEMPORARILY_DISABLED } from "@/services/stripeService";
 import { useToast } from "@/hooks/useToast";
 import { getStripeCustomerId } from "@/services/firebase/restaurantService";
-import { getUserRestauranteId } from "@/services/firebase/authService";
+
+const loadStripeService = async () => {
+  const mod = await import('@/services/stripeService');
+  return mod.default;
+};
 
 const Header = ({ isSidebarOpen = true }) => {
-  const ENABLE_PEDIDOS_EXIT_HARD_REFRESH = false;
   const { t, i18n } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
@@ -35,9 +37,8 @@ const Header = ({ isSidebarOpen = true }) => {
   const dropdownRef = useRef(null);
   const languageDropdownRef = useRef(null);
   const navigate = useNavigate();
-  const location = useLocation();
   const imagemRestaurante = useImagemDoRestaurante();
-  const { idRestaurante, user } = useAuth();
+  const { idRestaurante } = useAuth();
   const { hasPermission, isAdmin } = usePermissions();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { notifications, unreadCount, loading, markAllAsRead, markOneAsRead } = useNotifications(idRestaurante);
@@ -46,25 +47,6 @@ const Header = ({ isSidebarOpen = true }) => {
   const { notify } = useToast();
 
   const toggleDropdown = () => setIsDropdownOpen((open) => !open);
-
-  const safeNavigate = (to, options) => {
-    if (typeof to !== "string") {
-      navigate(to, options);
-      return;
-    }
-
-    const targetPath = to.split("?")[0] || to;
-    if (
-      ENABLE_PEDIDOS_EXIT_HARD_REFRESH &&
-      location.pathname === "/home/pedidos" &&
-      targetPath !== "/home/pedidos"
-    ) {
-      window.location.assign(to);
-      return;
-    }
-
-    navigate(to, options);
-  };
 
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
@@ -76,30 +58,21 @@ const Header = ({ isSidebarOpen = true }) => {
     try {
       setIsDropdownOpen(false);
       setIsSubMenuOpen(false);
-
-      if (STRIPE_TEMPORARILY_DISABLED) {
-        safeNavigate('/home');
-        return;
-      }
       
-      // Recupera idRestaurante com fallback para contas legadas.
-      let resolvedRestaurantId = idRestaurante;
-      if (!resolvedRestaurantId && user?.uid) {
-        resolvedRestaurantId = await getUserRestauranteId(user.uid);
-      }
-
-      if (!resolvedRestaurantId) {
-        notify('Não foi possível identificar o restaurante desta conta. Faça login novamente e tente de novo.', 'error');
+      // Check if restaurant has Stripe customer ID
+      if (!idRestaurante) {
+        notify('ID do restaurante não encontrado.', 'error');
         return;
       }
 
       // Get Stripe customer ID from restaurant document
-      const stripeCustomerId = await getStripeCustomerId(resolvedRestaurantId);
+      const stripeCustomerId = await getStripeCustomerId(idRestaurante);
+      const stripeService = await loadStripeService();
 
       // Check if restaurant has a Stripe customer ID
       if (!stripeCustomerId) {
         notify('Você está no plano gratuito. Escolha um plano pago para continuar.', 'info');
-        safeNavigate('/selecionar-plano');
+        navigate('/selecionar-plano');
         return;
       }
 
@@ -110,7 +83,7 @@ const Header = ({ isSidebarOpen = true }) => {
         if (!subscriptionData.subscription) {
           // No subscription found, redirect to plan selection
           notify('Você não possui uma assinatura ativa. Escolha um plano para continuar.', 'info');
-          safeNavigate('/selecionar-plano');
+          navigate('/selecionar-plano');
           return;
         }
 
@@ -121,7 +94,7 @@ const Header = ({ isSidebarOpen = true }) => {
         console.error('Erro ao verificar assinatura:', error);
         // On error checking subscription, redirect to plan selection as fallback
         notify('Redirecionando para seleção de planos...', 'info');
-        safeNavigate('/selecionar-plano');
+        navigate('/selecionar-plano');
       }
     } catch (error) {
       console.error('Erro ao acessar portal de faturamento:', error);
@@ -350,7 +323,7 @@ const Header = ({ isSidebarOpen = true }) => {
                   e.preventDefault();
                   try {
                     await logout();
-                    safeNavigate("/home-page");
+                    navigate("/home-page");
                   } catch (error) {
                     console.error("Erro ao fazer logout:", error.message);
                   }
@@ -394,13 +367,13 @@ const Header = ({ isSidebarOpen = true }) => {
         onMarkOne={markOneAsRead}
         onView={(mesaId) => {
           setIsNotificationsOpen(false);
-          safeNavigate(`/home/pedidos?mesaId=${encodeURIComponent(mesaId)}`);
+          navigate(`/home/pedidos?mesaId=${encodeURIComponent(mesaId)}`);
         }}
         loading={loading}
         pendingDisputes={pendingDisputes}
         onViewDisputes={() => {
           setIsNotificationsOpen(false);
-          safeNavigate("/home/integracoes/ifood?tab=disputes");
+          navigate("/home/integracoes/ifood?tab=disputes");
         }}
       />
     </header>

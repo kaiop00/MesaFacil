@@ -1,6 +1,5 @@
 /* Script de teste: cria/enfileira um item em restaurantes/{restId}/printQueue */
 async function main() {
-  const path = require('path');
   const admin = require('firebase-admin');
   const fs = require('fs');
 
@@ -13,7 +12,7 @@ async function main() {
   let serviceAccount;
   try {
     serviceAccount = require(credPath);
-  } catch (e) {
+  } catch {
     // try read as raw
     const raw = fs.readFileSync(credPath, 'utf8');
     serviceAccount = JSON.parse(raw);
@@ -53,4 +52,4 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((e) => { console.error('Erro:', e); process.exit(1); });
+main().catch((error) => { console.error('Erro:', error); process.exit(1); });

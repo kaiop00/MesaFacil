@@ -8,7 +8,7 @@ export default function useItemObservationPreference() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw === null) return false; // por padrão NÃO aplicar observação geral aos itens
       return raw === '1';
-    } catch (e) {
+    } catch {
       return false;
     }
   });
@@ -16,7 +16,7 @@ export default function useItemObservationPreference() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, applyObservationToItem ? '1' : '0');
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [applyObservationToItem]);

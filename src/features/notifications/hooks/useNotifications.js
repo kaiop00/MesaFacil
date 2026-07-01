@@ -33,6 +33,7 @@ export function useNotifications(idRestaurante) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const mesaUnsubsRef = useRef({});
+  const pedidosByMesaRef = useRef({});
   useEffect(() => {
     if (!idRestaurante) {
       setNotifications([]);
@@ -42,33 +43,33 @@ export function useNotifications(idRestaurante) {
       return;
     }
 
-    const start = startOfDay(new Date());
-    const end = endOfDay(new Date());
-    const qStart = Timestamp.fromDate(start);
-    const qEnd = Timestamp.fromDate(end);
-
+    // Assina mesas e, para cada mesa, assina pedidos do dia.
+    // Evita collectionGroup sem filtro por restaurante, que pode gerar permission-denied nas rules atuais.
     const mesasCol = collection(db, "restaurantes", idRestaurante, "mesas");
-    const cleanupMesaListeners = () => {
-      Object.keys(mesaUnsubsRef.current).forEach((mesaId) => {
-        mesaUnsubsRef.current[mesaId]?.();
-        delete mesaUnsubsRef.current[mesaId];
-      });
-    };
-
     const unsubscribe = onSnapshot(mesasCol, (snapshot) => {
       const mesas = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+      // Cancelar listeners antigos que não estão mais presentes
       const currentIds = new Set(mesas.map((m) => m.id));
       Object.keys(mesaUnsubsRef.current).forEach((mesaId) => {
         if (!currentIds.has(mesaId)) {
           mesaUnsubsRef.current[mesaId]?.();
           delete mesaUnsubsRef.current[mesaId];
+          delete pedidosByMesaRef.current[mesaId];
         }
       });
 
-      const tempByMesa = {};
+      const start = startOfDay(new Date());
+      const end = endOfDay(new Date());
+      const qStart = Timestamp.fromDate(start);
+      const qEnd = Timestamp.fromDate(end);
 
       mesas.forEach((mesa) => {
+        // Evita re-subscrever listeners já ativos para reduzir churn de rede.
+        if (mesaUnsubsRef.current[mesa.id]) {
+          return;
+        }
+
         const pedidosCol = collection(
           db,
           "restaurantes",
@@ -84,7 +85,6 @@ export function useNotifications(idRestaurante) {
           orderBy("criadoEm", "desc")
         );
 
-        mesaUnsubsRef.current[mesa.id]?.();
         mesaUnsubsRef.current[mesa.id] = onSnapshot(qPed, (snap) => {
           const items = snap.docs.map((d) => ({
             id: d.id,
@@ -93,9 +93,10 @@ export function useNotifications(idRestaurante) {
             refPath: d.ref.path,
             ...d.data(),
           }));
+          pedidosByMesaRef.current[mesa.id] = items;
 
-          tempByMesa[mesa.id] = items;
-          const all = Object.values(tempByMesa).flat();
+          // Unificar todas as mesas sempre que um listener atualizar
+          const all = Object.values(pedidosByMesaRef.current).flat();
           all.sort((a, b) => toMillis(b.criadoEm) - toMillis(a.criadoEm));
           setPedidoNotifications(all);
         });
@@ -103,8 +104,10 @@ export function useNotifications(idRestaurante) {
     });
 
     return () => {
-      unsubscribe();
-      cleanupMesaListeners();
+      if (unsubscribe) unsubscribe();
+      Object.values(mesaUnsubsRef.current).forEach((unsub) => unsub?.());
+      mesaUnsubsRef.current = {};
+      pedidosByMesaRef.current = {};
     };
   }, [idRestaurante]);
 

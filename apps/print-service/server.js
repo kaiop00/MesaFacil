@@ -1,5 +1,4 @@
 /* eslint-env node */
-/* global require, process, Buffer */
 
 const fs = require('fs/promises');
 const os = require('os');
@@ -30,78 +29,12 @@ const PORT = Number(process.env.PORT || 4891);
 const HOST = process.env.HOST || '127.0.0.1';
 const TEMP_DIR = path.join(os.tmpdir(), 'mesafacil-print-service');
 
-const QUEUE_WORKER_ENABLED = String(process.env.ENABLE_QUEUE_WORKER || 'true').toLowerCase() === 'true';
-const QUEUE_POLL_INTERVAL_MS = Number(process.env.QUEUE_POLL_INTERVAL_MS || 5000);
-const QUEUE_BATCH_SIZE = Number(process.env.QUEUE_BATCH_SIZE || 5);
-const ALLOW_FIREBASE_ADC = String(process.env.ALLOW_FIREBASE_ADC || 'false').toLowerCase() === 'true';
-
-const queueWorkerState = {
-  enabled: QUEUE_WORKER_ENABLED,
-  active: false,
-  firebaseReady: false,
-  credentialsSource: '',
-  projectId: '',
-  lastError: '',
-  lastRunAt: null,
-  statusMessage: QUEUE_WORKER_ENABLED
-    ? 'Aguardando configuração do Firebase para automação da fila'
-    : 'Worker desabilitado por configuração',
-};
-
 const app = express();
-app.use((req, res, next) => {
-  // Permite que o app em HTTPS acesse o agente local em rede privada (localhost/127.0.0.1).
-  res.setHeader('Access-Control-Allow-Private-Network', 'true');
-  next();
-});
 app.use(cors({ origin: true, methods: ['GET', 'POST', 'OPTIONS'] }));
 app.use(express.json({ limit: '2mb' }));
 
 app.get('/health', (_req, res) => {
-  res.json({
-    ok: true,
-    service: 'MesaFacil Print Service',
-    status: 'running',
-    port: PORT,
-    queueWorker: {
-      enabled: queueWorkerState.enabled,
-      active: queueWorkerState.active,
-      firebaseReady: queueWorkerState.firebaseReady,
-      statusMessage: queueWorkerState.statusMessage,
-    },
-  });
-});
-
-app.get('/config-status', async (_req, res) => {
-  let printers = [];
-  let printersError = null;
-
-  try {
-    printers = await listPrinters();
-  } catch (error) {
-    printersError = String(error?.message || error);
-  }
-
-  res.json({
-    ok: true,
-    service: 'MesaFacil Print Service',
-    host: HOST,
-    port: PORT,
-    queueWorker: {
-      ...queueWorkerState,
-      recommendedCredentialPath: getDefaultServiceAccountPath(),
-      allowFirebaseAdc: ALLOW_FIREBASE_ADC,
-    },
-    capabilities: {
-      printerLib: Boolean(printerLib),
-      pdfToPrinter: Boolean(pdfToPrinter),
-    },
-    printers: {
-      detected: printers.length,
-      items: printers,
-      error: printersError,
-    },
-  });
+  res.json({ ok: true, service: 'MesaFacil Print Service', status: 'running', port: PORT });
 });
 
 app.get('/printers', async (_req, res) => {
@@ -490,94 +423,17 @@ function sanitizeFileName(value) {
   return normalizeText(value).replace(/[^a-z0-9._-]+/gi, '_') || 'print-job';
 }
 
-function getDefaultServiceAccountPath() {
-  if (process.platform === 'win32') {
-    const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
-    return path.join(appData, 'MesaFacil', 'service-account.json');
-  }
-
-  return path.join(os.homedir(), '.config', 'mesafacil', 'service-account.json');
-}
-
-function getCredentialCandidatePaths() {
-  const candidates = [
-    process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
-    process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    getDefaultServiceAccountPath(),
-  ];
-
-  return Array.from(new Set(candidates.map((value) => String(value || '').trim()).filter(Boolean)));
-}
-
-function parseServiceAccountJson(rawValue) {
-  const raw = String(rawValue || '').trim();
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    try {
-      return JSON.parse(Buffer.from(raw, 'base64').toString('utf8'));
-    } catch {
-      return null;
-    }
-  }
-}
-
-function resolveServiceAccountConfig() {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    const parsed = parseServiceAccountJson(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-    if (parsed) {
-      return {
-        serviceAccount: parsed,
-        source: 'env:FIREBASE_SERVICE_ACCOUNT_JSON',
-      };
-    }
-
-    return {
-      serviceAccount: null,
-      source: 'env:FIREBASE_SERVICE_ACCOUNT_JSON',
-      error: 'FIREBASE_SERVICE_ACCOUNT_JSON inválido',
-    };
-  }
-
-  const fsSync = require('fs');
-  for (const candidatePath of getCredentialCandidatePaths()) {
-    try {
-      if (!fsSync.existsSync(candidatePath)) continue;
-      const raw = fsSync.readFileSync(candidatePath, 'utf8');
-      const parsed = JSON.parse(raw);
-      return {
-        serviceAccount: parsed,
-        source: `file:${candidatePath}`,
-      };
-    } catch (error) {
-      return {
-        serviceAccount: null,
-        source: `file:${candidatePath}`,
-        error: `Falha ao ler credencial: ${error?.message || error}`,
-      };
-    }
-  }
-
-  return {
-    serviceAccount: null,
-    source: '',
-    error: '',
-  };
-}
-
 app.listen(PORT, HOST, () => {
   console.log(`MesaFacil Print Service rodando em http://${HOST}:${PORT}`);
 });
-
-const globalState = globalThis.__mesaFacilPrintServiceState || (globalThis.__mesaFacilPrintServiceState = {});
-if (!process.env.FIREBASE_SERVICE_ACCOUNT_PATH && !process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-  if (!globalState.lastCredentialNoticeAt || (Date.now() - globalState.lastCredentialNoticeAt) > 5 * 60 * 1000) {
-    console.log(`[print-service] Credencial não informada. Caminho padrão esperado: ${getDefaultServiceAccountPath()}`);
-    globalState.lastCredentialNoticeAt = Date.now();
+  // Exibe instrução rápida sobre credenciais quando não fornecidas (rate-limited)
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT_PATH && !process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    // rate-limit this notice to avoid spam in environments where the worker is restarted frequently
+    if (!global.__mesaFacil_printservice_cred_notice_at || (Date.now() - global.__mesaFacil_printservice_cred_notice_at) > 5 * 60 * 1000) {
+      console.log('[print-service] Nota: nenhuma credencial explícita fornecida. Use FIREBASE_SERVICE_ACCOUNT_PATH ou gcloud ADC se necessário.');
+      global.__mesaFacil_printservice_cred_notice_at = Date.now();
+    }
   }
-}
 
 // --- optional Firestore queue worker ---
 let admin = null;
@@ -634,7 +490,7 @@ function resolveFirebaseProjectId(serviceAccount = null) {
       const fbProject = rc && rc.projects && (rc.projects.default || rc.projects.prod) ? (rc.projects.default || rc.projects.prod) : null;
       if (fbProject) return String(fbProject).trim();
     }
-  } catch (err) {
+  } catch {
     // ignore - arquivo pode não existir ou estar mal formado
   }
 
@@ -662,46 +518,86 @@ function tryInitFirebaseAdmin() {
   firebaseInitState.attempted = true;
 
   try {
-    const resolvedCredential = resolveServiceAccountConfig();
-    const serviceAccount = resolvedCredential.serviceAccount;
-    queueWorkerState.credentialsSource = resolvedCredential.source || '';
+    // Prefer explicit service account path or GOOGLE_APPLICATION_CREDENTIALS
+    const credPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    let serviceAccount = null;
 
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      // JSON string or base64
+      try {
+        const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+        serviceAccount = JSON.parse(Buffer.from(raw, 'base64').toString('utf8')) || JSON.parse(raw);
+      } catch {
+        try {
+          serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+        } catch {
+          if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+            console.warn('[print-service] FIREBASE_SERVICE_ACCOUNT_JSON inválido');
+            firebaseInitState.lastNotifiedAt = now;
+          }
+        }
+      }
+    } else if (credPath) {
+      try {
+        serviceAccount = require(credPath);
+      } catch {
+        if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+          console.warn('[print-service] Não foi possível carregar credencial do caminho via require:', credPath);
+          firebaseInitState.lastNotifiedAt = now;
+        }
+        try {
+          const fs = require('fs');
+          const raw = fs.readFileSync(credPath, 'utf8');
+          try {
+            serviceAccount = JSON.parse(raw);
+          } catch (parseErr) {
+            if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+              console.warn('[print-service] Falha ao parsear JSON da credencial lida do caminho:', parseErr?.message || parseErr);
+              firebaseInitState.lastNotifiedAt = now;
+            }
+          }
+        } catch (fsErr) {
+          if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
+            console.warn('[print-service] Não foi possível ler arquivo de credencial do caminho:', fsErr?.message || fsErr);
+            firebaseInitState.lastNotifiedAt = now;
+          }
+        }
+      }
+    }
+
+    // Se houver `serviceAccount` (JSON string/path resolvido), inicializa **sempre** com cert().
     if (serviceAccount) {
       try {
         admin = require('firebase-admin');
 
         const projectId = resolveFirebaseProjectId(serviceAccount);
         applyProjectIdToEnv(projectId);
-        queueWorkerState.projectId = projectId || '';
 
         const initOpts = { credential: admin.credential.cert(serviceAccount) };
         if (projectId) initOpts.projectId = projectId;
         admin.initializeApp(initOpts);
         firestore = admin.firestore();
         firebaseInitState.success = true;
-        queueWorkerState.firebaseReady = true;
-        queueWorkerState.statusMessage = 'Firebase conectado. Worker pronto para imprimir automaticamente por setor';
         console.log(`[print-service] Firebase Admin inicializado via serviceAccount${projectId ? ` (projectId=${projectId})` : ''}`);
         return true;
       } catch (certErr) {
         firebaseInitState.lastFailedAt = Date.now();
-        queueWorkerState.firebaseReady = false;
-        queueWorkerState.lastError = String(certErr?.message || certErr);
-        queueWorkerState.statusMessage = 'Falha ao inicializar Firebase com service account';
         if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
           console.warn('[print-service] Falha ao inicializar Firebase Admin com serviceAccount cert():', certErr?.message || certErr);
           firebaseInitState.lastNotifiedAt = now;
         }
+        // continue to ADC fallback
       }
     }
 
-    if (!serviceAccount && ALLOW_FIREBASE_ADC) {
+    if (!serviceAccount) {
+        // Tenta Application Default Credentials (ADC) como fallback: útil se o dev
+        // tiver rodado `gcloud auth application-default login` ou estiver em ambiente GCP.
         try {
           admin = require('firebase-admin');
 
           const projectId = resolveFirebaseProjectId();
           applyProjectIdToEnv(projectId);
-          queueWorkerState.projectId = projectId || '';
 
           if (projectId) {
             admin.initializeApp({ credential: admin.credential.applicationDefault(), projectId });
@@ -714,17 +610,12 @@ function tryInitFirebaseAdmin() {
 
           firestore = admin.firestore();
           firebaseInitState.success = true;
-          queueWorkerState.credentialsSource = 'adc';
-          queueWorkerState.firebaseReady = true;
-          queueWorkerState.statusMessage = 'Firebase conectado via ADC. Worker pronto para imprimir automaticamente por setor';
           return true;
         } catch (adcErr) {
           firebaseInitState.lastFailedAt = Date.now();
-          queueWorkerState.firebaseReady = false;
-          queueWorkerState.lastError = String(adcErr?.message || adcErr);
-          queueWorkerState.statusMessage = 'ADC habilitado, mas a autenticação do Firebase falhou';
           if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
-            console.warn('[print-service] ADC habilitado, mas as credenciais do Firebase não foram encontradas.');
+            console.warn('[print-service] Credenciais do Firebase não encontradas. Worker de fila não será iniciado.');
+            console.warn('[print-service] Para habilitar o worker, exporte FIREBASE_SERVICE_ACCOUNT_PATH ou rode `gcloud auth application-default login` para fornecer ADC.');
             console.warn('[print-service] Erro ADC:', adcErr?.message || adcErr);
             firebaseInitState.lastNotifiedAt = now;
           }
@@ -732,27 +623,8 @@ function tryInitFirebaseAdmin() {
         }
     }
 
-    firebaseInitState.lastFailedAt = Date.now();
-    queueWorkerState.firebaseReady = false;
-    queueWorkerState.lastError = resolvedCredential.error || 'Nenhuma credencial configurada';
-    queueWorkerState.statusMessage = `Worker aguardando credencial em ${getDefaultServiceAccountPath()}`;
-
-    if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
-      if (resolvedCredential.error) {
-        console.warn('[print-service] Problema na credencial do Firebase:', resolvedCredential.error);
-      } else {
-        console.warn(`[print-service] Credencial do Firebase não encontrada. Caminho padrão: ${getDefaultServiceAccountPath()}`);
-      }
-      firebaseInitState.lastNotifiedAt = now;
-    }
-
-    return false;
-
   } catch (error) {
     firebaseInitState.lastFailedAt = Date.now();
-    queueWorkerState.firebaseReady = false;
-    queueWorkerState.lastError = String(error?.message || error);
-    queueWorkerState.statusMessage = 'Falha inesperada ao inicializar Firebase Admin';
     if (!firebaseInitState.lastNotifiedAt || (now - firebaseInitState.lastNotifiedAt) > firebaseInitState.notifyIntervalMs) {
       console.error('[print-service] Falha ao inicializar Firebase Admin:', error?.message || error);
       firebaseInitState.lastNotifiedAt = now;
@@ -808,13 +680,11 @@ async function processPendingQueueBatch(limit = 5) {
 
       try {
         if (!printerName) {
-          queueWorkerState.lastError = 'Nenhuma impressora vinculada ao setor';
           await docSnap.ref.update({ status: 'ERRO', ultimoErro: 'Nenhuma impressora vinculada ao setor', tentativas: admin.firestore.FieldValue.increment(1) });
           continue;
         }
 
         if (!content) {
-          queueWorkerState.lastError = 'Conteúdo de impressão vazio';
           await docSnap.ref.update({ status: 'ERRO', ultimoErro: 'Conteúdo de impressão vazio', tentativas: admin.firestore.FieldValue.increment(1) });
           continue;
         }
@@ -830,10 +700,8 @@ async function processPendingQueueBatch(limit = 5) {
           printJobId: result.jobId || docSnap.id,
           ultimoErro: null,
         });
-        queueWorkerState.lastError = '';
       } catch (err) {
         console.error('[print-service] Erro ao imprimir fila:', err?.message || err);
-        queueWorkerState.lastError = String(err?.message || err);
         try {
           await docSnap.ref.update({ status: 'ERRO', ultimoErro: String(err?.message || err), tentativas: admin.firestore.FieldValue.increment(1) });
         } catch (uErr) {
@@ -843,7 +711,6 @@ async function processPendingQueueBatch(limit = 5) {
     }
   } catch (error) {
     console.error('[print-service] Falha ao processar fila:', error?.message || error);
-    queueWorkerState.lastError = String(error?.message || error);
   }
 }
 
@@ -989,43 +856,20 @@ async function enqueuePedidosFromPedidos(limitPerRest = 5) {
 }
 
 function startQueueWorker() {
-  if (!QUEUE_WORKER_ENABLED) {
-    queueWorkerState.active = false;
-    queueWorkerState.statusMessage = 'Worker desabilitado por configuração';
-    return;
-  }
+  const enabled = String(process.env.ENABLE_QUEUE_WORKER || 'true').toLowerCase() === 'true';
+  if (!enabled) return;
 
-  console.log(`[print-service] Iniciando worker de fila. Poll interval: ${QUEUE_POLL_INTERVAL_MS}ms`);
+  const inited = tryInitFirebaseAdmin();
+  if (!inited) return;
 
-  const runCycle = async () => {
-    queueWorkerState.lastRunAt = new Date().toISOString();
-
-    if (!firestore) {
-      const initialized = tryInitFirebaseAdmin();
-      queueWorkerState.active = initialized;
-      if (!initialized) return;
-    }
-
-    queueWorkerState.active = true;
-    queueWorkerState.firebaseReady = true;
-
-    await enqueuePedidosFromPedidos(QUEUE_BATCH_SIZE);
-    await processPendingQueueBatch(QUEUE_BATCH_SIZE);
-  };
-
-  runCycle().catch((error) => {
-    queueWorkerState.active = false;
-    queueWorkerState.lastError = String(error?.message || error);
-    console.error('[print-service] worker erro:', error);
-  });
-
+  const intervalMs = Number(process.env.QUEUE_POLL_INTERVAL_MS || 5000);
+  console.log(`[print-service] Iniciando worker de fila. Poll interval: ${intervalMs}ms`);
   setInterval(() => {
-    runCycle().catch((error) => {
-      queueWorkerState.active = false;
-      queueWorkerState.lastError = String(error?.message || error);
-      console.error('[print-service] worker erro:', error);
-    });
-  }, QUEUE_POLL_INTERVAL_MS);
+    // First, try to enqueue pedidos created by clients (QR) into printQueue
+    enqueuePedidosFromPedidos(Number(process.env.QUEUE_BATCH_SIZE || 5)).catch((e) => console.error('[print-service] enqueuePedidos erro:', e));
+    // Then process pending printQueue items
+    processPendingQueueBatch(Number(process.env.QUEUE_BATCH_SIZE || 5)).catch((e) => console.error('[print-service] worker erro:', e));
+  }, intervalMs);
 }
 
 // Start worker if requested

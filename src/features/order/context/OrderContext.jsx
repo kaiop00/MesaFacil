@@ -75,8 +75,8 @@ export const OrderProvider = ({ children }) => {
   };
 
   const clearOrder = () => {
-    setSelectedTable(null);
-    setItems([]);
+    setSelectedTable((prev) => (prev === null ? prev : null));
+    setItems((prev) => (prev.length === 0 ? prev : []));
   };
 
   return (

@@ -6,7 +6,7 @@ async function main() {
   if (!credPath) { console.error('FIREBASE_SERVICE_ACCOUNT_PATH não definido'); process.exit(2); }
 
   let serviceAccount;
-  try { serviceAccount = require(credPath); } catch (e) { serviceAccount = JSON.parse(fs.readFileSync(credPath,'utf8')); }
+  try { serviceAccount = require(credPath); } catch { serviceAccount = JSON.parse(fs.readFileSync(credPath,'utf8')); }
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   const firestore = admin.firestore();
 
@@ -21,4 +21,4 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch(error => { console.error(error); process.exit(1); });

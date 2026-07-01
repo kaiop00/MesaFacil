@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import stripeService from '@/services/stripeService';
 import {
   getStripeCustomerId,
   updateStripeData,
@@ -24,6 +23,11 @@ const withTimeout = (promise, timeoutMs = PLAN_DATA_TIMEOUT_MS, label = 'operati
 const isPaidPlanActive = (plan) => {
   if (!plan) return false;
   return plan.planId !== 'free' && (plan.status === 'active' || plan.status === 'trialing');
+};
+
+const loadStripeService = async () => {
+  const mod = await import('@/services/stripeService');
+  return mod.default;
 };
 
 const buildTrialState = (basePlan, trialData) => {
@@ -84,7 +88,7 @@ export const usePlanManagement = () => {
         customerId = await getStripeCustomerId(restaurantId);
       }
 
-      // Fetch plan from Stripe (will return mock premium plan if Stripe is disabled)
+      const stripeService = await loadStripeService();
       const plan = await withTimeout(stripeService.getCurrentPlan(customerId), PLAN_DATA_TIMEOUT_MS + 5000, 'getCurrentPlan');
 
       if (isPaidPlanActive(plan)) {
@@ -117,12 +121,14 @@ export const usePlanManagement = () => {
         await updateStripeData(restaurantId, customerId, subscriptionId);
         
         // Fetch updated plan from Stripe
+        const stripeService = await loadStripeService();
         const plan = await stripeService.getCurrentPlan(customerId);
         setCurrentPlan(plan);
         setHasActivePlan(plan.status === 'active' || plan.status === 'trialing');
         
         return plan;
       } else {
+        const stripeService = await loadStripeService();
         const fallbackPlan = await stripeService.getCurrentPlan(null);
         if (isPaidPlanActive(fallbackPlan)) {
           setCurrentPlan(fallbackPlan);
@@ -213,14 +219,9 @@ export const usePlanManagement = () => {
           }
         } catch (error) {
           console.error('Erro ao carregar plano do restaurante:', error);
-          try {
-            await checkUserPlan(idRestaurante);
-          } catch (planErr) {
-            console.error('Erro ao validar plano via fallback:', planErr);
-            const fallbackPlan = authPlan || { planId: 'free', status: 'active', expiresAt: null };
-            setCurrentPlan(fallbackPlan);
-            setHasActivePlan(isPaidPlanActive(fallbackPlan));
-          }
+          const fallbackPlan = authPlan || { planId: 'free', status: 'active', expiresAt: null };
+          setCurrentPlan(fallbackPlan);
+          setHasActivePlan(isPaidPlanActive(fallbackPlan));
         }
         
         setPlanLoading(false);

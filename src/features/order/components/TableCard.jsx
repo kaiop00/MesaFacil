@@ -96,7 +96,7 @@ const TableCard = ({
     <>
       <div className="bg-white rounded-lg shadow p-4 flex flex-col">
         {/* ícone + menu */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex justify-between items-start">
           <div className={`p-2 rounded ${currentStyle.iconBg} relative`}>
             {(isIfoodTable || isWATable) ? (
               <ShoppingBag02 className={`w-6 h-6 ${currentStyle.iconTxt}`} />
@@ -130,13 +130,13 @@ const TableCard = ({
         </div>
 
         {/* conteúdo */}
-        <div className="mt-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">
+        <div className="mt-4 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="min-w-0 flex-1 text-lg font-semibold text-gray-900">
               {(isIfoodTable || isWATable) ? (
-                <span className="flex items-center gap-2">
-                  <span>{isIfoodTable ? "iFood" : "WhatsApp"}</span>
-                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="min-w-0 break-words">{isIfoodTable ? "iFood" : "WhatsApp"}</span>
+                  <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
                     Delivery
                   </span>
                 </span>
@@ -147,7 +147,9 @@ const TableCard = ({
             
             {/* Badge de origem */}
             {mesa?.orderOrigin && status !== "livre" && (
-              <OrderOriginBadge origin={mesa.orderOrigin} size="small" />
+              <div className="shrink-0 max-w-full">
+                <OrderOriginBadge origin={mesa.orderOrigin} size="small" />
+              </div>
             )}
           </div>
 

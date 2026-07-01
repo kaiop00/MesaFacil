@@ -4,9 +4,13 @@ import { CircleCheck, CloseCircle, Clock, ArrowRightMd } from 'react-coolicons';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { useToast } from '@/hooks/useToast';
-import stripeService from '@/services/stripeService';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { PLANS_DATA } from '@/features/auth/constants/plansData';
+
+const loadStripeService = async () => {
+  const mod = await import('@/services/stripeService');
+  return mod.default;
+};
 
 const PaymentSuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -35,6 +39,7 @@ const PaymentSuccessPage = () => {
         setVerificationStatus('loading');
 
         // Verify the checkout session
+        const stripeService = await loadStripeService();
         const sessionInfo = await stripeService.verifyCheckoutSession(sessionId);
         setSessionData(sessionInfo);
 
@@ -144,6 +149,7 @@ const PaymentSuccessPage = () => {
       setVerificationStatus('loading');
 
       // Verify the checkout session
+      const stripeService = await loadStripeService();
       const sessionInfo = await stripeService.verifyCheckoutSession(sessionId);
       setSessionData(sessionInfo);
 
