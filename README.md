@@ -8,6 +8,7 @@
 2. É direcionado ao **cardápio digital personalizado**, acessado via navegador.
 3. Pode realizar pedidos, acompanhar o preparo e solicitar a conta.
 4. O restaurante recebe os pedidos em tempo real no painel do sistema.
+5. O restaurante tem todo o controle diário, mensal, anual de vendas, estoque, acesso de funcionários.
 
 ## ⚙️ Funcionalidades Principais
 
@@ -47,7 +48,7 @@
 
 - [x] Levantamento de requisitos
 - [x] Protótipo UX/UI
-- [ ] MVP funcional (Cardápio, Pedidos, Gestão de Mesas)
-- [ ] Integração de pagamentos e avaliações
-- [ ] Testes com restaurante parceiro
-- [ ] Lançamento
+- [x] MVP funcional (Cardápio, Pedidos, Gestão de Mesas)
+- [x] Integração de pagamentos e avaliações
+- [x] Testes com restaurante parceiro
+- [x] Lançamento
