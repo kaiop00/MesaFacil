@@ -60,7 +60,7 @@ const KitchenOrderCard = ({ order, onFinalize, onPrint, finalizing }) => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onPrint?.(order)}
+            onClick={() => onPrint?.(order, { hideMenuPrice: true })}
             className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-600 hover:bg-amber-100 cursor-pointer"
           >
             {t("cards.print")}
