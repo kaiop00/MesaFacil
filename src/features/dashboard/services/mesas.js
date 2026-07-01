@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, Timestamp, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
 import { db } from "@/config/firebaseConfig";
 
 const timestampToDate = (value) => {
@@ -402,6 +402,7 @@ const resolvePeriodRange = (dateFilter = null, startDate = null, endDate = null)
 const getOrdersForPeriod = async (idRestaurante, startDate = null, endDate = null) => {
   const pedidosRef = collection(db, 'restaurantes', idRestaurante, 'historicoPedidos');
   const constraints = [];
+  const MAX_DOCS = 5000; // Limite para evitar carregar documentos demais
 
   if (startDate) {
     constraints.push(where('criadoEm', '>=', Timestamp.fromDate(startDate)));
@@ -411,11 +412,19 @@ const getOrdersForPeriod = async (idRestaurante, startDate = null, endDate = nul
     constraints.push(where('criadoEm', '<=', Timestamp.fromDate(endDate)));
   }
 
-  constraints.push(orderBy('criadoEm', 'asc'));
+  constraints.push(orderBy('criadoEm', 'desc')); // Ordem descendente para pegar os mais recentes primeiro
+  constraints.push(limit(MAX_DOCS)); // Limite de documentos para performance
 
   const pedidosQuery = query(pedidosRef, ...constraints);
   const snapshot = await getDocs(pedidosQuery);
-  return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+  const pedidos = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+  
+  // Log de aviso se atingir o limite
+  if (pedidos.length >= MAX_DOCS) {
+    console.warn(`[mesas.js] Limite de ${MAX_DOCS} documentos atingido para período. Resultados podem estar incompletos.`);
+  }
+  
+  return pedidos;
 };
 
 const getDeliveredOrdersForPeriod = async (idRestaurante, tableIds, startDate, endDate) => {

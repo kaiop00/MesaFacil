@@ -119,6 +119,8 @@ const CaixaAtual = () => {
       // usar o relatório já gerado e persistido pelo serviço
       const rel = res.relatorio || res.relatorioFechamento || res.relatorio || '';
 
+      // Atualizar estado para mostrar tela de resumo imediatamente
+      setSession(null);
       setClosureReport({
         sessionId: session.id,
         report: rel,
@@ -127,12 +129,10 @@ const CaixaAtual = () => {
         diferenca: res.diferenca,
       });
 
-      // mostrar resposta completa para debug temporário
       // zerar os totais visuais após fechamento
       setTotais({ porForma: { DINHEIRO: 0, PIX: 0, CREDITO: 0, DEBITO: 0, VOUCHER: 0, IFOOD: 0 }, suprimentos: 0, entradasExtras: 0, sangrias: 0, vendasDinheiro: 0 });
 
       setCloseCaixaModal(false);
-      await reloadData();
       showToast('success', `Caixa fechado. Diferença: R$ ${Number(res.diferenca || 0).toFixed(2)}`);
     } catch (error) {
       console.error('Erro no fechamento do caixa:', error);

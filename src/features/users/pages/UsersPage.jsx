@@ -68,14 +68,18 @@ const UsersPage = () => {
     setError(null);
 
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('idRestaurante', '==', idRestaurante));
-
-    const unsubscribe = onSnapshot(q,
+    // Nota: usar onSnapshot sem where para todos os users, filtrar em memória
+    // Evita exigir índice composto no Firestore
+    const unsubscribe = onSnapshot(usersRef,
       (querySnapshot) => {
         try {
           const usersData = [];
           querySnapshot.forEach((doc) => {
-            usersData.push({ id: doc.id, ...doc.data() });
+            const userData = doc.data();
+            // Filtrar em memória por idRestaurante
+            if (userData.idRestaurante === idRestaurante) {
+              usersData.push({ id: doc.id, ...userData });
+            }
           });
           setUsers(usersData);
           setLoading(false);
