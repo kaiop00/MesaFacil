@@ -16,7 +16,10 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isAuthenticated() && request.auth.uid == uid;
+      allow read: if isAuthenticated() && (
+        request.auth.uid == uid ||
+        isSameRestaurant(resource.data.idRestaurante)
+      );
       allow write: if false;
     }
 

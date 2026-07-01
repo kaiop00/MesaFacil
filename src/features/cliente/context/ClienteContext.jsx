@@ -38,7 +38,8 @@ export function ClienteProvider({ children }) {
     const { slug } = useParams();
     const [searchParams] = useSearchParams();
     const idRestauranteFromUrl = searchParams.get("restaurante");
-    const [numeroStrFromUrl, mesaIdFromUrl] = slug?.split("-") || [];
+    const [numeroStrFromUrl, ...mesaIdPartsFromUrl] = slug?.split("-") || [];
+    const mesaIdFromUrl = mesaIdPartsFromUrl.join("-");
     const bootedRef = useRef(false);
     const initialRef = useRef(null);
     const saved = loadFromStorage();
