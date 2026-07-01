@@ -162,7 +162,8 @@ export const useKitchenPrint = () => {
           const price = currencyFormatter.format(Number(item?.price || 0));
 
           const extras = [];
-          if (item?.descricao) extras.push(sanitize(item.descricao));
+          const itemObservation = String(item?.itemObservation || item?.observacao || item?.descricao || "").trim();
+          if (itemObservation) extras.push(sanitize(itemObservation));
 
           if (Array.isArray(item?.alergias) && item.alergias.length > 0) {
             extras.push(
