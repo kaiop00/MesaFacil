@@ -86,11 +86,12 @@ service cloud.firestore {
 
     // Regras para fluxo de comandas/pedidos
     match /restaurantes/{restId}/mesas/{mesaId}/pedidos/{pedidoId} {
-      // Operadores autenticados do restaurante
-      allow read, write: if isSameRestaurant(restId);
-      // Clientes públicos (QR code) podem criar e ler seus próprios pedidos
-      allow read, create: if true;
-      allow update: if true;
+      // Leitura: apenas para operadores autenticados
+      allow read: if isSameRestaurant(restId);
+      // CREATE: Qualquer pessoa (público via QR code)
+      allow create: if true;
+      // UPDATE/DELETE: Apenas operadores autenticados
+      allow update, delete: if isSameRestaurant(restId);
     }
 
     match /restaurantes/{restId}/historicoPedidos/{pedidoId} {
@@ -131,7 +132,7 @@ service cloud.firestore {
     // mas restringem escritas (evita abertura de privilégios por erro)
     match /restaurantes/{restId}/{document=**} {
       allow read: if isSameRestaurant(restId);
-      allow write: if false;
+      allow write: if isSameRestaurant(restId);
     }
   }
 }
