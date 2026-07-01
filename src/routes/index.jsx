@@ -35,7 +35,6 @@ import MovementsPage from "@/features/movements/pages/MovementsPage";
 import KitchenPage from "@/features/kitchen/pages/KitchenPage";
 import IfoodIntegrationPage from "@/features/integrations/ifood/pages/IfoodIntegrationPage";
 import WhatsAppPage from "@/features/config/pages/WhatsAppPage";
-import ImpressoraSetorPage from "@/features/config/pages/ImpressoraSetorPage";
 import ConfigFiscalPage from "@/features/fiscal/pages/ConfigFiscalPage";
 import NfceListPage from "@/features/fiscal/pages/NfceListPage";
 import NfceDemoPage from "@/features/fiscal/pages/NfceDemoPage";
@@ -170,7 +169,7 @@ const AppRoutes = () => {
             }
           />
           <Route path="whatsapp" element={<WhatsAppPage />} />
-          <Route path="impressoras-setor" element={<ImpressoraSetorPage />} />
+
           <Route path="fiscal" element={<ConfigFiscalPage />} />
           <Route path="nfce-emitidas" element={<NfceListPage />} />
           <Route path="nfce-demo" element={<NfceDemoPage />} />

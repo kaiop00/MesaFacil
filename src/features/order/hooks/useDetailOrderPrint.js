@@ -559,27 +559,25 @@ export const useDetailOrderPrint = () => {
   const printDetailOrder = useCallback(
     (data) => {
       const htmlContent = buildHtml(data);
-      const printWindow = window.open("", "_blank", "width=600,height=800");
-
-      if (!printWindow) {
-        console.error("[useDetailOrderPrint] Não foi possível abrir a janela de impressão.");
-        return;
-      }
-
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.focus();
-
-      const cleanup = () => {
-        printWindow.close();
-        printWindow.removeEventListener("afterprint", cleanup);
+      
+      // Create iframe for printing (more reliable than window.open)
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      iframe.contentWindow.document.write(htmlContent);
+      iframe.contentWindow.document.close();
+      
+      // Wait for content to render before printing
+      iframe.onload = () => {
+        setTimeout(() => {
+          iframe.contentWindow.print();
+          // Remove iframe after print dialog closes
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 500);
+        }, 300);
       };
-
-      printWindow.addEventListener("afterprint", cleanup);
-
-      setTimeout(() => {
-        printWindow.print();
-      }, 300);
     },
     [buildHtml]
   );

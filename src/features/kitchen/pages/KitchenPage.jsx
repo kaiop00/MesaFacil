@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import CardHeader from "@/components/CardHeader";
 import PermissionDeniedPage from "@/components/PermissionDeniedPage";
 import LoadingSpinnerDynamic from "@/components/LoadingSpinnerDynamic";
@@ -20,11 +20,33 @@ const KitchenPage = () => {
   const { printOrder } = useKitchenPrint();
   const [finalizingId, setFinalizingId] = useState(null);
   const [hiddenOrderIds, setHiddenOrderIds] = useState([]);
+  const [printedOrderIds, setPrintedOrderIds] = useState(new Set());
+  const previousOrderCountRef = useRef(0);
 
   const visibleOrders = useMemo(
     () => orders.filter((order) => !hiddenOrderIds.includes(order.id)),
     [orders, hiddenOrderIds],
   );
+
+  // Auto-print new orders when they arrive
+  useEffect(() => {
+    if (loading || !orders || orders.length === 0) return;
+
+    // Check for new orders and print them automatically
+    orders.forEach((order) => {
+      // If this is a new order and hasn't been printed yet, print it automatically
+      if (!printedOrderIds.has(order.id)) {
+        // Small delay to ensure content is ready
+        setTimeout(() => {
+          printOrder(order, { hideMenuPrice: true });
+          // Mark this order as printed
+          setPrintedOrderIds((prev) => new Set([...prev, order.id]));
+        }, 500);
+      }
+    });
+
+    previousOrderCountRef.current = orders.length;
+  }, [orders, loading, printedOrderIds, printOrder]);
 
   const handleFinalize = async (order) => {
     if (!idRestaurante || !order?.mesaId || !order?.id) {

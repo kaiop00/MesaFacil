@@ -149,7 +149,7 @@ export const useKitchenPrint = () => {
   }, [getPaymentEntries]);
 
   const buildItemsSection = useCallback(
-    (order) => {
+    (order, hidePrice = false) => {
       if (!Array.isArray(order?.items) || order.items.length === 0) {
         return `<div class="row">${t("print.emptyItems")}</div>`;
       }
@@ -178,7 +178,7 @@ export const useKitchenPrint = () => {
                 <span class="index">${lineIndex}</span>
                 <span class="qty">${quantityLabel}x</span>
                 <span class="name">${itemName}</span>
-                <span class="price">${price}</span>
+                ${!hidePrice ? `<span class="price">${price}</span>` : ''}
               </div>
               ${
                 extras.length > 0
@@ -357,7 +357,7 @@ export const useKitchenPrint = () => {
 
   const buildHtml = useCallback(
     (order, options = {}) => {
-      const { isReceipt = false, consumerDocument = "" } = options;
+      const { isReceipt = false, consumerDocument = "", hideMenuPrice = false } = options;
       const createdAt = formatDate(order?.criadoEm || order?.createdAt || order?.finalizadoEm);
       const createdAtLabel = createdAt ?? t("print.unknownDate");
       const observations =
@@ -562,7 +562,7 @@ export const useKitchenPrint = () => {
 
               <div class="divider"></div>
               <div class="row title">${t("print.items")}</div>
-              ${buildItemsSection(order)}
+              ${buildItemsSection(order, hideMenuPrice)}
 
               <div class="divider"></div>
               ${buildTotalSection(order)}
@@ -589,27 +589,25 @@ export const useKitchenPrint = () => {
       if (!order) return;
 
       const htmlContent = buildHtml(order, options);
-      const printWindow = window.open("", "_blank", "width=600,height=800");
-
-      if (!printWindow) {
-        console.error("[useKitchenPrint] Não foi possível abrir a janela de impressão.");
-        return;
-      }
-
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.focus();
-
-      const cleanup = () => {
-        printWindow.close();
-        printWindow.removeEventListener("afterprint", cleanup);
+      
+      // Create iframe for printing (more reliable than window.open, avoids popup blocking)
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      iframe.contentWindow.document.write(htmlContent);
+      iframe.contentWindow.document.close();
+      
+      // Wait for content to render before printing
+      iframe.onload = () => {
+        setTimeout(() => {
+          iframe.contentWindow.print();
+          // Remove iframe after print dialog closes
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 500);
+        }, 300);
       };
-
-      printWindow.addEventListener("afterprint", cleanup);
-
-      setTimeout(() => {
-        printWindow.print();
-      }, 300);
     },
     [buildHtml]
   );

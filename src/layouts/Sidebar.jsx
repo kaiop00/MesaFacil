@@ -102,12 +102,6 @@ const Sidebar = ({ isOpen = true, setIsOpen }) => {
       path: "/home/usuarios",
       feature: FEATURE_FLAGS.EMPLOYEE_MANAGEMENT
     },
-    {
-      name: t("common:sidebar.productionPrinters", { defaultValue: "Impressora por setor" }),
-      icon: <Printer size={20} />,
-      path: "/home/impressoras-setor",
-      feature: null,
-    },
   ];
 
   const hiddenLinks = {
