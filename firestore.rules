@@ -85,10 +85,6 @@ service cloud.firestore {
     }
 
     // Regras para fluxo de comandas/pedidos
-    match /restaurantes/{restId}/mesas/{mesaId} {
-      allow read, write: if isSameRestaurant(restId);
-    }
-
     match /restaurantes/{restId}/mesas/{mesaId}/pedidos/{pedidoId} {
       allow read, write: if isSameRestaurant(restId);
     }
@@ -105,6 +101,27 @@ service cloud.firestore {
         allow read: if isSameRestaurant(restId);
         allow write: if isSameRestaurant(restId);
       }
+
+    // Públic acesso para cardápio, categorias, promocoes (sem autenticação necessária)
+    match /restaurantes/{restId}/cardapio/{docId} {
+      allow read: if true;
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/categorias/{docId} {
+      allow read: if true;
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/promocoes/{docId} {
+      allow read: if true;
+      allow write: if isSameRestaurant(restId);
+    }
+
+    match /restaurantes/{restId}/mesas/{mesaId} {
+      allow read: if true;
+      allow write: if isSameRestaurant(restId);
+    }
 
     // Fallback: outras coleções do restaurante seguem regra de leitura para o mesmo restaurante,
     // mas restringem escritas (evita abertura de privilégios por erro)

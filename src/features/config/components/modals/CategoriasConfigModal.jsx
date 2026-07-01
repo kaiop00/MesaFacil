@@ -18,19 +18,25 @@ export default function CategoriaConfigModal({ isOpen, onClose }) {
         categorias,
         isListening,   
         isSending,     
-        deletingIds,   
+        deletingIds,
+        error: hookError,
         addCategoria,
         deleteCategoria,
     } = useCrudCategorias({ idRestaurante, enabled: isOpen });
 
     async function handleCreate(nome) {
+        if (!idRestaurante) {
+            notify("Restaurante não identificado", "error");
+            return;
+        }
         try {
             await addCategoria(nome);
             setName("");
             notify(t("config:modals.categories.success.created"), "success");
         } catch (e) {
-            console.error(e);
-            notify(t("config:modals.categories.error.create"), "error");
+            console.error("Erro ao criar categoria:", e);
+            const errorMsg = e?.message || t("config:modals.categories.error.create");
+            notify(errorMsg, "error");
         }
     }
 
@@ -39,8 +45,9 @@ export default function CategoriaConfigModal({ isOpen, onClose }) {
             await deleteCategoria(categoria.id);
             notify(t("config:modals.categories.success.deleted"), "success");
         } catch (e) {
-            console.error(e);
-            notify(t("config:modals.categories.error.delete"), "error");
+            console.error("Erro ao deletar categoria:", e);
+            const errorMsg = e?.message || t("config:modals.categories.error.delete");
+            notify(errorMsg, "error");
         }
     }
 
