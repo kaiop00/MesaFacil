@@ -254,6 +254,16 @@ export default function PedidoClientePage() {
                 <div className="text-center">
                     <p className="text-gray-600">{t("common.loading") || "Carregando..."}</p>
                 </div>
+            ) : error ? (
+                <div className="text-center px-7 max-w-md">
+                    <div className="mb-4 text-4xl">⚠️</div>
+                    <p className="text-red-600 text-lg font-semibold">
+                        Não foi possível carregar seus pedidos agora.
+                    </p>
+                    <p className="text-gray-600 mt-2">
+                        {error}
+                    </p>
+                </div>
             ) : !pedidoAtual && pedidos.length === 0 ? (
                 <div className="text-center px-7">
                     <div className="mb-4 text-4xl">📋</div>
