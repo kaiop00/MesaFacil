@@ -27,7 +27,7 @@ const OrderPage = () => {
   const [mesaTransferencia, setMesaTransferencia] = useState(null);
   const { idRestaurante } = useAuth();
   const { hasPermission } = usePermissions();
-  const { mesasLivres, mesasAndamento, mesasEntregues, tables, loading: tablesLoading } = useTables(idRestaurante);
+  const { mesasLivres, mesasAndamento, mesasEntregues, tables, loading: tablesLoading, refreshTables } = useTables(idRestaurante);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -175,6 +175,7 @@ const OrderPage = () => {
             }}
             mesaSelecionada={mesaDetalhe}
             idRestaurante={idRestaurante}
+            onTransfer={handleOpenTransferModal}
           />
 
           <TransferOrderModal
@@ -189,8 +190,7 @@ const OrderPage = () => {
             onTransferred={() => {
               setIsTransferModalOpen(false);
               setMesaTransferencia(null);
-              // Reabrir detalhes para refletir o novo estado das mesas
-              setIsDetailModalOpen(false);
+              refreshTables?.();
             }}
           />
         </div>

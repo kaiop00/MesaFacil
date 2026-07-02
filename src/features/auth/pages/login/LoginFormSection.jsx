@@ -75,7 +75,7 @@ export default function LoginFormSection() {
 
             <button onClick={() => navigate("/recuperar-senha")} className="text-sm text-[#0149FD] hover:underline mt-4 font-inter" disabled={loading}>Esqueceu a senha?</button>
 
-            <footer className="text-xs text-gray-200 text-center py-4 mt-8">© Copyright 2025 MesaFácil</footer>
+            <footer className="text-xs text-gray-200 text-center py-4 mt-8">© Copyright 2026 MesaFácil</footer>
         </div>
     );
 }

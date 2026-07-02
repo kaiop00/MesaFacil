@@ -52,6 +52,8 @@ import SacolaPage from "@/features/cliente/pages/SacolaPage";
 import PedidoClientePage from "@/features/cliente/pages/PedidoClientePage";
 
 const AppRoutes = () => {
+  const caixaPermissions = ["view_cash", "manage_cash"];
+
   return (
     <Routes>
       <Route path="/" element={<RedirectHandler />} />
@@ -168,16 +170,58 @@ const AppRoutes = () => {
               </RequirePermission>
             }
           />
-          <Route path="whatsapp" element={<WhatsAppPage />} />
+          <Route
+            path="whatsapp"
+            element={
+              <RequirePermission permission="manage_whatsapp_menu">
+                <WhatsAppPage />
+              </RequirePermission>
+            }
+          />
 
           <Route path="fiscal" element={<ConfigFiscalPage />} />
           <Route path="nfce-emitidas" element={<NfceListPage />} />
           <Route path="nfce-demo" element={<NfceDemoPage />} />
-          <Route path="caixa" element={<CaixaAtual />} />
-          <Route path="caixa/abrir" element={<AbrirCaixa />} />
-          <Route path="caixa/lancamento" element={<LancamentoManual />} />
-          <Route path="caixa/movimentacoes" element={<Movimentacoes />} />
-          <Route path="caixa/historico" element={<HistoricoCaixas />} />
+          <Route
+            path="caixa"
+            element={
+              <RequirePermission permission={caixaPermissions}>
+                <CaixaAtual />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="caixa/abrir"
+            element={
+              <RequirePermission permission={caixaPermissions}>
+                <AbrirCaixa />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="caixa/lancamento"
+            element={
+              <RequirePermission permission={caixaPermissions}>
+                <LancamentoManual />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="caixa/movimentacoes"
+            element={
+              <RequirePermission permission={caixaPermissions}>
+                <Movimentacoes />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="caixa/historico"
+            element={
+              <RequirePermission permission={caixaPermissions}>
+                <HistoricoCaixas />
+              </RequirePermission>
+            }
+          />
         </Route>
       </Route>
 

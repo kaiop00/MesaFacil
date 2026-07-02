@@ -20,6 +20,7 @@ import {
 import { usePlan } from "@/contexts/PlanContext";
 import { FEATURE_FLAGS } from "@/constants/planFeatures";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useIfoodDisputes } from "@/features/integrations/ifood/hooks/useIfoodDisputes";
 import mesafacil from "@/assets/mesafacil.png";
 
@@ -27,6 +28,7 @@ const Sidebar = ({ isOpen = true, setIsOpen }) => {
   const ENABLE_PEDIDOS_EXIT_HARD_REFRESH = false;
   const { t } = useTranslation();
   const { hasFeatureAccess } = usePlan();
+  const { hasAnyPermission } = usePermissions();
   const { idRestaurante } = useAuth();
   const { pendingCount: disputeCount } = useIfoodDisputes(idRestaurante);
   const location = useLocation();
@@ -66,6 +68,9 @@ const Sidebar = ({ isOpen = true, setIsOpen }) => {
     }
   };
 
+  const canAccessCash = hasAnyPermission(["view_cash", "manage_cash"]);
+  const canAccessWhatsApp = hasAnyPermission(["manage_whatsapp_menu"]);
+
   const navLinks = [
     { name: t("common:sidebar.dashboard"), icon: <House03 size={20} />, path: "/home", feature: null },
     { name: t("common:sidebar.orders"), icon: <ListUnordered size={20} />, path: "/home/pedidos", feature: null },
@@ -103,6 +108,18 @@ const Sidebar = ({ isOpen = true, setIsOpen }) => {
       feature: FEATURE_FLAGS.EMPLOYEE_MANAGEMENT
     },
   ];
+
+  const visibleNavLinks = navLinks.filter((link) => {
+    if (link.path === "/home/caixa") {
+      return canAccessCash;
+    }
+
+    if (link.path === "/home/whatsapp") {
+      return canAccessWhatsApp;
+    }
+
+    return true;
+  });
 
   const hiddenLinks = {
     integrations: [
@@ -189,7 +206,7 @@ const Sidebar = ({ isOpen = true, setIsOpen }) => {
         {/* Navigation links */}
         <nav className="flex-1 overflow-y-auto pb-6 pt-3 md:pt-2">
           <ul className="space-y-2">
-            {navLinks.map((link) => {
+            {visibleNavLinks.map((link) => {
               const isLocked = link.feature && !hasFeatureAccess(link.feature);
               
               return (

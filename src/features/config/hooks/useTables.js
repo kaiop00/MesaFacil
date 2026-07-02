@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { TablesContext } from "@/features/config/context/TablesContext";
 import { getPedidosDaMesa } from "@/features/order/services/orderService";
 import { formatDistanceToNow } from "date-fns";
@@ -82,6 +82,12 @@ export const useTables = (idRestaurante) => {
   const [mesasEntregues, setMesasEntregues] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
+
+  const refreshTables = useCallback(() => {
+    summaryCacheRef.current.clear();
+    setRefreshCounter((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (!idRestaurante) {
@@ -213,7 +219,7 @@ export const useTables = (idRestaurante) => {
     return () => {
       isMounted = false;
     };
-  }, [tables, idRestaurante]);
+  }, [tables, idRestaurante, refreshCounter]);
 
 
   return {
@@ -224,5 +230,6 @@ export const useTables = (idRestaurante) => {
     mesasEntregues: mesasEntregues || [],
     loading,
     error,
+    refreshTables,
   };
 };

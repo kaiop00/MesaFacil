@@ -20,12 +20,18 @@ service cloud.firestore {
         request.auth.uid == uid ||
         isSameRestaurant(resource.data.idRestaurante)
       );
-      allow write: if false;
+      allow create: if isAuthenticated() && (
+        request.auth.uid == uid ||
+        isSameRestaurant(request.resource.data.idRestaurante)
+      );
+      allow update: if isAuthenticated() && request.auth.uid == uid;
+      allow delete: if false;
     }
 
     match /restaurantes/{restId} {
       allow read: if isSameRestaurant(restId);
-      allow write: if isSameRestaurant(restId);
+      allow create: if isAuthenticated();
+      allow update, delete: if isSameRestaurant(restId);
     }
 
     // Regras para o módulo de Caixa

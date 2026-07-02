@@ -16,9 +16,6 @@ import {
   getDoc,
   runTransaction,
   collection,
-  query,
-  where,
-  getDocs,
   addDoc,
   updateDoc,
 } from "firebase/firestore";
@@ -28,6 +25,7 @@ import { PERMISSIONS } from "@/features/users/constants/permissions";
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
+const DEFAULT_BRAND_COLOR = "#F8912E";
 
 /**
  * Cria ou associa um restaurante pelo nome.
@@ -37,19 +35,9 @@ const googleProvider = new GoogleAuthProvider();
  * @returns {Promise<string>} ID do restaurante
  */
 async function criarOuAssociarRestaurante(nomeRestaurante) {
-  const q = query(
-    collection(db, "restaurantes"),
-    where("nome", "==", nomeRestaurante)
-  );
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    return querySnapshot.docs[0].id;
-  }
-
   const docRef = await addDoc(collection(db, "restaurantes"), {
     nome: nomeRestaurante,
-    cor_base: "#D9A23B",   
+    cor_base: DEFAULT_BRAND_COLOR,
     imagem_restaurante: null, 
     taxa_servico: 10,
     stripeCustomerId: null,

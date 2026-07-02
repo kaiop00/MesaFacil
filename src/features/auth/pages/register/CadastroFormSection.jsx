@@ -66,7 +66,7 @@ export default function CadastroFormSection() {
                 </div>
 
                 <footer className="text-xs text-gray-400 text-center py-4 mt-12">
-                    &copy; Copyright 2025 MesaFácil
+                    &copy; Copyright 2026 MesaFácil
                 </footer>
             </div>
         );
@@ -109,7 +109,7 @@ export default function CadastroFormSection() {
             </Link>
 
             <footer className="text-xs text-gray-400 text-center py-4 mt-8">
-                &copy; Copyright 2025 MesaFácil
+                &copy; Copyright 2026 MesaFácil
             </footer>
         </div>
     );

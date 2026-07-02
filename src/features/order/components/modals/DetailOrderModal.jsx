@@ -27,7 +27,7 @@ import {
     extractIfoodCustomerInfo,
     isIfoodOrder
 } from "@/features/integrations/ifood/services/ifoodStatusSyncService";
-import { User01, Phone, MapPin, ShoppingBag02, Printer } from "react-coolicons";
+import { User01, Phone, MapPin, ShoppingBag02, Printer, ArrowRightMd } from "react-coolicons";
 import IfoodStatusHistory from "@/features/integrations/ifood/components/IfoodStatusHistory";
 import IfoodOrderActions from "@/features/integrations/ifood/components/IfoodOrderActions";
 import IfoodScheduledBadge from "@/features/integrations/ifood/components/IfoodScheduledBadge";
@@ -43,7 +43,7 @@ import { buscarConfigFiscal } from "@/features/fiscal/services/configFiscalServi
 import OrderOriginBadge from "@/features/order/components/OrderOriginBadge";
 import { useDetailOrderPrint } from "@/features/order/hooks/useDetailOrderPrint";
 
-const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onMesaUpdate }) => {
+const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onMesaUpdate, onTransfer }) => {
     const { t } = useTranslation('order');
     const [pedidos, setPedidos] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -77,14 +77,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         return null;
     }, [mesaSelecionada, pedidos]);
 
-    // Calcula tipoEntrega (delivery ou retirada) a partir do primeiro pedido WhatsApp
-    const tipoEntrega = useMemo(() => {
-        if (pedidos.length > 0 && pedidos[0]?.tipoEntrega) {
-            return pedidos[0].tipoEntrega;
-        }
-        return 'delivery'; // default para delivery
-    }, [pedidos]);
-    
     const {
         percent: serviceFeePercent,
         loading: serviceFeeLoading,
@@ -97,7 +89,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         enabled: coverChargeEnabled,
         value: coverChargeValue,
         loading: coverChargeLoading,
-        isExempt: coverChargeExempt,
     } = useCoverCharge(idRestaurante, { enabled: Boolean(idRestaurante), orderOrigin });
 
     // Sincroniza numeroPessoas com a mesa selecionada
@@ -197,9 +188,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
 
             // For each pedido that has an ifoodOrderId, set up a real-time listener
             // on the corresponding ifoodOrders/{ifoodOrderId} doc.
-            // Only add listeners for NEW pedidos that don't have one yet.
-            const currentPedidoIds = new Set(dados.map(p => p.ifoodOrderId).filter(Boolean));
-            
             // Build listeners for pedidos we haven't subscribed to yet
             const existingListenerIds = new Set(
                 ifoodUnsubscribersRef.current.map(u => u._ifoodOrderId)
@@ -276,22 +264,6 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
         setShowPaymentModal(false);
         setPedidoParaFinalizar(null);
     };
-
-    const handleOpenNfceModal = useCallback((pedidoId, pedidoData = null) => {
-        if (!mesaSelecionada?.id) return;
-
-        setNfcePedidoInfo({
-            mesaId: mesaSelecionada.id,
-            pedidoId,
-            orderData: pedidoData
-                ? {
-                    ...pedidoData,
-                    mesaNumero: pedidoData?.mesaNumero || mesaSelecionada?.numero || "-",
-                }
-                : null,
-        });
-        setShowNfceModal(true);
-    }, [mesaSelecionada?.id, mesaSelecionada?.numero]);
 
     const handleConfirmPayment = async (dadosPagamento) => {
         if (!idRestaurante || !mesaSelecionada?.id || !pedidoParaFinalizar) return;
@@ -1003,6 +975,15 @@ const DetailOrderModal = ({ isOpen, onClose, mesaSelecionada, idRestaurante, onM
             )}
 
             <div className="flex justify-end gap-2 mt-6">
+                {!loading && pedidos.length > 0 && !isDelivery && onTransfer && (
+                    <button
+                        onClick={() => onTransfer(mesaSelecionada)}
+                        className="flex items-center gap-2 px-4 py-2 bg-sky-50 border border-sky-300 rounded hover:bg-sky-100 text-sky-700 font-semibold cursor-pointer"
+                    >
+                        <ArrowRightMd size={18} />
+                        Transferir
+                    </button>
+                )}
                 {!loading && pedidos.length > 0 && !isDelivery && (
                     <button
                         onClick={handlePrintComanda}

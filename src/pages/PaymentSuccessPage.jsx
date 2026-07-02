@@ -132,9 +132,9 @@ const PaymentSuccessPage = () => {
     }
 
     if (verificationStatus === 'success') {
-      // Após confirmação automática, segue para o dashboard em 2s
+      // Após confirmação automática, recarrega o app para reconstruir os contextos globais com o novo plano
       timer = setTimeout(() => {
-        navigate('/home', { replace: true });
+        window.location.replace('/home');
       }, 2000);
     }
 
@@ -205,7 +205,7 @@ const PaymentSuccessPage = () => {
   };
 
   const handleContinue = () => {
-    navigate('/home', { replace: true });
+    window.location.replace('/home');
   };
 
   const handleRetry = () => {

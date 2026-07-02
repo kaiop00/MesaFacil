@@ -22,7 +22,7 @@ export default function PlanSelectionPage() {
   const { notify } = useToast();
   const resolvedRestaurantId = idRestaurante || location.state?.idRestaurante;
   const isFreeTrialExpired = Boolean(currentPlan?.planId === 'free' && currentPlan?.isTrialExpired);
-  const hasConsumedFreeTrial = hasUsedFreeTrial || Boolean(currentPlan?.trialStartedAt) || Boolean(currentPlan?.isTrialExpired);
+  const hasConsumedFreeTrial = hasUsedFreeTrial || Boolean(currentPlan?.isTrialExpired);
   const grantedRef = useRef(false);
 
   useEffect(() => {

@@ -55,6 +55,42 @@ const corsHandler = (req, res) => {
   return false; // Return false to continue processing
 };
 
+const resolveStripePriceId = async (stripe, rawPriceId) => {
+  const value = String(rawPriceId || "").trim();
+
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith("price_")) {
+    return value;
+  }
+
+  if (!value.startsWith("prod_")) {
+    return value;
+  }
+
+  const product = await stripe.products.retrieve(value);
+
+  if (product?.default_price) {
+    return typeof product.default_price === "string"
+      ? product.default_price
+      : product.default_price.id;
+  }
+
+  const prices = await stripe.prices.list({
+    product: value,
+    active: true,
+    limit: 1,
+  });
+
+  if (prices.data.length === 0) {
+    throw new Error(`No active price found for product: ${value}`);
+  }
+
+  return prices.data[0].id;
+};
+
 const normalizeText = (value) => String(value ?? "").trim();
 
 const safeLower = (value) => normalizeText(value).toLowerCase();
@@ -289,6 +325,12 @@ exports.createCheckoutSession = onRequest(
         });
       }
 
+      const resolvedPriceId = await resolveStripePriceId(stripe, priceId);
+
+      if (!resolvedPriceId) {
+        return res.status(400).json({error: "Price ID is required"});
+      }
+
       // Create or retrieve existing customer
       let customer;
       const existingCustomers = await stripe.customers.list({
@@ -319,7 +361,7 @@ exports.createCheckoutSession = onRequest(
         payment_method_collection: "if_required",
         line_items: [
           {
-            price: priceId,
+            price: resolvedPriceId,
             quantity: 1,
           },
         ],
