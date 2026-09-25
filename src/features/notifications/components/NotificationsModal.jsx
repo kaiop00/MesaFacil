@@ -45,6 +45,9 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
   };
 
   const buildTitle = (notification) => {
+    if (notification.tipo === "assinatura") {
+      return notification.titulo || "Atualização da assinatura";
+    }
     if (notification.tipo === "garcom") {
       return `${t("notifications:table")} ${notification.mesaNumero || notification.mesaId || "-"} ${t("notifications:requestedService")}`;
     }
@@ -52,6 +55,9 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
   };
 
   const buildSubtitle = (notification) => {
+    if (notification.tipo === "assinatura") {
+      return notification.mensagem || null;
+    }
     if (notification.tipo === "garcom") {
       return notification.motivo
         ? `${t("notifications:reason")}: ${notification.motivo}`
@@ -102,8 +108,8 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
         {unread.map((n) => (
           <div key={`unread-${n.mesaId}-${n.id}`} className="relative border border-gray-200 rounded-lg p-3 flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <div className="relative w-9 h-9 rounded bg-primary-dynamic/20 flex items-center justify-center text-primary-dynamic">
-                <House02 />
+              <div className={`relative w-9 h-9 rounded flex items-center justify-center ${n.tipo === "assinatura" ? "bg-red-100 text-red-600" : "bg-primary-dynamic/20 text-primary-dynamic"}`}>
+                {n.tipo === "assinatura" ? "R$" : <House02 />}
                 {/* bolinha vermelha de não lido */}
                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>
               </div>
@@ -159,7 +165,7 @@ const NotificationsModal = ({ isOpen, onClose, notifications, onMarkAll, onMarkO
         {read.map((n) => (
           <div key={`read-${n.mesaId}-${n.id}`} className="relative border border-gray-200 rounded-lg p-3 flex items-start justify-between opacity-80">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded bg-gray-100 flex items-center justify-center text-gray-500"><House02/></div>
+              <div className={`w-9 h-9 rounded flex items-center justify-center ${n.tipo === "assinatura" ? "bg-red-50 text-red-500" : "bg-gray-100 text-gray-500"}`}>{n.tipo === "assinatura" ? "R$" : <House02/>}</div>
               <div>
                 <p className="font-medium text-gray-700 text-sm">
                   {buildTitle(n)}

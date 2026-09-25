@@ -15,6 +15,12 @@ service cloud.firestore {
       return isAuthenticated() && userDoc().idRestaurante == restId;
     }
 
+    function hasRestaurantAccess(restId) {
+      return isSameRestaurant(restId) &&
+        (!get(/databases/$(database)/documents/restaurantes/$(restId)).data.keys().hasAny(["subscription"]) ||
+         get(/databases/$(database)/documents/restaurantes/$(restId)).data.subscription.accessBlocked != true);
+    }
+
     match /users/{uid} {
       allow read: if isAuthenticated() && (
         request.auth.uid == uid ||
@@ -31,16 +37,17 @@ service cloud.firestore {
     match /restaurantes/{restId} {
       allow read: if isSameRestaurant(restId);
       allow create: if isAuthenticated();
-      allow update, delete: if isSameRestaurant(restId);
+      allow update, delete: if hasRestaurantAccess(restId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["subscription"]);
     }
 
     // Regras para o módulo de Caixa
     match /restaurantes/{restId}/caixaSessions/{sessionId} {
       // Somente usuários autenticados do mesmo restaurante podem ler
-      allow read: if isSameRestaurant(restId);
+      allow read: if hasRestaurantAccess(restId);
 
       // Criar apenas se o usuário pertence ao restaurante e campos essenciais corretos
-      allow create: if isSameRestaurant(restId)
+      allow create: if hasRestaurantAccess(restId)
         && request.resource.data.empresaId == restId
         && request.resource.data.usuarioAberturaId == request.auth.uid
         && request.resource.data.status == 'ABERTO'
@@ -48,7 +55,7 @@ service cloud.firestore {
 
       // Atualizar: somente se a sessão está ABERTO (não permitir alterações de caixa fechado)
       // Permitir fechar definindo status = 'FECHADO' e preenchendo usuarioFechamentoId
-      allow update: if isSameRestaurant(restId)
+      allow update: if hasRestaurantAccess(restId)
         && resource.data.status == 'ABERTO'
         && (
           // mudanças parciais que não alterem campos de abertura
@@ -63,8 +70,8 @@ service cloud.firestore {
     }
 
     match /restaurantes/{restId}/caixaPagamentos/{docId} {
-      allow read: if isSameRestaurant(restId);
-      allow create: if isSameRestaurant(restId)
+      allow read: if hasRestaurantAccess(restId);
+      allow create: if hasRestaurantAccess(restId)
         && request.resource.data.empresaId == restId
         && request.resource.data.caixaSessionId is string
         && request.resource.data.pedidoId is string
@@ -73,8 +80,8 @@ service cloud.firestore {
     }
 
     match /restaurantes/{restId}/caixaLancamentos/{docId} {
-      allow read: if isSameRestaurant(restId);
-      allow create: if isSameRestaurant(restId)
+      allow read: if hasRestaurantAccess(restId);
+      allow create: if hasRestaurantAccess(restId)
         && request.resource.data.empresaId == restId
         && request.resource.data.caixaSessionId is string
         && request.resource.data.usuarioId == request.auth.uid
@@ -83,8 +90,8 @@ service cloud.firestore {
     }
 
     match /restaurantes/{restId}/caixaMovimentacoes/{docId} {
-      allow read: if isSameRestaurant(restId);
-      allow create: if isSameRestaurant(restId)
+      allow read: if hasRestaurantAccess(restId);
+      allow create: if hasRestaurantAccess(restId)
         && request.resource.data.empresaId == restId
         && request.resource.data.caixaSessionId is string
         && request.resource.data.usuarioId == request.auth.uid
@@ -100,41 +107,41 @@ service cloud.firestore {
       // CREATE: Qualquer pessoa (público via QR code)
       allow create: if true;
       // UPDATE/DELETE: Apenas operadores autenticados
-      allow update, delete: if isSameRestaurant(restId);
+      allow update, delete: if hasRestaurantAccess(restId);
     }
 
     match /restaurantes/{restId}/historicoPedidos/{pedidoId} {
-      allow read, write: if isSameRestaurant(restId);
+      allow read, write: if hasRestaurantAccess(restId);
     }
 
     match /restaurantes/{restId}/notificacoes/{docId} {
-      allow read, write: if isSameRestaurant(restId);
+      allow read, write: if hasRestaurantAccess(restId);
     }
 
       match /restaurantes/{restId}/itens/{docId} {
-        allow read: if isSameRestaurant(restId);
-        allow write: if isSameRestaurant(restId);
+        allow read: if hasRestaurantAccess(restId);
+        allow write: if hasRestaurantAccess(restId);
       }
 
     // Públic acesso para cardápio, categorias, promocoes (sem autenticação necessária)
     match /restaurantes/{restId}/cardapio/{docId} {
       allow read: if true;
-      allow write: if isSameRestaurant(restId);
+      allow write: if hasRestaurantAccess(restId);
     }
 
     match /restaurantes/{restId}/categorias/{docId} {
       allow read: if true;
-      allow write: if isSameRestaurant(restId);
+      allow write: if hasRestaurantAccess(restId);
     }
 
     match /restaurantes/{restId}/promocoes/{docId} {
       allow read: if true;
-      allow write: if isSameRestaurant(restId);
+      allow write: if hasRestaurantAccess(restId);
     }
 
     match /restaurantes/{restId}/mesas/{mesaId} {
       allow read: if true;
-      allow write: if isSameRestaurant(restId);
+      allow write: if hasRestaurantAccess(restId);
       // Permite que clientes públicos (QR code) atualizem status da mesa
       allow update: if true;
     }
@@ -142,8 +149,8 @@ service cloud.firestore {
     // Fallback: outras coleções do restaurante seguem regra de leitura para o mesmo restaurante,
     // mas restringem escritas (evita abertura de privilégios por erro)
     match /restaurantes/{restId}/{document=**} {
-      allow read: if isSameRestaurant(restId);
-      allow write: if isSameRestaurant(restId);
+      allow read: if hasRestaurantAccess(restId);
+      allow write: if hasRestaurantAccess(restId);
     }
   }
 }

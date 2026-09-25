@@ -2,10 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebaseConfig";
-import {
-  getStripeCustomerId,
-  getStripeSubscriptionId,
-} from "@/services/firebase/restaurantService";
+import { getStripeSubscriptionId } from "@/services/firebase/restaurantService";
 
 // ✅ Cria o contexto
 const AuthContext = createContext({
@@ -14,8 +11,33 @@ const AuthContext = createContext({
   idRestaurante: null,
   plan: null,
   stripeCustomerId: null,
+  subscription: null,
+  accessBlocked: false,
   loading: true,
 });
+
+const toMillis = (value) => {
+  if (!value) return null;
+  if (typeof value.toMillis === "function") return value.toMillis();
+  if (typeof value.toDate === "function") return value.toDate().getTime();
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const isSubscriptionBlocked = (value) => {
+  if (!value) return false;
+  if (value.accessBlocked === true) return true;
+  if (["unpaid", "canceled", "incomplete_expired"].includes(value.status)) return true;
+  if (value.status === "past_due") {
+    const graceUntil = toMillis(value.graceUntil);
+    return !graceUntil || graceUntil <= Date.now();
+  }
+  if (["active", "trialing"].includes(value.status) && value.cancelAtPeriodEnd) {
+    const periodEnd = toMillis(value.currentPeriodEnd);
+    return Boolean(periodEnd && periodEnd <= Date.now());
+  }
+  return false;
+};
 
 // ✅ Provider que centraliza user, role, idRestaurante, plan e loading
 export const AuthProvider = ({ children }) => {
@@ -24,6 +46,8 @@ export const AuthProvider = ({ children }) => {
   const [idRestaurante, setIdRestaurante] = useState(null);
   const [plan, setPlan] = useState(null);
   const [stripeCustomerId, setStripeCustomerId] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [accessBlocked, setAccessBlocked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,15 +73,24 @@ export const AuthProvider = ({ children }) => {
           setRole(data.role || "user");
           const restaurantId = data.idRestaurante || null;
           setIdRestaurante(restaurantId);
-          
-          // Get Stripe Customer ID from restaurant document instead of user document
+
           let customerId = null;
+          let restaurantSubscription = null;
           if (restaurantId) {
             try {
-              customerId = await getStripeCustomerId(restaurantId);
+              const restaurantDoc = await getDoc(doc(db, "restaurantes", restaurantId));
+              if (restaurantDoc.exists()) {
+                const restaurantData = restaurantDoc.data() || {};
+                customerId = restaurantData.stripeCustomerId || null;
+                restaurantSubscription = restaurantData.subscription || null;
+              }
               setStripeCustomerId(customerId);
+              setSubscription(restaurantSubscription);
+              setAccessBlocked(isSubscriptionBlocked(restaurantSubscription));
             } catch (error) {
-              console.error("Error getting Stripe customer ID from restaurant:", error);
+              console.error("Error getting restaurant subscription data:", error);
+              setSubscription(null);
+              setAccessBlocked(false);
             }
           }
 
@@ -95,6 +128,8 @@ export const AuthProvider = ({ children }) => {
         setIdRestaurante(null);
         setPlan(null);
         setStripeCustomerId(null);
+        setSubscription(null);
+        setAccessBlocked(false);
       }
       setLoading(false);
     });
@@ -107,7 +142,16 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, role, idRestaurante, plan, stripeCustomerId, loading }}>
+    <AuthContext.Provider value={{
+      user,
+      role,
+      idRestaurante,
+      plan,
+      stripeCustomerId,
+      subscription,
+      accessBlocked,
+      loading,
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );

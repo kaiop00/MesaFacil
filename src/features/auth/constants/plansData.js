@@ -23,7 +23,7 @@ export const PLANS_DATA = [
   {
     id: 'monthly',
     name: 'Mensal',
-    price: 200,
+    price: 250,
     duration: '30 dias',
     discount: null,
     isPopular: true,
@@ -42,9 +42,9 @@ export const PLANS_DATA = [
   {
     id: 'bimonthly',
     name: 'Bimestral',
-    price: 360,
+    price: 460,
     duration: '60 dias',
-    discount: 'R$ 180/mês',
+    discount: '8% OFF',
     isPopular: false,
     stripePriceId: import.meta.env.VITE_STRIPE_BIMONTHLY_PRICE_ID,
     features: [
@@ -59,14 +59,14 @@ export const PLANS_DATA = [
   {
     id: 'semiannual',
     name: 'Semestral',
-    price: 960,
+    price: 1275,
     duration: '180 dias',
-    discount: '20% OFF',
+    discount: '15% OFF',
     isPopular: false,
     stripePriceId: import.meta.env.VITE_STRIPE_SEMIANNUAL_PRICE_ID,
     features: [
       { text: 'Todas as funcionalidades dos planos anteriores', included: true },
-      { text: 'Maior economia no período (20% OFF)', included: true },
+      { text: 'Maior economia no período (15% OFF)', included: true },
       { text: 'Ajuda na configuração de cardápio e fluxo', included: true },
       { text: 'Prioridade máxima no suporte', included: true },
       { text: 'Acesso antecipado a novas funcionalidades', included: true },

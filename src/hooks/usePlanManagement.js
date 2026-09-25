@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   getStripeCustomerId,
   updateStripeData,
-  getFreeTrialData,
   initializeFreeTrialIfNeeded,
   markFreeTrialAsExpired
 } from '@/services/firebase/restaurantService';
@@ -22,7 +21,7 @@ const withTimeout = (promise, timeoutMs = PLAN_DATA_TIMEOUT_MS, label = 'operati
 
 const isPaidPlanActive = (plan) => {
   if (!plan) return false;
-  return plan.planId !== 'free' && (plan.status === 'active' || plan.status === 'trialing');
+  return plan.planId !== 'free' && (plan.status === 'active' || plan.status === 'trialing' || plan.status === 'past_due');
 };
 
 const loadStripeService = async () => {
@@ -57,7 +56,7 @@ export const usePlanManagement = () => {
   const [currentPlan, setCurrentPlan] = useState(null);
   const [planLoading, setPlanLoading] = useState(true);
   const [hasActivePlan, setHasActivePlan] = useState(false);
-  const { idRestaurante, stripeCustomerId, plan: authPlan } = useAuth();
+  const { idRestaurante, stripeCustomerId, plan: authPlan, subscription: authSubscription } = useAuth();
 
   const loadFreeTrialPlan = useCallback(async (restaurantId, basePlan = null) => {
     const trialData = await withTimeout(initializeFreeTrialIfNeeded(restaurantId), PLAN_DATA_TIMEOUT_MS, 'initializeFreeTrialIfNeeded');
@@ -124,7 +123,7 @@ export const usePlanManagement = () => {
         const stripeService = await loadStripeService();
         const plan = await stripeService.getCurrentPlan(customerId);
         setCurrentPlan(plan);
-        setHasActivePlan(plan.status === 'active' || plan.status === 'trialing');
+        setHasActivePlan(plan.status === 'active' || plan.status === 'trialing' || plan.status === 'past_due');
         
         return plan;
       } else {
@@ -190,6 +189,14 @@ export const usePlanManagement = () => {
 
     if (currentPlan.planId === 'free') {
       return typeof currentPlan.trialDaysRemaining === 'number' ? currentPlan.trialDaysRemaining : null;
+    }
+
+    if (currentPlan.status === 'past_due' && authSubscription?.graceUntil) {
+      const graceUntil = authSubscription.graceUntil?.toDate
+        ? authSubscription.graceUntil.toDate()
+        : new Date(authSubscription.graceUntil);
+      const graceDiff = graceUntil.getTime() - Date.now();
+      return Math.max(0, Math.ceil(graceDiff / (1000 * 3600 * 24)));
     }
 
     if (!currentPlan.expiresAt) {

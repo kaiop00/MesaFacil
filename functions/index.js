@@ -2,6 +2,7 @@
 /* eslint-disable no-undef */
 const {setGlobalOptions} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
+const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
@@ -20,6 +21,10 @@ if (!admin.apps.length) {
 
 // Define secrets for Stripe (will be configured via Firebase CLI)
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
+const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
+
+const SUBSCRIPTION_GRACE_DAYS = 3;
+const SUBSCRIPTION_REMINDER_DAYS = [10, 5, 3, 1, 0];
 
 // Helper function to get Stripe secret key
 function getStripeSecretKey() {
@@ -53,6 +58,289 @@ const corsHandler = (req, res) => {
   }
   
   return false; // Return false to continue processing
+};
+
+
+const getWebhookSecret = () => {
+  if (process.env.STRIPE_WEBHOOK_SECRET) {
+    return process.env.STRIPE_WEBHOOK_SECRET;
+  }
+  if (stripeWebhookSecret.value()) {
+    return stripeWebhookSecret.value();
+  }
+  throw new Error("STRIPE_WEBHOOK_SECRET not configured");
+};
+
+const timestampFromSeconds = (seconds) => (
+  seconds ? admin.firestore.Timestamp.fromMillis(Number(seconds) * 1000) : null
+);
+
+const timestampToMillis = (value) => {
+  if (!value) return null;
+  if (typeof value.toMillis === "function") return value.toMillis();
+  if (typeof value.toDate === "function") return value.toDate().getTime();
+  if (value instanceof Date) return value.getTime();
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const isBlockedSubscriptionState = (subscription = {}, nowMs = Date.now()) => {
+  if (subscription.accessBlocked === true) return true;
+
+  const status = subscription.status;
+  if (["unpaid", "canceled", "incomplete_expired"].includes(status)) return true;
+
+  if (status === "past_due") {
+    const graceUntilMs = timestampToMillis(subscription.graceUntil);
+    return !graceUntilMs || graceUntilMs <= nowMs;
+  }
+
+  if (["active", "trialing"].includes(status) && subscription.cancelAtPeriodEnd) {
+    const periodEndMs = timestampToMillis(subscription.currentPeriodEnd);
+    return Boolean(periodEndMs && periodEndMs <= nowMs);
+  }
+
+  return false;
+};
+
+const addRestaurantNotificationIfMissing = async (idRestaurante, notificationId, data) => {
+  if (!idRestaurante) return false;
+  const ref = admin.firestore()
+    .collection("restaurantes")
+    .doc(idRestaurante)
+    .collection("notificacoes")
+    .doc(notificationId);
+
+  const existing = await ref.get();
+  if (existing.exists) return false;
+
+  await ref.create({
+    tipo: "assinatura",
+    categoria: "cobranca",
+    read: false,
+    criadoEm: FieldValue.serverTimestamp(),
+    ...data,
+  });
+  return true;
+};
+
+const findRestaurantByStripe = async ({idRestaurante, customerId, subscriptionId}) => {
+  const restaurants = admin.firestore().collection("restaurantes");
+
+  if (idRestaurante) {
+    const direct = await restaurants.doc(idRestaurante).get();
+    if (direct.exists) return direct;
+  }
+
+  if (subscriptionId) {
+    const snapshot = await restaurants
+      .where("stripeSubscriptionId", "==", subscriptionId)
+      .limit(1)
+      .get();
+    if (!snapshot.empty) return snapshot.docs[0];
+  }
+
+  if (customerId) {
+    const snapshot = await restaurants
+      .where("stripeCustomerId", "==", customerId)
+      .limit(1)
+      .get();
+    if (!snapshot.empty) return snapshot.docs[0];
+  }
+
+  return null;
+};
+
+const buildSubscriptionState = (subscription, previous = {}) => {
+  const nowMs = Date.now();
+  const status = subscription.status;
+  const currentPeriodEnd = timestampFromSeconds(subscription.current_period_end);
+  const currentPeriodStart = timestampFromSeconds(subscription.current_period_start);
+  const cancelAtPeriodEnd = Boolean(subscription.cancel_at_period_end);
+
+  let graceUntil = previous.graceUntil || null;
+  if (status === "past_due" && !graceUntil) {
+    graceUntil = admin.firestore.Timestamp.fromMillis(
+      nowMs + SUBSCRIPTION_GRACE_DAYS * 24 * 60 * 60 * 1000,
+    );
+  }
+
+  if (["active", "trialing"].includes(status)) {
+    graceUntil = null;
+  }
+
+  const state = {
+    status,
+    stripeSubscriptionId: subscription.id,
+    stripePriceId: subscription.items?.data?.[0]?.price?.id || null,
+    planId: subscription.metadata?.planId || previous.planId || null,
+    currentPeriodStart,
+    currentPeriodEnd,
+    cancelAtPeriodEnd,
+    graceUntil,
+    paymentFailedAt: previous.paymentFailedAt || null,
+    accessBlocked: false,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+
+  state.accessBlocked = isBlockedSubscriptionState(state, nowMs);
+  if (["active", "trialing"].includes(status)) {
+    state.paymentFailedAt = null;
+    state.accessBlocked = false;
+  }
+
+  return state;
+};
+
+const syncRestaurantSubscription = async ({
+  idRestaurante,
+  customerId,
+  subscription,
+  reason = "stripe",
+}) => {
+  const restaurantDoc = await findRestaurantByStripe({
+    idRestaurante,
+    customerId,
+    subscriptionId: subscription?.id,
+  });
+
+  if (!restaurantDoc || !subscription) return null;
+
+  const restaurantData = restaurantDoc.data() || {};
+  const previous = restaurantData.subscription || {};
+  const previousBlocked = isBlockedSubscriptionState(previous);
+  const previousHadPaymentIssue = previousBlocked || ["past_due", "unpaid"].includes(previous.status);
+  const state = buildSubscriptionState(subscription, previous);
+  const nextBlocked = state.accessBlocked;
+  const restaurantRef = restaurantDoc.ref;
+
+  const update = {
+    stripeCustomerId: customerId || restaurantData.stripeCustomerId || null,
+    stripeSubscriptionId: subscription.id,
+    subscription: state,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+
+  if (reason === "payment_failed") {
+    update.subscription.paymentFailedAt = FieldValue.serverTimestamp();
+  }
+
+  await restaurantRef.set(update, {merge: true});
+
+  if (previousHadPaymentIssue && !nextBlocked && ["active", "trialing"].includes(state.status)) {
+    await addRestaurantNotificationIfMissing(
+      restaurantDoc.id,
+      `assinatura_restaurada_${subscription.id}_${subscription.current_period_end || Date.now()}`,
+      {
+        titulo: "Pagamento regularizado",
+        mensagem: "Seu pagamento foi regularizado e o acesso ao MesaFácil foi restaurado automaticamente.",
+        prioridade: "alta",
+        stripeSubscriptionId: subscription.id,
+      },
+    );
+  }
+
+  if (!previousBlocked && nextBlocked) {
+    await addRestaurantNotificationIfMissing(
+      restaurantDoc.id,
+      `assinatura_bloqueada_${subscription.id}_${subscription.current_period_end || Date.now()}`,
+      {
+        titulo: "Acesso bloqueado",
+        mensagem: "O período de tolerância terminou ou a assinatura não está mais regularizada. Escolha um plano para restaurar o acesso.",
+        prioridade: "alta",
+        stripeSubscriptionId: subscription.id,
+      },
+    );
+  }
+
+  if (reason === "payment_failed") {
+    await addRestaurantNotificationIfMissing(
+      restaurantDoc.id,
+      `assinatura_pagamento_falhou_${subscription.id}_${Date.now()}`,
+      {
+        titulo: "Falha no pagamento",
+        mensagem: "Não conseguimos confirmar o pagamento da sua assinatura. Verifique seu meio de pagamento para evitar o bloqueio do acesso.",
+        prioridade: "alta",
+        stripeSubscriptionId: subscription.id,
+      },
+    );
+  }
+
+  if (previous.status !== "past_due" && state.status === "past_due") {
+    const graceUntilDate = timestampToMillis(state.graceUntil);
+    await addRestaurantNotificationIfMissing(
+      restaurantDoc.id,
+      `assinatura_graca_${subscription.id}_${subscription.current_period_end || Date.now()}`,
+      {
+        titulo: "Período de tolerância iniciado",
+        mensagem: `Seu pagamento está pendente. Você tem ${SUBSCRIPTION_GRACE_DAYS} dias para regularizar a assinatura antes do bloqueio.`,
+        prioridade: "alta",
+        stripeSubscriptionId: subscription.id,
+        graceUntil: graceUntilDate ? admin.firestore.Timestamp.fromMillis(graceUntilDate) : null,
+      },
+    );
+  }
+
+  return {restaurantId: restaurantDoc.id, state};
+};
+
+const processStripeWebhookEvent = async (event) => {
+  const data = event.data?.object || {};
+
+  switch (event.type) {
+    case "checkout.session.completed": {
+      if (data.mode !== "subscription" || !data.subscription) return;
+      const customerId = typeof data.customer === "string" ? data.customer : data.customer?.id;
+      const subscriptionId = typeof data.subscription === "string" ? data.subscription : data.subscription?.id;
+      const idRestaurante = data.metadata?.idRestaurante || data.subscription_details?.metadata?.idRestaurante;
+      if (!subscriptionId) return;
+
+      const stripe = require("stripe")(getStripeSecretKey());
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      await syncRestaurantSubscription({
+        idRestaurante,
+        customerId,
+        subscription,
+        reason: "checkout_completed",
+      });
+      return;
+    }
+
+    case "invoice.payment_failed": {
+      const customerId = typeof data.customer === "string" ? data.customer : data.customer?.id;
+      const subscriptionId = typeof data.subscription === "string" ? data.subscription : data.subscription?.id;
+      if (!subscriptionId) return;
+      const stripe = require("stripe")(getStripeSecretKey());
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      await syncRestaurantSubscription({
+        customerId,
+        subscription,
+        reason: "payment_failed",
+      });
+      return;
+    }
+
+    case "invoice.paid":
+    case "invoice.payment_succeeded": {
+      const customerId = typeof data.customer === "string" ? data.customer : data.customer?.id;
+      const subscriptionId = typeof data.subscription === "string" ? data.subscription : data.subscription?.id;
+      if (!subscriptionId) return;
+      const stripe = require("stripe")(getStripeSecretKey());
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      await syncRestaurantSubscription({customerId, subscription, reason: "payment_paid"});
+      return;
+    }
+
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      const customerId = typeof data.customer === "string" ? data.customer : data.customer?.id;
+      await syncRestaurantSubscription({customerId, subscription: data, reason: event.type});
+      return;
+    }
+
+    default:
+      logger.debug("Stripe webhook ignored", {type: event.type});
+  }
 };
 
 const resolveStripePriceId = async (stripe, rawPriceId) => {
@@ -355,6 +643,35 @@ exports.createCheckoutSession = onRequest(
         });
       }
 
+      // If access was blocked because of an unpaid/past-due subscription,
+      // close that old subscription before creating the replacement checkout.
+      // This prevents the customer from ending up with two recurring subscriptions.
+      const checkoutSource = metadata?.source || "";
+      if (["blocked_access", "plan_selection"].includes(checkoutSource)) {
+        const existingSubscriptions = await stripe.subscriptions.list({
+          customer: customer.id,
+          status: "all",
+          limit: 20,
+        });
+
+        for (const existingSubscription of existingSubscriptions.data) {
+          if (["past_due", "unpaid"].includes(existingSubscription.status)) {
+            try {
+              await stripe.subscriptions.cancel(existingSubscription.id);
+              logger.info("Canceled previous delinquent subscription before new checkout", {
+                customerId: customer.id,
+                subscriptionId: existingSubscription.id,
+              });
+            } catch (cancelError) {
+              logger.warn("Could not cancel previous delinquent subscription", {
+                subscriptionId: existingSubscription.id,
+                error: cancelError.message,
+              });
+            }
+          }
+        }
+      }
+
       const checkoutPayload = {
         customer: customer.id,
         payment_method_types: ["card"],
@@ -476,15 +793,16 @@ exports.activatePlan = onRequest(
         return res.status(404).json({error: "Subscription not found in Stripe"});
       }
 
-      // Save only Stripe references to restaurant document in Firestore
-      // Plan details will be fetched from Stripe API on the frontend
-      await admin.firestore().collection("restaurantes").doc(idRestaurante).update({
-        stripeCustomerId: stripeCustomerId,
-        stripeSubscriptionId: stripeSubscriptionId,
-        updatedAt: FieldValue.serverTimestamp(),
+      // Keep the restaurant document synchronized immediately. The webhook remains
+      // the source of truth, but this makes the restoration instant after Checkout.
+      await syncRestaurantSubscription({
+        idRestaurante,
+        customerId: stripeCustomerId,
+        subscription,
+        reason: "checkout_completed",
       });
 
-      logger.info("Stripe references saved to restaurant", {idRestaurante, subscriptionId: stripeSubscriptionId});
+      logger.info("Stripe subscription synchronized with restaurant", {idRestaurante, subscriptionId: stripeSubscriptionId});
 
       res.json({
         success: true,
@@ -686,6 +1004,160 @@ const {
   nfceSincronizarCrt,
   nfceSincronizarDocumentos,
 } = require("./nfce");
+
+
+/**
+ * Stripe webhook - source of truth for subscription status and access.
+ * Configure this endpoint in Stripe as:
+ * https://us-central1-projectmesafacil.cloudfunctions.net/stripeWebhook
+ */
+exports.stripeWebhook = onRequest(
+  {secrets: [stripeSecretKey, stripeWebhookSecret]},
+  async (req, res) => {
+    if (req.method !== "POST") {
+      return res.status(405).send("Method not allowed");
+    }
+
+    const signature = req.headers["stripe-signature"];
+    if (!signature) {
+      return res.status(400).send("Missing Stripe signature");
+    }
+
+    try {
+      const stripe = require("stripe")(getStripeSecretKey());
+      const event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        getWebhookSecret(),
+      );
+
+      const eventRef = admin.firestore().collection("stripeWebhookEvents").doc(event.id);
+      const existingEvent = await eventRef.get();
+      if (existingEvent.exists) {
+        return res.json({received: true, duplicate: true});
+      }
+
+      await processStripeWebhookEvent(event);
+      await eventRef.set({
+        type: event.type,
+        created: event.created,
+        processedAt: FieldValue.serverTimestamp(),
+      });
+
+      return res.json({received: true});
+    } catch (error) {
+      logger.error("Stripe webhook error", {error: error.message});
+      return res.status(400).send(`Webhook Error: ${error.message}`);
+    }
+  },
+);
+
+/**
+ * Daily subscription reminders and automatic grace-period blocking.
+ * Runs every day at 09:00 UTC (06:00 in Ceará).
+ */
+exports.subscriptionBillingMonitor = onSchedule(
+  {
+    schedule: "0 9 * * *",
+    timeZone: "America/Fortaleza",
+  },
+  async () => {
+    const snapshot = await admin.firestore().collection("restaurantes").get();
+    const now = Date.now();
+
+    for (const restaurantDoc of snapshot.docs) {
+      const data = restaurantDoc.data() || {};
+      const subscription = data.subscription;
+
+      // Free-trial expiry reminders use the same notification center.
+      if (!subscription?.stripeSubscriptionId) {
+        const trialEndMs = timestampToMillis(data.freeTrial?.expiresAt);
+        const trialExpired = Boolean(data.freeTrial?.isExpired) || Boolean(trialEndMs && trialEndMs <= now);
+        if (trialEndMs && !trialExpired) {
+          const diffDays = Math.round((trialEndMs - now) / (24 * 60 * 60 * 1000));
+          if (SUBSCRIPTION_REMINDER_DAYS.includes(diffDays)) {
+            await addRestaurantNotificationIfMissing(
+              restaurantDoc.id,
+              `teste_gratis_vencimento_${Math.floor(trialEndMs / 1000)}_${diffDays}`,
+              {
+                titulo: diffDays === 0 ? "Teste grátis termina hoje" : `Teste grátis termina em ${diffDays} dias`,
+                mensagem: diffDays === 0
+                  ? "Seu período de teste termina hoje. Escolha um plano para continuar usando o MesaFácil."
+                  : `Seu período de teste termina em ${diffDays} dias. Escolha um plano pago para não interromper o acesso.`,
+                prioridade: diffDays <= 3 ? "alta" : "normal",
+              },
+            );
+          }
+        }
+        continue;
+      }
+
+      const status = subscription.status;
+      const graceUntilMs = timestampToMillis(subscription.graceUntil);
+      const periodEndMs = timestampToMillis(subscription.currentPeriodEnd);
+
+      if (status === "past_due" && graceUntilMs && graceUntilMs <= now && subscription.accessBlocked !== true) {
+        const blockedState = {
+          ...subscription,
+          accessBlocked: true,
+          updatedAt: FieldValue.serverTimestamp(),
+        };
+        await restaurantDoc.ref.update({subscription: blockedState, updatedAt: FieldValue.serverTimestamp()});
+        await addRestaurantNotificationIfMissing(
+          restaurantDoc.id,
+          `assinatura_bloqueada_graca_${subscription.stripeSubscriptionId}_${Math.floor(graceUntilMs / 1000)}`,
+          {
+            titulo: "Acesso bloqueado",
+            mensagem: "Os 3 dias de tolerância terminaram sem regularização do pagamento. Escolha um plano para voltar a usar o MesaFácil.",
+            prioridade: "alta",
+            stripeSubscriptionId: subscription.stripeSubscriptionId,
+          },
+        );
+      }
+
+      if (["active", "trialing"].includes(status) && subscription.cancelAtPeriodEnd && periodEndMs && periodEndMs <= now && subscription.accessBlocked !== true) {
+        await restaurantDoc.ref.update({
+          "subscription.accessBlocked": true,
+          "subscription.updatedAt": FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        await addRestaurantNotificationIfMissing(
+          restaurantDoc.id,
+          `assinatura_bloqueada_expirada_${subscription.stripeSubscriptionId}_${Math.floor(periodEndMs / 1000)}`,
+          {
+            titulo: "Assinatura encerrada",
+            mensagem: "O período contratado terminou. Escolha um novo plano para continuar usando o MesaFácil.",
+            prioridade: "alta",
+            stripeSubscriptionId: subscription.stripeSubscriptionId,
+          },
+        );
+      }
+
+      const effectiveBlocked = isBlockedSubscriptionState(subscription, now);
+      if (effectiveBlocked) continue;
+
+      if (periodEndMs) {
+        const diffDays = Math.round((periodEndMs - now) / (24 * 60 * 60 * 1000));
+        if (SUBSCRIPTION_REMINDER_DAYS.includes(diffDays)) {
+          const label = diffDays === 0 ? "vence hoje" : `vence em ${diffDays} dias`;
+          await addRestaurantNotificationIfMissing(
+            restaurantDoc.id,
+            `assinatura_vencimento_${subscription.stripeSubscriptionId}_${Math.floor(periodEndMs / 1000)}_${diffDays}`,
+            {
+              titulo: diffDays === 0 ? "Assinatura vence hoje" : `Assinatura ${label}`,
+              mensagem: diffDays === 0
+                ? "Sua assinatura vence hoje. Verifique o pagamento para evitar interrupção do acesso."
+                : `Sua assinatura vence em ${diffDays} dias. Mantenha o pagamento regularizado para continuar usando o MesaFácil.`,
+              prioridade: diffDays <= 3 ? "alta" : "normal",
+              stripeSubscriptionId: subscription.stripeSubscriptionId,
+              currentPeriodEnd: subscription.currentPeriodEnd || null,
+            },
+          );
+        }
+      }
+    }
+  },
+);
 
 exports.ifoodPolling = ifoodPolling;
 exports.ifoodPollManual = ifoodPollManual;

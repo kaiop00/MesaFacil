@@ -21,6 +21,7 @@ export default function PlanSelectionPage() {
   const { setUserPlan, currentPlan } = usePlanManagement();
   const { notify } = useToast();
   const resolvedRestaurantId = idRestaurante || location.state?.idRestaurante;
+  const isBlockedFlow = new URLSearchParams(location.search).get("blocked") === "1" || Boolean(location.state?.accessBlocked);
   const isFreeTrialExpired = Boolean(currentPlan?.planId === 'free' && currentPlan?.isTrialExpired);
   const hasConsumedFreeTrial = hasUsedFreeTrial || Boolean(currentPlan?.isTrialExpired);
   const grantedRef = useRef(false);
@@ -82,21 +83,26 @@ export default function PlanSelectionPage() {
         // auto-opening the billing portal. Billing management remains available
         // from explicit user actions elsewhere in the app.
         if (subscriptionData.subscription) {
-          try {
-            if (resolvedRestaurantId) {
-              await setUserPlan(
-                resolvedRestaurantId,
-                stripeCustomerId,
-                subscriptionData.subscription.id
-              );
-            }
-          } catch (err) {
-            console.error('Erro ao restaurar o plano da assinatura existente:', err);
-          }
+          const status = subscriptionData.subscription.status;
+          const canRestoreAccess = status === 'active' || status === 'trialing';
 
-          notify('Assinatura reconhecida. Acesso liberado automaticamente.', 'success');
-          navigate('/home', { replace: true });
-          return;
+          if (canRestoreAccess && !isBlockedFlow) {
+            try {
+              if (resolvedRestaurantId) {
+                await setUserPlan(
+                  resolvedRestaurantId,
+                  stripeCustomerId,
+                  subscriptionData.subscription.id
+                );
+              }
+            } catch (err) {
+              console.error('Erro ao restaurar o plano da assinatura existente:', err);
+            }
+
+            notify('Assinatura reconhecida. Acesso liberado automaticamente.', 'success');
+            navigate('/home', { replace: true });
+            return;
+          }
         }
         
         // No subscription found, show plan selection
@@ -109,7 +115,7 @@ export default function PlanSelectionPage() {
     };
 
     checkExistingSubscription();
-  }, [stripeCustomerId, notify, resolvedRestaurantId, setUserPlan, navigate]);
+  }, [stripeCustomerId, notify, resolvedRestaurantId, setUserPlan, navigate, isBlockedFlow]);
 
   const handlePlanSelect = (plan) => {
     if (plan.id === 'free' && (isFreeTrialExpired || hasConsumedFreeTrial)) {
@@ -172,7 +178,7 @@ export default function PlanSelectionPage() {
               idRestaurante: resolvedRestaurantId,
               planId: selectedPlan.id,
               planName: selectedPlan.name,
-              source: 'plan_selection'
+              source: isBlockedFlow ? 'blocked_access' : 'plan_selection'
             }
           );
         } else {
@@ -235,6 +241,22 @@ export default function PlanSelectionPage() {
                 <p className="text-yellow-700 text-sm mt-3 font-medium">
                   O sistema de cobrança será reativado em breve. Aproveite o acesso completo!
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isBlockedFlow && !STRIPE_TEMPORARILY_DISABLED && (
+          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8 max-w-4xl mx-auto">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-11 h-11 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 5c-.77-1.33-2.7-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-red-900 text-lg">Seu acesso ao MesaFácil está temporariamente bloqueado</h3>
+                <p className="text-red-800 mt-1">A cobrança da assinatura não foi regularizada dentro do período de tolerância. Escolha um plano abaixo para realizar o pagamento e restaurar o acesso automaticamente.</p>
               </div>
             </div>
           </div>

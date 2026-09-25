@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingSpinner from "./LoadingSpinner";
 
@@ -6,6 +6,8 @@ const PrivateRoute = () => {
     const auth = useAuth();
     const user = auth?.user ?? null;
     const loading = auth?.loading ?? true;
+    const accessBlocked = auth?.accessBlocked ?? false;
+    const location = useLocation();
 
     if (loading) {
         return (
@@ -19,8 +21,11 @@ const PrivateRoute = () => {
         return <Navigate to="/home-page" replace />;
     }
 
+    if (accessBlocked && location.pathname.startsWith("/home")) {
+        return <Navigate to="/selecionar-plano?blocked=1" replace />;
+    }
+
     return <Outlet />;
 };
-
 
 export default PrivateRoute;

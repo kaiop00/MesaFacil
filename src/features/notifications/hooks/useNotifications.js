@@ -147,6 +147,10 @@ export function useNotifications(idRestaurante) {
           total: data.total ?? 0,
           status: data.status || "pendente",
           origem: data.origem || "",
+          titulo: data.titulo || "",
+          mensagem: data.mensagem || "",
+          prioridade: data.prioridade || "normal",
+          categoria: data.categoria || "",
         };
       });
       setEventoNotifications(docs);
